@@ -196,6 +196,30 @@
 @keyframes lastShow{to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.opening-cloud,.opening-lightning,.opening-bulb,.opening-brush,.opening-paper,.opening-stroke,.opening-last{animation:none!important}.opening-paper,.opening-stroke,.opening-last{opacity:1}.opening-art{display:none}.opening-overlay{transition:none}}
 
+.idea-back{z-index:20}
+.idea-back[hidden]{display:none!important}
+.idea-popup{max-height:min(82dvh,740px);width:min(480px,100%);gap:13px}
+.idea-popup-header{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.idea-popup-header h2{font:normal 25px/1.25 Georgia,serif;min-width:0;overflow-wrap:anywhere}
+.idea-close{border:0;background:transparent;color:var(--muted);font-size:28px;line-height:1;padding:0 2px}
+.idea-popup-body{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted);font-size:14px;line-height:1.55}
+.idea-popup-row{display:flex;gap:8px;align-items:center;margin:5px 0 1px;font-size:14px}
+.idea-popup-row .muted{font-size:11px}
+.idea-action-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.idea-action-row input[type=checkbox]{flex:none;width:19px;height:19px;accent-color:var(--secondary-ui)}
+.idea-action-row.done .idea-action-name{text-decoration:line-through;color:var(--muted)}
+.idea-action-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.idea-small{border:0;background:var(--secondary-wash);color:var(--secondary-ui);border-radius:8px;padding:7px;font-size:11px;white-space:nowrap}
+.idea-remove{border:0;background:transparent;color:var(--muted);font-size:20px;padding:3px 5px}
+.idea-add-form{display:flex;gap:8px}
+.idea-add-form input{flex:1;min-width:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 11px;font:inherit;font-size:13px}
+.idea-add-form button{min-width:42px;font-size:19px}
+.idea-linked{display:block;width:100%;text-align:left;padding:8px 2px;border:0;background:transparent;color:var(--secondary-ui);font-size:13px}
+.idea-popup-buttons{display:flex;gap:8px}
+.idea-popup-buttons button{flex:1}
+.idea-popup-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:5px}
+@media(max-width:440px){.idea-popup{padding:18px;gap:12px}.idea-popup-header h2{font-size:23px}}
+
   </style>
 
 </head>
@@ -251,12 +275,6 @@
           <textarea id="brainstormDraft" placeholder="What's on your mind?" rows="4" maxlength="20000" aria-label="New idea"></textarea>
           <div class="capture-footer"><span class="muted" id="draftStatus">Autosaved draft</span><button class="primary-button" id="keepIdea">Keep Idea</button></div>
         </section>
-        <section id="ideaEditor" class="card" hidden><div class="card-heading"><h2>Edit Idea</h2><button class="text-button" id="closeIdea">Done</button></div>
-          <input id="ideaTitle" placeholder="Title (optional)" maxlength="160" aria-label="Idea title">
-          <textarea id="ideaBody" rows="7" maxlength="20000" placeholder="Let it flow..." aria-label="Idea notes"></textarea>
-          <p class="muted small" id="ideaSaveStatus">Autosaved</p>
-          <div class="row-buttons idea-actions"><button class="secondary-button" id="ideaToGoal">→ Goal</button><button class="secondary-button" id="ideaToTask">→ Task</button><button class="danger-button" id="deleteIdea">Delete</button></div>
-        </section>
         <section class="card"><div class="card-heading"><h2>Saved Ideas</h2><span class="muted" id="ideaCount"></span></div><div id="ideasList"></div></section>
       </div>
     </section>
@@ -291,6 +309,21 @@
     </svg>
     <div class="opening-last" id="openingLast"></div>
   </div>
+</div>
+<div id="ideaBack" class="modal-back idea-back" role="presentation" hidden>
+  <section id="ideaPopup" class="modal idea-popup" role="dialog" aria-modal="true" aria-labelledby="ideaPopupTitle" tabindex="-1">
+    <div class="idea-popup-header"><h2 id="ideaPopupTitle">Idea</h2><button id="closeIdea" class="idea-close" type="button" aria-label="Close idea">×</button></div>
+    <div id="ideaPopupBody" class="idea-popup-body"></div>
+    <div class="idea-popup-row"><strong>Actions</strong><span class="muted" id="ideaActionCount"></span></div>
+    <div id="ideaActionList"></div>
+    <form id="ideaAddAction" class="idea-add-form">
+      <input id="ideaActionText" maxlength="160" placeholder="Add an action..." required aria-label="New action">
+      <button type="submit" class="secondary-button" aria-label="Add action">+</button>
+    </form>
+    <div id="ideaLinked"></div>
+    <div class="idea-popup-buttons"><button id="ideaToTask" type="button" class="secondary-button">+ Task</button><button id="ideaToGoal" type="button" class="secondary-button">+ Goal</button></div>
+    <div class="idea-popup-footer"><button type="button" class="danger-button" id="deleteIdea">Delete Idea</button><button type="button" class="text-button" id="ideaDone">Done</button></div>
+  </section>
 </div>
 <div id="modalBack" class="modal-back" role="presentation"><form id="modalForm" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle"></h2><div id="modalFields" class="form-fields"></div><div class="modal-actions"><button type="button" class="danger-button" id="deleteModal" hidden>Delete</button><span class="modal-spacer"></span><button type="button" class="secondary-button" id="cancelModal">Cancel</button><button type="submit" class="primary-button">Save</button></div></form></div>
 <script>
@@ -334,7 +367,7 @@ function normalize(data){
   const seen=new Set();result.categories=categoryList.map(c=>String(c||'').trim()).filter(c=>{const key=c.toLocaleLowerCase();if(!key||seen.has(key))return false;seen.add(key);return true;});
   if(!result.categories.length)result.categories=['Personal'];
   for(const g of result.goals){g.category=result.categories.find(c=>c.toLocaleLowerCase()===g.category.toLocaleLowerCase())||'Personal';}
-  result.ideas=(Array.isArray(result.ideas)?result.ideas:[]).filter(n=>n&&typeof n==='object').map(n=>({...n,id:n.id??('n-'+Date.now()),title:String(n.title||''),body:String(n.body||''),created:n.created||new Date().toISOString(),updated:n.updated||n.created||new Date().toISOString(),goalIds:Array.isArray(n.goalIds)?n.goalIds:[],taskIds:Array.isArray(n.taskIds)?n.taskIds:[]}));
+  result.ideas=(Array.isArray(result.ideas)?result.ideas:[]).filter(n=>n&&typeof n==='object').map(n=>({...n,id:n.id??('n-'+Date.now()),title:String(n.title||''),body:String(n.body||''),created:n.created||new Date().toISOString(),updated:n.updated||n.created||new Date().toISOString(),goalIds:Array.isArray(n.goalIds)?n.goalIds:[],taskIds:Array.isArray(n.taskIds)?n.taskIds:[],actions:Array.isArray(n.actions)?n.actions.filter(a=>a&&typeof a==='object').map(a=>({id:a.id||('ia-'+Math.random()),title:String(a.title||''),done:!!a.done,taskId:a.taskId||''})):[]}));
   result.brainstormDraft=typeof result.brainstormDraft==='string'?result.brainstormDraft:'';
   if(!['none','quote','animation','both'].includes(result.openingMode))result.openingMode='both';
   result.openingMessage=typeof result.openingMessage==='string'?result.openingMessage.slice(0,280):defaults.openingMessage;
@@ -467,7 +500,7 @@ function renderIdeas(){
     const title=(n.title||n.body.trim().split('\n')[0]||'Untitled').slice(0,110);
     const preview=n.body.trim().replace(/\s+/g,' ').slice(0,160);
     const day=new Date(n.updated).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return '<button type="button" class="idea-card" data-edit-idea="'+esc(n.id)+'"><strong>'+esc(title)+'</strong><span>'+esc(preview)+'</span><small>'+esc(day)+'</small></button>';
+    return '<button type="button" class="idea-card" data-edit-idea="'+esc(n.id)+'"><strong>'+esc(title)+'</strong>'+(title.toLowerCase()===preview.toLowerCase()?'':'<span>'+esc(preview)+'</span>')+'<small>'+esc(day)+(n.actions?.length?' · '+n.actions.filter(a=>a.done).length+'/'+n.actions.length+' actions':'')+'</small></button>';
   }).join('')||'<p class="empty">Your next idea starts here.</p>';
   $('brainstormDraft').value=state.brainstormDraft;
 }
@@ -477,21 +510,50 @@ function addCategory(name){
   if(state.categories.some(c=>c.toLocaleLowerCase()===v.toLocaleLowerCase())){alert('That category already exists.');return false;}
   state.categories.push(v);selectedCategory=v;save();render();return true;
 }
+
+function activeIdea(){return state.ideas.find(n=>String(n.id)===String(activeIdeaId));}
+function ideaTitle(n){return (n.title.trim()||n.body.trim().split(/\r?\n/)[0]||'Idea').slice(0,160);}
+function renderIdeaPopup(){
+  const n=activeIdea();if(!n)return;
+  const name=ideaTitle(n),body=n.body.trim(),first=body.split(/\r?\n/)[0].trim();
+  $('ideaPopupTitle').textContent=name;
+  const visible=n.title.trim().toLowerCase()===body.toLowerCase()?'':(!n.title.trim()&&first===name?body.slice(first.length).trim():body);
+  $('ideaPopupBody').textContent=visible;$('ideaPopupBody').hidden=!visible;
+  const actions=n.actions||[];
+  $('ideaActionCount').textContent=actions.length?actions.filter(a=>a.done).length+'/'+actions.length:'';
+  $('ideaActionList').innerHTML=actions.map(a=>{
+    const t=state.tasks.find(t=>String(t.id)===String(a.taskId));
+    return '<div class="idea-action-row '+(a.done?'done':'')+'"><input type="checkbox" data-idea-action-check="'+esc(a.id)+'" aria-label="Complete '+esc(a.title)+'" '+(a.done?'checked':'')+'><span class="idea-action-name">'+esc(a.title)+'</span><button type="button" class="idea-small" '+(t?'data-open-idea-task="'+esc(t.id)+'"':'data-idea-action-task="'+esc(a.id)+'"')+'>'+(t?'Task':'→ Task')+'</button><button type="button" class="idea-remove" data-idea-action-remove="'+esc(a.id)+'" aria-label="Remove action">×</button></div>';
+  }).join('')||'<p class="muted small">Add an action to this idea.</p>';
+  const goals=state.goals.filter(g=>(n.goalIds||[]).some(id=>String(id)===String(g.id)));
+  const tasks=state.tasks.filter(t=>(n.taskIds||[]).some(id=>String(id)===String(t.id)));
+  $('ideaLinked').innerHTML=(goals.length||tasks.length?'<div class="idea-popup-row"><strong>Linked</strong></div>':'')+
+    goals.map(g=>'<button type="button" class="idea-linked" data-open-idea-goal="'+esc(g.id)+'">◎ '+esc(g.title)+'</button>').join('')+
+    tasks.map(t=>'<button type="button" class="idea-linked" data-open-idea-task="'+esc(t.id)+'">✓ '+esc(t.title)+'</button>').join('');
+}
 function openIdea(id){
   const n=state.ideas.find(n=>String(n.id)===String(id));if(!n)return;
-  activeIdeaId=n.id;
-  $('ideaEditor').hidden=false;$('ideaTitle').value=n.title;$('ideaBody').value=n.body;
-  $('ideaSaveStatus').textContent='Autosaved';
-  $('ideaEditor').scrollIntoView({block:'nearest',behavior:'smooth'});
+  activeIdeaId=n.id;$('ideaBack').hidden=false;$('ideaBack').classList.add('open');
+  renderIdeaPopup();$('ideaPopup').focus({preventScroll:true});
 }
-function activeIdea(){return state.ideas.find(n=>String(n.id)===String(activeIdeaId));}
 function closeIdea(){
-  activeIdeaId=null;$('ideaEditor').hidden=true;renderIdeas();
+  $('ideaBack').classList.remove('open');$('ideaBack').hidden=true;activeIdeaId=null;renderIdeas();
+}
+function addIdeaAction(title){
+  const n=activeIdea();title=String(title||'').trim();if(!n||!title)return;
+  (n.actions??=[]).push({id:'ia-'+uid(),title:title.slice(0,160),done:false,taskId:''});n.updated=new Date().toISOString();
+  save();renderIdeaPopup();renderIdeas();$('ideaActionText').value='';
+}
+function ideaActionToTask(actionId){
+  const n=activeIdea(),a=n?.actions?.find(a=>String(a.id)===String(actionId));if(!n||!a)return;
+  let t=state.tasks.find(t=>String(t.id)===String(a.taskId));
+  if(!t){t={id:uid(),title:a.title,date:'',dueDate:'',scheduledDate:'',scheduledTime:'',priority:false,priorityRank:0,goalId:'',actionId:'',actionIndex:'',ideaId:n.id,ideaActionId:a.id,done:a.done};state.tasks.push(t);a.taskId=t.id;save();}
+  closeIdea();planTab('tasks');render();openModal('task',t.id);
 }
 function createIdeaFromDraft(){
   const body=state.brainstormDraft.trim();
   if(!body){$('brainstormDraft').focus();return;}
-  const n={id:uid(),title:'',body,created:new Date().toISOString(),updated:new Date().toISOString(),goalIds:[],taskIds:[]};
+  const n={id:uid(),title:'',body,created:new Date().toISOString(),updated:new Date().toISOString(),goalIds:[],taskIds:[],actions:[]};
   state.ideas.push(n);state.brainstormDraft='';save();renderIdeas();openIdea(n.id);
 }
 function convertIdea(kind){
@@ -659,7 +721,11 @@ document.addEventListener('click',(e)=>{
   const action=e.target.closest('[data-add-action]');if(action){openModal('action',null,action.dataset.addAction);return;}
   if(e.target.closest('#keepIdea')){createIdeaFromDraft();return;}
   const editIdea=e.target.closest('[data-edit-idea]');if(editIdea){openIdea(editIdea.dataset.editIdea);return;}
-  if(e.target.closest('#closeIdea')){closeIdea();return;}
+  if(e.target.closest('#closeIdea')||e.target.closest('#ideaDone')||e.target.id==='ideaBack'){closeIdea();return;}
+  const actionTask=e.target.closest('[data-idea-action-task]');if(actionTask){ideaActionToTask(actionTask.dataset.ideaActionTask);return;}
+  const openTask=e.target.closest('[data-open-idea-task]');if(openTask){closeIdea();planTab('tasks');openModal('task',openTask.dataset.openIdeaTask);return;}
+  const openGoal=e.target.closest('[data-open-idea-goal]');if(openGoal){closeIdea();expandedGoals.add(String(openGoal.dataset.openIdeaGoal));planTab('goals');render();return;}
+  const removeAction=e.target.closest('[data-idea-action-remove]');if(removeAction){const n=activeIdea();if(!n)return;n.actions=n.actions.filter(a=>String(a.id)!==removeAction.dataset.ideaActionRemove);n.updated=new Date().toISOString();save();renderIdeaPopup();renderIdeas();return;}
   if(e.target.closest('#deleteIdea')){const n=activeIdea();if(!n||!confirm('Delete this idea?'))return;state.ideas=state.ideas.filter(x=>String(x.id)!==String(n.id));save();closeIdea();return;}
   if(e.target.closest('#ideaToGoal')){convertIdea('goal');return;}
   if(e.target.closest('#ideaToTask')){convertIdea('task');return;}
@@ -667,17 +733,20 @@ document.addEventListener('click',(e)=>{
   const mode=e.target.closest('[data-appearance]');if(mode){state.appearance=mode.dataset.appearance;save();render();return;}
 });
 $('brainstormDraft').addEventListener('input',e=>{state.brainstormDraft=e.target.value;save();$('draftStatus').textContent='Autosaved draft';});
-for(const id of ['ideaTitle','ideaBody']){
-  $(id).addEventListener('input',()=>{const n=activeIdea();if(!n)return;n.title=$('ideaTitle').value;n.body=$('ideaBody').value;n.updated=new Date().toISOString();save();$('ideaSaveStatus').textContent='Autosaved';});
-  $(id).addEventListener('blur',()=>renderIdeas());
-}
+$('ideaAddAction').addEventListener('submit',e=>{e.preventDefault();addIdeaAction($('ideaActionText').value);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('ideaBack').hidden)closeIdea();});
 for(const key of ['todayFocus','weeklyFocus']){
   $(key).addEventListener('input',e=>{state[key]=e.target.value;save();});
 }
 $('openingMessageInput').addEventListener('input',e=>{state.openingMessage=e.target.value.slice(0,280);save();});
 document.addEventListener('change',(e)=>{
   const x=e.target;
-  if(x.id==='openingMode'){state.openingMode=x.value;save();return;}if(x.dataset.taskCheck){const item=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);if(item){item.done=x.checked;if(item.goalId!==''&&item.goalId!=null){const g=state.goals.find(g=>String(g.id)===String(item.goalId));const a=g?.actions.find(a=>String(a.id)===String(item.actionId||''));if(a)a.done=x.checked;}}}
+  if(x.id==='openingMode'){state.openingMode=x.value;save();return;}if(x.dataset.taskCheck){const item=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);if(item){item.done=x.checked;if(item.goalId!==''&&item.goalId!=null){const g=state.goals.find(g=>String(g.id)===String(item.goalId));const a=g?.actions.find(a=>String(a.id)===String(item.actionId||''));if(a)a.done=x.checked;}if(item.ideaId&&item.ideaActionId){const n=state.ideas.find(n=>String(n.id)===String(item.ideaId));const a=n?.actions?.find(a=>String(a.id)===String(item.ideaActionId));if(a)a.done=x.checked;}}}
+  else if(x.dataset.ideaActionCheck){
+    const n=activeIdea(),a=n?.actions?.find(a=>String(a.id)===String(x.dataset.ideaActionCheck));if(!a)return;
+    a.done=x.checked;n.updated=new Date().toISOString();const t=state.tasks.find(t=>String(t.id)===String(a.taskId));if(t)t.done=x.checked;
+    save();renderIdeaPopup();renderIdeas();render();return;
+  }
   else if(x.dataset.weekgoalCheck){const item=state.weeklyGoals.find(t=>String(t.id)===x.dataset.weekgoalCheck);if(item)item.done=x.checked;}
   else if(x.dataset.habitCheck){const item=state.habits.find(t=>String(t.id)===x.dataset.habitCheck);if(item)item.days[x.dataset.date]=x.checked;}
   else if(x.dataset.actionCheck){const g=state.goals.find(t=>String(t.id)===x.dataset.actionCheck);if(g){const a=g.actions.find(a=>String(a.id)===String(x.dataset.actionId));if(a){a.done=x.checked;for(const t of state.tasks.filter(t=>String(t.goalId)===x.dataset.actionCheck&&String(t.actionId||'')===String(a.id)))t.done=x.checked;}}expandedGoals.add(x.dataset.actionCheck);}
@@ -693,6 +762,7 @@ $('cancelModal').onclick=closeModal;
 $('modalBack').onclick=e=>{if(e.target===$('modalBack'))closeModal();};
 $('deleteModal').onclick=()=>{const setName={task:'tasks',event:'events',habit:'habits',goal:'goals'}[modalMode];if(!setName)return;if(!confirm('Delete this item? This cannot be undone.'))return;
   if(modalMode==='goal'){for(const t of state.tasks.filter(t=>String(t.goalId)===String(modalId))){t.goalId='';t.actionId='';t.actionIndex='';}}
+  if(modalMode==='task')for(const n of state.ideas)for(const a of n.actions||[])if(String(a.taskId)===String(modalId))a.taskId='';
   state[setName]=state[setName].filter(x=>String(x.id)!==String(modalId));save();closeModal();render();};
 $('exportData').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='canvas-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);};
 $('importData').onclick=()=>$('importFile').click();
