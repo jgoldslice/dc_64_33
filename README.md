@@ -2,28 +2,27 @@
 
 > “Wherefore, be not weary in well-doing, for ye are laying the foundation of a great work. And out of small things proceedeth that which is great.” — Doctrine and Covenants 64:33
 
-A simple, mobile-first daily and weekly planner, designed initially for iPhone 15 and eventually for an expanded foldable layout.
+A simple, mobile-first daily and weekly planner for iPhone 15, designed to adapt to larger displays in the future.
 
-## Features
+## Version 2 features
 
-- Today: focus, tasks, schedule, and habits
-- Week: goals, seven-day preview, top priorities, and habits
-- Monthly goals with categories and expandable action items
-- Two customizable accent colors and automatic light/dark appearance
-- Local browser storage, JSON data export, and offline caching after the first load
+- **Today:** Editable reflective question, single Today at a Glance for timed events and tasks, and daily habits.
+- **Week:** Weekly focus and goals, a six-card weekly layout (Monday–Friday plus a shared Weekend card for Saturday and Sunday), top priorities, and weekly habit tracking.
+- **Goals:** Monthly goals categorized by life area, with expandable action items.
+- **Habits:** View, create, edit, delete, schedule repeat days, and record completions.
+- **Customize:** Light/Dark/System appearance; editable primary (default sage) and secondary (default sand) colors; import/export of JSON backups.
+- A local-first installable web app supporting offline access after the first successful load.
 
-## Publish with GitHub Pages
+## Local data
 
-1. Open **Settings → Pages** in this GitHub repository.
-2. Under **Build and deployment**, select **Deploy from a branch**.
-3. Select **main** and **/(root)**, then click **Save**.
-4. Once GitHub Pages publishes, open https://jgoldslice.github.io/dc_64_33/ in Safari.
-5. Use **Share → Add to Home Screen** to install the planner.
+The app preserves the original **jgold-planner-v1** localStorage key for backwards compatibility, and adds safe defaults for missing settings and habit schedules. Existing tasks, events, goals, and habit completions remain stored on the same device. **Cloud synchronization and automated backups are not implemented.** Export a backup before clearing Safari data or switching devices.
 
-## Data safety
+## GitHub Pages
 
-This is an early prototype. Tasks, events, habits, goals, and appearance choices are saved only in this browser's local storage, not synchronized across devices. **Settings → Export data** downloads a JSON backup. Clearing browser site data can erase the locally stored planner.
+The existing **Publish dc6433** GitHub Actions workflow deploys this repository's root static files to https://jgoldslice.github.io/dc_64_33/.
 
-## Local development
+To add it to iPhone Home Screen, open the site in Safari → Share → Add to Home Screen.
 
-Run `python3 -m http.server 8000` in the repository folder and open http://localhost:8000.
+## Architecture
+
+The main page is dependency-free HTML, CSS, and vanilla JavaScript, bundled in `index.html`. The service worker caches the page, manifest, and icon for offline use.
