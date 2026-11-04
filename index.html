@@ -49,6 +49,12 @@
 .swatch.selected{outline-color:var(--primary)}
 @media (max-width:355px){.focus-answer{min-height:62px}.view-header h1{font-size:31px}}
 
+.add-menu{position:relative}
+.add-menu-options[hidden]{display:none}
+.add-menu-options{position:absolute;right:0;top:calc(100% + 5px);z-index:4;background:var(--surface);border:1px solid var(--line);border-radius:11px;box-shadow:0 8px 22px #0002;padding:5px;min-width:132px}
+.add-menu-options button{display:block;width:100%;text-align:left;border:0;background:transparent;color:var(--ink);border-radius:7px;padding:10px;font-size:13px}
+.add-menu-options button:active{background:var(--primary-wash)}
+
   </style>
 
 </head>
@@ -70,7 +76,7 @@
       <div class="view-header"><div><div class="eyebrow">Your day, simplified</div><h1 id="todayTitle">Today</h1><p class="muted" id="todayDate"></p></div></div>
       <div class="stack">
         <section class="card focus-card"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Today's Focus</h2><button class="text-button" data-open="todayFocus">Edit</button></div><p class="focus-prompt">What small thing deserves my best effort today?</p><div class="focus-answer" id="todayFocus" role="button" tabindex="0" data-open="todayFocus" aria-label="Write today's focus"></div></section>
-        <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-calendar"/></svg> Today at a Glance</h2><button class="text-button add-trigger" id="addToday" type="button" aria-label="Add to today">+ Add</button></div><div id="todayGlance"></div></section>
+        <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-calendar"/></svg> Today at a Glance</h2><div class="add-menu"><button class="text-button add-trigger" id="addToday" type="button" aria-expanded="false" aria-controls="todayAddOptions">+ Add</button><div id="todayAddOptions" class="add-menu-options" hidden><button type="button" data-open="task">Add task</button><button type="button" data-open="event">Add event</button></div></div></div><div id="todayGlance"></div></section>
         <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habits</h2><button class="text-button" data-tab="habits">View all</button></div><div id="todayHabits"></div></section>
       </div>
     </section>
@@ -234,8 +240,9 @@ function handleSave(event){
 }
 document.addEventListener('click',(e)=>{
   const t=e.target.closest('[data-tab]');if(t){tab(t.dataset.tab);return;}
-  const opener=e.target.closest('[data-open]');if(opener){openModal(opener.dataset.open);return;}
-  if(e.target.closest('#addToday')){openModal('task');return;}
+  const opener=e.target.closest('[data-open]');if(opener){if($('todayAddOptions'))$('todayAddOptions').hidden=true;openModal(opener.dataset.open);return;}
+  if(e.target.closest('#addToday')){const options=$('todayAddOptions'),open=options.hidden;options.hidden=!open;$('addToday').setAttribute('aria-expanded',String(open));return;}
+  if(!e.target.closest('.add-menu')&&$('todayAddOptions')&&!$('todayAddOptions').hidden){$('todayAddOptions').hidden=true;$('addToday').setAttribute('aria-expanded','false');}
   const editTask=e.target.closest('[data-edit-task]');if(editTask){openModal('task',editTask.dataset.editTask);return;}
   const editEvent=e.target.closest('[data-edit-event]');if(editEvent){openModal('event',editEvent.dataset.editEvent);return;}
   const editHabit=e.target.closest('[data-edit-habit]');if(editHabit){openModal('habit',editHabit.dataset.editHabit);return;}
