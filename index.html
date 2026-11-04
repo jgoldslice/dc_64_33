@@ -110,6 +110,8 @@
 .focus-notebook::placeholder{color:transparent}
 .focus-pencil{color:var(--secondary-ui);font-size:19px}
 
+.due-mark{display:inline-block;font-size:9px;font-weight:750;color:var(--secondary-ui);background:var(--secondary-wash);padding:2px 4px;border-radius:4px}
+
   </style>
 
 </head>
@@ -241,7 +243,7 @@ function taskRow(t){const rank=ranked().findIndex(x=>String(x.id)===String(t.id)
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}
 function habitToggle(h,date){return `<input type="checkbox" data-habit-check="${h.id}" data-date="${date}" aria-label="${esc(h.title)} ${date}" ${h.days[date]?'checked':''}>`;}
 function habitTable(week){const dates=Array.from({length:7},(_,i)=>iso(plusDays(week,i)));return `<div class="week-table"><span></span>${['M','T','W','T','F','S','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${state.habits.map(h=>`<span class="habit-name" title="${esc(h.title)}">${esc(h.title)}</span>${dates.map(date=>isScheduled(h,date)?`<label>${habitToggle(h,date)}</label>`:'<span class="off">·</span>').join('')}`).join('')}</div>`;}
-function dayLines(date){ const events=state.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const tasks=state.tasks.filter(t=>(t.scheduledDate===date||(!t.scheduledDate&&t.dueDate===date))&&!t.done);return [...events.map(e=>`<p class="day-line"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),...tasks.slice(0,3).map(t=>`<p class="day-line">□ ${esc(t.title)}</p>`)].join('')||'<p class="day-empty">—</p>';}
+function dayLines(date){ const events=state.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const tasks=state.tasks.filter(t=>(t.scheduledDate===date||(!t.scheduledDate&&t.dueDate===date))&&!t.done);return [...events.map(e=>`<p class="day-line"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),...tasks.slice(0,3).map(t=>`<p class="day-line"><span class="when">${t.scheduledTime?timeText(t.scheduledTime)+' ':''}</span>□ ${esc(t.title)}${t.dueDate===date?' <span class="due-mark">DUE</span>':''}</p>`)].join('')||'<p class="day-empty">—</p>';}
 function dayCard(date){const d=new Date(date+'T12:00:00');return `<div class="day-card ${date===localToday()?'today':''}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}
 function render(){
   applyTheme();
@@ -251,7 +253,7 @@ function render(){
     if(document.activeElement!==$(id))$(id).value=value||'';
   }
   const todaysEvents=state.events.filter(e=>e.date===localToday()).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  const todaysTasks=state.tasks.filter(t=>t.scheduledDate===localToday()||(!t.scheduledDate&&t.dueDate===localToday()));
+  const todaysTasks=state.tasks.filter(t=>t.scheduledDate===localToday()||(!t.scheduledDate&&t.dueDate===localToday())).sort((a,b)=>String(a.scheduledTime||'99:99').localeCompare(String(b.scheduledTime||'99:99')));
   $('todayGlance').innerHTML=(todaysEvents.length?'<div class="section-label">Schedule</div>'+todaysEvents.map(eventRow).join(''):'')+(todaysTasks.length?'<div class="section-label">Tasks</div>'+todaysTasks.map(taskRow).join(''):'')+(!todaysEvents.length&&!todaysTasks.length?'<p class="empty">Your day is clear. Add an event or task to get started.</p>':'');
   const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
   $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today"><span>${esc(h.title)}</span>${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
