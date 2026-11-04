@@ -2,27 +2,28 @@
 
 > “Wherefore, be not weary in well-doing, for ye are laying the foundation of a great work. And out of small things proceedeth that which is great.” — Doctrine and Covenants 64:33
 
-A simple, mobile-first daily and weekly planner for iPhone 15, designed to adapt to larger displays in the future.
+A minimal, mobile-first daily and weekly planner for iPhone 15, with a future foldable layout planned.
 
-## Version 2 features
+## Version 4
 
-- **Today:** Editable reflective question, single Today at a Glance for timed events and tasks, and daily habits.
-- **Week:** Weekly focus and goals, a six-card weekly layout (Monday–Friday plus a shared Weekend card for Saturday and Sunday), top priorities, and weekly habit tracking.
-- **Goals:** Monthly goals categorized by life area, with expandable action items.
-- **Habits:** View, create, edit, delete, schedule repeat days, and record completions.
-- **Customize:** Light/Dark/System appearance; editable primary (default sage) and secondary (default sand) colors; import/export of JSON backups.
-- A local-first installable web app supporting offline access after the first successful load.
+- **Today:** Daily focus with handwritten-style notebook lines, timed events, deadline tasks, and habits.
+- **Week:** Weekly focus, seven-day calendar overview, top priorities, and habit tracker. No separate weekly-goals list.
+- **My Plan:** One section with **Tasks**, **Goals**, and **Habits** tabs.
+- **Tasks:** Title, optional deadline, priority, and connected goal. Newly prioritized tasks go to the bottom of a Roman numeral–ranked priority list. Move priorities up and down as desired. Tasks with deadlines show on calendar; events retain start times.
+- **Goals:** Categorized goals with expandable actions. Convert actions into linked tasks, and their completion states remain linked.
+- **Customize:** Tap the two-tone palette icon beside the app name. Set primary and secondary colors, including metallic/monochrome colors, with Light/Dark/System appearance. Primary color lightly tints cards; secondary color defines icons and checkmarks.
+- Offline-ready installable web app with JSON import and export.
 
-## Local data
+## Data safety
 
-The app preserves the original **jgold-planner-v1** localStorage key for backwards compatibility, and adds safe defaults for missing settings and habit schedules. Existing tasks, events, goals, and habit completions remain stored on the same device. **Cloud synchronization and automated backups are not implemented.** Export a backup before clearing Safari data or switching devices.
+Planner entries are stored **locally in this browser on this device** using the original `jgold-planner-v1` storage key. V4 preserves existing tasks, events, goal actions, habit completions, theme settings, and old weekly goals in backups (although the old Weekly Goals interface has been removed). Legacy planned work dates and times are retained in historical data, but V4 only uses task deadlines on the calendar, and task edits clear the old scheduling fields. There is no cloud sync or automated backup yet. Export a JSON backup before clearing Safari website data or moving devices.
 
-## GitHub Pages
+## Deploy
 
-The existing **Publish dc6433** GitHub Actions workflow deploys this repository's root static files to https://jgoldslice.github.io/dc_64_33/.
+The **Publish dc6433** GitHub Actions workflow publishes this repository to https://jgoldslice.github.io/dc_64_33/.
 
-To add it to iPhone Home Screen, open the site in Safari → Share → Add to Home Screen.
+Open that address in Safari on iPhone, then choose **Share → Add to Home Screen**.
 
-## Architecture
+## Implementation
 
-The main page is dependency-free HTML, CSS, and vanilla JavaScript, bundled in `index.html`. The service worker caches the page, manifest, and icon for offline use.
+Static HTML, CSS, and vanilla JavaScript in `index.html`, a web manifest, SVG icon, and a cache-first-install/network-first service worker for offline support.
