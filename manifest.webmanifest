@@ -1,7 +1,5 @@
 {
-  "name": "DC 64:33 Planner",
-  "short_name": "DC 64:33",
-  "description": "A calm daily and weekly planner inspired by Doctrine and Covenants 64:33.",
+  "name": "dc6433",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f7f4ed",
