@@ -1,4 +1,4 @@
-# DC 64:33 Planner
+# dc6433
 
 > “Wherefore, be not weary in well-doing, for ye are laying the foundation of a great work. And out of small things proceedeth that which is great.” — Doctrine and Covenants 64:33
 
