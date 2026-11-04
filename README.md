@@ -1,29 +1,34 @@
-# dc6433
+# Canvas — Version 5
 
-> “Wherefore, be not weary in well-doing, for ye are laying the foundation of a great work. And out of small things proceedeth that which is great.” — Doctrine and Covenants 64:33
+> “Life is a canvas. So by God, start painting.”
 
-A minimal, mobile-first daily and weekly planner for iPhone 15, with a future foldable layout planned.
+Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
-## Version 4
+## Navigation
 
-- **Today:** Daily focus with handwritten-style notebook lines, timed events, deadline tasks, and habits.
-- **Week:** Weekly focus, seven-day calendar overview, top priorities, and habit tracker. No separate weekly-goals list.
-- **My Plan:** One section with **Tasks**, **Goals**, and **Habits** tabs.
-- **Tasks:** Title, optional deadline, priority, and connected goal. Newly prioritized tasks go to the bottom of a Roman numeral–ranked priority list. Move priorities up and down as desired. Tasks with deadlines show on calendar; events retain start times.
-- **Goals:** Categorized goals with expandable actions. Convert actions into linked tasks, and their completion states remain linked.
-- **Customize:** Tap the two-tone palette icon beside the app name. Set primary and secondary colors, including metallic/monochrome colors, with Light/Dark/System appearance. Primary color lightly tints cards; secondary color defines icons and checkmarks.
-- Offline-ready installable web app with JSON import and export.
+- **Today** — focus, events, deadline tasks, and habits.
+- **Week** — weekly focus, calendar, top priorities, and weekly habit tracking.
+- **Blueprint** — a drafting-compass tab containing Tasks, Goals, and Habits.
+- **Brainstorm** — quick ideas, notes, and inspiration.
 
-## Data safety
+Tap the primary/secondary-colored palette in the header to open Customize.
 
-Planner entries are stored **locally in this browser on this device** using the original `jgold-planner-v1` storage key. V4 preserves existing tasks, events, goal actions, habit completions, theme settings, and old weekly goals in backups (although the old Weekly Goals interface has been removed). Legacy planned work dates and times are retained in historical data, but V4 only uses task deadlines on the calendar, and task edits clear the old scheduling fields. There is no cloud sync or automated backup yet. Export a JSON backup before clearing Safari website data or moving devices.
+## New in V5
 
-## Deploy
+- **Brainstorm:** Jot ideas in an autosaved draft, tap *Keep Idea* to save a note, and edit its optional title and full text with automatic saving. Convert an idea to a goal or task without deleting the original. A conversion creates the goal/task and opens its editor.
+- **Blueprint:** Tasks, Goals, and Habits stay together; the tab is renamed from My Plan.
+- **Goals:** No monthly timeframe. Add a goal with a selected category and one or more steps in the same form. Reorder, add, or remove steps when editing. Convert a step to a linked task; checking a linked task or step updates the other.
+- **Categories:** Filter goals, create custom categories, and manage their names. Goals in the same category share a section. Rename updates the goals. Categories containing goals cannot be deleted until those goals are moved.
+- **Opening animation:** A cloud, lightning strike, light bulb, paint brush, and brush stroke symbolize inspiration becoming action. No words appear until the end. Customize with *Animation + message*, *Animation only*, *Message only*, or *None*. Set a custom opening message and tap *Preview Opening* to replay a self-closing preview. Tap the opening to skip; Reduced Motion is respected.
+- **App identity:** Canvas branding, with the existing two-color palette icon, color controls, and minimal layout.
 
-The **Publish dc6433** GitHub Actions workflow publishes this repository to https://jgoldslice.github.io/dc_64_33/.
+## Data and privacy
 
-Open that address in Safari on iPhone, then choose **Share → Add to Home Screen**.
+All personal data is **stored locally in the browser**, under the original `jgold-planner-v1` storage key, so upgrading does not intentionally replace saved planner data. V5 adds optional fields (categories, ideas, a draft, and opening settings) while retaining existing tasks, habits, events, goals, previous weekly-goals data, and user color settings. No cloud synchronization or automatic cross-device backups are available; use **Customize → Your Data → Export backup** regularly. Browser data deletion or using a different device can lose local entries.
+
+The existing repository name and GitHub Pages URL have been retained to avoid breaking the published app:
+https://jgoldslice.github.io/dc_64_33/
 
 ## Implementation
 
-Static HTML, CSS, and vanilla JavaScript in `index.html`, a web manifest, SVG icon, and a cache-first-install/network-first service worker for offline support.
+Dependency-free HTML/CSS/JavaScript in `index.html`; SVG Home Screen icon and manifest; network-first, offline-fallback service worker with a V5 cache name. Full Apple Pencil support on future foldable hardware is not implemented; feasibility depends on the device’s stylus and browser support.
