@@ -88,6 +88,14 @@
   linear-gradient(to right,var(--primary) 0 50%,var(--secondary) 50% 100%);
   margin-right:10px}
 
+.rank-badge{flex:none;display:inline-grid;place-items:center;min-width:24px;height:23px;border-radius:7px;background:var(--secondary-wash);color:var(--secondary-ui);font:700 11px Georgia,serif}
+.task-due{display:block;margin-top:4px;color:var(--muted);font-size:11px}
+.priority-edit-row{display:flex;align-items:center;gap:9px;padding:11px 0;border-bottom:1px solid var(--line);font-size:13px}
+.priority-edit-row:last-child{border-bottom:0}
+.priority-edit-row button{border:1px solid var(--line);background:var(--surface);color:var(--primary-ui);border-radius:8px;width:30px;height:30px}
+.priority-edit-row button:disabled{opacity:.3}
+.bottom-nav{gap:0}.bottom-nav button{font-size:9px;min-width:0;padding:8px 0}
+
   </style>
 
 </head>
@@ -127,6 +135,7 @@
         </div>
       </div>
     </section>
+    <section class="view" id="tasks" aria-labelledby="tasksTitle"><div class="view-header"><div><div class="eyebrow">Your action list</div><h1 id="tasksTitle">Tasks</h1><p class="muted">Due dates, planned work, and priorities.</p></div><button class="primary-button" data-open="task">+ Task</button></div><div class="stack"><section class="card"><div class="card-heading"><h2>Priority Order</h2></div><div id="tasksPriority"></div></section><section class="card"><div class="card-heading"><h2>All Tasks</h2></div><div id="allTasks"></div></section></div></section>
     <section class="view" id="goals" aria-labelledby="goalsTitle"><div class="view-header"><div><div class="eyebrow">The bigger picture</div><h1 id="goalsTitle">Goals</h1><p class="muted">Tap a goal to view its action items.</p></div><button class="primary-button" data-open="goal">+ Goal</button></div><div class="stack" id="goalsList"></div></section>
     <section class="view" id="habits" aria-labelledby="habitsTitle"><div class="view-header"><div><div class="eyebrow">Small things, daily</div><h1 id="habitsTitle">Habits</h1><p class="muted">Build consistency, one day at a time.</p></div><button class="primary-button" data-open="habit">+ Habit</button></div><div class="stack"><section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Weekly Tracker</h2></div><div id="habitsWeekTitle" class="muted small"></div><div id="habitsTracker"></div></section><section class="card"><div class="card-heading"><h2>Manage Habits</h2></div><div id="habitManager"></div></section></div></section>
     <section class="view" id="customize" aria-labelledby="customTitle"><div class="view-header"><div><div class="eyebrow">Make it yours</div><h1 id="customTitle">Customize</h1></div><svg class="icon title-icon"><use href="#i-palette"/></svg></div><div class="stack">
@@ -140,6 +149,7 @@
 <nav class="bottom-nav" aria-label="Main navigation">
   <button class="active" data-tab="today"><svg class="icon"><use href="#i-today"/></svg><span>Today</span></button>
   <button data-tab="week"><svg class="icon"><use href="#i-calendar"/></svg><span>Week</span></button>
+  <button data-tab="tasks"><svg class="icon"><use href="#i-check"/></svg><span>Tasks</span></button>
   <button data-tab="goals"><svg class="icon"><use href="#i-goal"/></svg><span>Goals</span></button>
   <button data-tab="habits"><svg class="icon"><use href="#i-habit"/></svg><span>Habits</span></button>
   <button data-tab="customize"><svg class="icon"><use href="#i-palette"/></svg><span>Customize</span></button>
@@ -180,6 +190,9 @@ function normalize(data){
   if(['Make meaningful progress','What small thing deserves my best effort today?'].includes(result.todayFocus))result.todayFocus='';
   result.habits=result.habits.filter(h=>h&&typeof h==='object').map(h=>({...h,days:h.days&&typeof h.days==='object'?h.days:{},schedule:Array.isArray(h.schedule)?h.schedule:[0,1,2,3,4,5,6]}));
   result.goals=result.goals.filter(g=>g&&typeof g==='object').map(g=>({...g,actions:Array.isArray(g.actions)?g.actions:[]}));
+  result.tasks=result.tasks.filter(t=>t&&typeof t==='object').map(t=>({...t,dueDate:t.dueDate??t.date??'',scheduledDate:t.scheduledDate??t.date??'',scheduledTime:t.scheduledTime||'',priorityRank:Number.isInteger(Number(t.priorityRank))&&Number(t.priorityRank)>0?Number(t.priorityRank):0,priority:!!t.priority,goalId:t.goalId||'',actionIndex:t.actionIndex??''}));
+  let rank=1;for(const t of result.tasks){if(t.priority&&!t.priorityRank)t.priorityRank=rank++;}
+
   return result;
 }
 let stored={};try{stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');}catch{}
@@ -208,11 +221,13 @@ function applyTheme(){
   document.querySelector('meta[name="theme-color"]').content=dark?'#171c19':'#f7f4ed';
   document.querySelectorAll('[data-appearance]').forEach(b=>{b.classList.toggle('selected',b.dataset.appearance===state.appearance);b.setAttribute('aria-pressed',String(b.dataset.appearance===state.appearance));});
 }
-function taskRow(t){return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}><span class="entry-text">${esc(t.title)}</span>${t.priority&&!t.done?'<span class="meta">Priority</span>':''}<button class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button></div>`;}
+const roman=n=>{const symbols=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];let out='';for(const [v,a] of symbols)while(n>=v){out+=a;n-=v;}return out;};
+const ranked=()=>state.tasks.filter(t=>t.priority&&!t.done).sort((a,b)=>(a.priorityRank||9999)-(b.priorityRank||9999)||String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
+function taskRow(t){const rank=ranked().findIndex(x=>String(x.id)===String(t.id))+1;const detail=t.dueDate&&t.dueDate!==t.scheduledDate?'Due '+t.dueDate:t.dueDate?'Due '+t.dueDate:'';return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}>${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}<span class="entry-text">${esc(t.title)}${detail?'<small class="task-due">'+esc(detail)+'</small>':''}</span><button class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button></div>`;}
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}
 function habitToggle(h,date){return `<input type="checkbox" data-habit-check="${h.id}" data-date="${date}" aria-label="${esc(h.title)} ${date}" ${h.days[date]?'checked':''}>`;}
 function habitTable(week){const dates=Array.from({length:7},(_,i)=>iso(plusDays(week,i)));return `<div class="week-table"><span></span>${['M','T','W','T','F','S','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${state.habits.map(h=>`<span class="habit-name" title="${esc(h.title)}">${esc(h.title)}</span>${dates.map(date=>isScheduled(h,date)?`<label>${habitToggle(h,date)}</label>`:'<span class="off">·</span>').join('')}`).join('')}</div>`;}
-function dayLines(date){ const events=state.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const tasks=state.tasks.filter(t=>t.date===date&&!t.done);return [...events.map(e=>`<p class="day-line"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),...tasks.slice(0,3).map(t=>`<p class="day-line">□ ${esc(t.title)}</p>`)].join('')||'<p class="day-empty">—</p>';}
+function dayLines(date){ const events=state.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const tasks=state.tasks.filter(t=>(t.scheduledDate===date||(!t.scheduledDate&&t.dueDate===date))&&!t.done);return [...events.map(e=>`<p class="day-line"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),...tasks.slice(0,3).map(t=>`<p class="day-line">□ ${esc(t.title)}</p>`)].join('')||'<p class="day-empty">—</p>';}
 function dayCard(date){const d=new Date(date+'T12:00:00');return `<div class="day-card ${date===localToday()?'today':''}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}
 function render(){
   applyTheme();
@@ -222,7 +237,7 @@ function render(){
   $('weeklyFocus').textContent=state.weeklyFocus||'Tap to write your focus…';
   $('weeklyFocus').classList.toggle('unwritten',!state.weeklyFocus);
   const todaysEvents=state.events.filter(e=>e.date===localToday()).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  const todaysTasks=state.tasks.filter(t=>t.date===localToday());
+  const todaysTasks=state.tasks.filter(t=>t.scheduledDate===localToday()||(!t.scheduledDate&&t.dueDate===localToday()));
   $('todayGlance').innerHTML=(todaysEvents.length?'<div class="section-label">Schedule</div>'+todaysEvents.map(eventRow).join(''):'')+(todaysTasks.length?'<div class="section-label">Tasks</div>'+todaysTasks.map(taskRow).join(''):'')+(!todaysEvents.length&&!todaysTasks.length?'<p class="empty">Your day is clear. Add an event or task to get started.</p>':'');
   const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
   $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today"><span>${esc(h.title)}</span>${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
@@ -232,8 +247,10 @@ function render(){
   $('weekHabits').innerHTML=state.habits.length?habitTable(start):'<p class="empty">Add a habit to track your week.</p>';
   const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
   $('weekGrid').innerHTML=Array.from({length:5},(_,i)=>dayCard(iso(plusDays(start,i)))).join('')+`<div class="day-card weekend">${weekend}</div>`;
-  const priorities=state.tasks.filter(t=>t.priority&&!t.done).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(taskRow).join(''):'<p class="empty">No top priorities yet. You can mark tasks as priorities when creating or editing them.</p>';
+  const priorities=ranked();
+  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(taskRow).join(''):'<p class="empty">Mark important tasks as priorities to rank them here.</p>';
+  $('tasksPriority').innerHTML=priorities.length?priorities.map((t,i)=>`<div class="priority-edit-row"><span class="rank-badge">${roman(i+1)}</span><span class="entry-text">${esc(t.title)}</span><button data-priority-move="${t.id}" data-dir="-1" ${i===0?'disabled':''} aria-label="Move ${esc(t.title)} up">↑</button><button data-priority-move="${t.id}" data-dir="1" ${i===priorities.length-1?'disabled':''} aria-label="Move ${esc(t.title)} down">↓</button></div>`).join(''):'<p class="empty">No priorities yet. Mark any task as a priority.</p>';
+  $('allTasks').innerHTML=state.tasks.slice().sort((a,b)=>Number(a.done)-Number(b.done)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))).map(taskRow).join('')||'<p class="empty">Add your first task.</p>';
   const cats={};for(const g of state.goals)(cats[g.category]??=[]).push(g);
   $('goalsList').innerHTML=Object.entries(cats).map(([cat,goals])=>`<section class="card"><div class="card-heading"><h2>${esc(cat)}</h2></div>${goals.map(g=>{const count=g.actions.filter(a=>a.done).length;const percentage=g.actions.length?Math.round(count/g.actions.length*100):0;return `<details class="goal" data-goal="${g.id}" ${expandedGoals.has(String(g.id))?'open':''}><summary><div><h3>${esc(g.title)}</h3><p class="muted">${count} of ${g.actions.length} actions complete</p></div><span class="muted">⌄</span></summary><div class="progress"><div style="width:${percentage}%"></div></div><div class="goal-details">${g.actions.map((a,i)=>`<label class="entry ${a.done?'done':''}"><input type="checkbox" data-action-check="${g.id}" data-action-index="${i}" ${a.done?'checked':''}><span class="entry-text">${esc(a.title)}</span></label>`).join('')}<div class="row-buttons"><button class="text-button" data-add-action="${g.id}">+ Add action</button><button class="text-button" data-edit-goal="${g.id}">Edit goal</button></div></div></details>`;}).join('')}</section>`).join('')||'<p class="empty">Create a monthly goal to get started.</p>';
   $('habitsWeekTitle').textContent=`Week of ${format(start)} – ${format(plusDays(start,6))}`;
@@ -251,7 +268,7 @@ function openModal(type,id=null,parent=null){
   $('deleteModal').hidden=!item||!['task','event','habit','goal'].includes(type);
   let fields='';
   const name=(value='')=>formLine('Title',`<input name="title" required maxlength="160" value="${esc(value)}" placeholder="Enter a title">`);
-  if(type==='task')fields=name(item?.title)+formLine('Date',`<input type="date" name="date" value="${esc(item?.date||localToday())}" required>`)+`<label class="inline-check"><input type="checkbox" name="priority" ${item?.priority?'checked':''}>Top priority</label>`;
+  if(type==='task')fields=name(item?.title)+formLine('Due date (optional)',`<input type="date" name="dueDate" value="${esc(item?.dueDate||'')}">`)+formLine('Plan to work on (optional)',`<input type="date" name="scheduledDate" value="${esc(item?.scheduledDate||'')}">`)+formLine('Time (optional)',`<input type="time" name="scheduledTime" value="${esc(item?.scheduledTime||'')}">`)+`<label class="inline-check"><input type="checkbox" name="priority" ${item?.priority?'checked':''}>Mark as top priority (rank on Tasks page)</label>`+formLine('Related goal (optional)',`<select name="goalId"><option value="">No goal</option>${state.goals.map(g=>`<option value="${g.id}" ${String(item?.goalId)===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`);
   else if(type==='event')fields=name(item?.title)+formLine('Date',`<input type="date" name="date" value="${esc(item?.date||localToday())}" required>`)+formLine('Start time',`<input type="time" name="time" value="${esc(item?.time||'09:00')}" required>`);
   else if(type==='habit')fields=name(item?.title)+formLine('Repeat on',`<div class="days-picker">${['S','M','T','W','T','F','S'].map((day,i)=>`<label><span>${day}</span><input type="checkbox" name="schedule" value="${i}" ${(item?.schedule||[0,1,2,3,4,5,6]).includes(i)?'checked':''}></label>`).join('')}</div>`);
   else if(type==='goal')fields=name(item?.title)+formLine('Category',`<input name="category" value="${esc(item?.category||'Personal')}" maxlength="60" required>`);
@@ -268,7 +285,7 @@ function handleSave(event){
   event.preventDefault();const fd=new FormData($('modalForm'));const title=String(fd.get('title')||'').trim();if(!title&&!['todayFocus','weeklyFocus'].includes(modalMode))return;
   const existing=(arr)=>modalId===null?null:state[arr].find(x=>String(x.id)===String(modalId));
   const date=String(fd.get('date')||localToday());
-  if(modalMode==='task'){const t=existing('tasks');if(t)Object.assign(t,{title,date,priority:fd.has('priority')});else state.tasks.push({id:uid(),title,date,priority:fd.has('priority'),done:false});}
+  if(modalMode==='task'){const t=existing('tasks'),priority=fd.has('priority'),dueDate=String(fd.get('dueDate')||''),scheduledDate=String(fd.get('scheduledDate')||''),scheduledTime=String(fd.get('scheduledTime')||''),goalId=String(fd.get('goalId')||'');const priorityRank=priority?(t?.priorityRank||Math.max(0,...state.tasks.map(x=>x.priorityRank||0))+1):0;const fields={title,date:scheduledDate||dueDate||'',dueDate,scheduledDate,scheduledTime,priority,priorityRank,goalId};if(t)Object.assign(t,fields);else state.tasks.push({id:uid(),...fields,done:false});}
   else if(modalMode==='event'){const e=existing('events');const fields={title,date,time:String(fd.get('time')||'09:00')};if(e)Object.assign(e,fields);else state.events.push({id:uid(),...fields});}
   else if(modalMode==='habit'){const h=existing('habits');const schedule=fd.getAll('schedule').map(Number);if(h)Object.assign(h,{title,schedule});else state.habits.push({id:uid(),title,schedule,days:{}});}
   else if(modalMode==='goal'){const g=existing('goals');const category=String(fd.get('category')||'Personal').trim();if(g)Object.assign(g,{title,category});else state.goals.push({id:uid(),title,category,actions:[]});}
@@ -282,6 +299,7 @@ document.addEventListener('click',(e)=>{
   const opener=e.target.closest('[data-open]');if(opener){if($('todayAddOptions'))$('todayAddOptions').hidden=true;openModal(opener.dataset.open);return;}
   if(e.target.closest('#addToday')){const options=$('todayAddOptions'),open=options.hidden;options.hidden=!open;$('addToday').setAttribute('aria-expanded',String(open));return;}
   if(!e.target.closest('.add-menu')&&$('todayAddOptions')&&!$('todayAddOptions').hidden){$('todayAddOptions').hidden=true;$('addToday').setAttribute('aria-expanded','false');}
+  const mover=e.target.closest('[data-priority-move]');if(mover){const ordered=ranked(),i=ordered.findIndex(x=>String(x.id)===mover.dataset.priorityMove),j=i+Number(mover.dataset.dir);if(i>=0&&j>=0&&j<ordered.length){[ordered[i],ordered[j]]=[ordered[j],ordered[i]];ordered.forEach((x,k)=>x.priorityRank=k+1);save();render();}return;}
   const editTask=e.target.closest('[data-edit-task]');if(editTask){openModal('task',editTask.dataset.editTask);return;}
   const editEvent=e.target.closest('[data-edit-event]');if(editEvent){openModal('event',editEvent.dataset.editEvent);return;}
   const editHabit=e.target.closest('[data-edit-habit]');if(editHabit){openModal('habit',editHabit.dataset.editHabit);return;}
