@@ -14,6 +14,41 @@
 :root[data-theme="dark"]{--bg:#171c19;--surface:#242b26;--ink:#f2f0e9;--muted:#acb5ab;--line:#3c463e;--wash:color-mix(in srgb,var(--primary) 18%,var(--surface));--shadow:none;color-scheme:dark}
 *{box-sizing:border-box}html{min-height:100%}body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}button,input,textarea,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:3px}.svg-defs{position:absolute;width:0;height:0;overflow:hidden}.icon{height:19px;width:19px;stroke:var(--secondary-ui);stroke-width:1.75;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}.shell{width:min(1180px,100%);margin:auto;padding:calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 92px)}.app-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:23px}.brand{font:26px Georgia,serif;letter-spacing:-.6px}.brand:before{content:'◒';color:var(--primary);margin-right:10px}.icon-button{background:none;border:0;display:grid;place-items:center;padding:7px}.icon-button .icon{height:24px;width:24px}.view{display:none}.view.active{display:block}.view-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:19px}.view-header h1{font:normal 36px Georgia,serif;margin:4px 0 6px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:750;text-transform:uppercase;color:var(--muted)}.muted{color:var(--muted);margin:0;font-size:13px;line-height:1.5}.small{font-size:12px;margin:8px 0 12px}.stack{display:grid;gap:12px}.card{background:var(--surface);border:1px solid var(--line);border-radius:19px;padding:17px;box-shadow:var(--shadow);min-width:0}.focus-card{background:linear-gradient(135deg,color-mix(in srgb,var(--primary) 18%,var(--surface)),var(--surface));position:relative;overflow:hidden}.focus-card:after{content:'';position:absolute;width:175px;height:64px;right:-30px;bottom:-35px;background:var(--primary);opacity:.09;border-radius:50% 50% 0 0;transform:rotate(-13deg);pointer-events:none}.card h2{font:normal 21px Georgia,serif;margin:0}.card-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.card-heading h2{display:flex;align-items:center;gap:9px;min-width:0}.text-button{border:0;background:none;color:var(--secondary-ui);padding:7px 4px;font-size:13px;font-weight:650;white-space:nowrap}.action-pair{display:flex;gap:9px}.focus-quote{font:italic 22px/1.35 Georgia,serif;margin:13px 0 4px;position:relative;z-index:1}.entry{display:flex;align-items:center;gap:11px;padding:11px 1px;border-bottom:1px solid var(--line);font-size:14px;min-width:0}.entry:last-child{border-bottom:0;padding-bottom:2px}.entry input[type=checkbox]{width:19px;height:19px;accent-color:var(--secondary-ui);margin:0;flex:none}.entry .entry-text{flex:1;min-width:0;overflow-wrap:anywhere}.entry.done .entry-text{text-decoration:line-through;color:var(--muted)}.entry .meta{font-size:11px;color:var(--secondary-ui);white-space:nowrap}.entry .edit-small{border:0;background:none;color:var(--secondary-ui);font-size:12px;padding:7px 1px 7px 7px}.entry .time{font-size:12px;color:var(--secondary-ui);width:59px;flex:none}.entry .time-dot{width:4px;height:25px;border-radius:4px;background:var(--primary);flex:none}.entry.event{padding:9px 1px}.section-label{color:var(--muted);font-size:10px;letter-spacing:1px;font-weight:700;text-transform:uppercase;margin:13px 0 2px}.empty{color:var(--muted);font-size:13px;line-height:1.55;margin:10px 0 1px}.habit-today{display:grid;grid-template-columns:1fr auto;gap:4px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}.habit-today:last-child{border:0}.habit-today input{width:19px;height:19px;accent-color:var(--secondary-ui)}.week-top{align-items:flex-end;flex-wrap:wrap}.week-controls{display:flex;gap:8px;align-items:center}.week-controls button{border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--secondary-ui);padding:6px 11px;font-size:18px}.week-controls span{font-size:12px;color:var(--muted);min-width:104px;text-align:center}.week-layout{display:grid;gap:12px}.week-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.day-card{border:1px solid var(--line);border-radius:13px;background:var(--surface);padding:12px;min-width:0;min-height:133px}.day-card.today{background:var(--wash);border-color:var(--primary)}.day-top{display:flex;justify-content:space-between;gap:5px;align-items:center;font-size:13px;font-weight:750}.day-date{font-size:11px;color:var(--secondary-ui)}.day-line{font-size:12px;margin:8px 0;line-height:1.35;overflow-wrap:anywhere}.day-line .when{color:var(--secondary-ui);font-size:11px}.day-card.weekend{background:color-mix(in srgb,var(--secondary) 8%,var(--surface))}.weekend-half + .weekend-half{border-top:1px solid var(--line);padding-top:11px;margin-top:12px}.day-empty{color:var(--muted);font-size:12px;margin:12px 0 0}.week-table{display:grid;grid-template-columns:minmax(85px,1fr) repeat(7,22px);align-items:center;gap:4px;font-size:12px;overflow-x:auto}.week-table .dow{text-align:center;color:var(--secondary-ui);font-size:10px}.week-table .habit-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.week-table input{width:15px;height:15px;accent-color:var(--secondary-ui);margin:5px 0}.week-table label{text-align:center}.week-table .off{font-size:12px;color:var(--muted);text-align:center}.goal{padding:12px 0;border-bottom:1px solid var(--line)}.goal:last-child{border-bottom:0;padding-bottom:0}.goal summary{cursor:pointer;display:flex;justify-content:space-between;gap:10px;list-style:none}.goal summary::-webkit-details-marker{display:none}.goal h3{margin:0 0 4px;font-size:15px}.goal .progress{height:6px;background:var(--line);border-radius:5px;overflow:hidden;margin:12px 0}.goal .progress>div{height:100%;background:var(--secondary-ui)}.goal-details{padding:6px 0}.goal-details .entry{font-size:13px}.primary-button{background:var(--primary-ui);color:var(--bg);border:0;border-radius:10px;padding:10px 14px;font-weight:700;font-size:13px}.secondary-button{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:13px}.danger-button{background:none;color:#b0524d;border:0;font-size:13px;padding:10px}.row-buttons{display:flex;gap:8px;flex-wrap:wrap}.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:7px 7px calc(env(safe-area-inset-bottom) + 8px);display:flex;justify-content:space-around;gap:1px}.bottom-nav button{border:0;background:none;border-radius:12px;min-width:0;flex:1;max-width:110px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 1px;font-size:10px}.bottom-nav .icon{height:21px;width:21px}.bottom-nav button.active{background:var(--wash);color:var(--ink);font-weight:700}.bottom-nav button.active .icon{stroke:var(--secondary-ui)}.title-icon{height:28px;width:28px}.segmented{display:flex;background:var(--wash);border-radius:11px;padding:4px;margin-top:14px;gap:3px}.segmented button{border:0;border-radius:8px;background:none;flex:1;padding:10px;color:var(--muted);font-size:13px}.segmented button.selected{background:var(--surface);color:var(--ink);font-weight:750;box-shadow:var(--shadow)}.swatches{display:flex;flex-wrap:wrap;gap:11px;margin:18px 0}.swatch{width:36px;height:36px;border:2px solid var(--surface);border-radius:50%;box-shadow:0 0 0 1px var(--line);display:grid;place-items:center;color:#fff;text-shadow:0 1px 2px #0006;font-size:16px}.swatch.selected{outline:2px solid var(--secondary-ui);outline-offset:3px}.color-input{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted)}.color-input input{width:55px;height:38px;background:none;border:1px solid var(--line);border-radius:8px;padding:3px}.habit-manage-item{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding:12px 0;gap:12px}.habit-manage-item:last-child{border:0}.habit-manage-item strong{font-weight:600;font-size:14px}.habit-manage-item small{display:block;color:var(--muted);font-size:11px;margin-top:4px}.modal-back{display:none;position:fixed;inset:0;z-index:12;padding:16px;background:#0008;align-items:center;justify-content:center}.modal-back.open{display:flex}.modal{width:min(460px,100%);max-height:85vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:19px;padding:22px;display:grid;gap:14px;box-shadow:0 15px 45px #0003}.modal h2{font:normal 23px Georgia,serif;margin:0}.form-fields{display:grid;gap:12px}.form-fields input:not([type=checkbox]),.form-fields textarea,.form-fields select{width:100%;min-width:0;padding:11px 12px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px}.form-fields textarea{min-height:95px;resize:vertical}.form-fields label{display:grid;gap:5px;color:var(--muted);font-size:12px}.form-fields label.inline-check{display:flex;gap:9px;align-items:center}.form-fields input[type=checkbox]{accent-color:var(--secondary-ui);height:17px;width:17px}.days-picker{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.days-picker label{display:grid;justify-items:center;gap:6px;background:var(--wash);padding:9px 1px;border-radius:8px;font-size:11px}.modal-actions{display:flex;gap:7px;align-items:center}.modal-spacer{flex:1}#habitsWeekTitle{margin-bottom:13px}p{overflow-wrap:anywhere}@media(min-width:760px){.shell{padding:35px 28px 115px}.week-layout{grid-template-columns:minmax(270px,320px) minmax(0,1fr);align-items:start}.week-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.day-card{min-height:150px}.bottom-nav{max-width:600px;left:50%;transform:translateX(-50%);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0}.view-header h1{font-size:44px}#today .stack{max-width:650px;margin:auto}}@media(max-width:355px){.shell{padding-left:12px;padding-right:12px}.card{padding:14px}.week-table{grid-template-columns:minmax(70px,1fr) repeat(7,20px);gap:2px}.week-controls{width:100%;justify-content:flex-end}.entry .time{width:52px}.card h2{font-size:19px}}
 
+/* V2: purposeful accents, not additional dashboard clutter */
+:root{--primary-wash:color-mix(in srgb,var(--primary) 14%,var(--surface));--secondary-wash:color-mix(in srgb,var(--secondary) 19%,var(--surface))}
+.view-header h1{font-size:33px}
+.eyebrow{color:var(--primary-ui);letter-spacing:1.3px}
+.card-heading h2 .icon{stroke:var(--primary-ui)}
+.focus-card{border-top:3px solid var(--primary);padding-top:15px}
+.focus-card:after{opacity:.065}
+.focus-prompt{font-size:12px;line-height:1.5;color:var(--muted);margin:8px 0 10px;position:relative;z-index:1}
+.focus-answer{min-height:70px;padding:12px 13px;white-space:pre-wrap;overflow-wrap:anywhere;font:italic 17px/1.45 Georgia,serif;background:color-mix(in srgb,var(--surface) 84%,transparent);border:1px solid color-mix(in srgb,var(--primary) 30%,var(--line));border-left:3px solid var(--primary);border-radius:11px;position:relative;z-index:1;cursor:pointer}
+.focus-answer.unwritten{font:normal 13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--muted)}
+.focus-answer:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.entry input[type=checkbox],.habit-today input,.week-table input,.form-fields input[type=checkbox]{accent-color:var(--secondary)!important}
+.entry input[type=checkbox]:checked,.habit-today input:checked,.week-table input:checked{filter:drop-shadow(0 0 2px color-mix(in srgb,var(--secondary) 32%,transparent))}
+.entry .time-dot{background:var(--secondary)}
+.entry .time{color:var(--primary-ui);font-weight:650}
+.section-label{color:var(--primary-ui);font-size:10px;margin-top:16px}
+.entry .edit-small{font-size:11px;color:var(--muted);font-weight:500}
+.entry .meta{background:var(--secondary-wash);color:var(--secondary-ui);padding:4px 7px;border-radius:7px;font-size:10px;font-weight:700}
+.day-card.today{border:2px solid var(--primary);background:var(--primary-wash)}
+.day-card.today .day-top span:first-child{color:var(--primary-ui)}
+.day-card.weekend{border-top:3px solid var(--secondary)}
+.week-controls button{color:var(--primary-ui)}
+.week-table .dow{color:var(--primary-ui);font-weight:750}
+.goal .progress>div{background:var(--secondary)}
+.goal summary h3{color:var(--ink)}
+.primary-button{background:var(--primary-ui);color:var(--surface)}
+.bottom-nav button.active{background:color-mix(in srgb,var(--primary) 10%,var(--surface));color:var(--primary-ui)}
+.bottom-nav button.active .icon{stroke:var(--primary-ui)}
+.bottom-nav button:not(.active) .icon{stroke:var(--muted)}
+.text-button{color:var(--primary-ui)}
+.add-trigger{background:var(--primary-wash);border-radius:8px;padding:7px 12px}
+.habit-manage-item strong{border-left:3px solid var(--secondary);padding-left:10px}
+.swatch.selected{outline-color:var(--primary)}
+@media (max-width:355px){.focus-answer{min-height:62px}.view-header h1{font-size:31px}}
+
   </style>
 
 </head>
@@ -34,8 +69,8 @@
     <section class="view active" id="today" aria-labelledby="todayTitle">
       <div class="view-header"><div><div class="eyebrow">Your day, simplified</div><h1 id="todayTitle">Today</h1><p class="muted" id="todayDate"></p></div></div>
       <div class="stack">
-        <section class="card focus-card"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Today's Focus</h2><button class="text-button" data-open="todayFocus">Edit</button></div><p class="focus-quote" id="todayFocus"></p></section>
-        <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-calendar"/></svg> Today at a Glance</h2><div class="action-pair"><button class="text-button" data-open="task" aria-label="Add task">+ Task</button><button class="text-button" data-open="event" aria-label="Add event">+ Event</button></div></div><div id="todayGlance"></div></section>
+        <section class="card focus-card"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Today's Focus</h2><button class="text-button" data-open="todayFocus">Edit</button></div><p class="focus-prompt">What small thing deserves my best effort today?</p><div class="focus-answer" id="todayFocus" role="button" tabindex="0" data-open="todayFocus" aria-label="Write today's focus"></div></section>
+        <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-calendar"/></svg> Today at a Glance</h2><button class="text-button add-trigger" id="addToday" type="button" aria-label="Add to today">+ Add</button></div><div id="todayGlance"></div></section>
         <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habits</h2><button class="text-button" data-tab="habits">View all</button></div><div id="todayHabits"></div></section>
       </div>
     </section>
@@ -43,7 +78,7 @@
       <div class="view-header week-top"><div><div class="eyebrow">Plan with purpose</div><h1 id="weekTitle">This Week</h1></div><div class="week-controls"><button id="prevWeek" aria-label="Previous week">‹</button><span id="weekLabel"></span><button id="nextWeek" aria-label="Next week">›</button></div></div>
       <div class="week-layout">
         <div class="stack week-sidebar">
-          <section class="card focus-card"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Weekly Focus</h2><button class="text-button" data-open="weeklyFocus">Edit</button></div><p class="focus-quote" id="weeklyFocus"></p></section>
+          <section class="card focus-card"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Weekly Focus</h2><button class="text-button" data-open="weeklyFocus">Edit</button></div><p class="focus-prompt">What matters most this week?</p><div class="focus-answer" id="weeklyFocus" role="button" tabindex="0" data-open="weeklyFocus" aria-label="Write weekly focus"></div></section>
           <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Weekly Goals</h2><button class="text-button" data-open="weeklyGoal">+ Add</button></div><div id="weeklyGoals"></div></section>
           <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habit Tracker</h2><button class="text-button" data-tab="habits">Edit</button></div><div id="weekHabits"></div></section>
         </div>
@@ -89,7 +124,7 @@ const palettes = [['Sage','#78927d'],['Forest','#385c49'],['Ocean','#4d86a8'],['
 const today = localToday();
 const defaults = {
   primary:'#78927d',secondary:'#c6ae83',appearance:'system',
-  todayFocus:'What small thing deserves my best effort today?',weeklyFocus:'Be intentional',
+  todayFocus:'',weeklyFocus:'',
   tasks:[{id:1,title:'Review class notes',date:today,done:false,priority:true},{id:2,title:'Make progress on research',date:today,done:false,priority:true},{id:3,title:'Go to the gym',date:today,done:false,priority:false}],
   events:[{id:1,title:'Class',date:today,time:'08:00'},{id:2,title:'Lab',date:today,time:'10:00'},{id:3,title:'Research',date:today,time:'13:30'}],
   habits:[{id:1,title:'Scripture / Prayer',days:{}},{id:2,title:'Exercise',days:{}}],
@@ -103,7 +138,7 @@ function normalize(data){
   if(!/^#[0-9a-fA-F]{6}$/.test(result.primary))result.primary=defaults.primary;
   if(!/^#[0-9a-fA-F]{6}$/.test(result.secondary))result.secondary=defaults.secondary;
   if(!['system','light','dark'].includes(result.appearance))result.appearance='system';
-  if(result.todayFocus==='Make meaningful progress')result.todayFocus=defaults.todayFocus;
+  if(['Make meaningful progress','What small thing deserves my best effort today?'].includes(result.todayFocus))result.todayFocus='';
   result.habits=result.habits.filter(h=>h&&typeof h==='object').map(h=>({...h,days:h.days&&typeof h.days==='object'?h.days:{},schedule:Array.isArray(h.schedule)?h.schedule:[0,1,2,3,4,5,6]}));
   result.goals=result.goals.filter(g=>g&&typeof g==='object').map(g=>({...g,actions:Array.isArray(g.actions)?g.actions:[]}));
   return result;
@@ -137,8 +172,10 @@ function dayCard(date){const d=new Date(date+'T12:00:00');return `<div class="da
 function render(){
   applyTheme();
   $('todayDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  $('todayFocus').textContent=state.todayFocus;
-  $('weeklyFocus').textContent=state.weeklyFocus;
+  $('todayFocus').textContent=state.todayFocus||'Tap to write your focus…';
+  $('todayFocus').classList.toggle('unwritten',!state.todayFocus);
+  $('weeklyFocus').textContent=state.weeklyFocus||'Tap to write your focus…';
+  $('weeklyFocus').classList.toggle('unwritten',!state.weeklyFocus);
   const todaysEvents=state.events.filter(e=>e.date===localToday()).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   const todaysTasks=state.tasks.filter(t=>t.date===localToday());
   $('todayGlance').innerHTML=(todaysEvents.length?'<div class="section-label">Schedule</div>'+todaysEvents.map(eventRow).join(''):'')+(todaysTasks.length?'<div class="section-label">Tasks</div>'+todaysTasks.map(taskRow).join(''):'')+(!todaysEvents.length&&!todaysTasks.length?'<p class="empty">Your day is clear. Add an event or task to get started.</p>':'');
@@ -173,7 +210,7 @@ function openModal(type,id=null,parent=null){
   else if(type==='event')fields=name(item?.title)+formLine('Date',`<input type="date" name="date" value="${esc(item?.date||localToday())}" required>`)+formLine('Start time',`<input type="time" name="time" value="${esc(item?.time||'09:00')}" required>`);
   else if(type==='habit')fields=name(item?.title)+formLine('Repeat on',`<div class="days-picker">${['S','M','T','W','T','F','S'].map((day,i)=>`<label><span>${day}</span><input type="checkbox" name="schedule" value="${i}" ${(item?.schedule||[0,1,2,3,4,5,6]).includes(i)?'checked':''}></label>`).join('')}</div>`);
   else if(type==='goal')fields=name(item?.title)+formLine('Category',`<input name="category" value="${esc(item?.category||'Personal')}" maxlength="60" required>`);
-  else if(type==='todayFocus'||type==='weeklyFocus')fields=formLine('Your reflection',`<textarea name="title" maxlength="180" required>${esc(state[type])}</textarea>`);
+  else if(type==='todayFocus'||type==='weeklyFocus')fields=formLine('Your focus',`<textarea name="title" maxlength="180" placeholder="Write your focus here…">${esc(state[type])}</textarea>`);
   else fields=name(item?.title);
   $('modalFields').innerHTML=fields;
   $('modalBack').classList.add('open');
@@ -183,7 +220,7 @@ function closeModal(){$('modalBack').classList.remove('open');modalMode=null;mod
 function uid(){return Date.now()+Math.floor(Math.random()*100000);}
 function tab(name){if(!$(name))return;document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===name));document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));window.scrollTo({top:0,behavior:'instant'});}
 function handleSave(event){
-  event.preventDefault();const fd=new FormData($('modalForm'));const title=String(fd.get('title')||'').trim();if(!title)return;
+  event.preventDefault();const fd=new FormData($('modalForm'));const title=String(fd.get('title')||'').trim();if(!title&&!['todayFocus','weeklyFocus'].includes(modalMode))return;
   const existing=(arr)=>modalId===null?null:state[arr].find(x=>String(x.id)===String(modalId));
   const date=String(fd.get('date')||localToday());
   if(modalMode==='task'){const t=existing('tasks');if(t)Object.assign(t,{title,date,priority:fd.has('priority')});else state.tasks.push({id:uid(),title,date,priority:fd.has('priority'),done:false});}
@@ -198,6 +235,7 @@ function handleSave(event){
 document.addEventListener('click',(e)=>{
   const t=e.target.closest('[data-tab]');if(t){tab(t.dataset.tab);return;}
   const opener=e.target.closest('[data-open]');if(opener){openModal(opener.dataset.open);return;}
+  if(e.target.closest('#addToday')){openModal('task');return;}
   const editTask=e.target.closest('[data-edit-task]');if(editTask){openModal('task',editTask.dataset.editTask);return;}
   const editEvent=e.target.closest('[data-edit-event]');if(editEvent){openModal('event',editEvent.dataset.editEvent);return;}
   const editHabit=e.target.closest('[data-edit-habit]');if(editHabit){openModal('habit',editHabit.dataset.editHabit);return;}
@@ -206,6 +244,7 @@ document.addEventListener('click',(e)=>{
   const swatch=e.target.closest('[data-color-for]');if(swatch){state[swatch.dataset.colorFor]=swatch.dataset.color;save();render();return;}
   const mode=e.target.closest('[data-appearance]');if(mode){state.appearance=mode.dataset.appearance;save();render();return;}
 });
+document.addEventListener('keydown',(e)=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('.focus-answer')){e.preventDefault();openModal(e.target.dataset.open);}});
 document.addEventListener('change',(e)=>{
   const x=e.target;if(x.dataset.taskCheck){const item=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);if(item)item.done=x.checked;}
   else if(x.dataset.weekgoalCheck){const item=state.weeklyGoals.find(t=>String(t.id)===x.dataset.weekgoalCheck);if(item)item.done=x.checked;}
