@@ -27,3 +27,7 @@
 .v74-library-list .v6-gallery-tile img{height:70px;width:100px;object-fit:contain}
 @media(min-width:760px){.v74-board{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.v74-block *, .v74-action-card *{scroll-behavior:auto}}
+
+#projectActions .card-heading,#projectLibrary .card-heading{flex-wrap:wrap}
+#projectActionsList .v74-list-status{margin-left:auto;max-width:115px;padding:7px 3px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:11px}
+@media(max-width:400px){#projectActionsList .v74-list-status{max-width:100px}#projectLibrary .v74-switch{order:3}}
