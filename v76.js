@@ -292,6 +292,9 @@
       const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===String(grip.dataset.v76Drag));
       if(!obj)return;
       const box=grip.closest('.v76-item');
+      // Commit the actual displayed anchor before changing width so a previously
+      // edge-clamped box does not jump when it shrinks.
+      obj.x=parseFloat(box.style.left)||0;
       e.preventDefault();
       startInteraction({kind:'resize',pointerId:e.pointerId,capture:grip,box,obj,page:ctx.page,
         x:e.clientX,startWidth:visibleWidth(obj),changed:false});
