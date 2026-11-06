@@ -120,6 +120,11 @@
    for(const p of data.projects||[]){
      for(const r of p.library||[])if(r.key)keys.add(String(r.key));
      for(const b of p.contentBlocks||[])if(b.key)keys.add(String(b.key));
+     // Notebook page images are now first-class attachments. Older exports only
+     // indexed the legacy contentBlocks array, which could lose page-only media.
+     for(const page of p.notePages||[])
+       for(const obj of page.objects||[])
+         if(obj.type==='image'&&obj.key)keys.add(String(obj.key));
      keys.add('v6-draft-'+p.id);
    }
    return [...keys];
@@ -159,6 +164,9 @@
        for(const p of next.projects||[]){
          for(const r of p.library||[])if(r.key)r.key=remap.get(r.key)||r.key;
          for(const b of p.contentBlocks||[])if(b.key)b.key=remap.get(b.key)||b.key;
+         for(const page of p.notePages||[])
+           for(const obj of page.objects||[])
+             if(obj.type==='image'&&obj.key)obj.key=remap.get(obj.key)||obj.key;
          // Existing draft keys are project-scoped and should not be moved into another project accidentally.
        }
        for(const p of next.projects||[]){
