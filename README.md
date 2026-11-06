@@ -4,6 +4,17 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## iPad layout (Canvas v8.4)
+
+The existing Canvas web app adapts to iPad-sized browser windows; there is no separate iPad account or duplicate data format.
+
+- In full-width iPad portrait and landscape, the four existing destinations (Today, Week, Blueprint, Brainstorm) appear in a leading sidebar that can collapse to icons.
+- Projects and notebooks expand with available width. On wider iPads, the project switcher and current project's editor appear side by side.
+- In narrow Split View / Stage Manager windows, Canvas automatically returns to its compact bottom navigation. iPhone layout and touch editing remain unchanged.
+- The existing notebook accepts supported touch/stylus pointer input. Apple Pencil-specific pressure, hover and handwriting recognition are **not** new features of v8.4.
+- This is responsive PWA support, **not** a separately packaged native iPadOS app. Browser storage is per device/browser: content does **not** synchronize automatically between iPhone and iPad. Use the complete backup export/import to move data, and retain a copy before restoring.
+- Browser checks cover 834 × 1194 and 1366 × 1024 tablet viewports and a compact 600 × 900 window. Physical iPad Safari and Apple Pencil behavior still require hands-on QA.
+
 ## Navigation
 
 - **Today** — focus, events, deadline tasks, and habits.
