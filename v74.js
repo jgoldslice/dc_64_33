@@ -112,71 +112,197 @@
  const oldLibrary=v6RenderLibrary;
  v6RenderLibrary=function(p){oldLibrary(p);const root=document.getElementById('projectLibraryList');if(root)root.classList.toggle('v74-library-list',p.libraryView==='list');const switcher=document.getElementById('v74LibraryView');if(switcher)switcher.querySelectorAll('button').forEach(b=>{b.classList.toggle('selected',b.dataset.libraryView===(p.libraryView==='list'?'list':'gallery'));b.setAttribute('aria-pressed',String(b.dataset.libraryView===(p.libraryView==='list'?'list':'gallery')));});};
  document.addEventListener('click',e=>{if(!(e.target instanceof Element))return;const button=e.target.closest('[data-library-view]');if(!button)return;const p=getProject();if(!p)return;p.libraryView=button.dataset.libraryView;save();v6RenderLibrary(p);});
- // Portable JSON backup, including binary attachments and sketch drafts.
- const blobToBase64=blob=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);});
- const base64ToBlob=(data,mime)=>{const binary=atob(data),parts=[];for(let i=0;i<binary.length;i+=32768){const slice=binary.slice(i,i+32768),bytes=new Uint8Array(slice.length);for(let j=0;j<slice.length;j++)bytes[j]=slice.charCodeAt(j);parts.push(bytes);}return new Blob(parts,{type:mime||'application/octet-stream'});};
- function referencedKeys(data){
-   const keys=new Set();
+ // Canvas v8.5: portable, integrity-checked and rollback-safe complete backups.
+ // v1 backups stay importable. v2 adds SHA-256 for state and every attachment.
+ const blobToBase64=blob=>new Promise((resolve,reject)=>{
+   const reader=new FileReader();
+   reader.onload=()=>resolve(String(reader.result).split(',')[1]);
+   reader.onerror=()=>reject(reader.error||Error('Could not read an attachment'));
+   reader.readAsDataURL(blob);
+ });
+ const base64ToBlob=(data,mime)=>{
+   if(typeof data!=='string'||data.length%4!==0||!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(data))
+     throw Error('Corrupted attachment encoding');
+   const binary=atob(data),parts=[];
+   for(let i=0;i<binary.length;i+=32768){
+     const slice=binary.slice(i,i+32768),bytes=new Uint8Array(slice.length);
+     for(let j=0;j<slice.length;j++)bytes[j]=slice.charCodeAt(j);
+     parts.push(bytes);
+   }
+   return new Blob(parts,{type:mime||'application/octet-stream'});
+ };
+ const hashBytes=async bytes=>{
+   if(!globalThis.crypto?.subtle)throw Error('A secure browser context is required to verify complete backups');
+   return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))]
+     .map(b=>b.toString(16).padStart(2,'0')).join('');
+ };
+ const hashState=stateData=>hashBytes(new TextEncoder().encode(JSON.stringify(stateData)));
+ const hashBlob=blob=>blob.arrayBuffer().then(hashBytes);
+ function attachmentKeys(data){
+   const keys=new Set(),drafts=new Set();
    for(const p of data.projects||[]){
      for(const r of p.library||[])if(r.key)keys.add(String(r.key));
      for(const b of p.contentBlocks||[])if(b.key)keys.add(String(b.key));
-     // Notebook page images are now first-class attachments. Older exports only
-     // indexed the legacy contentBlocks array, which could lose page-only media.
      for(const page of p.notePages||[])
        for(const obj of page.objects||[])
          if(obj.type==='image'&&obj.key)keys.add(String(obj.key));
-     keys.add('v6-draft-'+p.id);
+     drafts.add('v6-draft-'+p.id);
    }
-   return [...keys];
+   return {required:keys,drafts};
+ }
+ function validatePlannerShape(data){
+   if(!data||typeof data!=='object'||Array.isArray(data)||
+     !Array.isArray(data.tasks)||!Array.isArray(data.goals)||!Array.isArray(data.habits)||
+     (data.projects!==undefined&&!Array.isArray(data.projects)))throw Error('Unrecognized Canvas backup data');
+   const ids=new Set();
+   for(const p of data.projects||[]){
+     if(!p||typeof p!=='object'||Array.isArray(p)||p.id==null)throw Error('Invalid project in backup');
+     const id=String(p.id);
+     if(ids.has(id))throw Error('Duplicate project ID in backup');
+     ids.add(id);
+     for(const prop of ['library','contentBlocks','notePages'])
+       if(p[prop]!==undefined&&!Array.isArray(p[prop]))throw Error('Invalid project '+prop+' in backup');
+     for(const page of p.notePages||[])
+       if(!page||typeof page!=='object'||(page.objects!==undefined&&!Array.isArray(page.objects)))
+         throw Error('Invalid notebook page in backup');
+   }
+ }
+ // Validate all source bytes BEFORE asking permission or writing to this device.
+ async function inspectBackup(source){
+   const complete=source?.format==='canvas-complete-backup';
+   if(!complete){
+     if(source&&typeof source==='object'&&'format' in source)
+       throw Error('Unsupported backup format');
+     validatePlannerShape(source);
+     return {complete:false,data:source,media:new Map()};
+   }
+   if(![1,2].includes(source.version))throw Error('Unsupported complete backup version');
+   validatePlannerShape(source.state);
+   if(!Array.isArray(source.attachments))throw Error('Backup has no attachment manifest');
+   if(source.version===2){
+     if(!/^[a-f0-9]{64}$/i.test(source.stateSha256||''))
+       throw Error('Backup state checksum is missing');
+     if(await hashState(source.state)!==source.stateSha256.toLowerCase())
+       throw Error('Backup state checksum mismatch: backup is corrupted');
+   }
+   const {required,drafts}=attachmentKeys(source.state),media=new Map();
+   for(const entry of source.attachments){
+     if(!entry||typeof entry!=='object'||typeof entry.key!=='string'||!entry.key||
+       typeof entry.base64!=='string'||typeof entry.mime!=='string')
+       throw Error('Invalid attachment entry');
+     if(media.has(entry.key))throw Error('Duplicate attachment key: '+entry.key);
+     if(!required.has(entry.key)&&!drafts.has(entry.key))
+       throw Error('Unreferenced attachment in backup: '+entry.key);
+     const blob=base64ToBlob(entry.base64,entry.mime);
+     if(blob.size>100*1024*1024)throw Error('Attachment exceeds safe import size: '+entry.key);
+     if(source.version===2){
+       if(!Number.isSafeInteger(entry.size)||entry.size!==blob.size||
+         !/^[a-f0-9]{64}$/i.test(entry.sha256||''))
+         throw Error('Missing or incorrect attachment integrity data: '+entry.key);
+       if(await hashBlob(blob)!==entry.sha256.toLowerCase())
+         throw Error('Attachment checksum mismatch: '+entry.key);
+     }else if(entry.size!=null&&entry.size!==blob.size){
+       throw Error('Attachment size mismatch: '+entry.key);
+     }
+     media.set(entry.key,blob);
+   }
+   for(const key of required)
+     if(!media.has(key))throw Error('Backup is missing saved attachment: '+key);
+   return {complete:true,data:source.state,media};
  }
  async function exportCompleteBackup(){
-   const attachments=[];
-   for(const key of referencedKeys(state)){
+   const snapshot=structuredClone(state);
+   const {required,drafts}=attachmentKeys(snapshot),attachments=[];
+   for(const key of new Set([...required,...drafts])){
      const blob=await v6Blob('get',key);
-     if(!blob){if(!key.startsWith('v6-draft-'))throw Error('Missing saved attachment: '+key);continue;}
-     attachments.push({key,mime:blob.type,base64:await blobToBase64(blob)});
+     if(!blob){if(required.has(key))throw Error('Missing saved attachment: '+key);continue;}
+     attachments.push({key,mime:blob.type||'application/octet-stream',
+       size:blob.size,sha256:await hashBlob(blob),base64:await blobToBase64(blob)});
    }
-   const packageData={format:'canvas-complete-backup',version:1,exportedAt:new Date().toISOString(),state:structuredClone(state),attachments};
+   // Finish the integrity manifest before offering a download.
+   const packageData={format:'canvas-complete-backup',version:2,
+     exportedAt:new Date().toISOString(),state:snapshot,stateSha256:await hashState(snapshot),attachments};
    const u=URL.createObjectURL(new Blob([JSON.stringify(packageData)],{type:'application/json'}));
-   const a=document.createElement('a');a.href=u;a.download='canvas-complete-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);
+   const a=document.createElement('a');
+   a.href=u;a.download='canvas-complete-'+new Date().toISOString().slice(0,10)+'.json';
+   document.body.appendChild(a);a.click();a.remove();
+   setTimeout(()=>URL.revokeObjectURL(u),30000);
  }
  async function importCompleteBackup(file){
    const source=JSON.parse(await file.text());
-   const complete=source?.format==='canvas-complete-backup'&&source.version===1;
-   const data=complete?source.state:source;
-   if(!data||!Array.isArray(data.tasks)||!Array.isArray(data.goals)||!Array.isArray(data.habits))throw Error('Unrecognized backup format');
-   if(!confirm('Replace current Canvas data with this backup? Export your current data first.'))return;
-   const oldState=state,created=[];
+   const inspected=await inspectBackup(source);
+   if(canvasUnsaved)throw Error('Some current edits have not been saved. Export your current work before importing');
+   if(!inspected.complete &&
+     !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return;
+   if(!confirm('Replace your current Canvas data with this backup? Export a complete backup of your current data first.'))return;
+
+   const originalState=state,created=[],draftChanges=[];
+   let next,committed=false;
    try{
-     const next=normalize(data);
-     if(complete){
-       if(!Array.isArray(source.attachments))throw Error('Backup has no attachment manifest');
-       const byKey=new Map(source.attachments.map(item=>[item.key,item]));
-       for(const key of referencedKeys(next)){
-         if(key.startsWith('v6-draft-')&&!byKey.has(key))continue;
-         if(!byKey.has(key))throw Error('Missing backup attachment: '+key);
-       }
-       const remap=new Map();
-       for(const entry of source.attachments){
-         if(typeof entry.key!=='string'||typeof entry.base64!=='string')throw Error('Invalid attachment entry');
-         const key='v74-import-'+v6Id();await v6Blob('put',key,base64ToBlob(entry.base64,entry.mime));created.push(key);remap.set(entry.key,key);
-       }
-       for(const p of next.projects||[]){
-         for(const r of p.library||[])if(r.key)r.key=remap.get(r.key)||r.key;
-         for(const b of p.contentBlocks||[])if(b.key)b.key=remap.get(b.key)||b.key;
-         for(const page of p.notePages||[])
-           for(const obj of page.objects||[])
-             if(obj.type==='image'&&obj.key)obj.key=remap.get(obj.key)||obj.key;
-         // Existing draft keys are project-scoped and should not be moved into another project accidentally.
-       }
-       for(const p of next.projects||[]){
-         const draft=remap.get('v6-draft-'+p.id);
-         if(draft){const blob=await v6Blob('get',draft);await v6Blob('put','v6-draft-'+p.id,blob);}
-       }
-     }else if(!confirm('Legacy backup does not contain images, sketches or files. Continue importing text-only data?'))return;
-     state=next;save();if(localStorage.getItem(STORAGE_KEY)!==JSON.stringify(state))throw Error('Device storage is full; restore was not saved');window.v6ActiveProjectId=null;v6Normalize();render();v6Render();alert('Canvas backup restored.');
-   }catch(err){state=oldState;save();for(const key of created)await v6Blob('delete',key).catch(()=>{});throw err;}
+     next=normalize(inspected.data);
+     const remap=new Map();
+     // Stage newly imported media under unique keys, never overwriting existing keys.
+     for(const [sourceKey,blob] of inspected.media){
+       if(sourceKey.startsWith('v6-draft-'))continue;
+       const key='v85-import-'+crypto.randomUUID();
+       await v6Blob('put',key,blob);
+       created.push(key);remap.set(sourceKey,key);
+     }
+     for(const p of next.projects||[]){
+       for(const item of p.library||[])if(item.key)item.key=remap.get(String(item.key))||item.key;
+       for(const item of p.contentBlocks||[])if(item.key)item.key=remap.get(String(item.key))||item.key;
+       for(const page of p.notePages||[])
+         for(const item of page.objects||[])
+           if(item.type==='image'&&item.key)item.key=remap.get(String(item.key))||item.key;
+     }
+     // Sketch drafts have fixed project-scoped keys. Snapshot them so both
+     // replacement and deletion can be reversed if the import fails.
+     const projectIds=new Set([...(originalState.projects||[]),...(next.projects||[])].map(p=>String(p.id)));
+     for(const id of projectIds){
+       const key='v6-draft-'+id;
+       const before=await v6Blob('get',key);
+       const after=inspected.media.get(key)||null;
+       draftChanges.push({key,before,after,applied:false});
+     }
+     state=next;
+     if(!save()||localStorage.getItem(STORAGE_KEY)!==JSON.stringify(next))
+       throw Error('Planner storage is full or unavailable; existing data will be restored');
+     committed=true;
+     for(const change of draftChanges){
+       if(change.after)await v6Blob('put',change.key,change.after);
+       else await v6Blob('delete',change.key);
+       change.applied=true;
+     }
+   }catch(error){
+     const recoveryErrors=[];
+     for(const change of [...draftChanges].reverse()){
+       if(!change.applied)continue;
+       try{
+         if(change.before)await v6Blob('put',change.key,change.before);
+         else await v6Blob('delete',change.key);
+       }catch(e){recoveryErrors.push('Sketch draft: '+change.key);}
+     }
+     state=originalState;
+     if(!save())recoveryErrors.push('Planner storage');
+     for(const key of created){
+       try{await v6Blob('delete',key);}catch(e){recoveryErrors.push('Temporary attachment: '+key);}
+     }
+     if(recoveryErrors.length)
+       throw Error('Import failed and automatic recovery was incomplete ('+
+         recoveryErrors.join(', ')+'). Do not clear browser storage. '+error.message);
+     throw error;
+   }
+   // Rendering errors must never roll back a successfully committed import.
+   window.v6ActiveProjectId=null;
+   try{v6Normalize();render();v6Render();}
+   catch(error){console.error('Imported data saved, but the view needs refresh',error);
+     alert('Canvas backup restored, but the view needs a reload. Your imported data was saved.');return;}
+   alert('Canvas backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.'));
  }
- document.getElementById('exportData').onclick=async()=>{try{await exportCompleteBackup();}catch(err){alert('Backup failed. No incomplete backup was downloaded. '+err.message);}};
+ document.getElementById('exportData').onclick=async()=>{
+   try{await exportCompleteBackup();}
+   catch(err){alert('Backup failed. No incomplete backup was downloaded. '+err.message);}
+ };
  window.v74ImportBackup=importCompleteBackup;
+
 })();
