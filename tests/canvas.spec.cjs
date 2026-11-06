@@ -143,3 +143,38 @@ test('Images use the same grip for resizing and long-press to move; page control
   expect(afterX).toBeGreaterThan(beforeX+15);
   expect(await width()).toBeCloseTo(resized,0);
 });
+
+test('Notes have only Text, Pen and Misc tool groups, with tap-to-type', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto(baseURL);
+  await page.locator('[data-tab="brainstorm"]').click();
+  page.once('dialog', d => d.accept('Minimal Toolbar Test'));
+  await page.locator('#newProject').click();
+  const toolbar = page.locator('#v76Editor .v76-toolbar');
+  await expect(toolbar.locator('.v79-tool-title')).toHaveText(['Text','Pen','Misc']);
+  await expect(toolbar.locator('button')).toHaveCount(5);
+  await expect(toolbar.locator('[data-v76-format="bold"],[data-v76-format="italic"],[data-v76-mode="text"],[data-v76-mode="select"]')).toHaveCount(0);
+  await expect(toolbar.locator('[data-v76-format="insertUnorderedList"]')).toBeVisible();
+  await expect(toolbar.locator('[data-v76-mode="pen"]')).toBeVisible();
+  await expect(toolbar.locator('[data-v76-mode="erase"]')).toBeVisible();
+  await expect(toolbar.locator('#v76UndoInk')).toBeVisible();
+  await expect(toolbar.locator('#v76AddImage')).toBeVisible();
+  const before = await page.locator('#v76Surface .v76-text').count();
+  await page.locator('#v76Surface').click({ position: { x: 35, y: 200 } });
+  await expect(page.locator('#v76Surface .v76-text')).toHaveCount(before+1);
+  const lastText = page.locator('#v76Surface .v76-rich').last();
+  await lastText.fill('A new text box appeared');
+  await expect(lastText).toHaveText('A new text box appeared');
+  const pen=toolbar.locator('[data-v76-mode="pen"]');
+  await pen.click();
+  await expect(pen).toHaveAttribute('aria-pressed','true');
+  await pen.click();
+  await expect(pen).toHaveAttribute('aria-pressed','false');
+  const eraser=toolbar.locator('[data-v76-mode="erase"]');
+  await eraser.click();
+  await expect(eraser).toHaveAttribute('aria-pressed','true');
+  await eraser.click();
+  await expect(eraser).toHaveAttribute('aria-pressed','false');
+  expect(errors).toEqual([]);
+});

@@ -12,18 +12,20 @@
     '<div id="v76PageMenu" class="v76-page-menu" hidden><button type="button" id="v76RenamePage">Rename page</button>'+
     '<button type="button" id="v76DeletePage">Delete page</button></div></div>'+
     '<div class="v76-toolbar" role="toolbar" aria-label="Notebook tools">'+
-    '<button type="button" data-v76-format="bold" aria-label="Bold selected text" title="Bold"><b>B</b></button>'+
-    '<button type="button" data-v76-format="italic" aria-label="Italicize selected text" title="Italic"><i>I</i></button>'+
-    '<button type="button" data-v76-format="insertUnorderedList" aria-label="Bullet list" title="Bullets">☷</button>'+
-    '<span class="v76-tool-divider" aria-hidden="true"></span>'+
-    '<button type="button" data-v76-mode="select" aria-label="Select and move" title="Select">↖</button>'+
-    '<button type="button" data-v76-mode="text" aria-label="Add text anywhere" title="Text">T</button>'+
-    '<button type="button" id="v76AddImage" aria-label="Add picture" title="Picture">▧</button>'+
-    '<button type="button" data-v76-mode="pen" aria-label="Draw with pen" title="Pen">✎</button>'+
-    '<button type="button" data-v76-mode="erase" aria-label="Erase drawing strokes" title="Eraser">⌫</button>'+
-    '<button type="button" id="v76UndoInk" aria-label="Undo last ink stroke" title="Undo ink">↶</button>'+
+      '<div class="v79-tool-group" role="group" aria-label="Text"><span class="v79-tool-title">Text</span><div class="v79-tool-buttons">'+
+        '<button type="button" data-v76-format="insertUnorderedList" aria-label="Add or remove bullet list" title="Bullet list">'+
+          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="4.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/></svg>'+
+        '</button></div></div>'+
+      '<div class="v79-tool-group" role="group" aria-label="Pen"><span class="v79-tool-title">Pen</span><div class="v79-tool-buttons">'+
+        '<button type="button" data-v76-mode="pen" aria-label="Draw; tap again to stop drawing" aria-pressed="false" title="Draw">✎</button>'+
+        '<button type="button" data-v76-mode="erase" aria-label="Erase drawing strokes; tap again to stop erasing" aria-pressed="false" title="Eraser">⌫</button>'+
+        '<button type="button" id="v76UndoInk" aria-label="Undo last drawing stroke" title="Undo drawing">↶</button>'+
+      '</div></div>'+
+      '<div class="v79-tool-group" role="group" aria-label="Misc"><span class="v79-tool-title">Misc</span><div class="v79-tool-buttons">'+
+        '<button type="button" id="v76AddImage" aria-label="Insert picture" title="Insert picture">▧</button>'+
+      '</div></div>'+
     '</div><div class="v76-page-wrap"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div>'+
-    '<p class="v76-tip">Drag the six dots (⠿) to resize a text box or picture. Press and hold the box itself, then drag to move. Tap text to edit. Changes save automatically.</p>'+
+    '<p class="v76-tip">Tap blank space to type. Drag ⠿ to resize; press and hold content to move. Tap Pen or Eraser again to return to typing. Saves automatically.</p>'+
     '<input type="file" id="v76ImageInput" accept="image/*" hidden></div>';
   pane.insertAdjacentHTML('beforeend',editorHtml);
   const root=document.getElementById('v76Editor'),surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
@@ -227,14 +229,26 @@
   root.addEventListener('click',e=>{
     const format=e.target.closest('[data-v76-format]');
     if(format){
-      const el=selectionInEditor();if(!el)return;el.focus();
+      let el=selectionInEditor();
+      if(!el){
+        const ctx=current();if(!ctx)return;
+        const nextY=Math.max(24,...ctx.page.objects.map(o=>(Number(o.y)||0)+(o.type==='image'?250:110)+14));
+        createText(14,nextY);
+        el=selectionInEditor();
+      }
+      if(!el)return;
+      el.focus();
       document.execCommand(format.dataset.v76Format,false,null);
       const ctx=current(),item=ctx?.page.objects.find(o=>o.id===el.dataset.v76Text);
       if(item){item.html=cleanHTML(el.innerHTML);persist();}
       return;
     }
     const modeButton=e.target.closest('[data-v76-mode]');
-    if(modeButton){applyMode(modeButton.dataset.v76Mode);return;}
+    if(modeButton){
+      const next=modeButton.dataset.v76Mode;
+      applyMode(mode===next?'select':next);
+      return;
+    }
     const rem=e.target.closest('[data-v76-remove]');
     if(rem){
       const ctx=current();if(!ctx)return;
