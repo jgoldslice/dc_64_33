@@ -29,7 +29,7 @@
     copy.style.marginTop=(-window.scrollY)+'px';
     return copy;
   }
-  function clear(){overlay?.remove();overlay=null;turning=false;}
+  function clear(){overlay?.layer.remove();overlay=null;turning=false;}
   function create(from,to,direction){
     if(overlay)return;
     const layer=document.createElement('div');
