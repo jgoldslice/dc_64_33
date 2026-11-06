@@ -32,3 +32,25 @@
 @media(max-width:480px){.v76-page-controls,.v76-toolbar{gap:5px}.v76-toolbar button{min-width:35px;min-height:35px}.v76-page-surface{min-height:740px}.v76-rich{font-size:18px}}
 /* In pen/eraser mode ink floats over photos and text for real annotations. */
 .v76-page-surface.v76-is-drawing #v76Ink{z-index:9}
+
+/* v7.8: Six dots resize; press-and-hold the content moves without reflowing widths. */
+.v76-page-controls{position:relative}
+.v76-page-menu{
+  position:absolute;right:0;top:calc(100% + 5px);display:grid;gap:3px;
+  padding:6px;min-width:145px;z-index:15;background:var(--surface);
+  border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 26px #0004;
+}
+.v76-page-menu[hidden]{display:none!important}
+.v76-page-menu button{
+  border:0;border-radius:7px;background:transparent;text-align:left;
+  color:var(--ink);font-size:13px;min-height:42px;padding:9px 11px;
+}
+.v76-page-menu button:hover,.v76-page-menu button:focus-visible{background:var(--wash)}
+.v76-grip{cursor:ew-resize;touch-action:none;font-size:19px;font-weight:800;color:var(--secondary-ui)}
+.v76-item.v76-resizing,.v76-item.v76-moving{
+  border:1px solid var(--secondary-ui);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--secondary-ui) 28%,transparent);
+}
+.v76-item.v76-moving{z-index:5;cursor:grabbing}
+.v76-item.v76-moving .v76-rich{caret-color:transparent}
+.v76-photo{-webkit-user-drag:none;-webkit-touch-callout:none;user-select:none}
