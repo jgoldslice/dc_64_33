@@ -54,3 +54,17 @@
 .v76-item.v76-moving{z-index:5;cursor:grabbing}
 .v76-item.v76-moving .v76-rich{caret-color:transparent}
 .v76-photo{-webkit-user-drag:none;-webkit-touch-callout:none;user-select:none}
+
+/* v7.9 — three quiet tool groups, five controls total. */
+.v76-toolbar{display:flex;align-items:flex-end;flex-wrap:nowrap;gap:11px;padding:5px 0 10px;overflow-x:auto}
+.v79-tool-group{display:grid;gap:5px;flex:none;min-width:0}
+.v79-tool-group+.v79-tool-group{border-left:1px solid var(--line);padding-left:11px}
+.v79-tool-title{font-size:10px;line-height:1;font-weight:650;letter-spacing:.5px;color:var(--muted)}
+.v79-tool-buttons{display:flex;gap:5px;align-items:center}
+.v79-tool-buttons button{width:39px;height:39px;min-width:39px;min-height:39px;padding:6px}
+.v79-tool-svg{height:21px;width:21px}
+@media(max-width:380px){
+  .v76-toolbar{gap:8px}
+  .v79-tool-group+.v79-tool-group{padding-left:8px}
+  .v79-tool-buttons button{width:36px;height:36px;min-width:36px;min-height:36px}
+}
