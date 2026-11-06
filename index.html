@@ -324,6 +324,7 @@
   <link rel="stylesheet" href="v74.css">
   <link rel="stylesheet" href="polish.css">
 <link rel="stylesheet" href="v76.css">
+<link rel="stylesheet" href="v77.css">
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -345,9 +346,11 @@
     <section class="view active" id="today" aria-labelledby="todayTitle">
       <div class="view-header"><div><div class="eyebrow">Your day, simplified</div><h1 id="todayTitle">Today</h1><p class="muted" id="todayDate"></p></div></div>
       <div class="stack">
-        <section class="card focus-card"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Today's Focus</h2><span class="focus-pencil" aria-hidden="true">✎</span></div><p class="focus-prompt">What small thing deserves my best effort today?</p><textarea class="focus-answer focus-notebook" id="todayFocus" aria-label="Write today's focus" maxlength="180" rows="3"></textarea></section>
+        <section class="card focus-card" hidden aria-hidden="true"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Today's Focus</h2><span class="focus-pencil" aria-hidden="true">✎</span></div><p class="focus-prompt">What small thing deserves my best effort today?</p><textarea class="focus-answer focus-notebook" id="todayFocus" aria-label="Write today's focus" maxlength="180" rows="3"></textarea></section>
         <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-calendar"/></svg> Today at a Glance</h2><div class="add-menu"><button class="text-button add-trigger" id="addToday" type="button" aria-expanded="false" aria-controls="todayAddOptions">+ Add</button><div id="todayAddOptions" class="add-menu-options" hidden><button type="button" data-open="task">Add task</button><button type="button" data-open="event">Add event</button></div></div></div><div id="todayGlance"></div></section>
         <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habits</h2><button class="text-button" data-plan-tab="habits">View all</button></div><div id="todayHabits"></div></section>
+        <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-check"/></svg> Top Priorities</h2><button type="button" class="text-button" id="v77ViewTasks">View all</button></div><div id="v77TodayPriorities"></div></section>
+        <section class="card"><div class="card-heading"><h2>Projects</h2><button type="button" class="text-button" id="v77ViewProjects">View all</button></div><div id="v77TodayProjects" class="v77-today-project-grid"></div></section>
       </div>
     </section>
     <section class="view" id="week" aria-labelledby="weekTitle">
@@ -642,16 +645,31 @@ function renderCategories(){
   }
 }
 function renderGoals(){
-  const cats={};
-  for(const g of state.goals){if(selectedCategory!=='All'&&g.category!==selectedCategory)continue;(cats[g.category]??=[]).push(g);}
-  const order=state.categories.filter(cat=>cats[cat]);
-  $('goalsList').innerHTML=order.map(cat=>{
-    const goals=cats[cat];
-    return '<section class="card"><div class="card-heading"><h2>'+esc(cat)+'</h2></div>'+goals.map(g=>{
-      const count=g.actions.filter(a=>a.done).length;
-      const percentage=g.actions.length?Math.round(count/g.actions.length*100):0;
-      return '<details class="goal" data-goal="'+g.id+'" '+(expandedGoals.has(String(g.id))?'open':'')+'><summary><div><h3>'+esc(g.title)+'</h3><p class="muted">'+count+' of '+g.actions.length+' steps complete</p></div><span class="muted">⌄</span></summary><div class="progress"><div style="width:'+percentage+'%"></div></div><div class="goal-details">'+(g.motivation?.trim()?'<div class="goal-motivation"><span class="goal-motivation-label">Motivation</span><p>'+esc(g.motivation)+'</p></div>':'')+g.actions.map((a,i)=>'<div class="entry '+(a.done?'done':'')+'"><input type="checkbox" aria-label="Complete '+esc(a.title)+'" data-action-check="'+g.id+'" data-action-id="'+esc(a.id)+'" data-action-index="'+i+'" '+(a.done?'checked':'')+'><span class="entry-text">'+esc(a.title)+'</span><span class="goal-step-actions"><button type="button" class="text-button" data-action-to-task="'+g.id+'" data-action-id="'+esc(a.id)+'">→ Task</button><button type="button" class="text-button" data-action-to-habit="'+g.id+'" data-action-id="'+esc(a.id)+'">'+(state.habits.some(h=>String(h.goalId)===String(g.id)&&String(h.actionId)===String(a.id))?'Habit':'→ Habit')+'</button></span></div>').join('')+'<div class="row-buttons"><button class="text-button" data-add-action="'+g.id+'">+ Step</button><button class="text-button" data-edit-goal="'+g.id+'">Edit goal</button></div></div></details>';
-    }).join('')+'</section>';
+  // One card per goal. Category is metadata, never the largest headline.
+  const goals=state.goals
+    .filter(g=>selectedCategory==='All'||g.category===selectedCategory)
+    .slice()
+    .sort((a,b)=>state.categories.indexOf(a.category)-state.categories.indexOf(b.category));
+  $('goalsList').innerHTML=goals.map(g=>{
+    const count=(g.actions||[]).filter(a=>a.done).length;
+    const total=(g.actions||[]).length;
+    const percentage=total?Math.round(count/total*100):0;
+    const items=(g.actions||[]).map((a,i)=>{
+      const taskLinked=state.tasks.some(t=>String(t.goalId)===String(g.id)&&String(t.actionId||'')===String(a.id));
+      const habitLinked=state.habits.some(h=>String(h.goalId)===String(g.id)&&String(h.actionId)===String(a.id));
+      return '<div class="entry v77-goal-step '+(a.done?'done':'')+'">'+
+        '<input type="checkbox" aria-label="Complete '+esc(a.title)+'" data-action-check="'+esc(g.id)+'" data-action-id="'+esc(a.id)+'" data-action-index="'+i+'" '+(a.done?'checked':'')+'>'+
+        '<div class="v77-step-area"><button type="button" class="v77-step-trigger entry-text" data-v77-step-action="'+esc(g.id)+'" data-action-id="'+esc(a.id)+'" aria-expanded="false" aria-label="Options for step: '+esc(a.title)+'">'+esc(a.title)+'</button>'+
+        '<div class="v77-step-menu" hidden>'+
+          '<button type="button" data-action-to-task="'+esc(g.id)+'" data-action-id="'+esc(a.id)+'" '+(taskLinked?'disabled':'')+'>'+(taskLinked?'✓ Linked to Task':'Create Task')+'</button>'+
+          '<button type="button" data-action-to-habit="'+esc(g.id)+'" data-action-id="'+esc(a.id)+'">'+(habitLinked?'Edit linked Habit':'Create Habit')+'</button>'+
+        '</div></div></div>';
+    }).join('');
+    return '<section class="card v77-goal-card"><details class="goal" data-goal="'+esc(g.id)+'" '+(expandedGoals.has(String(g.id))?'open':'')+'>'+
+      '<summary><div class="v77-goal-heading"><span class="v77-goal-category">'+esc(g.category)+'</span><h3>'+esc(g.title)+'</h3><p class="muted">'+count+' of '+total+' steps complete</p></div><span class="muted" aria-hidden="true">⌄</span></summary>'+
+      '<div class="progress" role="progressbar" aria-valuenow="'+percentage+'" aria-valuemin="0" aria-valuemax="100" aria-label="Goal progress"><div style="width:'+percentage+'%"></div></div>'+
+      '<div class="goal-details">'+(g.motivation?.trim()?'<div class="goal-motivation"><span class="goal-motivation-label">Motivation</span><p>'+esc(g.motivation)+'</p></div>':'')+
+      items+'<div class="row-buttons"><button class="text-button" data-add-action="'+esc(g.id)+'">+ Step</button><button class="text-button" data-edit-goal="'+esc(g.id)+'">Edit goal</button></div></div></details></section>';
   }).join('')||'<p class="empty">'+(selectedCategory==='All'?'Add a goal to begin.':'No goals in this category.')+'</p>';
 }
 function renderIdeas(){
@@ -1428,4 +1446,5 @@ v6Normalize();v6Render();
 </script>
 <script src="v74.js"></script>
 <script src="v76.js"></script>
+<script src="v77.js"></script>
 </body></html>
