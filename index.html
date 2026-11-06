@@ -216,7 +216,7 @@
 .idea-add-form button{min-width:42px;font-size:19px}
 .idea-linked{display:block;width:100%;text-align:left;padding:8px 2px;border:0;background:transparent;color:var(--secondary-ui);font-size:13px}
 .idea-popup-buttons{display:flex;gap:8px;flex-wrap:wrap}
-.idea-popup-buttons button{flex:1 1 95px}
+.idea-popup-buttons button{flex:1}
 .idea-popup-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:5px}
 @media(max-width:440px){.idea-popup{padding:18px;gap:12px}.idea-popup-header h2{font-size:23px}}
 
@@ -445,7 +445,7 @@
       <button type="submit" class="secondary-button" aria-label="Add action">+</button>
     </form>
     <div id="ideaLinked"></div><div class="v6-assign-idea"><label for="ideaProjectSelect">Project folder</label><select id="ideaProjectSelect" aria-label="Project folder for this idea"></select></div>
-    <div class="idea-popup-buttons"><button id="ideaToProject" type="button" class="secondary-button">→ Project</button><button id="ideaToTask" type="button" class="secondary-button">+ Task</button><button id="ideaToGoal" type="button" class="secondary-button">+ Goal</button></div>
+    <div class="idea-popup-buttons"><button id="ideaToProject" type="button" class="secondary-button">→ Project</button></div>
     <div class="idea-popup-footer"><button type="button" class="danger-button" id="deleteIdea">Delete Idea</button><button type="button" class="text-button" id="ideaDone">Done</button></div>
   </section>
 </div>
@@ -706,20 +706,7 @@ function convertIdea(kind){
     n.updated=new Date().toISOString();
     save();closeIdea();v6OpenProject(project.id);return;
   }
-  if(kind==='goal'){
-    const existing=state.goals.find(g=>(n.goalIds||[]).some(id=>String(id)===String(g.id)));
-    if(existing){closeIdea();planTab('goals');expandedGoals.add(String(existing.id));render();return;}
-    const g={id:uid(),title,category:state.categories.find(c=>c==='Personal')||state.categories[0],actions:[]};
-    state.goals.push(g);(n.goalIds??=[]).push(g.id);
-    save();closeIdea();planTab('goals');render();openModal('goal',g.id);return;
-  }
-  if(kind==='task'){
-    const existing=state.tasks.find(t=>(n.taskIds||[]).some(id=>String(id)===String(t.id)));
-    if(existing){closeIdea();planTab('tasks');render();return;}
-    const t={id:uid(),title,date:'',dueDate:'',scheduledDate:'',scheduledTime:'',priority:false,priorityRank:0,goalId:'',actionId:'',actionIndex:'',done:false};
-    state.tasks.push(t);(n.taskIds??=[]).push(t.id);
-    save();closeIdea();planTab('tasks');render();openModal('task',t.id);
-  }
+
 }
 
 
@@ -895,8 +882,6 @@ document.addEventListener('click',(e)=>{
   const removeAction=e.target.closest('[data-idea-action-remove]');if(removeAction){const n=activeIdea();if(!n)return;n.actions=n.actions.filter(a=>String(a.id)!==removeAction.dataset.ideaActionRemove);n.updated=new Date().toISOString();save();renderIdeaPopup();renderIdeas();return;}
   if(e.target.closest('#deleteIdea')){const n=activeIdea();if(!n||!confirm('Delete this idea?'))return;state.ideas=state.ideas.filter(x=>String(x.id)!==String(n.id));save();closeIdea();return;}
   if(e.target.closest('#ideaToProject')){convertIdea('project');return;}
-  if(e.target.closest('#ideaToGoal')){convertIdea('goal');return;}
-  if(e.target.closest('#ideaToTask')){convertIdea('task');return;}
   const swatch=e.target.closest('[data-color-for]');if(swatch){state[swatch.dataset.colorFor]=swatch.dataset.color;save();render();return;}
   const mode=e.target.closest('[data-appearance]');if(mode){state.appearance=mode.dataset.appearance;save();render();return;}
 });
