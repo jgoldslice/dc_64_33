@@ -1,0 +1,37 @@
+/* v8.2: minimal project header and contextual settings. */
+.v82-project-header {position:relative;gap:8px}
+.v82-project-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
+.v82-project-header-actions .v82-develop {
+  flex:none;min-height:44px;padding:8px 9px;border:1px solid var(--line);
+  border-radius:11px;background:var(--surface);color:var(--secondary-ui);
+  font-size:12px;font-weight:700;line-height:1.1;white-space:nowrap
+}
+.v82-project-header #renameProject {
+  min-height:44px;min-width:44px;display:grid;place-items:center;
+  font-size:20px;padding:8px;border-radius:11px;border:1px solid var(--line);
+  background:var(--surface)
+}
+.v82-project-menu {
+  position:absolute;right:0;top:calc(100% + 5px);width:min(265px,96vw);
+  z-index:25;background:var(--surface);border:1px solid var(--line);
+  border-radius:13px;box-shadow:0 12px 35px #0003;padding:6px;
+  display:grid;gap:2px
+}
+.v82-project-menu[hidden]{display:none!important}
+.v82-project-menu button {
+  width:100%;border:0;background:transparent;color:var(--ink);
+  border-radius:9px;min-height:44px;font-size:14px;
+  font-weight:600;padding:11px 12px;text-align:left
+}
+.v82-project-menu button:hover,.v82-project-menu button:focus-visible{background:var(--wash)}
+.v82-project-menu .v82-delete-project{color:#b74f49}
+#projectWorkspace .v6-project-footer[hidden]{display:none!important}
+.v82-overdue-label{color:var(--secondary-ui);font-weight:750}
+.v82-view-overdue{margin-top:4px;min-height:44px}
+@media(max-width:360px){
+  .v82-project-header-actions .v82-develop{padding-inline:7px}
+  .v82-project-header .text-button{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .v82-project-header-actions button,.v82-project-menu button{transition:none!important}
+}
