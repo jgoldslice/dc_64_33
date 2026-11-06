@@ -12,19 +12,19 @@
     '<div id="v76PageMenu" class="v76-page-menu" hidden><button type="button" id="v76RenamePage">Rename page</button>'+
     '<button type="button" id="v76DeletePage">Delete page</button></div></div>'+
     '<div class="v76-toolbar" role="toolbar" aria-label="Notebook tools">'+
-      '<div class="v79-tool-group" role="group" aria-label="Text"><span class="v79-tool-title">Text</span><div class="v79-tool-buttons">'+
+      '<div class="v79-tool-group" role="group" aria-label="Text"><div class="v79-tool-buttons">'+
         '<button type="button" data-v76-format="insertUnorderedList" aria-label="Add or remove bullet list" title="Bullet list">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="4.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/></svg>'+
         '</button><select id="v80TextSize" class="v80-text-size" aria-label="Text size" title="Text size">'+
           '<option value="small">Small</option><option value="medium" selected>Medium</option><option value="large">Large</option>'+
         '</select></div></div>'+
-      '<div class="v79-tool-group" role="group" aria-label="Pen"><span class="v79-tool-title">Pen</span><div class="v79-tool-buttons">'+
+      '<div class="v79-tool-group" role="group" aria-label="Pen"><div class="v79-tool-buttons">'+
         '<button type="button" data-v76-mode="pen" aria-label="Draw; tap again to stop drawing" aria-pressed="false" title="Draw">✎</button>'+
         '<button type="button" data-v76-mode="erase" aria-label="Erase drawing strokes; tap again to stop erasing" aria-pressed="false" title="Eraser">'+
-          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 21-4.3-4.3a2.4 2.4 0 0 1 0-3.4L13.3 2.7a2.4 2.4 0 0 1 3.4 0l4.6 4.6a2.4 2.4 0 0 1 0 3.4L10.7 21.3a2.4 2.4 0 0 1-3.4 0Z"/><path d="M22 21H7"/><path d="m5 11 8 8"/></svg></button>'+
+          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.3 20.4 3.6 15.7a2.2 2.2 0 0 1 0-3.1l9-9a2.2 2.2 0 0 1 3.1 0l4.7 4.7a2.2 2.2 0 0 1 0 3.1l-9 9a2.2 2.2 0 0 1-3.1 0Z"/><path d="M12 21h9"/></svg></button>'+
         '<button type="button" id="v76UndoInk" aria-label="Undo last drawing stroke" title="Undo drawing">↶</button>'+
       '</div></div>'+
-      '<div class="v79-tool-group" role="group" aria-label="Misc"><span class="v79-tool-title">Misc</span><div class="v79-tool-buttons">'+
+      '<div class="v79-tool-group" role="group" aria-label="Misc"><div class="v79-tool-buttons">'+
         '<button type="button" id="v76AddImage" aria-label="Insert picture" title="Insert picture">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></button>'+
       '</div></div>'+
@@ -453,15 +453,71 @@
     return {x:Math.round((e.clientX-box.left)*view.width/Math.max(1,box.width)*100)/100,
       y:Math.round((e.clientY-box.top)*view.height/Math.max(1,box.height)*100)/100};
   }
-  let activeStroke=null;
+  // Stroke eraser: continuously sweep a circular contact area along the
+  // Pencil / finger path, removing every intersected stroke, not just strokes
+  // with a saved point close to the initial tap. Crossing long sparse line
+  // segments must also work (many drawn strokes have widely spaced points).
+  const ERASER_RADIUS=18;
+  const sqDistance=(a,b)=>(a.x-b.x)**2+(a.y-b.y)**2;
+  function pointSegmentDistanceSq(point,start,end){
+    const dx=end.x-start.x,dy=end.y-start.y,lenSq=dx*dx+dy*dy;
+    if(lenSq===0)return sqDistance(point,start);
+    const t=Math.max(0,Math.min(1,((point.x-start.x)*dx+(point.y-start.y)*dy)/lenSq));
+    return sqDistance(point,{x:start.x+t*dx,y:start.y+t*dy});
+  }
+  function segmentsCross(a,b,c,d){
+    const cross=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);
+    const ab1=cross(a,b,c),ab2=cross(a,b,d),cd1=cross(c,d,a),cd2=cross(c,d,b);
+    // Collinear/endpoint contact is also handled by the distance checks.
+    return (ab1*ab2<0&&cd1*cd2<0);
+  }
+  function crossesStroke(stroke,from,to){
+    const points=stroke.points||[];
+    if(!points.length)return false;
+    const radiusSq=(ERASER_RADIUS+Math.max(0,Number(stroke.width)||2.5)/2)**2;
+    if(points.length===1)return pointSegmentDistanceSq(points[0],from,to)<=radiusSq;
+    for(let i=1;i<points.length;i++){
+      const a=points[i-1],b=points[i];
+      if(segmentsCross(from,to,a,b)
+        ||pointSegmentDistanceSq(a,from,to)<=radiusSq
+        ||pointSegmentDistanceSq(b,from,to)<=radiusSq
+        ||pointSegmentDistanceSq(from,a,b)<=radiusSq
+        ||pointSegmentDistanceSq(to,a,b)<=radiusSq)return true;
+    }
+    return false;
+  }
+  function eraseSweep(page,from,positions){
+    let previous=from;
+    if(!positions.length)return previous;
+    const path=positions.map(inkPosition);
+    const passes=[previous,...path];
+    const oldCount=(page.strokes||[]).length;
+    page.strokes=page.strokes.filter(stroke=>{
+      for(let i=1;i<passes.length;i++){
+        if(crossesStroke(stroke,passes[i-1],passes[i]))return false;
+      }
+      return true;
+    });
+    previous=path[path.length-1];
+    if(page.strokes.length!==oldCount){
+      strokesView(page);
+      persist(); // Save during a drag, not just at pointerup.
+    }
+    return previous;
+  }
+  const pointerSamples=e=>{
+    const coalesced=e.getCoalescedEvents?.();
+    return coalesced?.length?coalesced:[e];
+  };
+  let activeStroke=null,activeErase=null;
   ink.addEventListener('pointerdown',e=>{
     const ctx=current();if(!ctx||(mode!=='pen'&&mode!=='erase'))return;
+    if(e.pointerType==='mouse'&&e.button!==0)return;
     e.preventDefault();ink.setPointerCapture(e.pointerId);
     const pt=inkPosition(e);
     if(mode==='erase'){
-      const before=ctx.page.strokes.length;
-      ctx.page.strokes=ctx.page.strokes.filter(s=>!s.points.some(p=>Math.hypot(p.x-pt.x,p.y-pt.y)<18));
-      if(ctx.page.strokes.length!==before){persist();strokesView(ctx.page);}
+      activeErase={id:e.pointerId,page:ctx.page,last:pt};
+      eraseSweep(ctx.page,pt,[e]); // A tap is also an eraser gesture.
       return;
     }
     const css=getComputedStyle(document.documentElement);
@@ -469,14 +525,24 @@
     ctx.page.strokes.push(stroke);activeStroke={id:e.pointerId,stroke,page:ctx.page};strokesView(ctx.page);
   });
   ink.addEventListener('pointermove',e=>{
+    if(activeErase&&e.pointerId===activeErase.id){
+      e.preventDefault();
+      activeErase.last=eraseSweep(activeErase.page,activeErase.last,pointerSamples(e));
+      return;
+    }
     if(!activeStroke||e.pointerId!==activeStroke.id)return;
-    const samples=e.getCoalescedEvents?.();
-    const positions=samples?.length?samples:[e];
-    activeStroke.stroke.points.push(...positions.map(inkPosition));
+    activeStroke.stroke.points.push(...pointerSamples(e).map(inkPosition));
     strokesView(activeStroke.page);
   });
-  const finishStroke=e=>{if(activeStroke&&activeStroke.id===e.pointerId){activeStroke=null;persist();}};
-  ink.addEventListener('pointerup',finishStroke);ink.addEventListener('pointercancel',finishStroke);
+  const finishStroke=e=>{
+    if(activeErase&&e.pointerId===activeErase.id){
+      if(e.type==='pointerup')eraseSweep(activeErase.page,activeErase.last,[e]);
+      activeErase=null;
+    }
+    if(activeStroke&&activeStroke.id===e.pointerId){activeStroke=null;persist();}
+  };
+  ink.addEventListener('pointerup',finishStroke);
+  ink.addEventListener('pointercancel',finishStroke);
   document.getElementById('v76UndoInk').addEventListener('click',()=>{
     const ctx=current();if(!ctx||!ctx.page.strokes.length)return;ctx.page.strokes.pop();persist();strokesView(ctx.page);
   });
