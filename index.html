@@ -220,6 +220,53 @@
 .idea-popup-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:5px}
 @media(max-width:440px){.idea-popup{padding:18px;gap:12px}.idea-popup-header h2{font-size:23px}}
 
+/* V6 Project workspaces */
+#projectHome,#projectWorkspace{margin-bottom:17px}
+.v6-project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.v6-folder{border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:16px 12px;display:flex;flex-direction:column;text-align:left;min-height:114px;gap:9px;color:var(--ink)}
+.v6-folder svg{height:25px;width:25px;stroke:var(--secondary-ui);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.v6-folder strong{font-size:13px;overflow-wrap:anywhere}
+.v6-folder small{font-size:11px;color:var(--muted)}
+.v6-project-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.v6-project-title{font:normal 25px Georgia,serif;color:var(--ink);margin:0 0 14px;overflow-wrap:anywhere}
+.v6-project-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;background:var(--wash);padding:4px;border-radius:12px;margin-bottom:12px}
+.v6-project-tabs button{font-size:12px;border:0;border-radius:9px;background:transparent;color:var(--muted);padding:11px 2px}
+.v6-project-tabs button.selected{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px #0001;font-weight:700}
+.v6-project-pane[hidden],#projectWorkspace[hidden],#projectHome[hidden],#projectChatBack[hidden]{display:none!important}
+.v6-section-head{display:flex;align-items:center;gap:8px;margin-top:12px}
+.v6-section-head input{flex:1;min-width:0;font-weight:650}
+.v6-note-line{display:flex;gap:7px;align-items:center;margin:8px 0}
+.v6-note-line input{flex:1;min-width:0}
+.v6-project-pane input:not([type=checkbox]),.v6-project-pane textarea,.v6-assign-idea select{border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:var(--bg);color:var(--ink);font:inherit;font-size:13px}
+.v6-project-pane input[type=checkbox]{accent-color:var(--secondary-ui);width:18px;height:18px;flex:none}
+.v6-icon-btn{border:0;background:transparent;padding:7px;color:var(--muted);font-size:16px}
+.v6-add-line{background:transparent;color:var(--secondary-ui);border:0;font-size:12px;padding:9px 4px}
+.v6-note-section{padding:9px 0;border-bottom:1px solid var(--line)}
+.v6-note-section:last-child{border:0}
+.v6-project-pane .v6-action-row{display:flex;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.v6-action-row span{flex:1;min-width:0;overflow-wrap:anywhere;font-size:13px}
+.v6-action-row.completed span{text-decoration:line-through;color:var(--muted)}
+.v6-inline-form{display:flex;gap:8px;margin-top:12px}
+.v6-inline-form input{min-width:0;flex:1}
+.v6-lib-add{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:13px}
+.v6-lib-add button,.v6-sketch-tools button{border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);padding:9px 10px;font-size:12px}
+.v6-sketch-tools{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px}
+.v6-sketch-tools button.selected{border-color:var(--primary-ui);color:var(--primary-ui);font-weight:700}
+.v6-sketch-tools button[data-pen=primary]{color:var(--primary-ui)}
+.v6-sketch-tools button[data-pen=secondary]{color:var(--secondary-ui)}
+#projectCanvas{display:block;width:100%;height:auto;aspect-ratio:35/24;border:1px solid var(--line);border-radius:11px;background:white;touch-action:none;cursor:crosshair}
+.v6-resource-list{display:grid;gap:9px;margin-top:14px}
+.v6-resource{display:flex;align-items:start;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;min-width:0}
+.v6-resource-info{flex:1;min-width:0;overflow-wrap:anywhere}
+.v6-resource-info strong{font-size:13px;display:block}
+.v6-resource-info small{font-size:11px;color:var(--muted);display:block;margin-top:4px}
+.v6-resource-preview{height:46px;width:54px;border-radius:7px;object-fit:cover;background:var(--wash);border:1px solid var(--line);flex:none}
+.v6-resource-code{font:11px/1.45 monospace;background:var(--wash);padding:9px;border-radius:8px;white-space:pre-wrap;max-height:100px;overflow:auto;margin-top:8px}
+.v6-project-footer{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:12px}
+.v6-export-text{width:100%;min-height:210px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:12px;font:12px/1.5 monospace}
+.v6-assign-idea{display:grid;gap:7px;margin-top:9px}
+.v6-assign-idea label{font-size:12px;color:var(--muted)}
+
   </style>
 
 </head>
@@ -270,6 +317,45 @@
     </section>
     <section class="view" id="brainstorm" aria-labelledby="brainstormTitle">
       <div class="view-header"><div><div class="eyebrow">A place to think</div><h1 id="brainstormTitle">Brainstorm</h1><p class="muted">Capture what comes to mind.</p></div></div>
+      <div id="projectHome">
+        <section class="card"><div class="card-heading"><h2>Projects</h2><button type="button" id="newProject" class="primary-button">+ Project</button></div><div id="projectGrid" class="v6-project-grid"></div></section>
+      </div>
+      <div id="projectWorkspace" hidden>
+        <div class="v6-project-head"><button type="button" id="backProjects" class="text-button">← Projects</button><button type="button" id="renameProject" class="text-button">•••</button></div>
+        <h2 id="projectTitle" class="v6-project-title"></h2>
+        <div id="projectTabs" class="v6-project-tabs">
+          <button data-project-tab="notes" class="selected">Notes</button>
+          <button data-project-tab="sketch">Sketch</button>
+          <button data-project-tab="actions">Actions</button>
+          <button data-project-tab="library">Library</button>
+        </div>
+        <section class="card v6-project-pane" id="projectNotes">
+          <div class="card-heading"><h2>Notes</h2><button type="button" id="addNoteSection" class="text-button">+ Section</button></div>
+          <div id="projectNotesList"></div>
+        </section>
+        <section class="card v6-project-pane" id="projectSketch" hidden>
+          <div class="card-heading"><h2>Sketch Pad</h2><button type="button" id="newSketch" class="text-button">New</button></div>
+          <div class="v6-sketch-tools"><button data-pen="primary" class="selected" aria-label="Primary color pen">●</button><button data-pen="secondary" aria-label="Secondary color pen">●</button><button data-pen="eraser">Eraser</button><button id="sketchUndo">Undo</button><button id="sketchClear">Clear</button></div>
+          <canvas id="projectCanvas" width="700" height="480" aria-label="Freehand sketch canvas, use finger mouse or compatible stylus"></canvas>
+          <div class="capture-footer"><span class="muted small">Touch, mouse or compatible stylus</span><button type="button" id="saveSketch" class="primary-button">Save Sketch</button></div>
+          <div id="projectSketchList" class="v6-resource-list"></div>
+        </section>
+        <section class="card v6-project-pane" id="projectActions" hidden>
+          <div class="card-heading"><h2>Actions</h2></div>
+          <div id="projectActionsList"></div>
+          <form id="projectActionForm" class="v6-inline-form"><input id="projectActionInput" maxlength="160" required placeholder="Add an action..." aria-label="New project action"><button class="secondary-button" type="submit">+</button></form>
+        </section>
+        <section class="card v6-project-pane" id="projectLibrary" hidden>
+          <div class="card-heading"><h2>Library</h2></div>
+          <div class="v6-lib-add">
+            <button type="button" data-library-add="link">+ Link</button><button type="button" data-library-add="code">+ Code</button><button type="button" id="uploadProjectFile">+ Image / File</button>
+          </div>
+          <input id="projectFileInput" type="file" hidden accept="image/*,.pdf,.txt,.md,.py,.ino,.js,.json,.zip,.stl,.3mf,.obj,.step,.stp,.csv" multiple>
+          <div id="projectLibraryList" class="v6-resource-list"></div>
+          <p class="muted small">Files and sketches stay in this browser. Export important originals separately; JSON backups do not include uploaded file bytes.</p>
+        </section>
+        <section class="card v6-project-footer"><button id="projectChat" type="button" class="primary-button">Develop in ChatGPT ↗</button><button id="deleteProject" type="button" class="text-button">Delete project</button></section>
+      </div>
       <div class="stack">
         <section class="card brainstorm-capture"><div class="card-heading"><h2><svg class="icon"><use href="#i-brainstorm"/></svg> New Idea</h2></div>
           <textarea id="brainstormDraft" placeholder="What's on your mind?" rows="4" maxlength="20000" aria-label="New idea"></textarea>
@@ -320,11 +406,12 @@
       <input id="ideaActionText" maxlength="160" placeholder="Add an action..." required aria-label="New action">
       <button type="submit" class="secondary-button" aria-label="Add action">+</button>
     </form>
-    <div id="ideaLinked"></div>
+    <div id="ideaLinked"></div><div class="v6-assign-idea"><label for="ideaProjectSelect">Project folder</label><select id="ideaProjectSelect" aria-label="Project folder for this idea"></select></div>
     <div class="idea-popup-buttons"><button id="ideaToTask" type="button" class="secondary-button">+ Task</button><button id="ideaToGoal" type="button" class="secondary-button">+ Goal</button></div>
     <div class="idea-popup-footer"><button type="button" class="danger-button" id="deleteIdea">Delete Idea</button><button type="button" class="text-button" id="ideaDone">Done</button></div>
   </section>
 </div>
+<div id="projectChatBack" class="modal-back" role="presentation" hidden><section class="modal" role="dialog" aria-modal="true" aria-label="ChatGPT project handoff"><h2>Develop in ChatGPT</h2><p class="muted small">Copy your project context, then paste it into a ChatGPT chat or Project. Images and drawings need to be attached separately.</p><textarea id="projectChatText" class="v6-export-text" readonly aria-label="Project context for ChatGPT"></textarea><div class="row-buttons"><button type="button" id="copyProjectChat" class="primary-button">Copy Context</button><button type="button" id="openProjectChat" class="secondary-button">Open ChatGPT ↗</button><button type="button" id="closeProjectChat" class="text-button">Done</button></div></section></div>
 <div id="modalBack" class="modal-back" role="presentation"><form id="modalForm" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle"></h2><div id="modalFields" class="form-fields"></div><div class="modal-actions"><button type="button" class="danger-button" id="deleteModal" hidden>Delete</button><span class="modal-spacer"></span><button type="button" class="secondary-button" id="cancelModal">Cancel</button><button type="submit" class="primary-button">Save</button></div></form></div>
 <script>
 'use strict';
@@ -345,7 +432,7 @@ const today = localToday();
 const defaults = {
   primary:'#78927d',secondary:'#c6ae83',appearance:'system',
   todayFocus:'',weeklyFocus:'',
-  categories:['Personal','Physical','Research','Spiritual'],ideas:[],brainstormDraft:'',
+  categories:['Personal','Physical','Research','Spiritual'],ideas:[],projects:[],brainstormDraft:'',
   openingMode:'both',openingMessage:'Life is a canvas. So by God, start painting.',
   tasks:[{id:1,title:'Review class notes',date:today,done:false,priority:true},{id:2,title:'Make progress on research',date:today,done:false,priority:true},{id:3,title:'Go to the gym',date:today,done:false,priority:false}],
   events:[{id:1,title:'Class',date:today,time:'08:00'},{id:2,title:'Lab',date:today,time:'10:00'},{id:3,title:'Research',date:today,time:'13:30'}],
@@ -368,6 +455,7 @@ function normalize(data){
   if(!result.categories.length)result.categories=['Personal'];
   for(const g of result.goals){g.category=result.categories.find(c=>c.toLocaleLowerCase()===g.category.toLocaleLowerCase())||'Personal';}
   result.ideas=(Array.isArray(result.ideas)?result.ideas:[]).filter(n=>n&&typeof n==='object').map(n=>({...n,id:n.id??('n-'+Date.now()),title:String(n.title||''),body:String(n.body||''),created:n.created||new Date().toISOString(),updated:n.updated||n.created||new Date().toISOString(),goalIds:Array.isArray(n.goalIds)?n.goalIds:[],taskIds:Array.isArray(n.taskIds)?n.taskIds:[],actions:Array.isArray(n.actions)?n.actions.filter(a=>a&&typeof a==='object').map(a=>({id:a.id||('ia-'+Math.random()),title:String(a.title||''),done:!!a.done,taskId:a.taskId||''})):[]}));
+  result.projects=(Array.isArray(result.projects)?result.projects:[]).filter(p=>p&&typeof p==='object').map(p=>({...p,id:p.id||('p-'+Date.now()),title:String(p.title||'Project'),notes:Array.isArray(p.notes)?p.notes:[],actions:Array.isArray(p.actions)?p.actions:[],library:Array.isArray(p.library)?p.library:[]}));
   result.brainstormDraft=typeof result.brainstormDraft==='string'?result.brainstormDraft:'';
   if(!['none','quote','animation','both'].includes(result.openingMode))result.openingMode='both';
   result.openingMessage=typeof result.openingMessage==='string'?result.openingMessage.slice(0,280):defaults.openingMessage;
@@ -494,7 +582,7 @@ function renderGoals(){
   }).join('')||'<p class="empty">'+(selectedCategory==='All'?'Add a goal to begin.':'No goals in this category.')+'</p>';
 }
 function renderIdeas(){
-  const ideas=state.ideas.slice().sort((a,b)=>String(b.updated).localeCompare(String(a.updated)));
+  const ideas=state.ideas.filter(n=>!n.projectId).slice().sort((a,b)=>String(b.updated).localeCompare(String(a.updated)));
   $('ideaCount').textContent=ideas.length?String(ideas.length):'';
   $('ideasList').innerHTML=ideas.map(n=>{
     const title=(n.title||n.body.trim().split('\n')[0]||'Untitled').slice(0,110);
@@ -527,6 +615,7 @@ function renderIdeaPopup(){
   }).join('')||'<p class="muted small">Add an action to this idea.</p>';
   const goals=state.goals.filter(g=>(n.goalIds||[]).some(id=>String(id)===String(g.id)));
   const tasks=state.tasks.filter(t=>(n.taskIds||[]).some(id=>String(id)===String(t.id)));
+  $('ideaProjectSelect').innerHTML='<option value="">No project</option>'+((state.projects||[]).map(p=>'<option value="'+esc(p.id)+'" '+(String(n.projectId||'')===String(p.id)?'selected':'')+'>'+esc(p.title)+'</option>').join(''));
   $('ideaLinked').innerHTML=(goals.length||tasks.length?'<div class="idea-popup-row"><strong>Linked</strong></div>':'')+
     goals.map(g=>'<button type="button" class="idea-linked" data-open-idea-goal="'+esc(g.id)+'">◎ '+esc(g.title)+'</button>').join('')+
     tasks.map(t=>'<button type="button" class="idea-linked" data-open-idea-task="'+esc(t.id)+'">✓ '+esc(t.title)+'</button>').join('');
@@ -553,8 +642,8 @@ function ideaActionToTask(actionId){
 function createIdeaFromDraft(){
   const body=state.brainstormDraft.trim();
   if(!body){$('brainstormDraft').focus();return;}
-  const n={id:uid(),title:'',body,created:new Date().toISOString(),updated:new Date().toISOString(),goalIds:[],taskIds:[],actions:[]};
-  state.ideas.push(n);state.brainstormDraft='';save();renderIdeas();openIdea(n.id);
+  const n={id:uid(),projectId:window.v6ActiveProjectId||'',title:'',body,created:new Date().toISOString(),updated:new Date().toISOString(),goalIds:[],taskIds:[],actions:[]};
+  state.ideas.push(n);state.brainstormDraft='';save();renderIdeas();if(typeof v6Render==='function')v6Render();openIdea(n.id);
 }
 function convertIdea(kind){
   const n=activeIdea();if(!n)return;
@@ -774,5 +863,293 @@ render();
 showOpening();
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
 
+</script>
+<script>
+'use strict';
+window.v6ActiveProjectId=null;
+let v6ProjectTab='notes',v6Pen='primary',v6Drawing=false,v6InkHistory=[],v6SketchId=null;
+const v6Project=()=>state.projects?.find(p=>String(p.id)===String(window.v6ActiveProjectId));
+const v6Id=()=>String(uid())+'-'+Math.random().toString(36).slice(2,7);
+const v6Now=()=>new Date().toISOString();
+function v6Normalize(){
+  if(!Array.isArray(state.projects))state.projects=[];
+  for(const p of state.projects){if(!Array.isArray(p.notes))p.notes=[];if(!Array.isArray(p.actions))p.actions=[];if(!Array.isArray(p.library))p.library=[];}
+}
+function v6OpenProject(id){
+  if(!state.projects.some(p=>String(p.id)===String(id)))return;
+  window.v6ActiveProjectId=id;v6ProjectTab='notes';v6SketchId=null;v6Render();
+  $('projectWorkspace').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function v6Render(){
+  v6Normalize();const p=v6Project();
+  $('projectHome').hidden=!!p;$('projectWorkspace').hidden=!p;
+  $('projectGrid').innerHTML=state.projects.map(p=>{
+    const count=state.ideas.filter(n=>String(n.projectId)===String(p.id)).length;
+    return '<button type="button" class="v6-folder" data-v6-project="'+esc(p.id)+'"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><strong>'+esc(p.title)+'</strong><small>'+count+' ideas · '+p.actions.length+' actions</small></button>';
+  }).join('')||'<p class="muted small">Create a project for your next idea, build, or experiment.</p>';
+  $('brainstormDraft').placeholder=p?'Idea for '+p.title+'...':"What's on your mind?";
+  if(!p)return;
+  $('projectTitle').textContent=p.title;
+  document.querySelectorAll('[data-project-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.projectTab===v6ProjectTab));
+  for(const name of ['notes','sketch','actions','library'])$('project'+name[0].toUpperCase()+name.slice(1)).hidden=v6ProjectTab!==name;
+  v6RenderNotes(p);v6RenderActions(p);v6RenderLibrary(p);v6RenderSketches(p);
+  if(v6ProjectTab==='sketch')requestAnimationFrame(v6SetupCanvas);
+}
+function v6RenderNotes(p){
+  const html=p.notes.map(section=>'<div class="v6-note-section"><div class="v6-section-head"><input data-v6-heading="'+esc(section.id)+'" aria-label="Section title" value="'+esc(section.heading)+'" placeholder="Section heading"><button type="button" class="v6-icon-btn" data-v6-remove-section="'+esc(section.id)+'">×</button></div>'+
+  section.items.map(item=>'<div class="v6-note-line"><span>•</span><input data-v6-bullet="'+esc(item.id)+'" data-v6-section="'+esc(section.id)+'" value="'+esc(item.text)+'" placeholder="Add a thought..."><button type="button" class="v6-icon-btn" data-v6-remove-bullet="'+esc(item.id)+'" data-v6-section="'+esc(section.id)+'">×</button></div>').join('')+
+  '<button class="v6-add-line" type="button" data-v6-add-bullet="'+esc(section.id)+'">+ Bullet point</button></div>').join('');
+  const ideas=state.ideas.filter(n=>String(n.projectId||'')===String(p.id));
+  $('projectNotesList').innerHTML=html+(ideas.length?'<div class="v6-section-head"><strong>Saved Ideas</strong></div>'+ideas.map(n=>'<button type="button" class="idea-card" data-edit-idea="'+esc(n.id)+'"><strong>'+esc(ideaTitle(n))+'</strong></button>').join(''):'');
+}
+function v6RenderActions(p){
+  $('projectActionsList').innerHTML=p.actions.map(a=>{
+    const linked=state.tasks.find(t=>String(t.id)===String(a.taskId));
+    return '<div class="v6-action-row '+(a.done?'completed':'')+'"><input type="checkbox" data-v6-check="'+esc(a.id)+'" aria-label="Complete '+esc(a.title)+'" '+(a.done?'checked':'')+'><span>'+esc(a.title)+'</span><button type="button" class="text-button" data-v6-task="'+esc(a.id)+'">'+(linked?'Task':'→ Task')+'</button><button class="v6-icon-btn" type="button" data-v6-remove-action="'+esc(a.id)+'">×</button></div>';
+  }).join('')||'<p class="muted small">Add actions here, then turn them into Blueprint tasks.</p>';
+}
+let v6PreviewUrls=[];
+function v6RenderLibrary(p){
+  for(const url of v6PreviewUrls)URL.revokeObjectURL(url);v6PreviewUrls=[];
+  $('projectLibraryList').innerHTML=p.library.filter(r=>r.type!=='sketch').map(r=>{
+    const preview=r.type==='code'?'<pre class="v6-resource-code">'+esc(r.content||'')+'</pre>':'';
+    return '<div class="v6-resource">'+(r.type==='file'&&r.mime?.startsWith('image/')?'<img class="v6-resource-preview" data-v6-image="'+esc(r.id)+'" alt="'+esc(r.title)+'">':'<span class="muted">'+(r.type==='code'?'⌘':r.type==='link'?'↗':'▤')+'</span>')+'<div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>'+esc(r.type==='code'?(r.language||'Code'):r.type==='link'?r.url:(r.mime||'File'))+'</small>'+preview+'</div><button class="text-button" type="button" data-v6-open-resource="'+esc(r.id)+'">'+(r.type==='code'?'Copy':'Open')+'</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'">×</button></div>';
+  }).join('')||'<p class="muted small">Keep reference images, files, links, and code in one place.</p>';
+  const projectId=String(p.id);
+  for(const r of p.library.filter(x=>x.type==='file'&&x.mime?.startsWith('image/'))){
+    v6Blob('get',r.key).then(blob=>{
+      if(!blob||String(v6Project()?.id)!==projectId)return;
+      const img=[...$('projectLibraryList').querySelectorAll('[data-v6-image]')].find(x=>String(x.dataset.v6Image)===String(r.id));
+      if(img){const url=URL.createObjectURL(blob);v6PreviewUrls.push(url);img.src=url;}
+    }).catch(()=>{});
+  }
+}
+function v6RenderSketches(p){
+  $('projectSketchList').innerHTML=p.library.filter(r=>r.type==='sketch').map(r=>'<div class="v6-resource"><span>✎</span><div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>Saved sketch</small></div><button class="text-button" type="button" data-v6-load-sketch="'+esc(r.id)+'">Open</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'">×</button></div>').join('');
+}
+function v6CreateProject(name){
+  name=String(name||'').trim().slice(0,120);if(!name)return;
+  const p={id:v6Id(),title:name,notes:[],actions:[],library:[],created:v6Now()};
+  state.projects.push(p);save();v6OpenProject(p.id);return p;
+}
+function v6ActionToTask(id){
+  const p=v6Project(),a=p?.actions.find(x=>String(x.id)===String(id));if(!a)return;
+  let task=state.tasks.find(t=>String(t.id)===String(a.taskId));
+  if(!task){
+    task={id:uid(),title:a.title,date:'',dueDate:'',scheduledDate:'',scheduledTime:'',priority:false,priorityRank:0,goalId:'',actionId:'',actionIndex:'',projectId:p.id,projectActionId:a.id,done:!!a.done};
+    state.tasks.push(task);a.taskId=task.id;save();
+  }
+  planTab('tasks');render();openModal('task',task.id);
+}
+function v6ProjectContext(p){
+  const ideas=state.ideas.filter(n=>String(n.projectId||'')===String(p.id));
+  const lines=['Help me develop this project. Explore options, identify obstacles, and suggest actionable next steps.','','PROJECT: '+p.title,''];
+  for(const sec of p.notes)lines.push(sec.heading||'Notes',...sec.items.map(i=>'• '+i.text),'');
+  if(ideas.length)lines.push('IDEAS',...ideas.map(n=>'- '+n.body.trim()+(n.actions?.length?'\nActions: '+n.actions.map(a=>a.title).join('; '):'')),'');
+  if(p.actions.length)lines.push('ACTIONS',...p.actions.map(a=>(a.done?'[x] ':'[ ] ')+a.title),'');
+  if(p.library.length)lines.push('LIBRARY',...p.library.map(r=>'- '+r.title+(r.url?' — '+r.url:'')+(r.type==='code'?'\n'+r.content:'')),'');
+  lines.push('Uploaded files and sketches must be attached separately in ChatGPT.');
+  return lines.join('\n');
+}
+function v6ShowChat(){const p=v6Project();if(!p)return;$('projectChatText').value=v6ProjectContext(p);$('projectChatBack').hidden=false;$('projectChatBack').classList.add('open');}
+function v6HideChat(){$('projectChatBack').hidden=true;$('projectChatBack').classList.remove('open');}
+function v6DB(){return new Promise((res,rej)=>{if(!('indexedDB' in window)){rej(Error('Local file storage unsupported'));return;}const req=indexedDB.open('canvas-project-attachments-v1',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('blobs'))req.result.createObjectStore('blobs');};req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error||Error('Storage unavailable'));});}
+async function v6Blob(mode,key,blob){const db=await v6DB();return new Promise((res,rej)=>{const tx=db.transaction('blobs',mode==='get'?'readonly':'readwrite'),store=tx.objectStore('blobs');const req=mode==='put'?store.put(blob,key):mode==='delete'?store.delete(key):store.get(key);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);tx.oncomplete=()=>db.close();});}
+async function v6Upload(files){
+  const p=v6Project();if(!p)return;
+  for(const file of files){if(file.size>40*1024*1024){alert(file.name+' exceeds 40 MB');continue;}
+    const id=v6Id(),key='v6-'+id;
+    try{await v6Blob('put',key,file);p.library.push({id,type:'file',title:file.name,mime:file.type||'application/octet-stream',key,size:file.size,created:v6Now()});save();}
+    catch(err){alert('Unable to save '+file.name+': '+err.message);}
+  }
+  v6Render();
+}
+async function v6OpenResource(id){
+  const r=v6Project()?.library.find(x=>String(x.id)===String(id));if(!r)return;
+  if(r.type==='link'){window.open(r.url,'_blank','noopener,noreferrer');return;}
+  if(r.type==='code'){try{await navigator.clipboard.writeText(r.content||'');alert('Code copied.');}catch{prompt('Copy code',r.content||'');}return;}
+  try{const blob=await v6Blob('get',r.key);if(!blob)throw Error('File not found in this browser');
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=r.title;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
+  }catch(err){alert('Could not open file: '+err.message);}
+}
+async function v6DeleteResource(id){
+  const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));if(!r||!confirm('Remove '+r.title+'?'))return;
+  p.library=p.library.filter(x=>String(x.id)!==String(id));save();
+  if(r.key)try{await v6Blob('delete',r.key);}catch{}
+  if(String(v6SketchId)===String(id)){v6SketchId=null;v6ClearCanvas();}
+  v6Render();
+}
+function v6AddLibrary(type){
+  const p=v6Project();if(!p)return;
+  if(type==='link'){
+    let url=prompt('Link URL');if(url===null)return;url=url.trim();
+    try{const u=new URL(url);if(!['https:','http:'].includes(u.protocol))throw Error();url=u.href;}catch{alert('Enter a valid http or https URL.');return;}
+    const title=prompt('Link title',url)||url;
+    p.library.push({id:v6Id(),type:'link',title:title.slice(0,180),url,created:v6Now()});
+  }else{
+    const title=prompt('Code snippet title');if(!title?.trim())return;
+    const language=prompt('Language (optional)','Python')||'';
+    const content=prompt('Paste code');if(content===null)return;
+    p.library.push({id:v6Id(),type:'code',title:title.slice(0,180),language,content,created:v6Now()});
+  }
+  save();v6Render();
+}
+
+const v6Canvas=$('projectCanvas'),v6Ctx=v6Canvas.getContext('2d');
+function v6ClearCanvas(){
+  v6Ctx.save();v6Ctx.globalCompositeOperation='source-over';v6Ctx.fillStyle='#ffffff';v6Ctx.fillRect(0,0,v6Canvas.width,v6Canvas.height);v6Ctx.restore();
+}
+function v6SetupCanvas(){
+  const p=v6Project();if(!p)return;
+  if(v6Canvas.dataset.project===String(p.id))return;
+  v6Canvas.dataset.project=String(p.id);v6InkHistory=[];v6ClearCanvas();
+  v6Blob('get','v6-draft-'+p.id).then(blob=>{if(blob&&String(v6Project()?.id)===String(p.id))v6DrawBlob(blob);}).catch(()=>{});
+}
+function v6DrawBlob(blob){
+  const url=URL.createObjectURL(blob),img=new Image();
+  img.onload=()=>{v6Ctx.drawImage(img,0,0,v6Canvas.width,v6Canvas.height);URL.revokeObjectURL(url);};
+  img.onerror=()=>URL.revokeObjectURL(url);img.src=url;
+}
+function v6Point(e){
+  const r=v6Canvas.getBoundingClientRect();
+  return {x:(e.clientX-r.left)*v6Canvas.width/r.width,y:(e.clientY-r.top)*v6Canvas.height/r.height};
+}
+function v6PushUndo(){
+  v6InkHistory.push(v6Ctx.getImageData(0,0,v6Canvas.width,v6Canvas.height));
+  if(v6InkHistory.length>8)v6InkHistory.shift();
+}
+function v6Begin(e){
+  if(!v6Project())return;e.preventDefault();v6PushUndo();v6Drawing=true;
+  v6Canvas.setPointerCapture?.(e.pointerId);
+  const pt=v6Point(e);v6Ctx.beginPath();v6Ctx.moveTo(pt.x,pt.y);
+  v6Ctx.lineJoin='round';v6Ctx.lineCap='round';
+  v6Ctx.lineWidth=v6Pen==='eraser'?20:4;
+  v6Ctx.strokeStyle=v6Pen==='secondary'?state.secondary:state.primary;
+  v6Ctx.globalCompositeOperation=v6Pen==='eraser'?'destination-out':'source-over';
+  v6Ctx.lineTo(pt.x+.03,pt.y+.03);v6Ctx.stroke();
+}
+function v6Move(e){
+  if(!v6Drawing)return;e.preventDefault();
+  const pt=v6Point(e);v6Ctx.lineTo(pt.x,pt.y);v6Ctx.stroke();
+}
+function v6AutosaveSketch(){
+  const p=v6Project();if(!p)return;
+  v6Canvas.toBlob(async blob=>{if(!blob)return;try{await v6Blob('put','v6-draft-'+p.id,blob);}catch{}},'image/png');
+}
+function v6End(e){
+  if(!v6Drawing)return;v6Drawing=false;v6Ctx.closePath();v6Ctx.globalCompositeOperation='source-over';
+  if(e&&v6Canvas.hasPointerCapture?.(e.pointerId))v6Canvas.releasePointerCapture(e.pointerId);
+  v6AutosaveSketch();
+}
+async function v6SaveSketch(){
+  const p=v6Project();if(!p)return;
+  const title=prompt('Sketch name',v6SketchId?(p.library.find(x=>String(x.id)===String(v6SketchId))?.title||'Sketch'):'Sketch '+(p.library.filter(r=>r.type==='sketch').length+1));
+  if(!title?.trim())return;
+  const blob=await new Promise(res=>v6Canvas.toBlob(res,'image/png'));if(!blob)return;
+  const id=v6SketchId||v6Id(),key='v6-'+id;
+  try{
+    await v6Blob('put',key,blob);
+    const old=p.library.find(r=>String(r.id)===String(id));
+    if(old)old.title=title.trim().slice(0,160);
+    else p.library.push({id,type:'sketch',title:title.trim().slice(0,160),key,mime:'image/png',created:v6Now()});
+    v6SketchId=id;save();v6RenderSketches(p);
+  }catch(err){alert('Unable to save sketch: '+err.message);}
+}
+async function v6LoadSketch(id){
+  const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));if(!r)return;
+  try{const blob=await v6Blob('get',r.key);if(!blob)throw Error('Sketch not found');
+    v6ClearCanvas();v6SketchId=id;v6DrawBlob(blob);v6AutosaveSketch();
+  }catch(err){alert('Could not load sketch: '+err.message);}
+}
+// Project navigation and all workspace controls use event delegation.
+document.addEventListener('click',e=>{
+  const tgt=e.target,match=selector=>tgt.closest(selector);
+  const folder=match('[data-v6-project]');if(folder){v6OpenProject(folder.dataset.v6Project);return;}
+  if(match('#newProject')){const name=prompt('Project name');if(name!==null)v6CreateProject(name);return;}
+  if(match('#backProjects')){window.v6ActiveProjectId=null;v6SketchId=null;v6Canvas.dataset.project='';v6Render();renderIdeas();return;}
+  if(match('#renameProject')){
+    const p=v6Project();if(!p)return;
+    const title=prompt('Rename project',p.title);if(!title?.trim())return;
+    p.title=title.trim().slice(0,120);save();v6Render();return;
+  }
+  if(match('#deleteProject')){
+    const p=v6Project();if(!p||!confirm('Delete project "'+p.title+'"? Its notes, library entries, and sketches will be removed. Linked Blueprint tasks and saved ideas will remain.'))return;
+    for(const n of state.ideas)if(String(n.projectId)===String(p.id))n.projectId='';
+    for(const r of p.library)if(r.key)v6Blob('delete',r.key).catch(()=>{});
+    v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
+    state.projects=state.projects.filter(x=>String(x.id)!==String(p.id));
+    window.v6ActiveProjectId=null;v6Canvas.dataset.project='';save();v6Render();renderIdeas();return;
+  }
+  const tabButton=match('[data-project-tab]');
+  if(tabButton){v6ProjectTab=tabButton.dataset.projectTab;v6Render();return;}
+  if(match('#addNoteSection')){
+    const p=v6Project();if(!p)return;
+    p.notes.push({id:v6Id(),heading:'',items:[{id:v6Id(),text:''}]});save();v6RenderNotes(p);$('projectNotesList').querySelector('.v6-note-section:last-child input')?.focus();return;
+  }
+  const bullet=match('[data-v6-add-bullet]');if(bullet){const p=v6Project(),section=p?.notes.find(n=>String(n.id)===bullet.dataset.v6AddBullet);if(!section)return;
+    section.items.push({id:v6Id(),text:''});save();v6RenderNotes(p);return;
+  }
+  const removeBullet=match('[data-v6-remove-bullet]');if(removeBullet){
+    const p=v6Project(),sec=p?.notes.find(n=>String(n.id)===removeBullet.dataset.v6Section);if(!sec)return;
+    sec.items=sec.items.filter(i=>String(i.id)!==String(removeBullet.dataset.v6RemoveBullet));save();v6RenderNotes(p);return;
+  }
+  const removeSection=match('[data-v6-remove-section]');if(removeSection){
+    const p=v6Project();if(!p||!confirm('Delete this notes section?'))return;
+    p.notes=p.notes.filter(x=>String(x.id)!==String(removeSection.dataset.v6RemoveSection));save();v6RenderNotes(p);return;
+  }
+  const taskButton=match('[data-v6-task]');if(taskButton){v6ActionToTask(taskButton.dataset.v6Task);return;}
+  const removeAction=match('[data-v6-remove-action]');if(removeAction){
+    const p=v6Project();if(!p)return;p.actions=p.actions.filter(a=>String(a.id)!==String(removeAction.dataset.v6RemoveAction));save();v6RenderActions(p);return;
+  }
+  const libraryButton=match('[data-library-add]');if(libraryButton){v6AddLibrary(libraryButton.dataset.libraryAdd);return;}
+  if(match('#uploadProjectFile')){$('projectFileInput').click();return;}
+  const resource=match('[data-v6-open-resource]');if(resource){v6OpenResource(resource.dataset.v6OpenResource);return;}
+  const deleted=match('[data-v6-delete-resource]');if(deleted){v6DeleteResource(deleted.dataset.v6DeleteResource);return;}
+  const loadSketch=match('[data-v6-load-sketch]');if(loadSketch){v6LoadSketch(loadSketch.dataset.v6LoadSketch);return;}
+  if(match('#newSketch')){v6SketchId=null;v6PushUndo();v6ClearCanvas();v6AutosaveSketch();return;}
+  if(match('#saveSketch')){v6SaveSketch();return;}
+  if(match('#sketchUndo')){const img=v6InkHistory.pop();if(img){v6Ctx.putImageData(img,0,0);v6AutosaveSketch();}return;}
+  if(match('#sketchClear')){if(confirm('Clear the sketch pad?')){v6PushUndo();v6ClearCanvas();v6AutosaveSketch();}return;}
+  const pen=match('[data-pen]');if(pen){v6Pen=pen.dataset.pen;document.querySelectorAll('[data-pen]').forEach(b=>b.classList.toggle('selected',b===pen));return;}
+  if(match('#projectChat')){v6ShowChat();return;}
+  if(match('#closeProjectChat')||tgt.id==='projectChatBack'){v6HideChat();return;}
+  if(match('#copyProjectChat')){const value=$('projectChatText').value;navigator.clipboard?.writeText(value).then(()=>alert('Project context copied. Paste it into ChatGPT.')).catch(()=>{ $('projectChatText').focus();$('projectChatText').select();alert('Select and copy the project context.');});return;}
+  if(match('#openProjectChat')){window.open('https://chatgpt.com/','_blank','noopener,noreferrer');return;}
+});
+document.addEventListener('input',e=>{
+  const x=e.target,p=v6Project();if(!p)return;
+  if(x.dataset.v6Heading){const sec=p.notes.find(s=>String(s.id)===x.dataset.v6Heading);if(sec){sec.heading=x.value;save();}return;}
+  if(x.dataset.v6Bullet){const sec=p.notes.find(s=>String(s.id)===x.dataset.v6Section),b=sec?.items.find(i=>String(i.id)===x.dataset.v6Bullet);if(b){b.text=x.value;save();}}
+});
+document.addEventListener('change',e=>{
+  const x=e.target,p=v6Project();
+  if(x.id==='ideaProjectSelect'){
+    const n=activeIdea();if(!n)return;n.projectId=x.value;save();renderIdeas();v6Render();return;
+  }
+  if(x.dataset.v6Check&&p){
+    const a=p.actions.find(a=>String(a.id)===x.dataset.v6Check);if(!a)return;
+    a.done=x.checked;const t=state.tasks.find(t=>String(t.id)===String(a.taskId));if(t)t.done=x.checked;
+    save();v6RenderActions(p);render();return;
+  }
+  if(x.dataset.taskCheck){
+    const t=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);
+    if(t?.projectId&&t.projectActionId){
+      const pr=state.projects.find(p=>String(p.id)===String(t.projectId));
+      const a=pr?.actions.find(a=>String(a.id)===String(t.projectActionId));
+      if(a){a.done=x.checked;save();if(v6Project())v6RenderActions(v6Project());}
+    }
+  }
+});
+$('projectActionForm').addEventListener('submit',e=>{
+  e.preventDefault();const p=v6Project(),x=$('projectActionInput');if(!p||!x.value.trim())return;
+  p.actions.push({id:v6Id(),title:x.value.trim().slice(0,160),done:false,taskId:''});x.value='';save();v6RenderActions(p);
+});
+$('projectFileInput').addEventListener('change',async e=>{const files=[...e.target.files];e.target.value='';await v6Upload(files);});
+v6Canvas.addEventListener('pointerdown',v6Begin);
+v6Canvas.addEventListener('pointermove',v6Move);
+v6Canvas.addEventListener('pointerup',v6End);
+v6Canvas.addEventListener('pointercancel',v6End);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('projectChatBack').hidden)v6HideChat();});
+v6Normalize();v6Render();
 </script>
 </body></html>
