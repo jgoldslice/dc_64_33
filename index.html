@@ -1082,8 +1082,12 @@ function v6Normalize(){
   if(migrated)save();
 }
 function v6OpenProject(id){
-  if(!state.projects.some(p=>String(p.id)===String(id)))return;
-  window.v6ActiveProjectId=id;v6ProjectTab='notes';v6SketchId=null;v6SketchEditing=false;v6Render();
+  const project=state.projects.find(p=>String(p.id)===String(id));
+  if(!project)return;
+  window.v6ActiveProjectId=id;
+  // Reopening a project should return to the workspace the user left.
+  v6ProjectTab=['notes','actions','library'].includes(project.lastProjectTab)?project.lastProjectTab:'notes';
+  v6SketchId=null;v6SketchEditing=false;v6Render();
   $('projectWorkspace').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function v6Render(){
@@ -1382,7 +1386,7 @@ document.addEventListener('click',e=>{
   const folder=match('[data-v6-project]');if(folder){v6OpenProject(folder.dataset.v6Project);return;}
   if(match('#newProject')){const name=prompt('Project name');if(name!==null)v6CreateProject(name);return;}
   if(match('#backProjects')){window.v6ActiveProjectId=null;v6SketchEditing=false;v6SketchId=null;v6Canvas.dataset.project='';v6Render();renderIdeas();return;}
-  if(match('#renameProject')){
+  if(match('#v82RenameProject')){
     const p=v6Project();if(!p)return;
     const title=prompt('Rename project',p.title);if(!title?.trim())return;
     p.title=title.trim().slice(0,120);save();v6Render();return;
@@ -1390,13 +1394,33 @@ document.addEventListener('click',e=>{
   if(match('#deleteProject')){
     const p=v6Project();if(!p||!confirm('Delete project "'+p.title+'"? Its notes, library entries, and sketches will be removed. Linked Blueprint tasks and saved ideas will remain.'))return;
     for(const n of state.ideas)if(String(n.projectId)===String(p.id)){n.projectId='';n.convertedToProject=false;}
-    for(const r of p.library)if(r.key)v6Blob('delete',r.key).catch(()=>{});
+    // Collect the complete set of associated files, not merely Library files.
+    // A notebook picture may be shared with another page/project.
+    const keys=new Set([
+      ...(p.library||[]).map(r=>r.key),
+      ...(p.contentBlocks||[]).map(b=>b.key),
+      ...(p.notePages||[]).flatMap(page=>(page.objects||[]).map(o=>o.key))
+    ].filter(Boolean));
     v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
     state.projects=state.projects.filter(x=>String(x.id)!==String(p.id));
+    const referencedElsewhere=key=>state.projects.some(other=>
+      (other.library||[]).some(r=>r.key===key)||
+      (other.contentBlocks||[]).some(b=>b.key===key)||
+      (other.notePages||[]).some(pg=>(pg.objects||[]).some(o=>o.key===key))
+    );
+    for(const key of keys)if(!referencedElsewhere(key))v6Blob('delete',key).catch(()=>{});
     window.v6ActiveProjectId=null;v6Canvas.dataset.project='';save();v6Render();renderIdeas();return;
   }
   const tabButton=match('[data-project-tab]');
-  if(tabButton){v6ProjectTab=tabButton.dataset.projectTab;if(v6ProjectTab==='sketch')v6SketchEditing=false;v6Render();return;}
+  if(tabButton){
+    v6ProjectTab=tabButton.dataset.projectTab;
+    const p=v6Project();
+    if(p&&['notes','actions','library'].includes(v6ProjectTab)){
+      p.lastProjectTab=v6ProjectTab;save();
+    }
+    if(v6ProjectTab==='sketch')v6SketchEditing=false;
+    v6Render();return;
+  }
   const taskButton=match('[data-v6-task]');if(taskButton){v6ActionToTask(taskButton.dataset.v6Task);return;}
   const removeAction=match('[data-v6-remove-action]');if(removeAction){
     const p=v6Project();if(!p)return;
