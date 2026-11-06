@@ -138,10 +138,6 @@
     }else if(item.type==='image'){
       const img=document.createElement('img');img.className='v76-photo';img.alt=item.alt||'Note picture';img.draggable=false;img.dataset.v76ImageKey=item.key;
       box.append(img);
-      const size=document.createElement('div');size.className='v76-size-tools';
-      size.innerHTML='<button type="button" aria-label="Make image smaller" data-v76-resize="'+esc(item.id)+'" data-step="-50">−</button>'+
-        '<button type="button" aria-label="Make image larger" data-v76-resize="'+esc(item.id)+'" data-step="50">+</button>';
-      box.append(size);
       const projectId=String(p.id),pageId=String(page.id),key=item.key;
       v6Blob('get',key).then(blob=>{
         if(!blob||String(v6Project()?.id)!==projectId||String(current()?.page.id)!==pageId||!box.isConnected)return;
@@ -243,11 +239,6 @@
     if(rem){
       const ctx=current();if(!ctx)return;
       ctx.page.objects=ctx.page.objects.filter(o=>String(o.id)!==String(rem.dataset.v76Remove));persist();drawPage(ctx.p,ctx.page);return;
-    }
-    const size=e.target.closest('[data-v76-resize]');
-    if(size){const ctx=current(),obj=ctx?.page.objects.find(o=>o.id===size.dataset.v76Resize);if(!obj)return;
-      obj.width=Math.max(140,Math.min(surface.clientWidth-20,(obj.width||250)+Number(size.dataset.step||0)));
-      persist();drawPage(ctx.p,ctx.page);return;
     }
   });
   surface.addEventListener('focusin',e=>{if(e.target.matches('.v76-rich'))selectedText=e.target;});
