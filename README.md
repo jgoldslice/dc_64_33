@@ -117,3 +117,11 @@ Test goal step completion and task/habit conversion, iPhone tap menus, project s
 - **Tests:** New browser checks exercise text and image resize and long-press move, and verify saved text box width and position survive reloading.
 
 Keep a complete backup before trying the gesture changes on an important project. Automated Chromium tests complement but do not replace real iOS Safari testing; in particular, holding on editable text may interact with native text selection.
+
+## Canvas v7.9 — Minimal Notes toolbar
+
+- **Text:** One Bullets control. All text uses the existing handwritten font; no font picker, bold, or italic buttons. Previously saved bold/italic markup is retained.
+- **Pen:** Draw, Erase, and Undo last drawing stroke. Tap an active Draw/Eraser button again to return to regular typing mode.
+- **Misc:** Insert picture only. Other insert options are intentionally deferred.
+- **Text boxes:** Tap empty note space to create a text box automatically; the separate Text-box and Select buttons are removed. Existing six-dot resize and press-and-hold move gestures stay intact.
+- **Layout:** Three compact labeled icon groups fit mobile widths. Data structure and existing notes are unchanged.
