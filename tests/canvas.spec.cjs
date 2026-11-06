@@ -69,7 +69,7 @@ test('Project shortcuts open the workspace and note pages persist after refresh'
 
 test('Six-dot grip resizes a text box, hold-and-drag moves it, and both values persist', async ({ page }) => {
   const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+  page.on('pageerror', error => errors.push(error.stack||error.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog', d => d.accept('Resize Test'));
