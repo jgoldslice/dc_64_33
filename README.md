@@ -104,3 +104,16 @@ This is a lightweight notebook, not the full OneNote application. It uses a vert
 - **Offline:** Add v77.js and v77.css to the service-worker asset manifest and bump the cache version.
 
 Test goal step completion and task/habit conversion, iPhone tap menus, project shortcut navigation, priority edits and project creation/rename, and offline reload. This PR remains unmerged until tested on-device.
+
+
+## Canvas v7.8 — Notebook gesture and toolbar clarity
+
+- **Resize:** Drag the six-dot handle in the upper-left corner of a text box or image. Dragging right makes the box wider, dragging left narrower. The box's saved width is independent of its location.
+- **Move:** Press and hold on the text or picture itself for approximately 450 ms, then drag. A normal text tap continues editing. Movement is limited to the visible page edges without changing saved width.
+- **Consistent image controls:** Images now resize with the same six-dot handle as text (the extra +/- image buttons are removed).
+- **Page actions:** Page 1 selects a page, + Page adds a page, and ••• opens a clearly labeled Rename page / Delete page menu. This avoids using two visually identical pen icons.
+- **Formatting / draw toolbar:** Bold (B), Italic (I), bullet list, Select (arrow), add Text (T), insert Picture, draw Pen, stroke Eraser, and Undo last ink stroke.
+- **Offline:** Service-worker cache bumped for changed project-note JavaScript and styles.
+- **Tests:** New browser checks exercise text and image resize and long-press move, and verify saved text box width and position survive reloading.
+
+Keep a complete backup before trying the gesture changes on an important project. Automated Chromium tests complement but do not replace real iOS Safari testing; in particular, holding on editable text may interact with native text selection.
