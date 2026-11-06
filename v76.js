@@ -15,7 +15,9 @@
       '<div class="v79-tool-group" role="group" aria-label="Text"><span class="v79-tool-title">Text</span><div class="v79-tool-buttons">'+
         '<button type="button" data-v76-format="insertUnorderedList" aria-label="Add or remove bullet list" title="Bullet list">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="4.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/></svg>'+
-        '</button></div></div>'+
+        '</button><select id="v80TextSize" class="v80-text-size" aria-label="Text size" title="Text size">'+
+          '<option value="small">Small</option><option value="medium" selected>Medium</option><option value="large">Large</option>'+
+        '</select></div></div>'+
       '<div class="v79-tool-group" role="group" aria-label="Pen"><span class="v79-tool-title">Pen</span><div class="v79-tool-buttons">'+
         '<button type="button" data-v76-mode="pen" aria-label="Draw; tap again to stop drawing" aria-pressed="false" title="Draw">✎</button>'+
         '<button type="button" data-v76-mode="erase" aria-label="Erase drawing strokes; tap again to stop erasing" aria-pressed="false" title="Eraser">⌫</button>'+
@@ -30,6 +32,9 @@
   pane.insertAdjacentHTML('beforeend',editorHtml);
   const root=document.getElementById('v76Editor'),surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
   const pageSelect=document.getElementById('v76PageSelect');
+  const textSizeSelect=document.getElementById('v80TextSize');
+  const validSizes=new Set(['small','medium','large']);
+  const sizeName=value=>validSizes.has(value)?value:'medium';
   // These remain in the DOM for backwards compatibility, but are no longer the UI.
   for(const id of ['projectNotebook','v74Blocks','v74BlockImage','projectNotesList']){
     const el=document.getElementById(id);if(el)el.hidden=true;
@@ -134,8 +139,13 @@
     if(item.type==='text'){
       const el=document.createElement('div');el.className='v76-rich';el.dataset.v76Text=item.id;
       el.contentEditable='true';el.spellcheck=true;el.setAttribute('role','textbox');el.setAttribute('aria-label','Editable note text');
+      el.dataset.fontSize=sizeName(item.fontSize);
       el.innerHTML=cleanHTML(item.html);
-      el.addEventListener('focus',()=>{selectedText=el;applyMode('select');});
+      el.addEventListener('focus',()=>{
+        selectedText=el;
+        textSizeSelect.value=sizeName(item.fontSize);
+        applyMode('select');
+      });
       box.append(el);
     }else if(item.type==='image'){
       const img=document.createElement('img');img.className='v76-photo';img.alt=item.alt||'Note picture';img.draggable=false;img.dataset.v76ImageKey=item.key;
@@ -165,6 +175,7 @@
       const opt=document.createElement('option');opt.value=pg.id;opt.textContent=pg.title;pageSelect.append(opt);
     });
     pageSelect.value=String(page.id);
+    textSizeSelect.value=sizeName(page.defaultTextSize);
     drawPage(p,page);applyMode('select');
   }
   // v74 already wraps this function. Retain its existing save/import/backup behavior.
@@ -178,7 +189,7 @@
     const ctx=current();if(!ctx)return;
     const {page}=ctx;
     const width=Math.max(170,Math.min(360,surface.clientWidth-Math.max(0,x)-20));
-    const o={id:newId(),type:'text',x:Math.max(0,Math.round(x)),y:Math.max(0,Math.round(y)),width,html:''};
+    const o={id:newId(),type:'text',x:Math.max(0,Math.round(x)),y:Math.max(0,Math.round(y)),width,html:'',fontSize:sizeName(page.defaultTextSize)};
     page.objects.push(o);growPage(page,y+150);persist();drawPage(ctx.p,page);
     const box=surface.querySelector('[data-v76-item="'+o.id+'"] .v76-rich');
     if(box){box.focus();selectedText=box;}applyMode('select');
@@ -198,7 +209,7 @@
     const ctx=current();if(!ctx)return;
     const n=ctx.p.notePages.length+1;
     const title=(prompt('Page name','Page '+n)||'').trim();if(!title)return;
-    const pg={id:newId(),title:title.slice(0,80),height:740,objects:[{id:newId(),type:'text',x:14,y:22,width:320,html:''}],strokes:[]};
+    const pg={id:newId(),title:title.slice(0,80),height:740,defaultTextSize:'medium',objects:[{id:newId(),type:'text',x:14,y:22,width:320,html:'',fontSize:'medium'}],strokes:[]};
     ctx.p.notePages.push(pg);ctx.p.activeNotePageId=pg.id;persist();renderPage(ctx.p,true);
   });
   const pageMore=document.getElementById('v76PageMore');
@@ -221,6 +232,20 @@
     if(!confirm('Delete "'+ctx.page.title+'" and everything on this page? This cannot be undone.'))return;
     ctx.p.notePages=ctx.p.notePages.filter(pg=>pg!==ctx.page);
     ctx.p.activeNotePageId=ctx.p.notePages[0].id;persist();renderPage(ctx.p,true);
+  });
+  textSizeSelect.addEventListener('change',()=>{
+    const next=sizeName(textSizeSelect.value),ctx=current();
+    if(!ctx)return;
+    // The chosen size is remembered for newly created boxes on this page.
+    ctx.page.defaultTextSize=next;
+    const rich=selectionInEditor();
+    const item=rich&&ctx.page.objects.find(o=>String(o.id)===String(rich.dataset.v76Text));
+    if(item&&item.type==='text'){
+      item.fontSize=next;
+      rich.dataset.fontSize=next; // No redraw or loss of the editing caret.
+      growPage(ctx.page,rich.closest('.v76-item').offsetTop+rich.closest('.v76-item').offsetHeight+70);
+    }
+    persist();
   });
   root.addEventListener('pointerdown',e=>{
     const format=e.target.closest('[data-v76-format]');
@@ -292,6 +317,7 @@
   let interaction=null,pendingHold=null,holdTimer=null;
   function clearPendingHold(){
     if(holdTimer!==null)clearTimeout(holdTimer);
+    if(pendingHold?.box)pendingHold.box.classList.remove('v80-touch-pending');
     holdTimer=null;pendingHold=null;
   }
   function startInteraction(session){
@@ -322,10 +348,18 @@
       x:e.clientX,y:e.clientY,startX:parseFloat(box.style.left)||0,
       startY:parseFloat(box.style.top)||0,changed:false};
     pendingHold=session;
+    // Temporarily disable native selection while classifying touch as
+    // tap-to-edit or hold-to-move.
+    if(e.pointerType==='touch'){
+      box.classList.add('v80-touch-pending');
+      e.preventDefault();
+    }
     holdTimer=setTimeout(()=>{
       if(pendingHold!==session)return;
       clearPendingHold();
       if(document.activeElement?.isContentEditable)document.activeElement.blur();
+      const selection=window.getSelection();
+      if(selection)selection.removeAllRanges();
       startInteraction(session);
     },HOLD_MS);
   });
@@ -350,8 +384,41 @@
     placeBox(d.box,d.obj);
     growPage(d.page,(parseFloat(d.box.style.top)||0)+d.box.offsetHeight+80);
   });
+  function focusOnTap(e,session){
+    if(session.obj.type!=='text')return;
+    const rich=session.box.querySelector('.v76-rich');
+    if(!rich)return;
+    rich.focus({preventScroll:true});
+    selectedText=rich;
+    textSizeSelect.value=sizeName(session.obj.fontSize);
+    // iOS Safari supports caretRangeFromPoint; position the cursor where
+    // the finger landed rather than blindly appending all new text.
+    const range=document.caretRangeFromPoint?.(e.clientX,e.clientY);
+    if(range&&rich.contains(range.startContainer)){
+      const selection=window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+  }
+  // iOS may select the entire editable block before the 450-ms hold.
+  // Cancel native touch behavior for note content; restore short taps
+  // explicitly so normal typing continues.
+  root.addEventListener('touchstart',e=>{
+    if(mode==='pen'||mode==='erase'||e.touches.length!==1)return;
+    if(e.target.closest('.v76-item')&&!e.target.closest('button'))e.preventDefault();
+  },{passive:false});
+  root.addEventListener('contextmenu',e=>{
+    if(e.target.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
+  });
+  root.addEventListener('selectstart',e=>{
+    if(e.target.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
+  });
   function endInteraction(e){
-    if(pendingHold?.pointerId===e.pointerId)clearPendingHold();
+    if(pendingHold?.pointerId===e.pointerId){
+      const session=pendingHold;
+      clearPendingHold();
+      if(session.capture&&e.pointerType==='touch'&&e.type==='pointerup')focusOnTap(e,session);
+    }
     if(!interaction||interaction.pointerId!==e.pointerId)return;
     const d=interaction;interaction=null;
     d.box.classList.remove('v76-moving','v76-resizing');
