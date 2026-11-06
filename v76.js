@@ -218,7 +218,7 @@
   pageMore.addEventListener('click',()=>{
     pageMenu.hidden=!pageMenu.hidden;pageMore.setAttribute('aria-expanded',String(!pageMenu.hidden));
   });
-  document.addEventListener('click',e=>{if(!e.target.closest('.v76-page-controls'))closePageMenu();});
+  document.addEventListener('click',e=>{if(!(e.target instanceof Element))return;if(!e.target.closest('.v76-page-controls'))closePageMenu();});
   document.getElementById('v76RenamePage').addEventListener('click',()=>{
     closePageMenu();
     const ctx=current();if(!ctx)return;
