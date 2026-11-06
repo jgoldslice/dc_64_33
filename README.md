@@ -4,6 +4,12 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.8 — Delete goal from Blueprint
+
+- Expand a goal and select **Delete goal** beside **Edit goal**. Confirm the deletion to remove that goal; Cancel leaves everything unchanged.
+- Existing linked tasks and habits are **preserved** and become unlinked, exactly as they did when deleting through the goal edit dialog. Unrelated goals, tasks, and habits remain unchanged.
+- Inline deletion uses the same logic as the existing Edit Goal → Delete button. Goal removal cannot be undone unless restored from a backup.
+
 ## Canvas v8.7 — Simple Week calendar event entry
 
 - In **Week → Week at a Glance**, tap the **+** button to add an event to any day in the displayed week. Choose a day, enter the **event name** and **time**, and save.
