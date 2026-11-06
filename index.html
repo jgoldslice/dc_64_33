@@ -1377,6 +1377,7 @@ async function v6LoadSketch(id){
 }
 // Project navigation and all workspace controls use event delegation.
 document.addEventListener('click',e=>{
+  if(!(e.target instanceof Element))return;
   const tgt=e.target,match=selector=>tgt.closest(selector);
   const folder=match('[data-v6-project]');if(folder){v6OpenProject(folder.dataset.v6Project);return;}
   if(match('#newProject')){const name=prompt('Project name');if(name!==null)v6CreateProject(name);return;}
