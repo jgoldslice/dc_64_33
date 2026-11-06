@@ -1,4 +1,4 @@
-const CACHE='canvas-v7-8-notebook-resize';const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg','./v74.js','./v74.css','./polish.css','./v76.js','./v76.css','./v77.js','./v77.css'];
+const CACHE='canvas-v7-9-minimal-notebook-controls';const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg','./v74.js','./v74.css','./polish.css','./v76.js','./v76.css','./v77.js','./v77.css'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(names=>Promise.all(names.filter(n=>n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==self.location.origin)return;e.respondWith(fetch(e.request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));}return response;}).catch(()=>caches.match(e.request).then(cached=>cached||caches.match('./index.html'))))});
