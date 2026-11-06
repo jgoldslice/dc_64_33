@@ -42,6 +42,11 @@
     save();
     previousOpenProject(id);
     renderRail();
+    // Direct Today-to-Project navigation wins over a previously queued
+    // per-tab scroll restoration. Keep this folder's header on screen.
+    requestAnimationFrame(()=>{
+      if(!workspace.hidden)workspace.scrollIntoView({behavior:'instant',block:'start'});
+    });
   };
   rail.addEventListener('click',e=>{
     const button=e.target.closest('[data-v81-switch-project]');
