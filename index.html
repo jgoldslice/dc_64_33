@@ -554,7 +554,7 @@ function canvasSaveStatus(failed){
     const retry=document.createElement('button');retry.type='button';retry.textContent='Retry';retry.setAttribute('aria-label','Retry saving changes');retry.addEventListener('click',()=>save());
     notice.append(message,retry);document.body.append(notice);
   }
-  if(notice)notice.hidden=!failed;
+  if(notice){notice.hidden=!failed;notice.style.display=failed?'flex':'none';}
 }
 function save(){
   try{
