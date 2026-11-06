@@ -92,3 +92,15 @@ Keep independent copies of irreplaceable files until the complete backup and res
 ### Important limitations and tests
 
 This is a lightweight notebook, not the full OneNote application. It uses a vertically extendable page rather than an infinite pan/zoom canvas. Drawing, image placement and formatted text require iPhone/Safari interaction testing; these changes are proposed for review rather than published to the default branch. Test bold/italic/list selection, caret retention, drag handles, image paste and upload, pen annotations over photos, page switching, backup export/import and old-note migration on-device. Existing device-local data has no automatic cloud sync: export a complete backup before testing.
+
+
+## Canvas v7.7 — Goal-first Blueprint and four-section Today
+
+- **Goal-first cards:** Each goal gets its own card. Its title is the dominant text and category is displayed as small metadata above the name. Goal progress and linked step status remain intact.
+- **Step actions:** The arrow buttons are replaced by a tappable step name with a contextual menu for Create Task or Create/Edit Habit. Existing linked tasks/habits are preserved; the Task option is disabled if one is already linked.
+- **Simplified Today:** The visible Today layout is exactly Today at a Glance → Habits → Top Priorities → Projects. The previous Today Focus text is retained in state but its card is hidden.
+- **Top Priorities:** Shows up to five incomplete prioritized tasks and uses the same priority ordering as the Week and Tasks views. View all opens Blueprint Tasks.
+- **Project shortcuts:** Shows up to four folders on Today, with links directly into their Brainstorm workspaces; View all opens the project folder list.
+- **Offline:** Add v77.js and v77.css to the service-worker asset manifest and bump the cache version.
+
+Test goal step completion and task/habit conversion, iPhone tap menus, project shortcut navigation, priority edits and project creation/rename, and offline reload. This PR remains unmerged until tested on-device.
