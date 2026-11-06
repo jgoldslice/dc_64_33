@@ -1,8 +1,8 @@
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
+test.use({browserName:'chromium',viewport:{width:834,height:1194},isMobile:true,hasTouch:true});
 
 test.describe('Canvas adaptive iPad workspace',()=>{
-  test.use({browserName:'chromium',viewport:{width:834,height:1194},isMobile:true,hasTouch:true});
   test('iPad portrait uses a leading sidebar, not a bottom tab bar',async({page})=>{
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(base);
@@ -64,7 +64,7 @@ test.describe('Canvas adaptive iPad workspace',()=>{
 });
 
 test.describe('Canvas iPad landscape and notebook',()=>{
-  test.use({browserName:'chromium',viewport:{width:1366,height:1024},isMobile:true,hasTouch:true});
+  test.beforeEach(async({page})=>{await page.setViewportSize({width:1366,height:1024});});
   test('large iPad shows project navigation and the notebook beside it',async({page})=>{
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(base);
