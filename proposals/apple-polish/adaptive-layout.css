@@ -44,9 +44,10 @@
 }
 .ap-nav > button[aria-current="page"] {background:var(--wash)}
 .ap-content-grid {display:grid;gap:var(--ap-space-4);min-width:0}
+.ap-layout-host{container-type:inline-size;min-width:0}
 .ap-two-pane {
   display:grid;grid-template-columns:minmax(0,1fr);gap:var(--ap-space-4);
-  min-width:0;container-type:inline-size;
+  min-width:0;
 }
 .ap-pane-list,.ap-pane-detail {min-width:0}
 .ap-notebook {
