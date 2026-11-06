@@ -327,6 +327,7 @@
 <link rel="stylesheet" href="v77.css">
 <link rel="stylesheet" href="polish-v81.css">
 <link rel="stylesheet" href="polish-v82.css">
+<link rel="stylesheet" href="page-turn.css">
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -540,7 +541,38 @@ let selectedWeek=startOfWeek(new Date());
 let modalMode=null,modalId=null,modalParent=null;
 const expandedGoals=new Set();
 let selectedCategory='All',categoryManagerOpen=false,activeIdeaId=null,pendingOpeningTimer=null;
-function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{alert('Your browser could not save changes. Export a backup and check available storage.');}}
+// A failed write must never be silently treated as saved. Keep edits in memory.
+let canvasUnsaved=false;
+function canvasSaveStatus(failed){
+  let notice=document.getElementById('canvasSaveWarning');
+  if(!notice&&failed){
+    notice=document.createElement('div');
+    notice.id='canvasSaveWarning';
+    notice.setAttribute('role','alert');
+    notice.style.cssText='position:fixed;z-index:9999;bottom:calc(80px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:480px;margin:auto;padding:12px 14px;border:1px solid #b65b40;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 4px 16px #0002;display:flex;gap:10px;align-items:center;justify-content:space-between';
+    const message=document.createElement('span');message.textContent='Changes not saved on this device. Keep Canvas open and retry, or export a backup.';
+    const retry=document.createElement('button');retry.type='button';retry.textContent='Retry';retry.setAttribute('aria-label','Retry saving changes');retry.addEventListener('click',()=>save());
+    notice.append(message,retry);document.body.append(notice);
+  }
+  if(notice)notice.hidden=!failed;
+}
+function save(){
+  try{
+    const serialized=JSON.stringify(state);
+    if(typeof serialized!=='string')throw new TypeError('Unable to serialize Canvas data');
+    localStorage.setItem(STORAGE_KEY,serialized);
+    canvasUnsaved=false;canvasSaveStatus(false);
+    return true;
+  }catch(error){
+    canvasUnsaved=true;canvasSaveStatus(true);
+    console.error('Canvas local save failed',error);
+    return false;
+  }
+}
+window.addEventListener('beforeunload',event=>{
+  if(canvasUnsaved){event.preventDefault();event.returnValue='';}
+});
+
 function isScheduled(h,date){return !h.schedule||h.schedule.includes(new Date(date+'T12:00:00').getDay());}
 function contrast(hex){ const n=parseInt(hex.slice(1),16);return [(n>>16)&255,(n>>8)&255,n&255]; }
 function hexColor(rgb){return '#'+rgb.map(x=>Math.round(Math.min(255,Math.max(0,x))).toString(16).padStart(2,'0')).join('');}
@@ -912,7 +944,7 @@ function canvasInstallSwipeNavigation(){
   },{passive:true});
   document.addEventListener('touchcancel',()=>{gesture=null;},{passive:true});
 }
-canvasInstallSwipeNavigation();
+// Page-turn.js owns swipe navigation; disable legacy listener.
 
 $('canvasHomeButton').addEventListener('click',()=>tab('today'));
 function planTab(name){
@@ -1517,5 +1549,6 @@ v6Normalize();v6Render();
 <script src="v76.js"></script>
 <script src="v77.js"></script>
 <script src="polish-v81.js"></script>
+<script src="page-turn.js"></script>
 <script src="polish-v82.js"></script>
 </body></html>
