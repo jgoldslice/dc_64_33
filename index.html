@@ -223,7 +223,7 @@
 /* V6 Project workspaces */
 #projectHome,#projectWorkspace{margin-bottom:17px}
 .v6-project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
-.v6-folder{border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:16px 12px;display:flex;flex-direction:column;text-align:left;min-height:114px;gap:9px;color:var(--ink)}
+.v6-folder{border:1px solid var(--line);background:var(--bg);border-radius:14px;padding:16px 12px;display:flex;flex-direction:column;text-align:left;min-height:90px;gap:9px;color:var(--ink)}
 .v6-folder svg{height:25px;width:25px;stroke:var(--secondary-ui);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .v6-folder strong{font-size:13px;overflow-wrap:anywhere}
 .v6-folder small{font-size:11px;color:var(--muted)}
@@ -399,9 +399,9 @@
       </div>
     </section>
     <section class="view" id="customize" aria-labelledby="customTitle"><div class="view-header"><div><div class="eyebrow">Your colors</div><h1 id="customTitle">Customize</h1></div><button type="button" class="text-button" id="closeCustomize">Done</button></div><div class="stack">
-      <section class="card"><div class="card-heading"><h2>Appearance</h2></div><p class="muted small">Choose how the background responds to your phone.</p><div class="segmented" role="group" aria-label="Appearance mode"><button data-appearance="light">Light</button><button data-appearance="dark">Dark</button><button data-appearance="system">System</button></div></section>
-      <section class="card"><h2>Primary Color</h2><p class="muted small">The main accent: focus cards and selected surfaces. Default: sage.</p><div class="swatches" id="primarySwatches"></div><label class="color-input">Custom color <input type="color" id="primaryCustom" aria-label="Custom primary color"></label></section>
-      <section class="card"><h2>Secondary Color</h2><p class="muted small">Checkmarks, dates, progress, and icons. Default: muted sand.</p><div class="swatches" id="secondarySwatches"></div><label class="color-input">Custom color <input type="color" id="secondaryCustom" aria-label="Custom secondary color"></label></section>
+      <section class="card"><div class="card-heading"><h2>Appearance</h2></div><div class="segmented" role="group" aria-label="Appearance mode"><button data-appearance="light">Light</button><button data-appearance="dark">Dark</button><button data-appearance="system">System</button></div></section>
+      <section class="card"><h2>Primary Color</h2><div class="swatches" id="primarySwatches"></div><label class="color-input">Custom color <input type="color" id="primaryCustom" aria-label="Custom primary color"></label></section>
+      <section class="card"><h2>Secondary Color</h2><div class="swatches" id="secondarySwatches"></div><label class="color-input">Custom color <input type="color" id="secondaryCustom" aria-label="Custom secondary color"></label></section>
       <section class="card"><div class="card-heading"><h2>Opening</h2></div>
         <label class="setting-label">Style<select id="openingMode"><option value="both">Animation + message</option><option value="animation">Animation only</option><option value="quote">Message only</option><option value="none">None</option></select></label>
         <label class="setting-label">Opening Message<textarea id="openingMessageInput" rows="3" maxlength="280" placeholder="Write your message..."></textarea></label>
@@ -977,8 +977,7 @@ function v6Render(){
   $('projectHome').hidden=!!p;$('projectWorkspace').hidden=!p;
   $('brainstormQuickIdeas').hidden=!!p;
   $('projectGrid').innerHTML=state.projects.map(p=>{
-    const count=state.ideas.filter(n=>String(n.projectId)===String(p.id)).length;
-    return '<button type="button" class="v6-folder" data-v6-project="'+esc(p.id)+'"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><strong>'+esc(p.title)+'</strong><small>'+count+' ideas · '+p.actions.length+' actions</small></button>';
+    return '<button type="button" class="v6-folder" data-v6-project="'+esc(p.id)+'"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><strong>'+esc(p.title)+'</strong></button>';
   }).join('')||'<p class="muted small">Create a project for your next idea, build, or experiment.</p>';
   $('brainstormDraft').placeholder=p?'Idea for '+p.title+'...':"What's on your mind?";
   if(!p)return;
