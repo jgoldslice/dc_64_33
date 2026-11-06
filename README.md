@@ -78,3 +78,17 @@ Keep independent copies of irreplaceable files until the complete backup and res
 3. Try swipe navigation, note blocks, project action List/Board, and file galleries, including on a narrow iPhone screen.
 4. Remove a project action that has a linked Blueprint task; confirm the task remains in Blueprint.
 5. Test offline reopening after an online refresh; keep independent backup copies until on-device restore is tested.
+
+## Canvas v7.6 — OneNote-inspired project pages (review branch)
+
+- **Simpler Notes:** The old structured-content dropdown and card-based paragraph/heading/checklist editor are hidden. Project notes open as notebook pages instead.
+- **Multiple pages:** Create, rename, switch, and delete pages within each project. Each page has free-positioned text boxes and images; drag the small handle to reposition items.
+- **Minimal formatting:** The handwritten-style font is the default, with only bold, italic and bullet-list controls. Tap an empty area to add another text box.
+- **Drawing:** Pen strokes, stroke eraser, and undo are built into each page. Existing saved Sketch items remain in Library.
+- **Images:** Add or paste pictures; resize with +/−. Image data stays in IndexedDB and is referenced by the complete backup manifest.
+- **Tabs:** Project navigation becomes Notes / To-Do / Library. Existing project Actions data and Blueprint links are unchanged.
+- **Persistence:** Existing notebook text and note blocks are copied into the first page when needed. Their original fields remain present as a recovery copy; individual page content autosaves locally.
+
+### Important limitations and tests
+
+This is a lightweight notebook, not the full OneNote application. It uses a vertically extendable page rather than an infinite pan/zoom canvas. Drawing, image placement and formatted text require iPhone/Safari interaction testing; these changes are proposed for review rather than published to the default branch. Test bold/italic/list selection, caret retention, drag handles, image paste and upload, pen annotations over photos, page switching, backup export/import and old-note migration on-device. Existing device-local data has no automatic cloud sync: export a complete backup before testing.
