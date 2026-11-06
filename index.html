@@ -288,6 +288,12 @@
 .v6-sketch-card{align-items:center}
 @media(min-width:760px){.v6-notebook{min-height:470px;height:min(65vh,760px)}}
 
+.v6-library-menu-wrap{position:relative}
+.v6-library-menu{position:absolute;right:0;top:calc(100% + 7px);z-index:4;min-width:154px;padding:5px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 10px 22px #0003}
+.v6-library-menu[hidden]{display:none}
+.v6-library-menu button{display:block;width:100%;text-align:left;border:0;border-radius:8px;background:transparent;color:var(--ink);font:inherit;font-size:13px;padding:11px}
+.v6-library-menu button:hover,.v6-library-menu button:focus-visible{background:var(--wash)}
+
   </style>
 
 </head>
@@ -367,10 +373,7 @@
           <form id="projectActionForm" class="v6-inline-form"><input id="projectActionInput" maxlength="160" required placeholder="Add an action..." aria-label="New project action"><button class="secondary-button" type="submit">+</button></form>
         </section>
         <section class="card v6-project-pane" id="projectLibrary" hidden>
-          <div class="card-heading"><h2>Library</h2></div>
-          <div class="v6-lib-add">
-            <button type="button" data-library-add="link">+ Link</button><button type="button" data-library-add="code">+ Code</button><button type="button" id="uploadProjectFile">+ Image / File</button>
-          </div>
+          <div class="card-heading"><h2>Library</h2><div class="v6-library-menu-wrap"><button type="button" id="libraryAddToggle" class="secondary-button" aria-expanded="false" aria-controls="libraryAddChoices">+ Add</button><div id="libraryAddChoices" class="v6-library-menu" hidden><button type="button" data-library-add="link">Link</button><button type="button" data-library-add="code">Code</button><button type="button" id="uploadProjectFile">Image / File</button></div></div></div>
           <input id="projectFileInput" type="file" hidden accept="image/*,.pdf,.txt,.md,.py,.ino,.js,.json,.zip,.stl,.3mf,.obj,.step,.stp,.csv" multiple>
           <div id="projectLibraryList" class="v6-resource-list"></div>
           <p class="muted small">Files and sketches stay in this browser. Export important originals separately; JSON backups do not include uploaded file bytes.</p>
@@ -939,6 +942,7 @@ function v6OpenProject(id){
 }
 function v6Render(){
   v6Normalize();const p=v6Project();
+  v6CloseLibraryMenu();
   $('projectHome').hidden=!!p;$('projectWorkspace').hidden=!p;
   $('brainstormQuickIdeas').hidden=!!p;
   $('projectGrid').innerHTML=state.projects.map(p=>{
@@ -974,12 +978,15 @@ function v6RenderActions(p){
 let v6PreviewUrls=[];
 function v6RenderLibrary(p){
   for(const url of v6PreviewUrls)URL.revokeObjectURL(url);v6PreviewUrls=[];
-  $('projectLibraryList').innerHTML=p.library.filter(r=>r.type!=='sketch').map(r=>{
+  $('projectLibraryList').innerHTML=p.library.map(r=>{
+    const isImage=(r.type==='sketch'||(r.type==='file'&&r.mime?.startsWith('image/')));
     const preview=r.type==='code'?'<pre class="v6-resource-code">'+esc(r.content||'')+'</pre>':'';
-    return '<div class="v6-resource">'+(r.type==='file'&&r.mime?.startsWith('image/')?'<img class="v6-resource-preview" data-v6-image="'+esc(r.id)+'" alt="'+esc(r.title)+'">':'<span class="muted">'+(r.type==='code'?'⌘':r.type==='link'?'↗':'▤')+'</span>')+'<div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>'+esc(r.type==='code'?(r.language||'Code'):r.type==='link'?r.url:(r.mime||'File'))+'</small>'+preview+'</div><button class="text-button" type="button" data-v6-open-resource="'+esc(r.id)+'">'+(r.type==='code'?'Copy':'Open')+'</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'">×</button></div>';
-  }).join('')||'<p class="muted small">Keep reference images, files, links, and code in one place.</p>';
+    const thumb=isImage?'<img class="v6-resource-preview" data-v6-image="'+esc(r.id)+'" alt="'+esc(r.title)+'">':'<span class="muted">'+(r.type==='code'?'⌘':r.type==='link'?'↗':'▤')+'</span>';
+    const kind=r.type==='sketch'?'Sketch':r.type==='code'?(r.language||'Code'):r.type==='link'?r.url:(r.mime||'File');
+    return '<div class="v6-resource">'+thumb+'<div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>'+esc(kind)+'</small>'+preview+'</div><button class="text-button" type="button" data-v6-open-resource="'+esc(r.id)+'">'+(r.type==='code'?'Copy':r.type==='sketch'?'Edit':'Open')+'</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'" aria-label="Remove item">×</button></div>';
+  }).join('')||'<p class="muted small">Keep sketches, photos, files, links, and code together.</p>';
   const projectId=String(p.id);
-  for(const r of p.library.filter(x=>x.type==='file'&&x.mime?.startsWith('image/'))){
+  for(const r of p.library.filter(x=>x.type==='sketch'||(x.type==='file'&&x.mime?.startsWith('image/')))){
     v6Blob('get',r.key).then(blob=>{
       if(!blob||String(v6Project()?.id)!==projectId)return;
       const img=[...$('projectLibraryList').querySelectorAll('[data-v6-image]')].find(x=>String(x.dataset.v6Image)===String(r.id));
@@ -1042,6 +1049,7 @@ async function v6Upload(files){
 }
 async function v6OpenResource(id){
   const r=v6Project()?.library.find(x=>String(x.id)===String(id));if(!r)return;
+  if(r.type==='sketch'){v6ProjectTab='sketch';v6Render();await v6LoadSketch(id);return;}
   if(r.type==='link'){window.open(r.url,'_blank','noopener,noreferrer');return;}
   if(r.type==='code'){try{await navigator.clipboard.writeText(r.content||'');alert('Code copied.');}catch{prompt('Copy code',r.content||'');}return;}
   try{const blob=await v6Blob('get',r.key);if(!blob)throw Error('File not found in this browser');
@@ -1054,6 +1062,10 @@ async function v6DeleteResource(id){
   if(r.key)try{await v6Blob('delete',r.key);}catch{}
   if(String(v6SketchId)===String(id)){v6SketchId=null;v6ClearCanvas();}
   v6Render();
+}
+function v6CloseLibraryMenu(){
+  $('libraryAddChoices').hidden=true;
+  $('libraryAddToggle').setAttribute('aria-expanded','false');
 }
 function v6AddLibrary(type){
   const p=v6Project();if(!p)return;
@@ -1138,7 +1150,7 @@ async function v6SaveSketch(){
     else p.library.push({id,type:'sketch',title:title.trim().slice(0,160),key,mime:'image/png',created:v6Now()});
     // File the finished drawing away like a note, then show a fresh page.
     v6SketchId=null;v6InkHistory=[];v6ClearCanvas();v6AutosaveSketch();
-    save();v6RenderSketches(p);
+    save();v6RenderSketches(p);v6RenderLibrary(p);
   }catch(err){alert('Unable to save sketch: '+err.message);}
 }
 async function v6LoadSketch(id){
@@ -1173,8 +1185,10 @@ document.addEventListener('click',e=>{
   const removeAction=match('[data-v6-remove-action]');if(removeAction){
     const p=v6Project();if(!p)return;p.actions=p.actions.filter(a=>String(a.id)!==String(removeAction.dataset.v6RemoveAction));save();v6RenderActions(p);return;
   }
-  const libraryButton=match('[data-library-add]');if(libraryButton){v6AddLibrary(libraryButton.dataset.libraryAdd);return;}
-  if(match('#uploadProjectFile')){$('projectFileInput').click();return;}
+  if(match('#libraryAddToggle')){const menu=$('libraryAddChoices');menu.hidden=!menu.hidden;$('libraryAddToggle').setAttribute('aria-expanded',String(!menu.hidden));return;}
+  const libraryButton=match('[data-library-add]');if(libraryButton){v6CloseLibraryMenu();v6AddLibrary(libraryButton.dataset.libraryAdd);return;}
+  if(match('#uploadProjectFile')){v6CloseLibraryMenu();$('projectFileInput').click();return;}
+  if(!$('libraryAddChoices').hidden&&!match('#libraryAddChoices'))v6CloseLibraryMenu();
   const resource=match('[data-v6-open-resource]');if(resource){v6OpenResource(resource.dataset.v6OpenResource);return;}
   const deleted=match('[data-v6-delete-resource]');if(deleted){v6DeleteResource(deleted.dataset.v6DeleteResource);return;}
   const loadSketch=match('[data-v6-load-sketch]');if(loadSketch){v6LoadSketch(loadSketch.dataset.v6LoadSketch);return;}
