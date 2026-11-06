@@ -294,6 +294,10 @@
 .v6-library-menu button{display:block;width:100%;text-align:left;border:0;border-radius:8px;background:transparent;color:var(--ink);font:inherit;font-size:13px;padding:11px}
 .v6-library-menu button:hover,.v6-library-menu button:focus-visible{background:var(--wash)}
 
+#sketchGallery[hidden],#sketchEditor[hidden],#continueSketchDraft[hidden]{display:none!important}
+.v6-continue-draft{width:100%;margin:10px 0 4px;background:var(--wash);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left}
+#sketchGallery+.v6-resource-list{margin-top:12px}
+
   </style>
 
 </head>
@@ -361,10 +365,16 @@
           <div id="projectNotesList"></div>
         </section>
         <section class="card v6-project-pane" id="projectSketch" hidden>
-          <div class="card-heading"><h2>Sketch Pad</h2><button type="button" id="newSketch" class="text-button">New</button></div>
-          <div class="v6-sketch-tools"><button data-pen="primary" class="selected" aria-label="Primary color pen">●</button><button data-pen="secondary" aria-label="Secondary color pen">●</button><button data-pen="eraser">Eraser</button><button id="sketchUndo">Undo</button><button id="sketchClear">Clear</button></div>
+          <div id="sketchGallery">
+            <div class="card-heading"><h2>Sketches</h2><button type="button" id="newSketch" class="primary-button">+ New Sketch</button></div>
+            <button type="button" id="continueSketchDraft" class="v6-continue-draft" hidden>Continue unfinished sketch →</button>
+          </div>
+          <div id="sketchEditor" hidden>
+            <div class="card-heading"><h2>Sketch Pad</h2><button type="button" id="backSketchGallery" class="text-button">← Sketches</button></div>
+            <div class="v6-sketch-tools"><button data-pen="primary" class="selected" aria-label="Primary color pen">●</button><button data-pen="secondary" aria-label="Secondary color pen">●</button><button data-pen="eraser">Eraser</button><button id="sketchUndo">Undo</button><button id="sketchClear">Clear</button></div>
           <canvas id="projectCanvas" width="700" height="480" aria-label="Freehand sketch canvas, use finger mouse or compatible stylus"></canvas>
           <div class="capture-footer"><span class="muted small">Touch, mouse or compatible stylus</span><button type="button" id="saveSketch" class="primary-button">Save Sketch</button></div>
+          </div>
           <div id="projectSketchList" class="v6-resource-list"></div>
         </section>
         <section class="card v6-project-pane" id="projectActions" hidden>
@@ -913,7 +923,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceW
 <script>
 'use strict';
 window.v6ActiveProjectId=null;
-let v6ProjectTab='notes',v6Pen='primary',v6Drawing=false,v6InkHistory=[],v6SketchId=null;
+let v6ProjectTab='notes',v6Pen='primary',v6Drawing=false,v6InkHistory=[],v6SketchId=null,v6SketchEditing=false;
 const v6Project=()=>state.projects?.find(p=>String(p.id)===String(window.v6ActiveProjectId));
 const v6Id=()=>String(uid())+'-'+Math.random().toString(36).slice(2,7);
 const v6Now=()=>new Date().toISOString();
@@ -937,7 +947,7 @@ function v6Normalize(){
 }
 function v6OpenProject(id){
   if(!state.projects.some(p=>String(p.id)===String(id)))return;
-  window.v6ActiveProjectId=id;v6ProjectTab='notes';v6SketchId=null;v6Render();
+  window.v6ActiveProjectId=id;v6ProjectTab='notes';v6SketchId=null;v6SketchEditing=false;v6Render();
   $('projectWorkspace').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function v6Render(){
@@ -955,7 +965,8 @@ function v6Render(){
   document.querySelectorAll('[data-project-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.projectTab===v6ProjectTab));
   for(const name of ['notes','sketch','actions','library'])$('project'+name[0].toUpperCase()+name.slice(1)).hidden=v6ProjectTab!==name;
   v6RenderNotes(p);v6RenderActions(p);v6RenderLibrary(p);v6RenderSketches(p);
-  if(v6ProjectTab==='sketch')requestAnimationFrame(v6SetupCanvas);
+  v6RenderSketchView();
+  if(v6ProjectTab==='sketch'&&!v6SketchEditing)v6CheckDraft(p);
 }
 function v6RenderNotes(p){
   const page=$('projectNotebook');
@@ -993,6 +1004,42 @@ function v6RenderLibrary(p){
       if(img){const url=URL.createObjectURL(blob);v6PreviewUrls.push(url);img.src=url;}
     }).catch(()=>{});
   }
+}
+function v6RenderSketchView(){
+  $('sketchGallery').hidden=v6SketchEditing;
+  $('sketchEditor').hidden=!v6SketchEditing;
+}
+let v6DraftCheckSeq=0;
+function v6CheckDraft(p){
+  const seq=++v6DraftCheckSeq,projectId=String(p.id);
+  $('continueSketchDraft').hidden=true;
+  v6Blob('get','v6-draft-'+projectId).then(blob=>{
+    if(seq!==v6DraftCheckSeq||v6SketchEditing||v6ProjectTab!=='sketch'||String(v6Project()?.id)!==projectId)return;
+    $('continueSketchDraft').hidden=!blob;
+  }).catch(()=>{});
+}
+function v6OpenSketchEditor(){
+  const p=v6Project();if(!p)return;
+  v6SketchEditing=true;v6RenderSketchView();
+  v6Canvas.dataset.project=String(p.id);v6InkHistory=[];v6ClearCanvas();
+}
+function v6SketchGallery(){
+  ++v6DraftCheckSeq;v6SketchEditing=false;v6SketchId=null;
+  v6RenderSketchView();const p=v6Project();if(p){v6RenderSketches(p);v6CheckDraft(p);}
+}
+async function v6NewSketch(){
+  const p=v6Project();if(!p)return;
+  const existing=await v6Blob('get','v6-draft-'+p.id).catch(()=>null);
+  if(existing&&!confirm('Start a new sketch? The unfinished sketch will be discarded.'))return;
+  ++v6DraftGeneration;await v6DraftWrite.catch(()=>{});
+  await v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
+  v6SketchId=null;v6OpenSketchEditor();
+}
+async function v6ContinueSketch(){
+  const p=v6Project();if(!p)return;
+  const projectId=String(p.id),blob=await v6Blob('get','v6-draft-'+projectId).catch(()=>null);
+  if(!blob||String(v6Project()?.id)!==projectId)return;
+  v6SketchId=null;v6OpenSketchEditor();v6DrawBlob(blob);
 }
 let v6SketchThumbUrls=[];
 function v6RenderSketches(p){
@@ -1049,7 +1096,7 @@ async function v6Upload(files){
 }
 async function v6OpenResource(id){
   const r=v6Project()?.library.find(x=>String(x.id)===String(id));if(!r)return;
-  if(r.type==='sketch'){v6ProjectTab='sketch';v6Render();await v6LoadSketch(id);return;}
+  if(r.type==='sketch'){v6ProjectTab='sketch';v6SketchEditing=false;v6Render();await v6LoadSketch(id);return;}
   if(r.type==='link'){window.open(r.url,'_blank','noopener,noreferrer');return;}
   if(r.type==='code'){try{await navigator.clipboard.writeText(r.content||'');alert('Code copied.');}catch{prompt('Copy code',r.content||'');}return;}
   try{const blob=await v6Blob('get',r.key);if(!blob)throw Error('File not found in this browser');
@@ -1087,12 +1134,7 @@ const v6Canvas=$('projectCanvas'),v6Ctx=v6Canvas.getContext('2d');
 function v6ClearCanvas(){
   v6Ctx.save();v6Ctx.globalCompositeOperation='source-over';v6Ctx.fillStyle='#ffffff';v6Ctx.fillRect(0,0,v6Canvas.width,v6Canvas.height);v6Ctx.restore();
 }
-function v6SetupCanvas(){
-  const p=v6Project();if(!p)return;
-  if(v6Canvas.dataset.project===String(p.id))return;
-  v6Canvas.dataset.project=String(p.id);v6InkHistory=[];v6ClearCanvas();
-  v6Blob('get','v6-draft-'+p.id).then(blob=>{if(blob&&String(v6Project()?.id)===String(p.id))v6DrawBlob(blob);}).catch(()=>{});
-}
+function v6SetupCanvas(){return;} // Sketches are selected from their gallery.
 function v6DrawBlob(blob){
   const url=URL.createObjectURL(blob),img=new Image();
   img.onload=()=>{v6Ctx.drawImage(img,0,0,v6Canvas.width,v6Canvas.height);URL.revokeObjectURL(url);v6AutosaveSketch();};
@@ -1107,7 +1149,7 @@ function v6PushUndo(){
   if(v6InkHistory.length>8)v6InkHistory.shift();
 }
 function v6Begin(e){
-  if(!v6Project())return;e.preventDefault();v6PushUndo();v6Drawing=true;
+  if(!v6Project()||!v6SketchEditing)return;e.preventDefault();v6PushUndo();v6Drawing=true;
   v6Canvas.setPointerCapture?.(e.pointerId);
   const pt=v6Point(e);v6Ctx.beginPath();v6Ctx.moveTo(pt.x,pt.y);
   v6Ctx.lineJoin='round';v6Ctx.lineCap='round';
@@ -1122,7 +1164,7 @@ function v6Move(e){
 }
 let v6DraftGeneration=0,v6DraftWrite=Promise.resolve();
 function v6AutosaveSketch(){
-  const p=v6Project();if(!p)return;
+  const p=v6Project();if(!p||!v6SketchEditing)return;
   const projectId=String(p.id),generation=++v6DraftGeneration;
   v6Canvas.toBlob(blob=>{
     if(!blob||generation!==v6DraftGeneration)return;
@@ -1149,14 +1191,16 @@ async function v6SaveSketch(){
     if(old)old.title=title.trim().slice(0,160);
     else p.library.push({id,type:'sketch',title:title.trim().slice(0,160),key,mime:'image/png',created:v6Now()});
     // File the finished drawing away like a note, then show a fresh page.
-    v6SketchId=null;v6InkHistory=[];v6ClearCanvas();v6AutosaveSketch();
-    save();v6RenderSketches(p);v6RenderLibrary(p);
+    ++v6DraftGeneration;await v6DraftWrite.catch(()=>{});
+    await v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
+    v6SketchId=null;v6InkHistory=[];v6ClearCanvas();
+    save();v6RenderLibrary(p);v6SketchGallery();
   }catch(err){alert('Unable to save sketch: '+err.message);}
 }
 async function v6LoadSketch(id){
   const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));if(!r)return;
   try{const blob=await v6Blob('get',r.key);if(!blob)throw Error('Sketch not found');
-    ++v6DraftGeneration;v6InkHistory=[];v6ClearCanvas();v6SketchId=id;v6DrawBlob(blob);
+    ++v6DraftGeneration;v6SketchId=id;v6OpenSketchEditor();v6DrawBlob(blob);
     // Do not autosave until the saved sketch has finished loading.
   }catch(err){alert('Could not load sketch: '+err.message);}
 }
@@ -1165,7 +1209,7 @@ document.addEventListener('click',e=>{
   const tgt=e.target,match=selector=>tgt.closest(selector);
   const folder=match('[data-v6-project]');if(folder){v6OpenProject(folder.dataset.v6Project);return;}
   if(match('#newProject')){const name=prompt('Project name');if(name!==null)v6CreateProject(name);return;}
-  if(match('#backProjects')){window.v6ActiveProjectId=null;v6SketchId=null;v6Canvas.dataset.project='';v6Render();renderIdeas();return;}
+  if(match('#backProjects')){window.v6ActiveProjectId=null;v6SketchEditing=false;v6SketchId=null;v6Canvas.dataset.project='';v6Render();renderIdeas();return;}
   if(match('#renameProject')){
     const p=v6Project();if(!p)return;
     const title=prompt('Rename project',p.title);if(!title?.trim())return;
@@ -1180,7 +1224,7 @@ document.addEventListener('click',e=>{
     window.v6ActiveProjectId=null;v6Canvas.dataset.project='';save();v6Render();renderIdeas();return;
   }
   const tabButton=match('[data-project-tab]');
-  if(tabButton){v6ProjectTab=tabButton.dataset.projectTab;v6Render();return;}
+  if(tabButton){v6ProjectTab=tabButton.dataset.projectTab;if(v6ProjectTab==='sketch')v6SketchEditing=false;v6Render();return;}
   const taskButton=match('[data-v6-task]');if(taskButton){v6ActionToTask(taskButton.dataset.v6Task);return;}
   const removeAction=match('[data-v6-remove-action]');if(removeAction){
     const p=v6Project();if(!p)return;p.actions=p.actions.filter(a=>String(a.id)!==String(removeAction.dataset.v6RemoveAction));save();v6RenderActions(p);return;
@@ -1192,7 +1236,9 @@ document.addEventListener('click',e=>{
   const resource=match('[data-v6-open-resource]');if(resource){v6OpenResource(resource.dataset.v6OpenResource);return;}
   const deleted=match('[data-v6-delete-resource]');if(deleted){v6DeleteResource(deleted.dataset.v6DeleteResource);return;}
   const loadSketch=match('[data-v6-load-sketch]');if(loadSketch){v6LoadSketch(loadSketch.dataset.v6LoadSketch);return;}
-  if(match('#newSketch')){v6SketchId=null;v6PushUndo();v6ClearCanvas();v6AutosaveSketch();return;}
+  if(match('#newSketch')){v6NewSketch();return;}
+  if(match('#continueSketchDraft')){v6ContinueSketch();return;}
+  if(match('#backSketchGallery')){v6SketchGallery();return;}
   if(match('#saveSketch')){v6SaveSketch();return;}
   if(match('#sketchUndo')){const img=v6InkHistory.pop();if(img){v6Ctx.putImageData(img,0,0);v6AutosaveSketch();}return;}
   if(match('#sketchClear')){if(confirm('Clear the sketch pad?')){v6PushUndo();v6ClearCanvas();v6AutosaveSketch();}return;}
