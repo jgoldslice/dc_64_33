@@ -34,8 +34,8 @@ test.describe('Canvas adaptive iPad workspace',()=>{
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-pressed','true');
     await expect(page.locator('body')).toHaveClass(/canvas-ipad-sidebar-collapsed/);
-    const small=await page.locator('.bottom-nav').evaluate(el=>el.getBoundingClientRect().width);
-    expect(small).toBeLessThan(initial);
+    await expect.poll(async()=>page.locator('.bottom-nav').evaluate(el=>el.getBoundingClientRect().width))
+      .toBeLessThan(initial-40);
     await page.locator('[data-tab="brainstorm"]').click();
     await expect(page.locator('#brainstorm')).toBeVisible();
     await toggle.click();
