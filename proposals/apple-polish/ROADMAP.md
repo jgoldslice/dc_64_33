@@ -135,4 +135,6 @@ Legend: P0 = reliability/accessibility must-have, P1 = high-value UX, P2 = futur
 - \`proposals/apple-polish/gesture-router.js\`: reusable pointer and swipe classifier; edge/exclusion protection, no side effects until installed.
 - \`proposals/apple-polish/adaptive-layout.css\`: optional safe-area, larger touch target and two-pane CSS layer designed around width, not hardware branding.
 - \`proposals/apple-polish/mobile-interactions.spec.cjs\`: future Playwright test scenarios (not included in current production test workflow).
+- Draft navigation-position utility: proposals/apple-polish/navigation-position.js (saves per-tab scroll positions on opt-in installation).
+- Read-only media-integrity audit utility: proposals/apple-polish/media-integrity.js (checks references before any future backup/cleanup workflow).
 - Nothing in these files is imported from index.html or the service worker. These are review-only artifacts.
