@@ -61,7 +61,7 @@
    const add=e.target.closest('#v74AddBlock');
    if(add){const p=getProject();if(!p)return;const type=document.getElementById('v74BlockType').value;if(type==='image'){document.getElementById('v74BlockImage').click();return;}addBlock(p,type);return;}
    const del=e.target.closest('[data-v74-delete-block]');
-   if(del){const p=getProject();if(!p||!confirm('Delete this block?'))return;p.contentBlocks=p.contentBlocks.filter(b=>String(b.id)!==del.dataset.v74DeleteBlock);save();renderBlocks(p);return;}
+   if(del){const p=getProject();if(!p||!confirm('Delete this block?'))return;const block=p.contentBlocks.find(b=>String(b.id)===String(del.dataset.v74DeleteBlock));p.contentBlocks=p.contentBlocks.filter(b=>String(b.id)!==del.dataset.v74DeleteBlock);save();renderBlocks(p);if(block?.type==='image'&&block.key)v6Blob('delete',block.key).catch(()=>{});return;}
    const move=e.target.closest('[data-v74-move-block]');
    if(move){const p=getProject();if(!p)return;const i=p.contentBlocks.findIndex(b=>String(b.id)===move.dataset.v74MoveBlock),next=i+(move.dataset.direction==='up'?-1:1);if(i<0||next<0||next>=p.contentBlocks.length)return;[p.contentBlocks[i],p.contentBlocks[next]]=[p.contentBlocks[next],p.contentBlocks[i]];save();renderBlocks(p);return;}
  });
