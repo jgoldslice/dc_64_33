@@ -4,6 +4,14 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.9 — iPad Pencil alignment and notebook icons
+
+- Replaced the notebook's former backspace-style eraser glyph with a recognizable **eraser icon**, and the grid-like Image glyph with a **photo icon**. Existing tool names and operations are unchanged.
+- Corrected a drawing-offset bug: some iPad breakpoints forced the page to be at least 800 or 980 CSS pixels tall, while the SVG ink layer used the stored 740-pixel height as its viewBox. The SVG then centered ink with a vertical offset. Ink now tracks the **displayed** surface dimensions with a matching viewBox and no centering, and Pencil pointer contact is converted with the SVG screen transformation matrix.
+- Uses available coalesced pointer coordinates for smoother stroke capture and retains the original stroke-point storage schema, undo/erase behavior, autosaving and complete backups.
+- The web app uses browser Pointer Events; it does not gain native **PencilKit** by this change. A future native iPadOS build can integrate PencilKit for lower-latency inking, advanced pressure/tilt and system drawing tools.
+- Browser regression tests include simulated pen input at iPad portrait and landscape sizes, compact windows, persistence across reload, and existing notebook toolbar behavior. Real Apple Pencil/Safari verification on hardware is still advisable.
+
 ## Canvas v8.8 — Delete goal from Blueprint
 
 - Expand a goal and select **Delete goal** beside **Edit goal**. Confirm the deletion to remove that goal; Cancel leaves everything unchanged.
