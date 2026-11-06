@@ -326,6 +326,7 @@
 <link rel="stylesheet" href="v76.css">
 <link rel="stylesheet" href="v77.css">
 <link rel="stylesheet" href="polish-v81.css">
+<link rel="stylesheet" href="page-turn.css">
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -930,7 +931,7 @@ function canvasInstallSwipeNavigation(){
   },{passive:true});
   document.addEventListener('touchcancel',()=>{gesture=null;},{passive:true});
 }
-canvasInstallSwipeNavigation();
+// Replaced by the gesture-aware paper-turn controller in page-turn.js.
 
 $('canvasHomeButton').addEventListener('click',()=>tab('today'));
 function planTab(name){
@@ -1504,4 +1505,5 @@ v6Normalize();v6Render();
 <script src="v76.js"></script>
 <script src="v77.js"></script>
 <script src="polish-v81.js"></script>
+<script src="page-turn.js"></script>
 </body></html>
