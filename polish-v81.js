@@ -49,6 +49,7 @@
     });
   };
   rail.addEventListener('click',e=>{
+    if(!(e.target instanceof Element))return;
     const button=e.target.closest('[data-v81-switch-project]');
     if(!button)return;
     v6OpenProject(button.dataset.v81SwitchProject);
