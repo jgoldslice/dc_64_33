@@ -322,6 +322,7 @@
   </style>
 
   <link rel="stylesheet" href="v74.css">
+  <link rel="stylesheet" href="polish.css">
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -338,7 +339,7 @@
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
 </svg>
 <div class="shell">
-  <header class="app-header"><button type="button" class="palette-launch" id="paletteLauncher" aria-label="Customize colors" title="Customize colors"><svg class="palette-logo" viewBox="0 0 48 48" aria-hidden="true"><path class="palette-base" d="M24 4C12.9 4 4 12.9 4 24s8.9 20 20 20h3.8c3.7 0 6.3-2.5 6.3-5.6 0-2-1.4-3.2-1.4-5.1 0-2.4 1.8-4.2 4.3-4.2h1.3c3.6 0 5.7-2.2 5.7-5.7C44 12.7 35.1 4 24 4Z"/><circle class="palette-dot" cx="14" cy="21" r="3.2"/><circle class="palette-dot" cx="20" cy="12.6" r="3.2"/><circle class="palette-dot" cx="29.7" cy="14" r="3.2"/><circle class="palette-dot" cx="19.2" cy="31" r="3.2"/><circle class="palette-hole" cx="37.2" cy="35.2" r="3"/></svg></button><div class="brand">Canvas</div></header>
+  <header class="app-header"><button type="button" class="palette-launch" id="paletteLauncher" aria-label="Customize colors" title="Customize colors"><svg class="palette-logo" viewBox="0 0 48 48" aria-hidden="true"><path class="palette-base" d="M24 4C12.9 4 4 12.9 4 24s8.9 20 20 20h3.8c3.7 0 6.3-2.5 6.3-5.6 0-2-1.4-3.2-1.4-5.1 0-2.4 1.8-4.2 4.3-4.2h1.3c3.6 0 5.7-2.2 5.7-5.7C44 12.7 35.1 4 24 4Z"/><circle class="palette-dot" cx="14" cy="21" r="3.2"/><circle class="palette-dot" cx="20" cy="12.6" r="3.2"/><circle class="palette-dot" cx="29.7" cy="14" r="3.2"/><circle class="palette-dot" cx="19.2" cy="31" r="3.2"/><circle class="palette-hole" cx="37.2" cy="35.2" r="3"/></svg></button><button type="button" class="brand brand-home" id="canvasHomeButton" aria-label="Go to Today (Canvas Home)">Canvas</button></header>
   <main>
     <section class="view active" id="today" aria-labelledby="todayTitle">
       <div class="view-header"><div><div class="eyebrow">Your day, simplified</div><h1 id="todayTitle">Today</h1><p class="muted" id="todayDate"></p></div></div>
@@ -424,8 +425,8 @@
     </section>
     <section class="view" id="customize" aria-labelledby="customTitle"><div class="view-header"><div><div class="eyebrow">Your colors</div><h1 id="customTitle">Customize</h1></div><button type="button" class="text-button" id="closeCustomize">Done</button></div><div class="stack">
       <section class="card"><div class="card-heading"><h2>Appearance</h2></div><div class="segmented" role="group" aria-label="Appearance mode"><button data-appearance="light">Light</button><button data-appearance="dark">Dark</button><button data-appearance="system">System</button></div></section>
-      <section class="card"><h2>Primary Color</h2><div class="swatches" id="primarySwatches"></div><label class="color-input">Custom color <input type="color" id="primaryCustom" aria-label="Custom primary color"></label></section>
-      <section class="card"><h2>Secondary Color</h2><div class="swatches" id="secondarySwatches"></div><label class="color-input">Custom color <input type="color" id="secondaryCustom" aria-label="Custom secondary color"></label></section>
+      <section class="card"><h2>Primary Color</h2><p class="color-selection" id="primaryColorName" aria-live="polite"></p><div class="swatches" id="primarySwatches"></div><label class="color-input">Custom color <input type="color" id="primaryCustom" aria-label="Custom primary color"></label></section>
+      <section class="card"><h2>Secondary Color</h2><p class="color-selection" id="secondaryColorName" aria-live="polite"></p><div class="swatches" id="secondarySwatches"></div><label class="color-input">Custom color <input type="color" id="secondaryCustom" aria-label="Custom secondary color"></label></section>
       <section class="card"><div class="card-heading"><h2>Opening</h2></div>
         <label class="setting-label">Style<select id="openingMode"><option value="both">Animation + message</option><option value="animation">Animation only</option><option value="quote">Message only</option><option value="none">None</option></select></label>
         <label class="setting-label">Opening Message<textarea id="openingMessageInput" rows="3" maxlength="280" placeholder="Write your message..."></textarea></label>
@@ -614,7 +615,16 @@ function render(){
   $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item"><div><strong>${esc(h.title)}</strong><small>${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
   $('openingMode').value=state.openingMode;
   if(document.activeElement!==$('openingMessageInput'))$('openingMessageInput').value=state.openingMessage;
-  for(const prop of ['primary','secondary']){$(prop+'Swatches').innerHTML=palettes.map(([name,hex])=>`<button class="swatch ${state[prop].toLowerCase()===hex?'selected':''}" style="background:${hex}" title="${name}" aria-label="${name}" data-color-for="${prop}" data-color="${hex}">${state[prop].toLowerCase()===hex?'✓':''}</button>`).join('');$(prop+'Custom').value=state[prop];}
+  for(const prop of ['primary','secondary']){
+    const current=state[prop].toLowerCase();
+    const named=palettes.find(([,hex])=>hex.toLowerCase()===current);
+    $(prop+'ColorName').textContent='Selected: '+(named?named[0]:'Custom')+' ('+current.toUpperCase()+')';
+    $(prop+'Swatches').innerHTML=palettes.map(([name,hex])=>{
+      const selected=current===hex.toLowerCase();
+      return `<button type="button" class="swatch ${selected?'selected':''}" style="--swatch-color:${hex}" title="${name}" aria-label="${prop==='primary'?'Primary':'Secondary'}: ${name}" aria-pressed="${selected}" data-color-for="${prop}" data-color="${hex}"><span class="swatch-dot" aria-hidden="true"></span><span class="swatch-label">${esc(name)}</span></button>`;
+    }).join('');
+    $(prop+'Custom').value=state[prop];
+  }
 }
 
 const normalizedCategory=(text)=>String(text||'').trim().replace(/\s+/g,' ');
@@ -855,6 +865,7 @@ function canvasInstallSwipeNavigation(){
 }
 canvasInstallSwipeNavigation();
 
+$('canvasHomeButton').addEventListener('click',()=>tab('today'));
 function planTab(name){
   if(!['tasks','goals','habits'].includes(name))return;
   activePlanTab=name;
