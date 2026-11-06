@@ -4,6 +4,13 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.7 — Simple Week calendar event entry
+
+- In **Week → Week at a Glance**, tap the **+** button to add an event to any day in the displayed week. Choose a day, enter the **event name** and **time**, and save.
+- Tap any weekday or either half of the weekend calendar cell to open the same simple event form with that day's date already chosen. The form contains **only the event name and time** for day-tap entry.
+- New events use the existing event data model and automatically appear in Week and Today as appropriate; they persist through reload and are included in current Canvas backups.
+- Day cards are keyboard accessible (Enter/Space); Escape cancels. Video-link previews are unchanged.
+
 ## Canvas v8.6 — Video link previews
 
 - Paste a YouTube **Shorts**, standard `watch?v=`, or `youtu.be` URL into **Brainstorm → Project → Library → + Add → Link**. The Gallery and List views show a thumbnail card with a large Play button, instead of a long URL.
