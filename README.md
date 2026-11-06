@@ -42,9 +42,9 @@ Dependency-free HTML/CSS/JavaScript in `index.html`; SVG Home Screen icon and ma
 - **Library:** Save HTTP(S) links, code snippets, and uploaded image/files up to 40 MB each. Uploaded file bytes and sketches are kept in **IndexedDB** on that device; photos show thumbnails where supported. Code can be copied. Links open in a new tab.
 - **ChatGPT handoff:** Prepare a full text summary of the project (notes, ideas, actions, link/code references), copy it, and open ChatGPT. It does **not** automatically create a ChatGPT Project or attach images/files: attach those separately.
 
-### Storage warning
+### Historical v6 storage warning (superseded by v7.4 complete backups)
 
-Canvas keeps text/project metadata in the original `jgold-planner-v1` localStorage key. Images, uploaded files, and sketch PNGs live in browser IndexedDB and **are not included in JSON backup exports**. For important projects, keep independent copies of the original files or downloads of your sketches. Clearing Safari/browser data or moving to a different device can remove local attachments. Browser storage quota may limit file sizes and total usage. There is no cloud sync.
+At v6, Canvas kept text/project metadata in the original `jgold-planner-v1` localStorage key. Images, uploaded files, and sketch PNGs lived in browser IndexedDB and **were not included in the older JSON backup exports**. Current v7.4+ complete exports are intended to include referenced media; verify the restored files on a separate device/browser before relying on them. For important projects, keep independent copies of the original files or downloads of your sketches. Clearing Safari/browser data or moving to a different device can remove local attachments. Browser storage quota may limit file sizes and total usage. There is no cloud sync.
 
 ## Canvas v7.4 — Project workspace refinement
 
