@@ -9,7 +9,7 @@
   function refreshTodayExtras(){
     const top=ranked().slice(0,5);
     priorityHost.innerHTML=top.length?top.map(taskRow).join(''):'<p class="muted small">No priorities yet. Mark an important task as a priority.</p>';
-    const projects=(state.projects||[]).slice(0,4);
+    const projects=(state.projects||[]).slice().sort((a,b)=>(Number(b.lastOpenedAt)||0)-(Number(a.lastOpenedAt)||0)).slice(0,4);
     projectsHost.innerHTML=projects.length?projects.map(p=>
       '<button class="v77-project-folder" type="button" data-v77-open-project="'+esc(p.id)+'" aria-label="Open project: '+esc(p.title)+'">'+
       folderIcon+'<span>'+esc(p.title)+'</span></button>'
@@ -29,6 +29,7 @@
     });
   }
   document.addEventListener('click',e=>{
+    if(!(e.target instanceof Element))return;
     const project=e.target.closest('[data-v77-open-project]');
     if(project){
       const id=project.dataset.v77OpenProject;

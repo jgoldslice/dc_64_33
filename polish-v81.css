@@ -1,0 +1,84 @@
+/* Canvas 8.1 — quiet polish inspired by Apple HIG, Material and Fluent.
+ * Preserve theme variables. No new default tabs or rich text controls.
+ */
+:root {
+  --v81-hit-target:44px;
+  --v81-space:8px;
+  --v81-timing:160ms;
+}
+html { scroll-padding-top:calc(env(safe-area-inset-top) + 12px) }
+body { overflow-wrap:anywhere }
+button, [role="button"] { -webkit-tap-highlight-color:transparent }
+button:active { transition:transform 80ms ease;transform:scale(.987) }
+button:focus-visible, a:focus-visible, .v81-project-rail button:focus-visible {
+  outline:2px solid var(--secondary-ui);outline-offset:3px
+}
+/* Make the interactive area large even when the graphic is intentionally small. */
+.bottom-nav button {min-height:54px}
+.plan-tabs button, .v6-project-tabs button, .category-chip,
+.v77-step-menu button, .v81-project-switch, .v81-project-rail button,
+.v76-page-controls button, .text-button {
+  min-height:var(--v81-hit-target)
+}
+.v76-page-controls select,.v80-text-size {min-height:var(--v81-hit-target)}
+.v79-tool-buttons button {min-width:44px;min-height:44px;width:44px;height:44px}
+.v76-grip {width:36px;height:36px;top:0;left:0}
+.v76-remove {width:36px;height:36px;top:0;right:0}
+.v76-item {padding-top:37px}
+.v77-goal-step>input[type="checkbox"],.entry input[type="checkbox"] {
+  width:26px;height:26px;min-width:26px;min-height:26px;
+}
+.v6-folder,.v77-project-folder {min-height:100px}
+.v6-project-head .text-button {padding-inline:10px}
+.v76-page-surface,.v76-rich {overscroll-behavior:contain}
+/* Reuse the app's current colors, not an unrelated artificial "glass" palette. */
+.card,.v6-folder,.v77-project-folder,.v76-page-surface {
+  transition:border-color var(--v81-timing) ease,background-color var(--v81-timing) ease;
+}
+.v6-project-tabs button:active,.plan-tabs button:active {background:var(--wash)}
+.modal-back {padding-bottom:max(16px,env(safe-area-inset-bottom))}
+.modal {
+  max-height:min(85dvh,760px);
+  overscroll-behavior-y:contain;
+}
+/* A project stays an independent workspace on narrow screens.
+ * On a wide window, let the user keep project folders beside their notes. */
+.v81-project-layout {display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
+.v81-project-main {min-width:0}
+.v81-project-rail {display:none}
+.v81-project-switch {
+  display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;
+  color:var(--ink);background:transparent;border:1px solid transparent;
+  border-radius:11px;text-align:left;font-weight:650;
+}
+.v81-project-switch[aria-current="true"] {
+  border-color:var(--line);background:var(--wash)
+}
+.v81-project-switch svg{width:21px;height:21px;flex:none;stroke:var(--secondary-ui);fill:none;stroke-width:1.6;stroke-linejoin:round}
+.v81-project-switch span{min-width:0;overflow-wrap:anywhere}
+.v81-project-rail h3 {font-size:13px;margin:2px 7px 12px;color:var(--muted);font-weight:700}
+@media(min-width:850px) {
+  .v81-project-layout {grid-template-columns:minmax(205px,25%) minmax(0,1fr);gap:18px;align-items:start}
+  .v81-project-rail {display:block;position:sticky;top:16px;min-width:0;padding:15px 10px;border:1px solid var(--line);border-radius:17px;background:var(--surface)}
+  .v81-project-main .v6-project-title {font-size:30px}
+  #projectNotes {min-width:0}
+  #projectWorkspace .v76-notebook-ui {max-width:none}
+}
+@media(max-width:365px) {
+  .shell {padding-inline:12px}
+  .v76-toolbar {gap:7px}
+  .v79-tool-group+.v79-tool-group {padding-left:7px}
+  .v79-tool-buttons button {width:42px;min-width:42px;height:44px}
+}
+/* Keyboard/small-height dialogs: action buttons remain reachable. */
+@media(max-height:560px) {
+  .modal {max-height:calc(100dvh - 28px)}
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after {
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+    scroll-behavior:auto!important;
+  }
+}

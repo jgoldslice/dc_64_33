@@ -325,6 +325,7 @@
   <link rel="stylesheet" href="polish.css">
 <link rel="stylesheet" href="v76.css">
 <link rel="stylesheet" href="v77.css">
+<link rel="stylesheet" href="polish-v81.css">
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -820,8 +821,14 @@ function closeModal(){$('modalBack').classList.remove('open');modalMode=null;mod
 function uid(){return Date.now()+Math.floor(Math.random()*100000);}
 let lastMainTab='today';
 let activePlanTab='tasks';
+// Keep one scroll position for each main destination. Returning to a view
+// shouldn't make someone search for the project or task they were reading.
+const canvasScrollPositions=new Map();
 function tab(name){
   if(!['today','week','myplan','brainstorm','customize'].includes(name)||!$(name))return;
+  const previous=document.querySelector('.view.active')?.id||'today';
+  const changing=previous!==name;
+  if(changing)canvasScrollPositions.set(previous,window.scrollY);
   if(name!=='customize')lastMainTab=name;
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===name));
   document.querySelectorAll('.bottom-nav button').forEach(b=>{
@@ -829,13 +836,16 @@ function tab(name){
     b.classList.toggle('active',active);
     if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
   });
-  window.scrollTo({top:0,behavior:'instant'});
+  if(changing){
+    // Wait for the newly visible view to establish its own scroll height.
+    requestAnimationFrame(()=>window.scrollTo({top:canvasScrollPositions.get(name)||0,behavior:'instant'}));
+  }
 }
 // V7.3: horizontal swipes between main views (works in Safari and Capacitor).
 function canvasInstallSwipeNavigation(){
   const views=['today','week','myplan','brainstorm'];
-  const minimumDistance=65;
-  const edgeInset=24; // Leave iOS back/forward system edge gestures alone.
+  const minimumDistance=72;
+  const edgeInset=28; // Leave iOS back/forward system edge gestures alone.
   let gesture=null;
 
   function overlayIsOpen(){
@@ -854,12 +864,13 @@ function canvasInstallSwipeNavigation(){
   }
   function isProtectedTarget(target){
     if(!(target instanceof Element))return true;
-    if(target.closest('input,textarea,select,button,canvas,svg,video,a,summary,details,[contenteditable],[role="slider"],[role="tablist"],.no-swipe,.bottom-nav'))return true;
+    if(target.closest('input,textarea,select,button,canvas,svg,video,a,summary,details,[contenteditable],[role="slider"],[role="tablist"],.no-swipe,.bottom-nav,.v76-notebook-ui,.v81-project-rail,[data-no-swipe]'))return true;
     return isHorizontalScroller(target);
   }
   document.addEventListener('touchstart',event=>{
     gesture=null;
-    if(event.touches.length!==1 || overlayIsOpen() || isProtectedTarget(event.target))return;
+    if(event.touches.length!==1 || overlayIsOpen() || isProtectedTarget(event.target) ||
+       !!window.getSelection()?.toString().trim())return;
     const active=document.querySelector('.view.active');
     if(!active || !views.includes(active.id) || !active.contains(event.target))return;
     const project=$('projectWorkspace');
@@ -867,6 +878,13 @@ function canvasInstallSwipeNavigation(){
     const point=event.touches[0];
     if(point.clientX<edgeInset || point.clientX>window.innerWidth-edgeInset)return;
     gesture={x:point.clientX,y:point.clientY,time:Date.now(),view:active.id};
+  },{passive:true});
+  document.addEventListener('touchmove',event=>{
+    if(!gesture || event.touches.length!==1)return;
+    const p=event.touches[0],dx=p.clientX-gesture.x,dy=p.clientY-gesture.y;
+    // Once a finger commits to vertical scrolling, never reinterpret it as
+    // a tab swipe after the user changes direction.
+    if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)*1.25)gesture=null;
   },{passive:true});
   document.addEventListener('touchend',event=>{
     if(!gesture)return;
@@ -876,7 +894,7 @@ function canvasInstallSwipeNavigation(){
     if(!active || active.id!==start.view)return;
     const point=event.changedTouches[0];
     const dx=point.clientX-start.x,dy=point.clientY-start.y;
-    if(Math.abs(dx)<minimumDistance || Math.abs(dx)<Math.abs(dy)*1.5 || Date.now()-start.time>800)return;
+    if(Math.abs(dx)<minimumDistance || Math.abs(dx)<Math.abs(dy)*1.7 || Date.now()-start.time>800)return;
     const current=views.indexOf(start.view),next=current+(dx<0?1:-1);
     if(next>=0 && next<views.length)tab(views[next]);
   },{passive:true});
@@ -1252,7 +1270,14 @@ async function v6OpenResource(id){
 async function v6DeleteResource(id){
   const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));if(!r||!confirm('Remove '+r.title+'?'))return;
   p.library=p.library.filter(x=>String(x.id)!==String(id));save();
-  if(r.key)try{await v6Blob('delete',r.key);}catch{}
+  // Never erase a shared image from IndexedDB while a notebook page, legacy
+  // block or another Library resource still needs the original blob.
+  const stillReferenced=!!r.key&&state.projects.some(proj=>
+    (proj.library||[]).some(item=>item.key===r.key)||
+    (proj.contentBlocks||[]).some(block=>block.key===r.key)||
+    (proj.notePages||[]).some(page=>(page.objects||[]).some(obj=>obj.key===r.key))
+  );
+  if(r.key&&!stillReferenced)try{await v6Blob('delete',r.key);}catch{}
   if(String(v6SketchId)===String(id)){v6SketchId=null;v6ClearCanvas();}
   v6Render();
 }
@@ -1352,6 +1377,7 @@ async function v6LoadSketch(id){
 }
 // Project navigation and all workspace controls use event delegation.
 document.addEventListener('click',e=>{
+  if(!(e.target instanceof Element))return;
   const tgt=e.target,match=selector=>tgt.closest(selector);
   const folder=match('[data-v6-project]');if(folder){v6OpenProject(folder.dataset.v6Project);return;}
   if(match('#newProject')){const name=prompt('Project name');if(name!==null)v6CreateProject(name);return;}
@@ -1447,4 +1473,5 @@ v6Normalize();v6Render();
 <script src="v74.js"></script>
 <script src="v76.js"></script>
 <script src="v77.js"></script>
+<script src="polish-v81.js"></script>
 </body></html>

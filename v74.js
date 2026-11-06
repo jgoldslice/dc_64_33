@@ -55,7 +55,7 @@
    if(x.matches('[data-v6-check]')){const a=p.actions.find(a=>String(a.id)===String(x.dataset.v6Check));if(a){a.status=x.checked?'done':'todo';save();}}
    if(x.matches('[data-task-check]')){const t=state.tasks.find(t=>String(t.id)===String(x.dataset.taskCheck));const a=state.projects.find(p=>String(p.id)===String(t?.projectId))?.actions.find(a=>String(a.id)===String(t?.projectActionId));if(a){a.status=t.done?'done':'todo';save();}}
  });
- document.addEventListener('click',e=>{
+ document.addEventListener('click',e=>{if(!(e.target instanceof Element))return;
    const button=e.target.closest('[data-action-view]');
    if(button){const p=getProject();if(!p)return;p.actionView=button.dataset.actionView;save();v6RenderActions(p);return;}
    const add=e.target.closest('#v74AddBlock');
@@ -111,7 +111,7 @@
  // Library already provides a thumbnail gallery and full-screen viewer. Offer a compact file list mode.
  const oldLibrary=v6RenderLibrary;
  v6RenderLibrary=function(p){oldLibrary(p);const root=document.getElementById('projectLibraryList');if(root)root.classList.toggle('v74-library-list',p.libraryView==='list');const switcher=document.getElementById('v74LibraryView');if(switcher)switcher.querySelectorAll('button').forEach(b=>{b.classList.toggle('selected',b.dataset.libraryView===(p.libraryView==='list'?'list':'gallery'));b.setAttribute('aria-pressed',String(b.dataset.libraryView===(p.libraryView==='list'?'list':'gallery')));});};
- document.addEventListener('click',e=>{const button=e.target.closest('[data-library-view]');if(!button)return;const p=getProject();if(!p)return;p.libraryView=button.dataset.libraryView;save();v6RenderLibrary(p);});
+ document.addEventListener('click',e=>{if(!(e.target instanceof Element))return;const button=e.target.closest('[data-library-view]');if(!button)return;const p=getProject();if(!p)return;p.libraryView=button.dataset.libraryView;save();v6RenderLibrary(p);});
  // Portable JSON backup, including binary attachments and sketch drafts.
  const blobToBase64=blob=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);});
  const base64ToBlob=(data,mime)=>{const binary=atob(data),parts=[];for(let i=0;i<binary.length;i+=32768){const slice=binary.slice(i,i+32768),bytes=new Uint8Array(slice.length);for(let j=0;j<slice.length;j++)bytes[j]=slice.charCodeAt(j);parts.push(bytes);}return new Blob(parts,{type:mime||'application/octet-stream'});};
@@ -120,6 +120,11 @@
    for(const p of data.projects||[]){
      for(const r of p.library||[])if(r.key)keys.add(String(r.key));
      for(const b of p.contentBlocks||[])if(b.key)keys.add(String(b.key));
+     // Notebook page images are now first-class attachments. Older exports only
+     // indexed the legacy contentBlocks array, which could lose page-only media.
+     for(const page of p.notePages||[])
+       for(const obj of page.objects||[])
+         if(obj.type==='image'&&obj.key)keys.add(String(obj.key));
      keys.add('v6-draft-'+p.id);
    }
    return [...keys];
@@ -159,6 +164,9 @@
        for(const p of next.projects||[]){
          for(const r of p.library||[])if(r.key)r.key=remap.get(r.key)||r.key;
          for(const b of p.contentBlocks||[])if(b.key)b.key=remap.get(b.key)||b.key;
+         for(const page of p.notePages||[])
+           for(const obj of page.objects||[])
+             if(obj.type==='image'&&obj.key)obj.key=remap.get(obj.key)||obj.key;
          // Existing draft keys are project-scoped and should not be moved into another project accidentally.
        }
        for(const p of next.projects||[]){
