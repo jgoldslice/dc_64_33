@@ -267,6 +267,10 @@
 .v6-assign-idea{display:grid;gap:7px;margin-top:9px}
 .v6-assign-idea label{font-size:12px;color:var(--muted)}
 
+.goal-step-actions{display:flex;align-items:center;gap:8px;flex:none}
+.goal-step-actions .text-button{font-size:12px;white-space:nowrap;padding:7px 2px}
+@media(max-width:420px){.goal-step-actions{gap:4px}.goal-step-actions .text-button{font-size:11px}}
+
   </style>
 
 </head>
@@ -577,7 +581,7 @@ function renderGoals(){
     return '<section class="card"><div class="card-heading"><h2>'+esc(cat)+'</h2></div>'+goals.map(g=>{
       const count=g.actions.filter(a=>a.done).length;
       const percentage=g.actions.length?Math.round(count/g.actions.length*100):0;
-      return '<details class="goal" data-goal="'+g.id+'" '+(expandedGoals.has(String(g.id))?'open':'')+'><summary><div><h3>'+esc(g.title)+'</h3><p class="muted">'+count+' of '+g.actions.length+' steps complete</p></div><span class="muted">⌄</span></summary><div class="progress"><div style="width:'+percentage+'%"></div></div><div class="goal-details">'+g.actions.map((a,i)=>'<div class="entry '+(a.done?'done':'')+'"><input type="checkbox" aria-label="Complete '+esc(a.title)+'" data-action-check="'+g.id+'" data-action-id="'+esc(a.id)+'" data-action-index="'+i+'" '+(a.done?'checked':'')+'><span class="entry-text">'+esc(a.title)+'</span><button type="button" class="text-button" data-action-to-task="'+g.id+'" data-action-id="'+esc(a.id)+'">→ Task</button></div>').join('')+'<div class="row-buttons"><button class="text-button" data-add-action="'+g.id+'">+ Step</button><button class="text-button" data-edit-goal="'+g.id+'">Edit goal</button></div></div></details>';
+      return '<details class="goal" data-goal="'+g.id+'" '+(expandedGoals.has(String(g.id))?'open':'')+'><summary><div><h3>'+esc(g.title)+'</h3><p class="muted">'+count+' of '+g.actions.length+' steps complete</p></div><span class="muted">⌄</span></summary><div class="progress"><div style="width:'+percentage+'%"></div></div><div class="goal-details">'+g.actions.map((a,i)=>'<div class="entry '+(a.done?'done':'')+'"><input type="checkbox" aria-label="Complete '+esc(a.title)+'" data-action-check="'+g.id+'" data-action-id="'+esc(a.id)+'" data-action-index="'+i+'" '+(a.done?'checked':'')+'><span class="entry-text">'+esc(a.title)+'</span><span class="goal-step-actions"><button type="button" class="text-button" data-action-to-task="'+g.id+'" data-action-id="'+esc(a.id)+'">→ Task</button><button type="button" class="text-button" data-action-to-habit="'+g.id+'" data-action-id="'+esc(a.id)+'">'+(state.habits.some(h=>String(h.goalId)===String(g.id)&&String(h.actionId)===String(a.id))?'Habit':'→ Habit')+'</button></span></div>').join('')+'<div class="row-buttons"><button class="text-button" data-add-action="'+g.id+'">+ Step</button><button class="text-button" data-edit-goal="'+g.id+'">Edit goal</button></div></div></details>';
     }).join('')+'</section>';
   }).join('')||'<p class="empty">'+(selectedCategory==='All'?'Add a goal to begin.':'No goals in this category.')+'</p>';
 }
@@ -682,6 +686,12 @@ function saveGoalSteps(g,nextActions){
     const i=nextActions.findIndex(a=>String(a.id)===String(old.id));
     if(i<0){task.goalId='';task.actionId='';task.actionIndex='';}
     else {task.actionId=nextActions[i].id;task.actionIndex=i;}
+  }
+  for(const habit of state.habits){
+    if(String(habit.goalId)!==String(g.id))continue;
+    if(!nextActions.some(a=>String(a.id)===String(habit.actionId))){
+      habit.goalId='';habit.actionId='';
+    }
   }
 }
 
@@ -807,6 +817,19 @@ document.addEventListener('click',(e)=>{
     if(selectedCategory===cat)selectedCategory='All';save();render();return;
   }
   const convert=e.target.closest('[data-action-to-task]');if(convert){e.preventDefault();const goal=state.goals.find(g=>String(g.id)===convert.dataset.actionToTask),index=goal?.actions.findIndex(a=>String(a.id)===convert.dataset.actionId)??-1,action=index>=0?goal.actions[index]:null;if(goal&&action){const exists=state.tasks.some(t=>String(t.goalId)===String(goal.id)&&String(t.actionId||'')===String(action.id));if(exists){alert('A task is already linked to this action.');return;}state.tasks.push({id:uid(),title:action.title,date:'',dueDate:'',scheduledDate:'',scheduledTime:'',goalId:String(goal.id),actionIndex:index,actionId:action.id,priority:false,priorityRank:0,done:!!action.done});save();render();planTab('tasks');}return;}
+  const habitConvert=e.target.closest('[data-action-to-habit]');
+  if(habitConvert){
+    e.preventDefault();
+    const g=state.goals.find(g=>String(g.id)===habitConvert.dataset.actionToHabit);
+    const a=g?.actions.find(a=>String(a.id)===habitConvert.dataset.actionId);
+    if(!g||!a)return;
+    let h=state.habits.find(h=>String(h.goalId)===String(g.id)&&String(h.actionId)===String(a.id));
+    if(!h){
+      h={id:uid(),title:a.title,days:{},schedule:[0,1,2,3,4,5,6],goalId:String(g.id),actionId:String(a.id)};
+      state.habits.push(h);save();
+    }
+    render();planTab('habits');openModal('habit',h.id);return;
+  }
   const action=e.target.closest('[data-add-action]');if(action){openModal('action',null,action.dataset.addAction);return;}
   if(e.target.closest('#keepIdea')){createIdeaFromDraft();return;}
   const editIdea=e.target.closest('[data-edit-idea]');if(editIdea){openIdea(editIdea.dataset.editIdea);return;}
@@ -851,6 +874,9 @@ $('cancelModal').onclick=closeModal;
 $('modalBack').onclick=e=>{if(e.target===$('modalBack'))closeModal();};
 $('deleteModal').onclick=()=>{const setName={task:'tasks',event:'events',habit:'habits',goal:'goals'}[modalMode];if(!setName)return;if(!confirm('Delete this item? This cannot be undone.'))return;
   if(modalMode==='goal'){for(const t of state.tasks.filter(t=>String(t.goalId)===String(modalId))){t.goalId='';t.actionId='';t.actionIndex='';}}
+  if(modalMode==='goal'){
+    for(const h of state.habits.filter(h=>String(h.goalId)===String(modalId))){h.goalId='';h.actionId='';}
+  }
   if(modalMode==='task')for(const n of state.ideas)for(const a of n.actions||[])if(String(a.taskId)===String(modalId))a.taskId='';
   state[setName]=state[setName].filter(x=>String(x.id)!==String(modalId));save();closeModal();render();};
 $('exportData').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='canvas-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);};
