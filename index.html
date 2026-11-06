@@ -298,6 +298,10 @@
 .v6-continue-draft{width:100%;margin:10px 0 4px;background:var(--wash);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left}
 #sketchGallery+.v6-resource-list{margin-top:12px}
 
+.goal-motivation{padding:10px 2px 16px}
+.goal-motivation-label{font-size:12px;font-weight:700;color:var(--secondary-ui)}
+.goal-motivation p{font-size:14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;margin:7px 0 0;color:var(--ink)}
+
   </style>
 
 </head>
@@ -483,7 +487,7 @@ function normalize(data){
   if(!['system','light','dark'].includes(result.appearance))result.appearance='system';
   if(['Make meaningful progress','What small thing deserves my best effort today?'].includes(result.todayFocus))result.todayFocus='';
   result.habits=result.habits.filter(h=>h&&typeof h==='object').map(h=>({...h,days:h.days&&typeof h.days==='object'?h.days:{},schedule:Array.isArray(h.schedule)?h.schedule:[0,1,2,3,4,5,6]}));
-  result.goals=result.goals.filter(g=>g&&typeof g==='object').map(g=>({...g,category:String(g.category||'Personal').trim()||'Personal',actions:Array.isArray(g.actions)?g.actions.filter(a=>a&&typeof a==='object').map((a,i)=>({...a,id:String(a.id||('a-'+g.id+'-'+i)),done:!!a.done})):[]}));
+  result.goals=result.goals.filter(g=>g&&typeof g==='object').map(g=>({...g,motivation:typeof g.motivation==='string'?g.motivation:'',category:String(g.category||'Personal').trim()||'Personal',actions:Array.isArray(g.actions)?g.actions.filter(a=>a&&typeof a==='object').map((a,i)=>({...a,id:String(a.id||('a-'+g.id+'-'+i)),done:!!a.done})):[]}));
   const categoryList=[...(Array.isArray(result.categories)?result.categories:[]),...result.goals.map(g=>g.category)];
   const seen=new Set();result.categories=categoryList.map(c=>String(c||'').trim()).filter(c=>{const key=c.toLocaleLowerCase();if(!key||seen.has(key))return false;seen.add(key);return true;});
   if(!result.categories.length)result.categories=['Personal'];
@@ -611,7 +615,7 @@ function renderGoals(){
     return '<section class="card"><div class="card-heading"><h2>'+esc(cat)+'</h2></div>'+goals.map(g=>{
       const count=g.actions.filter(a=>a.done).length;
       const percentage=g.actions.length?Math.round(count/g.actions.length*100):0;
-      return '<details class="goal" data-goal="'+g.id+'" '+(expandedGoals.has(String(g.id))?'open':'')+'><summary><div><h3>'+esc(g.title)+'</h3><p class="muted">'+count+' of '+g.actions.length+' steps complete</p></div><span class="muted">⌄</span></summary><div class="progress"><div style="width:'+percentage+'%"></div></div><div class="goal-details">'+g.actions.map((a,i)=>'<div class="entry '+(a.done?'done':'')+'"><input type="checkbox" aria-label="Complete '+esc(a.title)+'" data-action-check="'+g.id+'" data-action-id="'+esc(a.id)+'" data-action-index="'+i+'" '+(a.done?'checked':'')+'><span class="entry-text">'+esc(a.title)+'</span><span class="goal-step-actions"><button type="button" class="text-button" data-action-to-task="'+g.id+'" data-action-id="'+esc(a.id)+'">→ Task</button><button type="button" class="text-button" data-action-to-habit="'+g.id+'" data-action-id="'+esc(a.id)+'">'+(state.habits.some(h=>String(h.goalId)===String(g.id)&&String(h.actionId)===String(a.id))?'Habit':'→ Habit')+'</button></span></div>').join('')+'<div class="row-buttons"><button class="text-button" data-add-action="'+g.id+'">+ Step</button><button class="text-button" data-edit-goal="'+g.id+'">Edit goal</button></div></div></details>';
+      return '<details class="goal" data-goal="'+g.id+'" '+(expandedGoals.has(String(g.id))?'open':'')+'><summary><div><h3>'+esc(g.title)+'</h3><p class="muted">'+count+' of '+g.actions.length+' steps complete</p></div><span class="muted">⌄</span></summary><div class="progress"><div style="width:'+percentage+'%"></div></div><div class="goal-details">'+(g.motivation?.trim()?'<div class="goal-motivation"><span class="goal-motivation-label">Motivation</span><p>'+esc(g.motivation)+'</p></div>':'')+g.actions.map((a,i)=>'<div class="entry '+(a.done?'done':'')+'"><input type="checkbox" aria-label="Complete '+esc(a.title)+'" data-action-check="'+g.id+'" data-action-id="'+esc(a.id)+'" data-action-index="'+i+'" '+(a.done?'checked':'')+'><span class="entry-text">'+esc(a.title)+'</span><span class="goal-step-actions"><button type="button" class="text-button" data-action-to-task="'+g.id+'" data-action-id="'+esc(a.id)+'">→ Task</button><button type="button" class="text-button" data-action-to-habit="'+g.id+'" data-action-id="'+esc(a.id)+'">'+(state.habits.some(h=>String(h.goalId)===String(g.id)&&String(h.actionId)===String(a.id))?'Habit':'→ Habit')+'</button></span></div>').join('')+'<div class="row-buttons"><button class="text-button" data-add-action="'+g.id+'">+ Step</button><button class="text-button" data-edit-goal="'+g.id+'">Edit goal</button></div></div></details>';
     }).join('')+'</section>';
   }).join('')||'<p class="empty">'+(selectedCategory==='All'?'Add a goal to begin.':'No goals in this category.')+'</p>';
 }
@@ -763,6 +767,7 @@ function openModal(type,id=null,parent=null){
   else if(type==='habit')fields=name(item?.title)+formLine('Repeat on',`<div class="days-picker">${['S','M','T','W','T','F','S'].map((day,i)=>`<label><span>${day}</span><input type="checkbox" name="schedule" value="${i}" ${(item?.schedule||[0,1,2,3,4,5,6]).includes(i)?'checked':''}></label>`).join('')}</div>`);
   else if(type==='goal')fields=name(item?.title)
     +formLine('Category',`<select name="category" required>${state.categories.map(cat=>`<option value="${esc(cat)}" ${(item?.category||state.categories[0])===cat?'selected':''}>${esc(cat)}</option>`).join('')}</select>`)
+    +formLine('Motivation',`<textarea name="motivation" rows="3" maxlength="3000" placeholder="Why does this goal matter to you?">${esc(item?.motivation||'')}</textarea>`)
     +`<div class="goal-step-header"><svg class="icon"><use href="#i-stairs"/></svg><span>Steps</span></div><div id="goalStepsEditor"></div><button type="button" class="goal-step-add" data-step-add>+ Add Step</button>`;
   else if(type==='todayFocus'||type==='weeklyFocus')fields=formLine('Your focus',`<textarea name="title" maxlength="180" placeholder="Write your focus here…">${esc(state[type])}</textarea>`);
   else fields=name(item?.title);
@@ -813,12 +818,12 @@ function handleSave(event){
   else if(modalMode==='event'){const e=existing('events');const fields={title,date,time:String(fd.get('time')||'09:00')};if(e)Object.assign(e,fields);else state.events.push({id:uid(),...fields});}
   else if(modalMode==='habit'){const h=existing('habits');const schedule=fd.getAll('schedule').map(Number);if(h)Object.assign(h,{title,schedule});else state.habits.push({id:uid(),title,schedule,days:{}});}
   else if(modalMode==='goal'){
-    const g=existing('goals'),category=state.categories.find(c=>c===String(fd.get('category')||''))||state.categories[0];
+    const g=existing('goals'),category=state.categories.find(c=>c===String(fd.get('category')||''))||state.categories[0],motivation=String(fd.get('motivation')||'').trim().slice(0,3000);
     const raw=readGoalStepRows().filter(a=>a.title.trim());
     const old=g?.actions||[];
     const actions=raw.map(a=>{const original=old.find(o=>String(o.id)===String(a.id));return {id:a.id||'a-'+uid(),title:a.title.trim(),done:!!original?.done};});
-    if(g){g.title=title;g.category=category;saveGoalSteps(g,actions);}
-    else {state.goals.push({id:uid(),title,category,actions});}
+    if(g){g.title=title;g.category=category;g.motivation=motivation;saveGoalSteps(g,actions);}
+    else {state.goals.push({id:uid(),title,category,motivation,actions});}
     selectedCategory='All';
   }
   else if(modalMode==='weeklyGoal')state.weeklyGoals.push({id:uid(),title,done:false});
