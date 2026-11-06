@@ -4,6 +4,16 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.5 — Data integrity and safe restore
+
+- **Complete backups now include SHA-256 integrity checks.** The v2 JSON backup stores a checksum for the planner state and each attached image, file, saved sketch, and available unfinished sketch draft.
+- **Import validation happens before replacing local data.** Damaged state, missing media, corrupted bytes, duplicate attachment keys, malformed entries, and unsupported versions are rejected without applying the import.
+- **Older v1 complete backups remain importable.** Their original format does not include the new checksums, so old files cannot provide equivalent corruption detection. Legacy text-only backups still require an extra warning and do not reconstruct missing media.
+- **Attachment writes now wait for transaction completion.** A request-level IndexedDB success no longer incorrectly counts as a successful saved file when the transaction aborts.
+- **Failed imports attempt to restore the old planner and draft sketches** and remove newly staged attachments. If browser storage also prevents recovery, Canvas displays an explicit warning; preserve the browser data and your independent backup.
+- **No background/cloud backup or cross-device syncing.** Exports are manual. Keep copies outside Safari, and test restoring to a separate browser/device before treating an export as your only copy.
+- Media from replaced projects are deliberately not automatically purged; avoiding accidental deletion takes precedence over aggressive space cleanup.
+
 ## iPad layout (Canvas v8.4)
 
 The existing Canvas web app adapts to iPad-sized browser windows; there is no separate iPad account or duplicate data format.
