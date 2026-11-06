@@ -325,6 +325,7 @@
   <link rel="stylesheet" href="polish.css">
 <link rel="stylesheet" href="v76.css">
 <link rel="stylesheet" href="v77.css">
+<link rel="stylesheet" href="polish-v81.css">
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -843,8 +844,8 @@ function tab(name){
 // V7.3: horizontal swipes between main views (works in Safari and Capacitor).
 function canvasInstallSwipeNavigation(){
   const views=['today','week','myplan','brainstorm'];
-  const minimumDistance=65;
-  const edgeInset=24; // Leave iOS back/forward system edge gestures alone.
+  const minimumDistance=72;
+  const edgeInset=28; // Leave iOS back/forward system edge gestures alone.
   let gesture=null;
 
   function overlayIsOpen(){
@@ -863,12 +864,13 @@ function canvasInstallSwipeNavigation(){
   }
   function isProtectedTarget(target){
     if(!(target instanceof Element))return true;
-    if(target.closest('input,textarea,select,button,canvas,svg,video,a,summary,details,[contenteditable],[role="slider"],[role="tablist"],.no-swipe,.bottom-nav'))return true;
+    if(target.closest('input,textarea,select,button,canvas,svg,video,a,summary,details,[contenteditable],[role="slider"],[role="tablist"],.no-swipe,.bottom-nav,.v76-notebook-ui,.v81-project-rail,[data-no-swipe]'))return true;
     return isHorizontalScroller(target);
   }
   document.addEventListener('touchstart',event=>{
     gesture=null;
-    if(event.touches.length!==1 || overlayIsOpen() || isProtectedTarget(event.target))return;
+    if(event.touches.length!==1 || overlayIsOpen() || isProtectedTarget(event.target) ||
+       !!window.getSelection()?.toString().trim())return;
     const active=document.querySelector('.view.active');
     if(!active || !views.includes(active.id) || !active.contains(event.target))return;
     const project=$('projectWorkspace');
@@ -876,6 +878,13 @@ function canvasInstallSwipeNavigation(){
     const point=event.touches[0];
     if(point.clientX<edgeInset || point.clientX>window.innerWidth-edgeInset)return;
     gesture={x:point.clientX,y:point.clientY,time:Date.now(),view:active.id};
+  },{passive:true});
+  document.addEventListener('touchmove',event=>{
+    if(!gesture || event.touches.length!==1)return;
+    const p=event.touches[0],dx=p.clientX-gesture.x,dy=p.clientY-gesture.y;
+    // Once a finger commits to vertical scrolling, never reinterpret it as
+    // a tab swipe after the user changes direction.
+    if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)*1.25)gesture=null;
   },{passive:true});
   document.addEventListener('touchend',event=>{
     if(!gesture)return;
@@ -885,7 +894,7 @@ function canvasInstallSwipeNavigation(){
     if(!active || active.id!==start.view)return;
     const point=event.changedTouches[0];
     const dx=point.clientX-start.x,dy=point.clientY-start.y;
-    if(Math.abs(dx)<minimumDistance || Math.abs(dx)<Math.abs(dy)*1.5 || Date.now()-start.time>800)return;
+    if(Math.abs(dx)<minimumDistance || Math.abs(dx)<Math.abs(dy)*1.7 || Date.now()-start.time>800)return;
     const current=views.indexOf(start.view),next=current+(dx<0?1:-1);
     if(next>=0 && next<views.length)tab(views[next]);
   },{passive:true});
@@ -1463,4 +1472,5 @@ v6Normalize();v6Render();
 <script src="v74.js"></script>
 <script src="v76.js"></script>
 <script src="v77.js"></script>
+<script src="polish-v81.js"></script>
 </body></html>
