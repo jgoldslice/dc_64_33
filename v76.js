@@ -7,8 +7,10 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const editorHtml='<div id="v76Editor" class="v76-notebook-ui">'+
     '<div class="v76-page-controls"><label for="v76PageSelect" class="v76-sr">Note page</label><select id="v76PageSelect" aria-label="Select note page"></select>'+
-    '<button type="button" id="v76NewPage" class="secondary-button">+ Page</button><button type="button" id="v76RenamePage" class="v76-icon" aria-label="Rename current page" title="Rename page">✎</button>'+
-    '<button type="button" id="v76DeletePage" class="v76-icon" aria-label="Delete current page" title="Delete page">⋯</button></div>'+
+    '<button type="button" id="v76NewPage" class="secondary-button">+ Page</button>'+
+    '<button type="button" id="v76PageMore" class="v76-icon" aria-label="Page options" aria-expanded="false" aria-controls="v76PageMenu" title="Page options">•••</button>'+
+    '<div id="v76PageMenu" class="v76-page-menu" hidden><button type="button" id="v76RenamePage">Rename page</button>'+
+    '<button type="button" id="v76DeletePage">Delete page</button></div></div>'+
     '<div class="v76-toolbar" role="toolbar" aria-label="Notebook tools">'+
     '<button type="button" data-v76-format="bold" aria-label="Bold selected text" title="Bold"><b>B</b></button>'+
     '<button type="button" data-v76-format="italic" aria-label="Italicize selected text" title="Italic"><i>I</i></button>'+
@@ -21,7 +23,7 @@
     '<button type="button" data-v76-mode="erase" aria-label="Erase drawing strokes" title="Eraser">⌫</button>'+
     '<button type="button" id="v76UndoInk" aria-label="Undo last ink stroke" title="Undo ink">↶</button>'+
     '</div><div class="v76-page-wrap"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div>'+
-    '<p class="v76-tip">Tap a blank spot to type. Drag the ⠿ handle to move text or pictures. Use Pen to draw. Everything saves automatically.</p>'+
+    '<p class="v76-tip">Drag the six dots (⠿) to resize a text box or picture. Press and hold the box itself, then drag to move. Tap text to edit. Changes save automatically.</p>'+
     '<input type="file" id="v76ImageInput" accept="image/*" hidden></div>';
   pane.insertAdjacentHTML('beforeend',editorHtml);
   const root=document.getElementById('v76Editor'),surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
@@ -109,15 +111,22 @@
       poly.setAttribute('stroke-linejoin','round');ink.append(poly);
     }
   }
+  function visibleWidth(item){
+    // Responsive fallback is temporary: moving an object never alters its saved width.
+    return Math.min(Math.max(135,Number(item.width)||250),Math.max(135,surface.clientWidth-18));
+  }
   function placeBox(el,item){
-    el.style.left=Math.max(0,item.x||0)+'px';el.style.top=Math.max(0,item.y||0)+'px';
-    el.style.width='min('+Math.max(135,item.width||250)+'px, calc(100% - '+Math.max(0,item.x||0)+'px))';
+    const width=visibleWidth(item);
+    const maxX=Math.max(0,surface.clientWidth-width-8);
+    el.style.left=Math.min(Math.max(0,Number(item.x)||0),maxX)+'px';
+    el.style.top=Math.max(0,Number(item.y)||0)+'px';
+    el.style.width=width+'px';
   }
   function addRenderedObject(item,p,page){
     const box=document.createElement('div');box.className='v76-item v76-'+item.type;box.dataset.v76Item=item.id;
     placeBox(box,item);
     const grip=document.createElement('button');grip.type='button';grip.className='v76-grip';grip.dataset.v76Drag=item.id;
-    grip.textContent='⠿';grip.title='Drag to move';grip.setAttribute('aria-label','Move '+item.type);box.append(grip);
+    grip.textContent='⠿';grip.title='Drag left or right to resize';grip.setAttribute('aria-label','Resize '+item.type);box.append(grip);
     const remove=document.createElement('button');remove.type='button';remove.className='v76-remove';remove.dataset.v76Remove=item.id;
     remove.textContent='×';remove.setAttribute('aria-label','Remove '+item.type);
     if(item.type==='text'){
@@ -127,7 +136,7 @@
       el.addEventListener('focus',()=>{selectedText=el;applyMode('select');});
       box.append(el);
     }else if(item.type==='image'){
-      const img=document.createElement('img');img.className='v76-photo';img.alt=item.alt||'Note picture';img.dataset.v76ImageKey=item.key;
+      const img=document.createElement('img');img.className='v76-photo';img.alt=item.alt||'Note picture';img.draggable=false;img.dataset.v76ImageKey=item.key;
       box.append(img);
       const size=document.createElement('div');size.className='v76-size-tools';
       size.innerHTML='<button type="button" aria-label="Make image smaller" data-v76-resize="'+esc(item.id)+'" data-step="-50">−</button>'+
@@ -194,12 +203,21 @@
     const pg={id:newId(),title:title.slice(0,80),height:740,objects:[{id:newId(),type:'text',x:14,y:22,width:320,html:''}],strokes:[]};
     ctx.p.notePages.push(pg);ctx.p.activeNotePageId=pg.id;persist();renderPage(ctx.p,true);
   });
+  const pageMore=document.getElementById('v76PageMore');
+  const pageMenu=document.getElementById('v76PageMenu');
+  const closePageMenu=()=>{pageMenu.hidden=true;pageMore.setAttribute('aria-expanded','false');};
+  pageMore.addEventListener('click',()=>{
+    pageMenu.hidden=!pageMenu.hidden;pageMore.setAttribute('aria-expanded',String(!pageMenu.hidden));
+  });
+  document.addEventListener('click',e=>{if(!e.target.closest('.v76-page-controls'))closePageMenu();});
   document.getElementById('v76RenamePage').addEventListener('click',()=>{
+    closePageMenu();
     const ctx=current();if(!ctx)return;
     const title=(prompt('Rename page',ctx.page.title)||'').trim();if(!title)return;
     ctx.page.title=title.slice(0,80);persist();renderPage(ctx.p,true);
   });
   document.getElementById('v76DeletePage').addEventListener('click',()=>{
+    closePageMenu();
     const ctx=current();if(!ctx)return;
     if(ctx.p.notePages.length<2){alert('Keep at least one page in each project.');return;}
     if(!confirm('Delete "'+ctx.page.title+'" and everything on this page? This cannot be undone.'))return;
@@ -263,24 +281,78 @@
   document.getElementById('v76ImageInput').addEventListener('change',async e=>{
     const file=e.target.files?.[0];e.target.value='';if(file)await insertImage(file);
   });
-  let dragging=null;
+  // The six-dot handle changes the saved width ONLY. Long-pressing the object
+  // (not its handle or controls) changes its saved position ONLY.
+  const HOLD_MS=450;
+  let interaction=null,pendingHold=null,holdTimer=null;
+  function clearPendingHold(){
+    if(holdTimer!==null)clearTimeout(holdTimer);
+    holdTimer=null;pendingHold=null;
+  }
+  function startInteraction(session){
+    interaction=session;
+    session.box.classList.add(session.kind==='resize'?'v76-resizing':'v76-moving');
+    try{session.capture.setPointerCapture(session.pointerId);}catch(_){}
+  }
   root.addEventListener('pointerdown',e=>{
-    const grip=e.target.closest('[data-v76-drag]');if(!grip)return;
-    const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===grip.dataset.v76Drag);
+    if(e.button!==0||interaction||pendingHold)return;
+    const grip=e.target.closest('[data-v76-drag]');
+    if(grip){
+      const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===String(grip.dataset.v76Drag));
+      if(!obj)return;
+      const box=grip.closest('.v76-item');
+      e.preventDefault();
+      startInteraction({kind:'resize',pointerId:e.pointerId,capture:grip,box,obj,page:ctx.page,
+        x:e.clientX,startWidth:visibleWidth(obj),changed:false});
+      return;
+    }
+    const box=e.target.closest('.v76-item');
+    if(!box||e.target.closest('button,.v76-size-tools')||mode==='pen'||mode==='erase')return;
+    const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===String(box.dataset.v76Item));
     if(!obj)return;
-    e.preventDefault();grip.setPointerCapture(e.pointerId);
-    dragging={pointerId:e.pointerId,grip,obj,page:ctx.page,x:e.clientX,y:e.clientY,startX:obj.x,startY:obj.y};
+    const session={kind:'move',pointerId:e.pointerId,capture:box,box,obj,page:ctx.page,
+      x:e.clientX,y:e.clientY,startX:parseFloat(box.style.left)||0,
+      startY:parseFloat(box.style.top)||0,changed:false};
+    pendingHold=session;
+    holdTimer=setTimeout(()=>{
+      if(pendingHold!==session)return;
+      clearPendingHold();
+      if(document.activeElement?.isContentEditable)document.activeElement.blur();
+      startInteraction(session);
+    },HOLD_MS);
   });
   root.addEventListener('pointermove',e=>{
-    if(!dragging||dragging.pointerId!==e.pointerId)return;
-    const d=dragging,box=surface.querySelector('[data-v76-item="'+d.obj.id+'"]');
-    d.obj.x=Math.min(Math.max(0,d.startX+e.clientX-d.x),Math.max(0,surface.clientWidth-120));
-    d.obj.y=Math.max(0,d.startY+e.clientY-d.y);
-    if(box)placeBox(box,d.obj);
-    growPage(d.page,d.obj.y+240);
+    if(pendingHold&&pendingHold.pointerId===e.pointerId){
+      if(Math.hypot(e.clientX-pendingHold.x,e.clientY-pendingHold.y)>10)clearPendingHold();
+    }
+    if(!interaction||interaction.pointerId!==e.pointerId)return;
+    const d=interaction;
+    if(d.kind==='resize'){
+      // Dragging the handle right expands the box; left contracts it.
+      const maxWidth=Math.max(135,surface.clientWidth-(parseFloat(d.box.style.left)||0)-8);
+      const width=Math.min(maxWidth,Math.max(135,Math.round(d.startWidth+e.clientX-d.x)));
+      if(width!==d.obj.width){d.obj.width=width;d.changed=true;}
+    }else{
+      const width=visibleWidth(d.obj);
+      const maxX=Math.max(0,surface.clientWidth-width-8);
+      const x=Math.min(maxX,Math.max(0,Math.round(d.startX+e.clientX-d.x)));
+      const y=Math.max(0,Math.round(d.startY+e.clientY-d.y));
+      if(x!==d.obj.x||y!==d.obj.y){d.obj.x=x;d.obj.y=y;d.changed=true;}
+    }
+    placeBox(d.box,d.obj);
+    growPage(d.page,(parseFloat(d.box.style.top)||0)+d.box.offsetHeight+80);
   });
-  function endDrag(e){if(!dragging||dragging.pointerId!==e.pointerId)return;dragging=null;persist();}
-  root.addEventListener('pointerup',endDrag);root.addEventListener('pointercancel',endDrag);
+  function endInteraction(e){
+    if(pendingHold?.pointerId===e.pointerId)clearPendingHold();
+    if(!interaction||interaction.pointerId!==e.pointerId)return;
+    const d=interaction;interaction=null;
+    d.box.classList.remove('v76-moving','v76-resizing');
+    if(d.changed)persist();
+  }
+  root.addEventListener('pointerup',endInteraction);
+  root.addEventListener('pointercancel',endInteraction);
+  // Prevent the native drag-image ghost from intercepting long-press movement.
+  root.addEventListener('dragstart',e=>{if(e.target.closest('.v76-item'))e.preventDefault();});
   let activeStroke=null;
   ink.addEventListener('pointerdown',e=>{
     const ctx=current();if(!ctx||(mode!=='pen'&&mode!=='erase'))return;
