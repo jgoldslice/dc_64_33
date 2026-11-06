@@ -1293,7 +1293,27 @@ function v6ProjectContext(p){
 function v6ShowChat(){const p=v6Project();if(!p)return;$('projectChatText').value=v6ProjectContext(p);$('projectChatBack').hidden=false;$('projectChatBack').classList.add('open');}
 function v6HideChat(){$('projectChatBack').hidden=true;$('projectChatBack').classList.remove('open');}
 function v6DB(){return new Promise((res,rej)=>{if(!('indexedDB' in window)){rej(Error('Local file storage unsupported'));return;}const req=indexedDB.open('canvas-project-attachments-v1',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('blobs'))req.result.createObjectStore('blobs');};req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error||Error('Storage unavailable'));});}
-async function v6Blob(mode,key,blob){const db=await v6DB();return new Promise((res,rej)=>{const tx=db.transaction('blobs',mode==='get'?'readonly':'readwrite'),store=tx.objectStore('blobs');const req=mode==='put'?store.put(blob,key):mode==='delete'?store.delete(key):store.get(key);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);tx.oncomplete=()=>db.close();});}
+async function v6Blob(mode,key,blob){
+  // Request success is not transaction success. In particular, a quota error
+  // can abort the transaction AFTER put() reports success.
+  const db=await v6DB();
+  return new Promise((resolve,reject)=>{
+    let tx,req,result,finished=false;
+    const close=()=>{try{db.close();}catch{}};
+    const fail=error=>{if(finished)return;finished=true;close();reject(error||Error('Attachment storage transaction failed'));};
+    try{
+      if(!['get','put','delete'].includes(mode))throw Error('Unsupported attachment operation');
+      tx=db.transaction('blobs',mode==='get'?'readonly':'readwrite');
+      const store=tx.objectStore('blobs');
+      req=mode==='put'?store.put(blob,key):mode==='delete'?store.delete(key):store.get(key);
+      req.onsuccess=()=>{result=req.result;};
+      req.onerror=()=>{ /* transaction onabort will report a failed write */ };
+      tx.oncomplete=()=>{if(finished)return;finished=true;close();resolve(result);};
+      tx.onabort=()=>fail(tx.error||req?.error||Error('Attachment storage transaction aborted'));
+      tx.onerror=()=>{ /* onabort handles the final failure */ };
+    }catch(error){fail(error);}
+  });
+}
 async function v6Upload(files){
   const p=v6Project();if(!p)return;
   for(const file of files){if(file.size>40*1024*1024){alert(file.name+' exceeds 40 MB');continue;}
