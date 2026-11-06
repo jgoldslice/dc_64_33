@@ -799,6 +799,59 @@ function tab(name){
   });
   window.scrollTo({top:0,behavior:'instant'});
 }
+// V7.3: horizontal swipes between main views (works in Safari and Capacitor).
+function canvasInstallSwipeNavigation(){
+  const views=['today','week','myplan','brainstorm'];
+  const minimumDistance=65;
+  const edgeInset=24; // Leave iOS back/forward system edge gestures alone.
+  let gesture=null;
+
+  function overlayIsOpen(){
+    if(document.querySelector('.modal-back.open'))return true;
+    return [...document.querySelectorAll('[role="dialog"], .opening-overlay')].some(el=>
+      !el.hidden && el.getClientRects().length>0 && getComputedStyle(el).visibility!=='hidden'
+    );
+  }
+  function isHorizontalScroller(element){
+    for(let el=element;el && el!==document.body;el=el.parentElement){
+      if(!(el instanceof HTMLElement))continue;
+      const overflow=getComputedStyle(el).overflowX;
+      if((overflow==='auto'||overflow==='scroll')&&el.scrollWidth>el.clientWidth+8)return true;
+    }
+    return false;
+  }
+  function isProtectedTarget(target){
+    if(!(target instanceof Element))return true;
+    if(target.closest('input,textarea,select,button,canvas,svg,video,a,summary,details,[contenteditable],[role="slider"],[role="tablist"],.no-swipe,.bottom-nav'))return true;
+    return isHorizontalScroller(target);
+  }
+  document.addEventListener('touchstart',event=>{
+    gesture=null;
+    if(event.touches.length!==1 || overlayIsOpen() || isProtectedTarget(event.target))return;
+    const active=document.querySelector('.view.active');
+    if(!active || !views.includes(active.id) || !active.contains(event.target))return;
+    const project=$('projectWorkspace');
+    if(active.id==='brainstorm' && project && !project.hidden)return;
+    const point=event.touches[0];
+    if(point.clientX<edgeInset || point.clientX>window.innerWidth-edgeInset)return;
+    gesture={x:point.clientX,y:point.clientY,time:Date.now(),view:active.id};
+  },{passive:true});
+  document.addEventListener('touchend',event=>{
+    if(!gesture)return;
+    const start=gesture;gesture=null;
+    if(event.changedTouches.length!==1 || overlayIsOpen())return;
+    const active=document.querySelector('.view.active');
+    if(!active || active.id!==start.view)return;
+    const point=event.changedTouches[0];
+    const dx=point.clientX-start.x,dy=point.clientY-start.y;
+    if(Math.abs(dx)<minimumDistance || Math.abs(dx)<Math.abs(dy)*1.5 || Date.now()-start.time>800)return;
+    const current=views.indexOf(start.view),next=current+(dx<0?1:-1);
+    if(next>=0 && next<views.length)tab(views[next]);
+  },{passive:true});
+  document.addEventListener('touchcancel',()=>{gesture=null;},{passive:true});
+}
+canvasInstallSwipeNavigation();
+
 function planTab(name){
   if(!['tasks','goals','habits'].includes(name))return;
   activePlanTab=name;
