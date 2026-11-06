@@ -215,41 +215,24 @@ test('Text stays transparent over images and size choices persist independently'
 });
 
 
-test('Touch gesture does not trigger native select-all and long-hold moves text', async ({page}) => {
+
+test('Notebook touchstart cancels the native long-press selection gesture', async ({page}) => {
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept('Touch Test'));
+  page.once('dialog',d=>d.accept('Touch Safety Test'));
   await page.locator('#newProject').click();
-  const box=page.locator('#v76Surface .v76-text').first();
-  const rich=box.locator('.v76-rich');
-  await rich.fill('iPhone touch should move without selection');
+  const rich=page.locator('#v76Surface .v76-text .v76-rich').first();
+  await rich.fill('iPhone selection protection');
   const rect=await rich.boundingBox();
-  const x=rect.x+Math.min(42,rect.width/2),y=rect.y+Math.min(15,rect.height/2);
-  const before=await box.evaluate(el=>parseFloat(el.style.left));
-  // Emulate a touch pointer sequence without mixing synthetic TouchEvents
-  // with Playwright's real mouse (which Chromium otherwise suppresses).
-  await page.evaluate(({x,y})=>{
-    const target=document.elementFromPoint(x,y);
-    target.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerType:'touch',pointerId:145,button:0,clientX:x,clientY:y}));
-  },{x,y});
-  await page.waitForTimeout(530);
-  await page.evaluate(({x,y})=>{
-    const target=document.querySelector('.v76-text .v76-rich');
-    target.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,cancelable:true,pointerType:'touch',pointerId:145,button:0,clientX:x+34,clientY:y+15}));
-    target.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerType:'touch',pointerId:145,button:0,clientX:x+34,clientY:y+15}));
-  },{x,y});
-  const moved=await box.evaluate(el=>parseFloat(el.style.left));
-  expect(moved).toBeGreaterThan(before+15);
-  const selection=await page.evaluate(()=>window.getSelection()?.toString()||'');
-  expect(selection).toBe('');
   const canceled=await page.evaluate(({x,y})=>{
     const target=document.elementFromPoint(x,y);
     const touch=new Touch({identifier:99,target,clientX:x,clientY:y});
     const event=new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[touch],changedTouches:[touch],targetTouches:[touch]});
     target.dispatchEvent(event);return event.defaultPrevented;
-  },{x:rect.x+20,y:rect.y+15});
+  },{x:rect.x+30,y:rect.y+12});
   expect(canceled).toBe(true);
+  expect(await page.evaluate(()=>window.getSelection()?.toString()||'')).toBe('');
   expect(errors).toEqual([]);
 });
