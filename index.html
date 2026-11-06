@@ -284,6 +284,8 @@
 }
 .v6-notebook:focus{outline:none;box-shadow:none}
 .v6-notebook-ideas{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+.v6-sketch-thumb{width:74px;height:60px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff;flex:none}
+.v6-sketch-card{align-items:center}
 @media(min-width:760px){.v6-notebook{min-height:470px;height:min(65vh,760px)}}
 
   </style>
@@ -984,8 +986,21 @@ function v6RenderLibrary(p){
     }).catch(()=>{});
   }
 }
+let v6SketchThumbUrls=[];
 function v6RenderSketches(p){
-  $('projectSketchList').innerHTML=p.library.filter(r=>r.type==='sketch').map(r=>'<div class="v6-resource"><span>✎</span><div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>Saved sketch</small></div><button class="text-button" type="button" data-v6-load-sketch="'+esc(r.id)+'">Open</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'">×</button></div>').join('');
+  for(const url of v6SketchThumbUrls)URL.revokeObjectURL(url);
+  v6SketchThumbUrls=[];
+  const sketches=p.library.filter(r=>r.type==='sketch');
+  $('projectSketchList').innerHTML=(sketches.length?'<p class="muted small">Saved Sketches</p>':'')+
+    sketches.map(r=>'<div class="v6-resource v6-sketch-card"><img class="v6-sketch-thumb" data-v6-sketch-thumb="'+esc(r.id)+'" alt="Sketch preview"><div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>Tap Open to continue drawing</small></div><button class="text-button" type="button" data-v6-load-sketch="'+esc(r.id)+'">Open</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'" aria-label="Delete sketch">×</button></div>').join('');
+  const projectId=String(p.id);
+  for(const r of sketches){
+    v6Blob('get',r.key).then(blob=>{
+      if(!blob||String(v6Project()?.id)!==projectId)return;
+      const img=[...$('projectSketchList').querySelectorAll('[data-v6-sketch-thumb]')].find(x=>String(x.dataset.v6SketchThumb)===String(r.id));
+      if(img){const url=URL.createObjectURL(blob);v6SketchThumbUrls.push(url);img.src=url;}
+    }).catch(()=>{});
+  }
 }
 function v6CreateProject(name){
   name=String(name||'').trim().slice(0,120);if(!name)return;
@@ -1067,7 +1082,7 @@ function v6SetupCanvas(){
 }
 function v6DrawBlob(blob){
   const url=URL.createObjectURL(blob),img=new Image();
-  img.onload=()=>{v6Ctx.drawImage(img,0,0,v6Canvas.width,v6Canvas.height);URL.revokeObjectURL(url);};
+  img.onload=()=>{v6Ctx.drawImage(img,0,0,v6Canvas.width,v6Canvas.height);URL.revokeObjectURL(url);v6AutosaveSketch();};
   img.onerror=()=>URL.revokeObjectURL(url);img.src=url;
 }
 function v6Point(e){
@@ -1092,9 +1107,17 @@ function v6Move(e){
   if(!v6Drawing)return;e.preventDefault();
   const pt=v6Point(e);v6Ctx.lineTo(pt.x,pt.y);v6Ctx.stroke();
 }
+let v6DraftGeneration=0,v6DraftWrite=Promise.resolve();
 function v6AutosaveSketch(){
   const p=v6Project();if(!p)return;
-  v6Canvas.toBlob(async blob=>{if(!blob)return;try{await v6Blob('put','v6-draft-'+p.id,blob);}catch{}},'image/png');
+  const projectId=String(p.id),generation=++v6DraftGeneration;
+  v6Canvas.toBlob(blob=>{
+    if(!blob||generation!==v6DraftGeneration)return;
+    v6DraftWrite=v6DraftWrite.catch(()=>{}).then(()=>{
+      if(generation!==v6DraftGeneration)return;
+      return v6Blob('put','v6-draft-'+projectId,blob);
+    }).catch(()=>{});
+  },'image/png');
 }
 function v6End(e){
   if(!v6Drawing)return;v6Drawing=false;v6Ctx.closePath();v6Ctx.globalCompositeOperation='source-over';
@@ -1112,13 +1135,16 @@ async function v6SaveSketch(){
     const old=p.library.find(r=>String(r.id)===String(id));
     if(old)old.title=title.trim().slice(0,160);
     else p.library.push({id,type:'sketch',title:title.trim().slice(0,160),key,mime:'image/png',created:v6Now()});
-    v6SketchId=id;save();v6RenderSketches(p);
+    // File the finished drawing away like a note, then show a fresh page.
+    v6SketchId=null;v6InkHistory=[];v6ClearCanvas();v6AutosaveSketch();
+    save();v6RenderSketches(p);
   }catch(err){alert('Unable to save sketch: '+err.message);}
 }
 async function v6LoadSketch(id){
   const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));if(!r)return;
   try{const blob=await v6Blob('get',r.key);if(!blob)throw Error('Sketch not found');
-    v6ClearCanvas();v6SketchId=id;v6DrawBlob(blob);v6AutosaveSketch();
+    ++v6DraftGeneration;v6InkHistory=[];v6ClearCanvas();v6SketchId=id;v6DrawBlob(blob);
+    // Do not autosave until the saved sketch has finished loading.
   }catch(err){alert('Could not load sketch: '+err.message);}
 }
 // Project navigation and all workspace controls use event delegation.
