@@ -271,6 +271,21 @@
 .goal-step-actions .text-button{font-size:12px;white-space:nowrap;padding:7px 2px}
 @media(max-width:420px){.goal-step-actions{gap:4px}.goal-step-actions .text-button{font-size:11px}}
 
+/* A single quiet, ruled notebook page with a consistent writing baseline. */
+.v6-notebook-pane{padding:13px 16px 16px}
+.v6-notebook{
+  box-sizing:border-box;display:block;width:100%;min-height:370px;height:min(62vh,650px);
+  padding:12px 12px 14px;border:0!important;border-radius:7px;
+  resize:vertical;outline:none;background-color:transparent!important;
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--line) 31px,var(--line) 32px)!important;
+  background-position:0 12px!important;
+  color:var(--ink)!important;font:normal 16px/32px system-ui,-apple-system,sans-serif!important;
+  letter-spacing:0;overflow-y:auto;overflow-wrap:break-word;
+}
+.v6-notebook:focus{outline:none;box-shadow:none}
+.v6-notebook-ideas{margin-top:18px;border-top:1px solid var(--line);padding-top:12px}
+@media(min-width:760px){.v6-notebook{min-height:470px;height:min(65vh,760px)}}
+
   </style>
 
 </head>
@@ -333,8 +348,8 @@
           <button data-project-tab="actions">Actions</button>
           <button data-project-tab="library">Library</button>
         </div>
-        <section class="card v6-project-pane" id="projectNotes">
-          <div class="card-heading"><h2>Notes</h2><button type="button" id="addNoteSection" class="text-button">+ Section</button></div>
+        <section class="card v6-project-pane v6-notebook-pane" id="projectNotes">
+          <textarea id="projectNotebook" class="v6-notebook" aria-label="Project notebook" spellcheck="true"></textarea>
           <div id="projectNotesList"></div>
         </section>
         <section class="card v6-project-pane" id="projectSketch" hidden>
@@ -899,7 +914,21 @@ const v6Id=()=>String(uid())+'-'+Math.random().toString(36).slice(2,7);
 const v6Now=()=>new Date().toISOString();
 function v6Normalize(){
   if(!Array.isArray(state.projects))state.projects=[];
-  for(const p of state.projects){if(!Array.isArray(p.notes))p.notes=[];if(!Array.isArray(p.actions))p.actions=[];if(!Array.isArray(p.library))p.library=[];}
+  let migrated=false;
+  for(const p of state.projects){
+    if(!Array.isArray(p.notes))p.notes=[];
+    if(!Array.isArray(p.actions))p.actions=[];
+    if(!Array.isArray(p.library))p.library=[];
+    if(typeof p.notebookText!=='string'){
+      // Preserve content from the old heading/bullet editor without deleting its structure.
+      p.notebookText=p.notes.map(section=>[
+        String(section.heading||'').trim(),
+        ...(Array.isArray(section.items)?section.items:[]).map(item=>String(item.text||'').trim()).filter(Boolean)
+      ].filter(Boolean).join('\n')).filter(Boolean).join('\n\n');
+      migrated=true;
+    }
+  }
+  if(migrated)save();
 }
 function v6OpenProject(id){
   if(!state.projects.some(p=>String(p.id)===String(id)))return;
@@ -922,11 +951,16 @@ function v6Render(){
   if(v6ProjectTab==='sketch')requestAnimationFrame(v6SetupCanvas);
 }
 function v6RenderNotes(p){
-  const html=p.notes.map(section=>'<div class="v6-note-section"><div class="v6-section-head"><input data-v6-heading="'+esc(section.id)+'" aria-label="Section title" value="'+esc(section.heading)+'" placeholder="Section heading"><button type="button" class="v6-icon-btn" data-v6-remove-section="'+esc(section.id)+'">×</button></div>'+
-  section.items.map(item=>'<div class="v6-note-line"><span>•</span><input data-v6-bullet="'+esc(item.id)+'" data-v6-section="'+esc(section.id)+'" value="'+esc(item.text)+'" placeholder="Add a thought..."><button type="button" class="v6-icon-btn" data-v6-remove-bullet="'+esc(item.id)+'" data-v6-section="'+esc(section.id)+'">×</button></div>').join('')+
-  '<button class="v6-add-line" type="button" data-v6-add-bullet="'+esc(section.id)+'">+ Bullet point</button></div>').join('');
+  const page=$('projectNotebook');
+  // Replacing a focused textarea on every render disrupts the iOS caret.
+  if(document.activeElement!==page || page.dataset.projectId!==String(p.id)){
+    page.value=p.notebookText||'';
+  }
+  page.dataset.projectId=String(p.id);
   const ideas=state.ideas.filter(n=>String(n.projectId||'')===String(p.id));
-  $('projectNotesList').innerHTML=html+(ideas.length?'<div class="v6-section-head"><strong>Saved Ideas</strong></div>'+ideas.map(n=>'<button type="button" class="idea-card" data-edit-idea="'+esc(n.id)+'"><strong>'+esc(ideaTitle(n))+'</strong></button>').join(''):'');
+  $('projectNotesList').innerHTML=ideas.length?
+    '<div class="v6-notebook-ideas"><p class="muted small">Saved Ideas</p>'+
+    ideas.map(n=>'<button type="button" class="idea-card" data-edit-idea="'+esc(n.id)+'"><strong>'+esc(ideaTitle(n))+'</strong></button>').join('')+'</div>':'';
 }
 function v6RenderActions(p){
   $('projectActionsList').innerHTML=p.actions.map(a=>{
@@ -970,7 +1004,7 @@ function v6ActionToTask(id){
 function v6ProjectContext(p){
   const ideas=state.ideas.filter(n=>String(n.projectId||'')===String(p.id));
   const lines=['Help me develop this project. Explore options, identify obstacles, and suggest actionable next steps.','','PROJECT: '+p.title,''];
-  for(const sec of p.notes)lines.push(sec.heading||'Notes',...sec.items.map(i=>'• '+i.text),'');
+  if(p.notebookText?.trim())lines.push('NOTES',p.notebookText.trim(),'');
   if(ideas.length)lines.push('IDEAS',...ideas.map(n=>'- '+n.body.trim()+(n.actions?.length?'\nActions: '+n.actions.map(a=>a.title).join('; '):'')),'');
   if(p.actions.length)lines.push('ACTIONS',...p.actions.map(a=>(a.done?'[x] ':'[ ] ')+a.title),'');
   if(p.library.length)lines.push('LIBRARY',...p.library.map(r=>'- '+r.title+(r.url?' — '+r.url:'')+(r.type==='code'?'\n'+r.content:'')),'');
@@ -1108,21 +1142,6 @@ document.addEventListener('click',e=>{
   }
   const tabButton=match('[data-project-tab]');
   if(tabButton){v6ProjectTab=tabButton.dataset.projectTab;v6Render();return;}
-  if(match('#addNoteSection')){
-    const p=v6Project();if(!p)return;
-    p.notes.push({id:v6Id(),heading:'',items:[{id:v6Id(),text:''}]});save();v6RenderNotes(p);$('projectNotesList').querySelector('.v6-note-section:last-child input')?.focus();return;
-  }
-  const bullet=match('[data-v6-add-bullet]');if(bullet){const p=v6Project(),section=p?.notes.find(n=>String(n.id)===bullet.dataset.v6AddBullet);if(!section)return;
-    section.items.push({id:v6Id(),text:''});save();v6RenderNotes(p);return;
-  }
-  const removeBullet=match('[data-v6-remove-bullet]');if(removeBullet){
-    const p=v6Project(),sec=p?.notes.find(n=>String(n.id)===removeBullet.dataset.v6Section);if(!sec)return;
-    sec.items=sec.items.filter(i=>String(i.id)!==String(removeBullet.dataset.v6RemoveBullet));save();v6RenderNotes(p);return;
-  }
-  const removeSection=match('[data-v6-remove-section]');if(removeSection){
-    const p=v6Project();if(!p||!confirm('Delete this notes section?'))return;
-    p.notes=p.notes.filter(x=>String(x.id)!==String(removeSection.dataset.v6RemoveSection));save();v6RenderNotes(p);return;
-  }
   const taskButton=match('[data-v6-task]');if(taskButton){v6ActionToTask(taskButton.dataset.v6Task);return;}
   const removeAction=match('[data-v6-remove-action]');if(removeAction){
     const p=v6Project();if(!p)return;p.actions=p.actions.filter(a=>String(a.id)!==String(removeAction.dataset.v6RemoveAction));save();v6RenderActions(p);return;
@@ -1144,8 +1163,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   const x=e.target,p=v6Project();if(!p)return;
-  if(x.dataset.v6Heading){const sec=p.notes.find(s=>String(s.id)===x.dataset.v6Heading);if(sec){sec.heading=x.value;save();}return;}
-  if(x.dataset.v6Bullet){const sec=p.notes.find(s=>String(s.id)===x.dataset.v6Section),b=sec?.items.find(i=>String(i.id)===x.dataset.v6Bullet);if(b){b.text=x.value;save();}}
+  if(x.id==='projectNotebook'){p.notebookText=x.value;save();}
 });
 document.addEventListener('change',e=>{
   const x=e.target,p=v6Project();
