@@ -24,6 +24,7 @@ async function gesture(page,{from='today',start=315,end=105,target,vertical=0}={
 test('Swipe next and previous flips the correct main tabs and cleans up overlays',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);
+  await expect(page.locator('#openingOverlay')).toBeHidden({timeout:10000});
   await expect(page.locator('#today')).toHaveClass(/active/);
   await gesture(page);
   await expect(page.locator('#week')).toHaveClass(/active/);
@@ -35,6 +36,7 @@ test('Swipe next and previous flips the correct main tabs and cleans up overlays
 });
 test('Vertical scrolling and protected controls never trigger a tab turn',async({page})=>{
   await page.goto(base);
+  await expect(page.locator('#openingOverlay')).toBeHidden({timeout:10000});
   await gesture(page,{start:185,end:155,vertical:170});
   await expect(page.locator('#today')).toHaveClass(/active/);
   await gesture(page,{start:315,end:105,target:'.bottom-nav [data-tab="today"]'});
@@ -44,6 +46,7 @@ test('Vertical scrolling and protected controls never trigger a tab turn',async(
 test('Reduced Motion swaps tabs without a 3D overlay',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto(base);
+  await expect(page.locator('#openingOverlay')).toBeHidden({timeout:10000});
   await gesture(page);
   await expect(page.locator('#week')).toHaveClass(/active/);
   await expect(page.locator('.canvas-turn-layer')).toHaveCount(0);
