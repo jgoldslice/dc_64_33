@@ -1,11 +1,11 @@
 /* Canvas 8.2 — cache only our own app's assets, never another site's caches. */
-const CACHE='canvas-v8-2-project-flow';
+const CACHE='canvas-v8-3-paper-turn';
 const PREFIX='canvas-';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon.svg',
   './v74.js','./v74.css','./polish.css','./v76.js','./v76.css',
   './v77.js','./v77.css','./polish-v81.css','./polish-v81.js',
-  './polish-v82.css','./polish-v82.js'
+  './polish-v82.css','./polish-v82.js','./page-turn.js','./page-turn.css'
 ];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))
