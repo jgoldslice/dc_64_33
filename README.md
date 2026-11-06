@@ -45,3 +45,22 @@ Dependency-free HTML/CSS/JavaScript in `index.html`; SVG Home Screen icon and ma
 ### Storage warning
 
 Canvas keeps text/project metadata in the original `jgold-planner-v1` localStorage key. Images, uploaded files, and sketch PNGs live in browser IndexedDB and **are not included in JSON backup exports**. For important projects, keep independent copies of the original files or downloads of your sketches. Clearing Safari/browser data or moving to a different device can remove local attachments. Browser storage quota may limit file sizes and total usage. There is no cloud sync.
+
+## Canvas v7.4 — Project workspace refinement
+
+- **Project Actions:** Persistent List / Board toggle per project, with To Do / In Progress / Done status controls and linked Blueprint task completion. Board columns are grouped sections, not drag-and-drop.
+- **Project Notes:** Preserves the existing freeform notebook and adds optional Heading, Paragraph, Checklist, Code, and Image blocks with reorder controls. Note images use IndexedDB.
+- **Project Library:** Existing gallery and full-screen viewer remain, with an additional Gallery / List toggle per project.
+- **Backups:** Customize → Export backup writes a `canvas-complete-backup` JSON containing planner data, referenced IndexedDB media, and sketch drafts. Import supports new complete backups and legacy text-only backups. Backups can be large because they embed media as base64.
+- **No floating + button** was added. Existing Add controls remain.
+- **Offline:** `sw.js` caches `v74.js` and `v74.css`.
+
+### v7.4 manual verification
+1. Swipe between views, then open a project and confirm gesture protection.
+2. Move project actions between statuses in List and Board and verify linked Blueprint task completion.
+3. Add and reorder note blocks, save and reload, then confirm content persists.
+4. Upload an image and save a sketch, export a complete backup, and import into a separate clean browser profile.
+5. Verify files, sketches, tasks, and project data survive import.
+6. Test offline after the updated app has loaded online.
+
+Keep independent copies of irreplaceable files until the complete backup and restore workflow has been tested on-device.

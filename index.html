@@ -321,6 +321,7 @@
 
   </style>
 
+  <link rel="stylesheet" href="v74.css">
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -383,6 +384,8 @@
         </div>
         <section class="card v6-project-pane v6-notebook-pane" id="projectNotes">
           <textarea id="projectNotebook" class="v6-notebook" aria-label="Project notebook" spellcheck="true"></textarea>
+          <div class="v74-block-toolbar"><label for="v74BlockType" class="muted small">Add structured content</label><select id="v74BlockType" aria-label="Content block type"><option value="paragraph">Paragraph</option><option value="heading">Heading</option><option value="checklist">Checklist</option><option value="image">Image</option><option value="code">Code</option></select><button type="button" id="v74AddBlock" class="secondary-button">+ Add block</button><input type="file" id="v74BlockImage" accept="image/*" hidden></div>
+          <div id="v74Blocks" class="v74-blocks" aria-label="Project note blocks"></div>
           <div id="projectNotesList"></div>
         </section>
         <section class="card v6-project-pane" id="projectSketch" hidden>
@@ -399,15 +402,15 @@
           <div id="projectSketchList" class="v6-resource-list"></div>
         </section>
         <section class="card v6-project-pane" id="projectActions" hidden>
-          <div class="card-heading"><h2>Actions</h2></div>
+          <div class="card-heading"><h2>Actions</h2><div id="v74ActionView" class="v74-switch" role="group" aria-label="Actions view"><button type="button" class="selected" data-action-view="list">List</button><button type="button" data-action-view="board">Board</button></div></div>
           <div id="projectActionsList"></div>
           <form id="projectActionForm" class="v6-inline-form"><input id="projectActionInput" maxlength="160" required placeholder="Add an action..." aria-label="New project action"><button class="secondary-button" type="submit">+</button></form>
         </section>
         <section class="card v6-project-pane" id="projectLibrary" hidden>
-          <div class="card-heading"><h2>Library</h2><div class="v6-library-menu-wrap"><button type="button" id="libraryAddToggle" class="secondary-button" aria-expanded="false" aria-controls="libraryAddChoices">+ Add</button><div id="libraryAddChoices" class="v6-library-menu" hidden><button type="button" data-library-add="link">Link</button><button type="button" data-library-add="code">Code</button><button type="button" id="uploadProjectFile">Image / File</button></div></div></div>
+          <div class="card-heading"><h2>Library</h2><div id="v74LibraryView" class="v74-switch" role="group" aria-label="Library view"><button type="button" class="selected" data-library-view="gallery">Gallery</button><button type="button" data-library-view="list">List</button></div><div class="v6-library-menu-wrap"><button type="button" id="libraryAddToggle" class="secondary-button" aria-expanded="false" aria-controls="libraryAddChoices">+ Add</button><div id="libraryAddChoices" class="v6-library-menu" hidden><button type="button" data-library-add="link">Link</button><button type="button" data-library-add="code">Code</button><button type="button" id="uploadProjectFile">Image / File</button></div></div></div>
           <input id="projectFileInput" type="file" hidden accept="image/*,.pdf,.txt,.md,.py,.ino,.js,.json,.zip,.stl,.3mf,.obj,.step,.stp,.csv" multiple>
           <div id="projectLibraryList"></div>
-          <p class="muted small">Files and sketches stay in this browser. Export important originals separately; JSON backups do not include uploaded file bytes.</p>
+          <p class="muted small">Files and sketches stay on this device. Use Customize → Export backup to include them in a complete backup.</p>
         </section>
         <section class="card v6-project-footer"><button id="projectChat" type="button" class="primary-button">Develop in ChatGPT ↗</button><button id="deleteProject" type="button" class="text-button">Delete project</button></section>
       </div>
@@ -996,7 +999,7 @@ $('deleteModal').onclick=()=>{const setName={task:'tasks',event:'events',habit:'
   state[setName]=state[setName].filter(x=>String(x.id)!==String(modalId));save();closeModal();render();};
 $('exportData').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='canvas-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);};
 $('importData').onclick=()=>$('importFile').click();
-$('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{const d=JSON.parse(await file.text());if(!d||!Array.isArray(d.tasks)||!Array.isArray(d.habits)||!Array.isArray(d.goals))throw Error('Unrecognized backup');if(!confirm('Replace current planner data with this backup? Export your current data first if needed.'))return;state=normalize(d);save();render();alert('Backup imported.');}catch(err){alert('Could not import this backup: '+err.message);}finally{e.target.value='';}});
+$('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{await window.v74ImportBackup(file);}catch(err){alert('Could not import backup: '+err.message);}finally{e.target.value='';}});
 const systemMode=matchMedia('(prefers-color-scheme: dark)');
 if(systemMode.addEventListener)systemMode.addEventListener('change',()=>{if(state.appearance==='system')applyTheme();});
 else if(systemMode.addListener)systemMode.addListener(()=>{if(state.appearance==='system')applyTheme();});
@@ -1403,4 +1406,5 @@ v6Canvas.addEventListener('pointercancel',v6End);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('v6ImageViewer').hidden)v6CloseImage();else if(!$('projectChatBack').hidden)v6HideChat();}});
 v6Normalize();v6Render();
 </script>
+<script src="v74.js"></script>
 </body></html>
