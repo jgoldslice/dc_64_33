@@ -1,0 +1,28 @@
+/* Canvas v7.5 — light-touch polish; Today doubles as Home */
+.brand-home{appearance:none;border:0;background:transparent;color:var(--ink);cursor:pointer;padding:7px 5px;border-radius:9px;text-align:left}
+.brand-home:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:3px}
+.color-selection{font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.45}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(82px,1fr));gap:10px;margin:13px 0 20px}
+.swatch{width:100%;height:auto;min-height:83px;border-radius:12px;padding:10px 5px 9px;border:1px solid var(--line);background:var(--surface);box-shadow:none;color:var(--ink);text-shadow:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;font-size:12px;line-height:1.2;transition:background-color .15s ease,border-color .15s ease}
+.swatch.selected{background:var(--wash);border-color:var(--primary-ui);outline:2px solid var(--primary-ui);outline-offset:1px}
+.swatch:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:3px}
+.swatch-dot{width:35px;height:35px;min-height:35px;border-radius:50%;background:var(--swatch-color);border:1px solid rgba(40,54,45,.22);position:relative;display:block;box-shadow:0 1px 3px rgba(20,30,20,.08)}
+.swatch.selected .swatch-dot:after{content:'✓';position:absolute;right:-7px;bottom:-5px;width:20px;height:20px;display:grid;place-items:center;border-radius:50%;font:700 12px sans-serif;background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.swatch-label{text-align:center;overflow-wrap:anywhere;color:var(--ink);font-weight:500}
+.swatch.selected .swatch-label{font-weight:750}
+.color-input{min-height:46px}
+.color-input input{min-width:58px;min-height:42px}
+.bottom-nav button{min-height:50px}
+#v74ActionView button,#v74LibraryView button{min-height:42px;min-width:50px}
+.v74-block-actions button{min-width:39px;min-height:39px}
+#v74AddBlock,.v74-block-toolbar select{min-height:44px}
+#projectActionsList:not(.v74-board) .v6-action-row{flex-wrap:wrap;row-gap:7px}
+#projectActionsList .v74-list-status{min-height:39px}
+.v74-block:focus-within{border-color:var(--primary-ui)}
+.v74-action-card:focus-within{border-color:var(--primary-ui)}
+@media(max-width:380px){
+ .swatches{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+ .swatch{min-height:77px;padding:8px 3px}
+ #projectActions .card-heading,#projectLibrary .card-heading{row-gap:9px}
+}
+@media(prefers-reduced-motion:reduce){.swatch{transition:none}}
