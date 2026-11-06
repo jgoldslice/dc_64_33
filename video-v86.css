@@ -38,7 +38,7 @@
 .v86-video-open{min-height:44px;padding-inline:5px;text-align:left;color:var(--secondary-ui)}
 .v86-video-remove{min-width:44px;min-height:44px;font-size:20px}
 #projectLibraryList .v6-library-other:has(.v86-video-card){margin-top:10px}
-#projectLibraryList:not(.v74-library-list) .v6-library-other{
+#projectLibraryList:not(.v74-library-list) .v6-library-other:has(.v86-video-card){
   grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));
   align-items:start;
 }
