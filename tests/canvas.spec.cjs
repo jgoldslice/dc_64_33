@@ -214,7 +214,8 @@ test('Text stays transparent over images and size choices persist independently'
   expect(errors).toEqual([]);
 });
 
-test('Short touchscreen tap edits and long-press move does not select all text', async ({page}) => {
+
+test('Touch gesture does not trigger native select-all and long-hold moves text', async ({page}) => {
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(baseURL);
@@ -227,18 +228,28 @@ test('Short touchscreen tap edits and long-press move does not select all text',
   const rect=await rich.boundingBox();
   const x=rect.x+Math.min(42,rect.width/2),y=rect.y+Math.min(15,rect.height/2);
   const before=await box.evaluate(el=>parseFloat(el.style.left));
+  // Emulate a touch pointer sequence without mixing synthetic TouchEvents
+  // with Playwright's real mouse (which Chromium otherwise suppresses).
   await page.evaluate(({x,y})=>{
     const target=document.elementFromPoint(x,y);
-    const touch=new Touch({identifier:99,target,clientX:x,clientY:y});
-    target.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[touch],changedTouches:[touch],targetTouches:[touch]}));
+    target.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerType:'touch',pointerId:145,button:0,clientX:x,clientY:y}));
   },{x,y});
-  await page.mouse.move(x,y);await page.mouse.down();
-  await page.waitForTimeout(550);
-  await page.mouse.move(x+35,y+17,{steps:8});
-  await page.mouse.up();
+  await page.waitForTimeout(530);
+  await page.evaluate(({x,y})=>{
+    const target=document.querySelector('.v76-text .v76-rich');
+    target.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,cancelable:true,pointerType:'touch',pointerId:145,button:0,clientX:x+34,clientY:y+15}));
+    target.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerType:'touch',pointerId:145,button:0,clientX:x+34,clientY:y+15}));
+  },{x,y});
   const moved=await box.evaluate(el=>parseFloat(el.style.left));
   expect(moved).toBeGreaterThan(before+15);
   const selection=await page.evaluate(()=>window.getSelection()?.toString()||'');
   expect(selection).toBe('');
+  const canceled=await page.evaluate(({x,y})=>{
+    const target=document.elementFromPoint(x,y);
+    const touch=new Touch({identifier:99,target,clientX:x,clientY:y});
+    const event=new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[touch],changedTouches:[touch],targetTouches:[touch]});
+    target.dispatchEvent(event);return event.defaultPrevented;
+  },{x:rect.x+20,y:rect.y+15});
+  expect(canceled).toBe(true);
   expect(errors).toEqual([]);
 });
