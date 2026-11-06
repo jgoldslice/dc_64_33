@@ -1,0 +1,29 @@
+/* Canvas v7.4 — project-specific enhancements */
+.v74-switch{display:flex;gap:3px;border-radius:10px;background:var(--wash);padding:3px}
+.v74-switch button{border:0;background:transparent;border-radius:8px;padding:8px 12px;color:var(--muted);font-size:12px}
+.v74-switch button.selected{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:var(--shadow)}
+.v74-block-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.v74-block-toolbar select{flex:1;min-width:120px;padding:9px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:9px}
+.v74-blocks{display:grid;gap:10px;margin:12px 0}
+.v74-block{position:relative;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;display:grid;gap:8px}
+.v74-block-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
+.v74-block-actions{position:absolute;top:5px;right:7px;display:flex;gap:2px}
+.v74-block-actions button{border:0;background:none;color:var(--muted);padding:7px 9px}
+.v74-block-actions button:disabled{opacity:.3}
+.v74-block textarea,.v74-block input:not([type=checkbox]){display:block;width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;min-width:0;font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif}
+.v74-block .v74-heading{font:22px Georgia,serif}
+.v74-block .v74-code{font:13px/1.5 ui-monospace,monospace;min-height:100px}
+.v74-check-row{display:flex;align-items:center;gap:9px}
+.v74-block-image{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:8px}
+.v74-board{display:grid;gap:12px}
+.v74-lane{border:1px solid var(--line);border-radius:13px;background:var(--bg);padding:12px;min-width:0}
+.v74-lane h3{margin:0 0 10px;font-size:13px}
+.v74-lane h3 small{font-weight:400;color:var(--muted);margin-left:7px}
+.v74-action-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0;display:grid;gap:8px;font-size:13px}
+.v74-action-card select{width:100%;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px;border-radius:8px}
+.v74-action-tools{display:flex;justify-content:space-between}
+.v74-library-list .v6-library-gallery{grid-template-columns:1fr}
+.v74-library-list .v6-gallery-tile{aspect-ratio:auto;min-height:74px;display:flex;align-items:center;padding:8px;max-width:100%}
+.v74-library-list .v6-gallery-tile img{height:70px;width:100px;object-fit:contain}
+@media(min-width:760px){.v74-board{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.v74-block *, .v74-action-card *{scroll-behavior:auto}}
