@@ -1,6 +1,6 @@
 /* Canvas 8.4 — responsive iPad workspace. The same DOM and data power phone,
    tablet and compact iPad multitasking windows. No device/user-agent sniffing. */
-.canvas-ipad-nav-head,.canvas-ipad-nav-footer{display:none}
+.canvas-ipad-nav-head,.canvas-ipad-nav-footer,.canvas-ipad-collapse{display:none}
 @media (min-width:740px) and (min-height:600px){
   :root{--canvas-ipad-rail-width:208px}
   body.canvas-ipad-sidebar-collapsed{--canvas-ipad-rail-width:76px}
@@ -35,6 +35,7 @@
     gap:5px;padding:4px 3px 22px;min-height:70px
   }
   .canvas-ipad-brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .canvas-ipad-nav-head{padding-right:35px}
   .canvas-ipad-brand-mark{
     width:33px;height:33px;display:grid;place-items:center;flex:none;
     border-radius:11px;color:var(--secondary-ui);background:var(--wash);
@@ -49,9 +50,12 @@
     font-size:10px;letter-spacing:.35px;color:var(--muted);white-space:nowrap
   }
   .canvas-ipad-collapse{
-    display:grid;place-items:center;flex:none;width:32px;height:38px;
+    display:grid;place-items:center;position:fixed;z-index:31;
+    left:calc(var(--canvas-ipad-rail-width) - 45px);
+    top:calc(env(safe-area-inset-top) + 30px);
+    width:32px;height:38px;
     border:0;border-radius:10px;background:transparent;color:var(--muted);
-    padding:7px
+    padding:7px;transition:left 200ms ease
   }
   .canvas-ipad-collapse svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
   .bottom-nav>button[data-tab]{
@@ -73,7 +77,11 @@
     font:italic 12px/1.5 Georgia,serif;color:var(--muted)
   }
   body.canvas-ipad-sidebar-collapsed .canvas-ipad-nav-head{
-    flex-direction:column;gap:8px;padding:4px 0 22px;min-height:90px
+    flex-direction:column;gap:8px;padding:4px 0 42px;min-height:103px
+  }
+  body.canvas-ipad-sidebar-collapsed .canvas-ipad-collapse{
+    left:calc(var(--canvas-ipad-rail-width) / 2 - 16px);
+    top:calc(env(safe-area-inset-top) + 67px)
   }
   body.canvas-ipad-sidebar-collapsed .canvas-ipad-brand-copy,
   body.canvas-ipad-sidebar-collapsed .bottom-nav>button[data-tab] span,
@@ -110,6 +118,10 @@
   .v6-project-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .week-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
+@media (min-width:1040px) and (max-width:1179px) and (min-height:600px){
+  #projectWorkspace .v81-project-layout{grid-template-columns:minmax(175px,24%) minmax(0,1fr);gap:18px}
+  #projectWorkspace .v81-project-rail{display:block;position:sticky;top:18px}
+}
 @media (min-width:1180px) and (min-height:600px){
   .week-layout{grid-template-columns:minmax(240px,310px) minmax(0,1fr);align-items:start}
   .week-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -133,5 +145,5 @@
   }
 }
 @media(prefers-reduced-motion:reduce){
-  .bottom-nav,.shell{transition:none!important}
+  .bottom-nav,.shell,.canvas-ipad-collapse{transition:none!important}
 }
