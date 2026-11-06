@@ -326,6 +326,7 @@
 <link rel="stylesheet" href="v76.css">
 <link rel="stylesheet" href="v77.css">
 <link rel="stylesheet" href="polish-v81.css">
+<link rel="stylesheet" href="polish-v82.css">
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -598,9 +599,20 @@ function render(){
   for(const [id,value] of [['todayFocus',state.todayFocus],['weeklyFocus',state.weeklyFocus]]){
     if(document.activeElement!==$(id))$(id).value=value||'';
   }
-  const todaysEvents=state.events.filter(e=>e.date===localToday()).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  const todaysTasks=state.tasks.filter(t=>t.dueDate===localToday()).sort((a,b)=>Number(b.priority)-Number(a.priority));
-  $('todayGlance').innerHTML=(todaysEvents.length?'<div class="section-label">Schedule</div>'+todaysEvents.map(eventRow).join(''):'')+(todaysTasks.length?'<div class="section-label">Tasks</div>'+todaysTasks.map(taskRow).join(''):'')+(!todaysEvents.length&&!todaysTasks.length?'<p class="empty">Your day is clear. Add an event or task to get started.</p>':'');
+  const today=localToday();
+  const todaysEvents=state.events.filter(e=>e.date===today).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const todaysTasks=state.tasks.filter(t=>t.dueDate===today).sort((a,b)=>Number(b.priority)-Number(a.priority));
+  // A missed deadline must not disappear simply because the calendar rolled over.
+  // Keep overdue items inside Today at a Glance, not another home card.
+  const overdue=state.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<today)
+    .sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
+  $('todayGlance').innerHTML=
+    (todaysEvents.length?'<div class="section-label">Schedule</div>'+todaysEvents.map(eventRow).join(''):'')+
+    (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
+      overdue.slice(0,3).map(taskRow).join('')+
+      (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
+    (todaysTasks.length?'<div class="section-label">Tasks</div>'+todaysTasks.map(taskRow).join(''):'')+
+    (!todaysEvents.length&&!todaysTasks.length&&!overdue.length?'<p class="empty">Your day is clear. Add an event or task to get started.</p>':'');
   const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
   $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today"><span>${esc(h.title)}</span>${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
   const start=selectedWeek;
@@ -1498,4 +1510,5 @@ v6Normalize();v6Render();
 <script src="v76.js"></script>
 <script src="v77.js"></script>
 <script src="polish-v81.js"></script>
+<script src="polish-v82.js"></script>
 </body></html>
