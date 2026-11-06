@@ -22,7 +22,21 @@
    const board=p.actionView==='board';
    switcher.querySelectorAll('button').forEach(b=>{b.classList.toggle('selected',b.dataset.actionView===(board?'board':'list'));b.setAttribute('aria-pressed',String(b.dataset.actionView===(board?'board':'list')));});
    const list=document.getElementById('projectActionsList');
-   if(!board){list.classList.remove('v74-board');return;}
+   if(!board){
+     list.classList.remove('v74-board');
+     [...list.querySelectorAll('[data-v6-check]')].forEach(checkbox=>{
+       const a=p.actions.find(a=>String(a.id)===String(checkbox.dataset.v6Check));
+       if(!a)return;
+       const select=document.createElement('select');
+       select.className='v74-list-status';select.dataset.v74Status=a.id;
+       select.setAttribute('aria-label','Status of '+a.title);
+       [['todo','To Do'],['progress','In Progress'],['done','Done']].forEach(([id,label])=>{
+         const option=document.createElement('option');option.value=id;option.textContent=label;select.appendChild(option);
+       });
+       select.value=actionStatus(a);checkbox.closest('.v6-action-row')?.appendChild(select);
+     });
+     return;
+   }
    list.classList.add('v74-board');
    list.innerHTML=['todo','progress','done'].map(status=>{
      const label={todo:'To Do',progress:'In Progress',done:'Done'}[status];
