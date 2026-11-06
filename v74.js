@@ -166,7 +166,7 @@
          if(draft){const blob=await v6Blob('get',draft);await v6Blob('put','v6-draft-'+p.id,blob);}
        }
      }else if(!confirm('Legacy backup does not contain images, sketches or files. Continue importing text-only data?'))return;
-     state=next;save();window.v6ActiveProjectId=null;v6Normalize();render();v6Render();alert('Canvas backup restored.');
+     state=next;save();if(localStorage.getItem(STORAGE_KEY)!==JSON.stringify(state))throw Error('Device storage is full; restore was not saved');window.v6ActiveProjectId=null;v6Normalize();render();v6Render();alert('Canvas backup restored.');
    }catch(err){state=oldState;save();for(const key of created)await v6Blob('delete',key).catch(()=>{});throw err;}
  }
  document.getElementById('exportData').onclick=async()=>{try{await exportCompleteBackup();}catch(err){alert('Backup failed. No incomplete backup was downloaded. '+err.message);}};
