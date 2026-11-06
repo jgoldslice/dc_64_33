@@ -46,7 +46,7 @@ async function restore(page,archive){
     name:'canvas-complete-backup.json',mimeType:'application/json',
     buffer:Buffer.from(JSON.stringify(archive))
   });
-  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('jgold-planner-v1')).projects.length),{timeout:12000}).toBe(2);
+  await expect.poll(()=>page.evaluate(()=>(JSON.parse(localStorage.getItem('jgold-planner-v1')||'{}').projects||[]).length),{timeout:12000}).toBe(2);
   return dialogs;
 }
 async function keys(page){
@@ -164,15 +164,16 @@ test('a failed planner commit rolls back staged media without overwriting the ol
   const beforeKeys=await keys(page);
   await page.evaluate(()=>{
     const original=Storage.prototype.setItem;
-    let once=true;
     Storage.prototype.setItem=function(k,v){
-      if(k==='jgold-planner-v1'&&once){once=false;throw new DOMException('Quota','QuotaExceededError');}
+      // Fail specifically on the imported state, never on unrelated autosaves.
+      if(k==='jgold-planner-v1'&&v.includes('"p-backup-a"'))
+        throw new DOMException('Quota','QuotaExceededError');
       return original.call(this,k,v);
     };
     window.__restoreSetItem=()=>{Storage.prototype.setItem=original;};
   });
   const messages=[];
-  page.on('dialog',async d=>{messages.push(d.message());await d.dismiss();});
+  page.on('dialog',async d=>{messages.push(d.message());if(d.type()==='confirm')await d.accept();else await d.dismiss();});
   await page.locator('#importFile').setInputFiles({
     name:'valid.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(archive))
   });
