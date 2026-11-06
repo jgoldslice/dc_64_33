@@ -64,3 +64,17 @@ Canvas keeps text/project metadata in the original `jgold-planner-v1` localStora
 6. Test offline after the updated app has loaded online.
 
 Keep independent copies of irreplaceable files until the complete backup and restore workflow has been tested on-device.
+## Canvas v7.5 — Today/Home polish and named colors
+
+- **Today = Home:** The existing Today tab remains the single landing/home screen. Tap the Canvas wordmark in the header to return to Today. No extra Home tab or dashboard was created.
+- **Customization:** Every palette swatch displays its color name under the swatch, with a visible selection indicator. The selected color displays its name and hex code; custom-picked colors are labeled Custom.
+- **Mobile polish:** Clearer selected-state contrast, improved focus indicators and touch targets for frequently used controls, and better narrow-screen wrapping of project action controls.
+- **Project safety:** Removing an action asks for confirmation and leaves the linked Blueprint task intact. Removing a note image block also cleans up its stored image.
+- **Offline:** The service worker pre-caches the new polish.css stylesheet. After deployment, reload once online before relying on offline use.
+
+### v7.5 on-device checks
+1. Open Customize and cycle through Sage, Gold, White, Black, and a custom hex color for both Primary and Secondary. Verify labels, selection ring, and dark/light contrast.
+2. Tap the Canvas title from Week, Blueprint, Brainstorm, and Customize: it should return to Today without resetting saved content.
+3. Try swipe navigation, note blocks, project action List/Board, and file galleries, including on a narrow iPhone screen.
+4. Remove a project action that has a linked Blueprint task; confirm the task remains in Blueprint.
+5. Test offline reopening after an online refresh; keep independent backup copies until on-device restore is tested.
