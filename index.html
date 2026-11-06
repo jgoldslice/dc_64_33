@@ -215,8 +215,8 @@
 .idea-add-form input{flex:1;min-width:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 11px;font:inherit;font-size:13px}
 .idea-add-form button{min-width:42px;font-size:19px}
 .idea-linked{display:block;width:100%;text-align:left;padding:8px 2px;border:0;background:transparent;color:var(--secondary-ui);font-size:13px}
-.idea-popup-buttons{display:flex;gap:8px}
-.idea-popup-buttons button{flex:1}
+.idea-popup-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.idea-popup-buttons button{flex:1 1 95px}
 .idea-popup-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:5px}
 @media(max-width:440px){.idea-popup{padding:18px;gap:12px}.idea-popup-header h2{font-size:23px}}
 
@@ -441,7 +441,7 @@
       <button type="submit" class="secondary-button" aria-label="Add action">+</button>
     </form>
     <div id="ideaLinked"></div><div class="v6-assign-idea"><label for="ideaProjectSelect">Project folder</label><select id="ideaProjectSelect" aria-label="Project folder for this idea"></select></div>
-    <div class="idea-popup-buttons"><button id="ideaToTask" type="button" class="secondary-button">+ Task</button><button id="ideaToGoal" type="button" class="secondary-button">+ Goal</button></div>
+    <div class="idea-popup-buttons"><button id="ideaToProject" type="button" class="secondary-button">→ Project</button><button id="ideaToTask" type="button" class="secondary-button">+ Task</button><button id="ideaToGoal" type="button" class="secondary-button">+ Goal</button></div>
     <div class="idea-popup-footer"><button type="button" class="danger-button" id="deleteIdea">Delete Idea</button><button type="button" class="text-button" id="ideaDone">Done</button></div>
   </section>
 </div>
@@ -639,6 +639,7 @@ function renderIdeaPopup(){
   const n=activeIdea();if(!n)return;
   const name=ideaTitle(n),body=n.body.trim(),first=body.split(/\r?\n/)[0].trim();
   $('ideaPopupTitle').textContent=name;
+  $('ideaToProject').textContent=state.projects?.some(p=>String(p.id)===String(n.projectId))?'Open Project':'→ Project';
   const visible=n.title.trim().toLowerCase()===body.toLowerCase()?'':(!n.title.trim()&&first===name?body.slice(first.length).trim():body);
   $('ideaPopupBody').textContent=visible;$('ideaPopupBody').hidden=!visible;
   const actions=n.actions||[];
@@ -682,6 +683,25 @@ function createIdeaFromDraft(){
 function convertIdea(kind){
   const n=activeIdea();if(!n)return;
   const title=(n.title.trim()||n.body.trim().split(/\r?\n/)[0]||'New idea').slice(0,160);
+  if(kind==='project'){
+    const existing=state.projects.find(p=>String(p.id)===String(n.projectId));
+    if(existing){closeIdea();v6OpenProject(existing.id);return;}
+    const cleanTitle=title.trim()||'New Project';
+    const project={
+      id:v6Id(),title:cleanTitle.slice(0,120),created:v6Now(),
+      notes:[],notebookText:n.body.trim(),
+      actions:(n.actions||[]).map(a=>({
+        id:v6Id(),title:a.title,done:!!a.done,taskId:a.taskId||'',
+        ideaId:n.id,ideaActionId:a.id
+      })),
+      library:[]
+    };
+    state.projects.push(project);
+    n.projectId=project.id;
+    n.convertedToProject=true;
+    n.updated=new Date().toISOString();
+    save();closeIdea();v6OpenProject(project.id);return;
+  }
   if(kind==='goal'){
     const existing=state.goals.find(g=>(n.goalIds||[]).some(id=>String(id)===String(g.id)));
     if(existing){closeIdea();planTab('goals');expandedGoals.add(String(existing.id));render();return;}
@@ -869,6 +889,7 @@ document.addEventListener('click',(e)=>{
   const openGoal=e.target.closest('[data-open-idea-goal]');if(openGoal){closeIdea();expandedGoals.add(String(openGoal.dataset.openIdeaGoal));planTab('goals');render();return;}
   const removeAction=e.target.closest('[data-idea-action-remove]');if(removeAction){const n=activeIdea();if(!n)return;n.actions=n.actions.filter(a=>String(a.id)!==removeAction.dataset.ideaActionRemove);n.updated=new Date().toISOString();save();renderIdeaPopup();renderIdeas();return;}
   if(e.target.closest('#deleteIdea')){const n=activeIdea();if(!n||!confirm('Delete this idea?'))return;state.ideas=state.ideas.filter(x=>String(x.id)!==String(n.id));save();closeIdea();return;}
+  if(e.target.closest('#ideaToProject')){convertIdea('project');return;}
   if(e.target.closest('#ideaToGoal')){convertIdea('goal');return;}
   if(e.target.closest('#ideaToTask')){convertIdea('task');return;}
   const swatch=e.target.closest('[data-color-for]');if(swatch){state[swatch.dataset.colorFor]=swatch.dataset.color;save();render();return;}
@@ -975,7 +996,7 @@ function v6RenderNotes(p){
     page.value=p.notebookText||'';
   }
   page.dataset.projectId=String(p.id);
-  const ideas=state.ideas.filter(n=>String(n.projectId||'')===String(p.id));
+  const ideas=state.ideas.filter(n=>String(n.projectId||'')===String(p.id)&&!n.convertedToProject);
   $('projectNotesList').innerHTML=ideas.length?
     '<div class="v6-notebook-ideas"><p class="muted small">Saved Ideas</p>'+
     ideas.map(n=>'<button type="button" class="idea-card" data-edit-idea="'+esc(n.id)+'"><strong>'+esc(ideaTitle(n))+'</strong></button>').join('')+'</div>':'';
@@ -1075,7 +1096,7 @@ function v6ProjectContext(p){
   const ideas=state.ideas.filter(n=>String(n.projectId||'')===String(p.id));
   const lines=['Help me develop this project. Explore options, identify obstacles, and suggest actionable next steps.','','PROJECT: '+p.title,''];
   if(p.notebookText?.trim())lines.push('NOTES',p.notebookText.trim(),'');
-  if(ideas.length)lines.push('IDEAS',...ideas.map(n=>'- '+n.body.trim()+(n.actions?.length?'\nActions: '+n.actions.map(a=>a.title).join('; '):'')),'');
+  if(ideas.filter(n=>!n.convertedToProject).length)lines.push('IDEAS',...ideas.filter(n=>!n.convertedToProject).map(n=>'- '+n.body.trim()+(n.actions?.length?'\nActions: '+n.actions.map(a=>a.title).join('; '):'')),'');
   if(p.actions.length)lines.push('ACTIONS',...p.actions.map(a=>(a.done?'[x] ':'[ ] ')+a.title),'');
   if(p.library.length)lines.push('LIBRARY',...p.library.map(r=>'- '+r.title+(r.url?' — '+r.url:'')+(r.type==='code'?'\n'+r.content:'')),'');
   lines.push('Uploaded files and sketches must be attached separately in ChatGPT.');
@@ -1217,7 +1238,7 @@ document.addEventListener('click',e=>{
   }
   if(match('#deleteProject')){
     const p=v6Project();if(!p||!confirm('Delete project "'+p.title+'"? Its notes, library entries, and sketches will be removed. Linked Blueprint tasks and saved ideas will remain.'))return;
-    for(const n of state.ideas)if(String(n.projectId)===String(p.id))n.projectId='';
+    for(const n of state.ideas)if(String(n.projectId)===String(p.id)){n.projectId='';n.convertedToProject=false;}
     for(const r of p.library)if(r.key)v6Blob('delete',r.key).catch(()=>{});
     v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
     state.projects=state.projects.filter(x=>String(x.id)!==String(p.id));
