@@ -20,11 +20,13 @@
         '</select></div></div>'+
       '<div class="v79-tool-group" role="group" aria-label="Pen"><span class="v79-tool-title">Pen</span><div class="v79-tool-buttons">'+
         '<button type="button" data-v76-mode="pen" aria-label="Draw; tap again to stop drawing" aria-pressed="false" title="Draw">✎</button>'+
-        '<button type="button" data-v76-mode="erase" aria-label="Erase drawing strokes; tap again to stop erasing" aria-pressed="false" title="Eraser">⌫</button>'+
+        '<button type="button" data-v76-mode="erase" aria-label="Erase drawing strokes; tap again to stop erasing" aria-pressed="false" title="Eraser">'+
+          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 21-4.3-4.3a2.4 2.4 0 0 1 0-3.4L13.3 2.7a2.4 2.4 0 0 1 3.4 0l4.6 4.6a2.4 2.4 0 0 1 0 3.4L10.7 21.3a2.4 2.4 0 0 1-3.4 0Z"/><path d="M22 21H7"/><path d="m5 11 8 8"/></svg></button>'+
         '<button type="button" id="v76UndoInk" aria-label="Undo last drawing stroke" title="Undo drawing">↶</button>'+
       '</div></div>'+
       '<div class="v79-tool-group" role="group" aria-label="Misc"><span class="v79-tool-title">Misc</span><div class="v79-tool-buttons">'+
-        '<button type="button" id="v76AddImage" aria-label="Insert picture" title="Insert picture">▧</button>'+
+        '<button type="button" id="v76AddImage" aria-label="Insert picture" title="Insert picture">'+
+          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></button>'+
       '</div></div>'+
     '</div><div class="v76-page-wrap"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div>'+
     '<p class="v76-tip">Tap blank space to type. Drag ⠿ to resize; press and hold content to move. Tap Pen or Eraser again to return to typing. Saves automatically.</p>'+
@@ -109,7 +111,11 @@
   }
   function strokesView(page){
     ink.replaceChildren();
-    ink.setAttribute('viewBox','0 0 '+Math.max(1,surface.clientWidth)+' '+page.height);
+    // A tablet media query can make the *displayed* page 800/980px high
+    // even though page.height is still 740. Matching the actual drawing
+    // surface avoids SVG's default centered letterbox and Pencil drift.
+    ink.setAttribute('preserveAspectRatio','none');
+    ink.setAttribute('viewBox','0 0 '+Math.max(1,surface.clientWidth)+' '+Math.max(1,surface.clientHeight));
     for(const stroke of page.strokes||[]){
       const poly=document.createElementNS('http://www.w3.org/2000/svg','polyline');
       poly.setAttribute('points',stroke.points.map(pt=>pt.x+','+pt.y).join(' '));
@@ -433,11 +439,25 @@
   root.addEventListener('pointercancel',endInteraction);
   // Prevent the native drag-image ghost from intercepting long-press movement.
   root.addEventListener('dragstart',e=>{if(e.target.closest('.v76-item'))e.preventDefault();});
+  // Convert the Pencil's screen contact into actual SVG user coordinates.
+  // getScreenCTM covers scrolling, Safari zoom, responsive sizing and CSS
+  // transforms; unlike simple rect subtraction it also handles SVG scaling.
+  function inkPosition(e){
+    const matrix=ink.getScreenCTM?.();
+    if(matrix&&typeof DOMPoint==='function'){
+      const local=new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse());
+      return {x:Math.round(local.x*100)/100,y:Math.round(local.y*100)/100};
+    }
+    // Fallback for browser versions lacking DOMPoint.
+    const box=ink.getBoundingClientRect(),view=ink.viewBox.baseVal;
+    return {x:Math.round((e.clientX-box.left)*view.width/Math.max(1,box.width)*100)/100,
+      y:Math.round((e.clientY-box.top)*view.height/Math.max(1,box.height)*100)/100};
+  }
   let activeStroke=null;
   ink.addEventListener('pointerdown',e=>{
     const ctx=current();if(!ctx||(mode!=='pen'&&mode!=='erase'))return;
     e.preventDefault();ink.setPointerCapture(e.pointerId);
-    const pt=position(e);
+    const pt=inkPosition(e);
     if(mode==='erase'){
       const before=ctx.page.strokes.length;
       ctx.page.strokes=ctx.page.strokes.filter(s=>!s.points.some(p=>Math.hypot(p.x-pt.x,p.y-pt.y)<18));
@@ -450,7 +470,10 @@
   });
   ink.addEventListener('pointermove',e=>{
     if(!activeStroke||e.pointerId!==activeStroke.id)return;
-    activeStroke.stroke.points.push(position(e));strokesView(activeStroke.page);
+    const samples=e.getCoalescedEvents?.();
+    const positions=samples?.length?samples:[e];
+    activeStroke.stroke.points.push(...positions.map(inkPosition));
+    strokesView(activeStroke.page);
   });
   const finishStroke=e=>{if(activeStroke&&activeStroke.id===e.pointerId){activeStroke=null;persist();}};
   ink.addEventListener('pointerup',finishStroke);ink.addEventListener('pointercancel',finishStroke);
