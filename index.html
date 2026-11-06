@@ -302,6 +302,23 @@
 .goal-motivation-label{font-size:12px;font-weight:700;color:var(--secondary-ui)}
 .goal-motivation p{font-size:14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;margin:7px 0 0;color:var(--ink)}
 
+/* Visual gallery: image-only cards; details appear on selection */
+.v6-library-gallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.v6-gallery-tile{aspect-ratio:1;display:block;width:100%;min-width:0;padding:0;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--wash);cursor:pointer}
+.v6-gallery-tile img{display:block;width:100%;height:100%;object-fit:cover}
+.v6-library-other{display:grid;gap:8px;margin-top:13px}
+.v6-image-viewer[hidden]{display:none!important}
+.v6-image-viewer{position:fixed;inset:0;z-index:80;background:rgba(10,15,12,.95);color:white;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom)}
+.v6-image-viewer-bar{display:flex;align-items:center;gap:10px;min-height:60px}
+.v6-image-viewer-bar>button{font-size:28px;line-height:1;border:0;background:transparent;color:white;padding:8px}
+#v6ImageTitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;flex:1}
+.v6-viewer-actions{display:flex;gap:5px}
+.v6-viewer-actions button{padding:9px 8px;background:transparent;color:white;border:1px solid #ffffff42;border-radius:8px;font-size:12px}
+.v6-viewer-actions button[hidden]{display:none}
+.v6-image-viewer-body{flex:1;min-height:0;display:grid;place-items:center;cursor:zoom-out}
+#v6ImageFull{max-width:100%;max-height:100%;object-fit:contain}
+@media(max-width:520px){.v6-library-gallery{gap:6px;grid-template-columns:repeat(2,minmax(0,1fr))}}
+
   </style>
 
 </head>
@@ -389,7 +406,7 @@
         <section class="card v6-project-pane" id="projectLibrary" hidden>
           <div class="card-heading"><h2>Library</h2><div class="v6-library-menu-wrap"><button type="button" id="libraryAddToggle" class="secondary-button" aria-expanded="false" aria-controls="libraryAddChoices">+ Add</button><div id="libraryAddChoices" class="v6-library-menu" hidden><button type="button" data-library-add="link">Link</button><button type="button" data-library-add="code">Code</button><button type="button" id="uploadProjectFile">Image / File</button></div></div></div>
           <input id="projectFileInput" type="file" hidden accept="image/*,.pdf,.txt,.md,.py,.ino,.js,.json,.zip,.stl,.3mf,.obj,.step,.stp,.csv" multiple>
-          <div id="projectLibraryList" class="v6-resource-list"></div>
+          <div id="projectLibraryList"></div>
           <p class="muted small">Files and sketches stay in this browser. Export important originals separately; JSON backups do not include uploaded file bytes.</p>
         </section>
         <section class="card v6-project-footer"><button id="projectChat" type="button" class="primary-button">Develop in ChatGPT ↗</button><button id="deleteProject" type="button" class="text-button">Delete project</button></section>
@@ -448,6 +465,10 @@
     <div class="idea-popup-buttons"><button id="ideaToProject" type="button" class="secondary-button">→ Project</button></div>
     <div class="idea-popup-footer"><button type="button" class="danger-button" id="deleteIdea">Delete Idea</button><button type="button" class="text-button" id="ideaDone">Done</button></div>
   </section>
+</div>
+<div id="v6ImageViewer" class="v6-image-viewer" hidden role="dialog" aria-modal="true" aria-label="Project image preview">
+  <div class="v6-image-viewer-bar"><button type="button" id="v6CloseImage" aria-label="Close image">×</button><span id="v6ImageTitle"></span><div class="v6-viewer-actions"><button type="button" id="v6ImageEdit" hidden>Edit</button><button type="button" id="v6ImageDownload">Save</button><button type="button" id="v6ImageDelete" aria-label="Delete image">Delete</button></div></div>
+  <div class="v6-image-viewer-body"><img id="v6ImageFull" alt="Project image"></div>
 </div>
 <div id="projectChatBack" class="modal-back" role="presentation" hidden><section class="modal" role="dialog" aria-modal="true" aria-label="ChatGPT project handoff"><h2>Develop in ChatGPT</h2><p class="muted small">Copy your project context, then paste it into a ChatGPT chat or Project. Images and drawings need to be attached separately.</p><textarea id="projectChatText" class="v6-export-text" readonly aria-label="Project context for ChatGPT"></textarea><div class="row-buttons"><button type="button" id="copyProjectChat" class="primary-button">Copy Context</button><button type="button" id="openProjectChat" class="secondary-button">Open ChatGPT ↗</button><button type="button" id="closeProjectChat" class="text-button">Done</button></div></section></div>
 <div id="modalBack" class="modal-back" role="presentation"><form id="modalForm" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle"></h2><div id="modalFields" class="form-fields"></div><div class="modal-actions"><button type="button" class="danger-button" id="deleteModal" hidden>Delete</button><span class="modal-spacer"></span><button type="button" class="secondary-button" id="cancelModal">Cancel</button><button type="submit" class="primary-button">Save</button></div></form></div>
@@ -996,24 +1017,49 @@ function v6RenderActions(p){
     return '<div class="v6-action-row '+(a.done?'completed':'')+'"><input type="checkbox" data-v6-check="'+esc(a.id)+'" aria-label="Complete '+esc(a.title)+'" '+(a.done?'checked':'')+'><span>'+esc(a.title)+'</span><button type="button" class="text-button" data-v6-task="'+esc(a.id)+'">'+(linked?'Task':'→ Task')+'</button><button class="v6-icon-btn" type="button" data-v6-remove-action="'+esc(a.id)+'">×</button></div>';
   }).join('')||'<p class="muted small">Add actions here, then turn them into Blueprint tasks.</p>';
 }
-let v6PreviewUrls=[];
+let v6PreviewUrls=[],v6ImageViewerUrl=null,v6ImageViewerId=null,v6LibraryRenderToken=0;
 function v6RenderLibrary(p){
-  for(const url of v6PreviewUrls)URL.revokeObjectURL(url);v6PreviewUrls=[];
-  $('projectLibraryList').innerHTML=p.library.map(r=>{
-    const isImage=(r.type==='sketch'||(r.type==='file'&&r.mime?.startsWith('image/')));
+  const token=++v6LibraryRenderToken;
+  for(const url of v6PreviewUrls)URL.revokeObjectURL(url);
+  v6PreviewUrls=[];
+  const images=p.library.filter(r=>r.type==='sketch'||(r.type==='file'&&r.mime?.startsWith('image/')));
+  const others=p.library.filter(r=>!images.includes(r));
+  const gallery=images.length?'<div class="v6-library-gallery">'+images.map(r=>
+    '<button class="v6-gallery-tile" type="button" data-v6-view-image="'+esc(r.id)+'" aria-label="View '+esc(r.title)+'"><img data-v6-gallery-image="'+esc(r.id)+'" alt="" loading="lazy"></button>'
+  ).join('')+'</div>':'';
+  const list=others.length?'<div class="v6-library-other">'+others.map(r=>{
     const preview=r.type==='code'?'<pre class="v6-resource-code">'+esc(r.content||'')+'</pre>':'';
-    const thumb=isImage?'<img class="v6-resource-preview" data-v6-image="'+esc(r.id)+'" alt="'+esc(r.title)+'">':'<span class="muted">'+(r.type==='code'?'⌘':r.type==='link'?'↗':'▤')+'</span>';
-    const kind=r.type==='sketch'?'Sketch':r.type==='code'?(r.language||'Code'):r.type==='link'?r.url:(r.mime||'File');
-    return '<div class="v6-resource">'+thumb+'<div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>'+esc(kind)+'</small>'+preview+'</div><button class="text-button" type="button" data-v6-open-resource="'+esc(r.id)+'">'+(r.type==='code'?'Copy':r.type==='sketch'?'Edit':'Open')+'</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'" aria-label="Remove item">×</button></div>';
-  }).join('')||'<p class="muted small">Keep sketches, photos, files, links, and code together.</p>';
+    const kind=r.type==='code'?(r.language||'Code'):r.type==='link'?r.url:(r.mime||'File');
+    return '<div class="v6-resource"><span class="muted">'+(r.type==='code'?'⌘':r.type==='link'?'↗':'▤')+'</span><div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>'+esc(kind)+'</small>'+preview+'</div><button class="text-button" type="button" data-v6-open-resource="'+esc(r.id)+'">'+(r.type==='code'?'Copy':'Open')+'</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'" aria-label="Remove item">×</button></div>';
+  }).join('')+'</div>':'';
+  $('projectLibraryList').innerHTML=gallery+list||'<p class="muted small">Your saved images, sketches, and resources will appear here.</p>';
   const projectId=String(p.id);
-  for(const r of p.library.filter(x=>x.type==='sketch'||(x.type==='file'&&x.mime?.startsWith('image/')))){
+  for(const r of images){
     v6Blob('get',r.key).then(blob=>{
-      if(!blob||String(v6Project()?.id)!==projectId)return;
-      const img=[...$('projectLibraryList').querySelectorAll('[data-v6-image]')].find(x=>String(x.dataset.v6Image)===String(r.id));
+      if(!blob||token!==v6LibraryRenderToken||String(v6Project()?.id)!==projectId)return;
+      const img=[...$('projectLibraryList').querySelectorAll('[data-v6-gallery-image]')].find(x=>String(x.dataset.v6GalleryImage)===String(r.id));
       if(img){const url=URL.createObjectURL(blob);v6PreviewUrls.push(url);img.src=url;}
     }).catch(()=>{});
   }
+}
+async function v6ViewImage(id){
+  const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));
+  if(!r||!(r.type==='sketch'||(r.type==='file'&&r.mime?.startsWith('image/'))))return;
+  try{
+    const blob=await v6Blob('get',r.key);
+    if(!blob||String(v6Project()?.id)!==String(p.id))throw Error('Image unavailable');
+    v6CloseImage();
+    v6ImageViewerUrl=URL.createObjectURL(blob);v6ImageViewerId=r.id;
+    $('v6ImageFull').src=v6ImageViewerUrl;$('v6ImageFull').alt=r.title;
+    $('v6ImageTitle').textContent=r.title;
+    $('v6ImageEdit').hidden=r.type!=='sketch';
+    $('v6ImageViewer').hidden=false;
+  }catch(err){alert('Could not open image: '+err.message);}
+}
+function v6CloseImage(){
+  $('v6ImageViewer').hidden=true;$('v6ImageFull').removeAttribute('src');
+  if(v6ImageViewerUrl)URL.revokeObjectURL(v6ImageViewerUrl);
+  v6ImageViewerUrl=null;v6ImageViewerId=null;
 }
 function v6RenderSketchView(){
   $('sketchGallery').hidden=v6SketchEditing;
@@ -1106,7 +1152,11 @@ async function v6Upload(files){
 }
 async function v6OpenResource(id){
   const r=v6Project()?.library.find(x=>String(x.id)===String(id));if(!r)return;
-  if(r.type==='sketch'){v6ProjectTab='sketch';v6SketchEditing=false;v6Render();await v6LoadSketch(id);return;}
+  if(r.type==='sketch'){
+    // Gallery edit is handled by the viewer; Save downloads the original PNG.
+    const blob=await v6Blob('get',r.key);if(!blob)return;
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=r.title+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);return;
+  }
   if(r.type==='link'){window.open(r.url,'_blank','noopener,noreferrer');return;}
   if(r.type==='code'){try{await navigator.clipboard.writeText(r.content||'');alert('Code copied.');}catch{prompt('Copy code',r.content||'');}return;}
   try{const blob=await v6Blob('get',r.key);if(!blob)throw Error('File not found in this browser');
@@ -1243,6 +1293,13 @@ document.addEventListener('click',e=>{
   const libraryButton=match('[data-library-add]');if(libraryButton){v6CloseLibraryMenu();v6AddLibrary(libraryButton.dataset.libraryAdd);return;}
   if(match('#uploadProjectFile')){v6CloseLibraryMenu();$('projectFileInput').click();return;}
   if(!$('libraryAddChoices').hidden&&!match('#libraryAddChoices'))v6CloseLibraryMenu();
+  const gallery=match('[data-v6-view-image]');if(gallery){v6ViewImage(gallery.dataset.v6ViewImage);return;}
+  if(match('#v6CloseImage')||tgt.id==='v6ImageViewer'||match('.v6-image-viewer-body')){v6CloseImage();return;}
+  if(match('#v6ImageEdit')){
+    const id=v6ImageViewerId;v6CloseImage();v6ProjectTab='sketch';v6SketchEditing=false;v6Render();v6LoadSketch(id);return;
+  }
+  if(match('#v6ImageDownload')){const id=v6ImageViewerId;v6OpenResource(id);return;}
+  if(match('#v6ImageDelete')){const id=v6ImageViewerId;v6DeleteResource(id).then(()=>{if(!v6Project()?.library.some(r=>String(r.id)===String(id)))v6CloseImage();});return;}
   const resource=match('[data-v6-open-resource]');if(resource){v6OpenResource(resource.dataset.v6OpenResource);return;}
   const deleted=match('[data-v6-delete-resource]');if(deleted){v6DeleteResource(deleted.dataset.v6DeleteResource);return;}
   const loadSketch=match('[data-v6-load-sketch]');if(loadSketch){v6LoadSketch(loadSketch.dataset.v6LoadSketch);return;}
@@ -1290,7 +1347,7 @@ v6Canvas.addEventListener('pointerdown',v6Begin);
 v6Canvas.addEventListener('pointermove',v6Move);
 v6Canvas.addEventListener('pointerup',v6End);
 v6Canvas.addEventListener('pointercancel',v6End);
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('projectChatBack').hidden)v6HideChat();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('v6ImageViewer').hidden)v6CloseImage();else if(!$('projectChatBack').hidden)v6HideChat();}});
 v6Normalize();v6Render();
 </script>
 </body></html>
