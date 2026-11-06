@@ -1,0 +1,32 @@
+/* Canvas v7.6 — minimal freeform notebook. Old note editors remain hidden but preserved. */
+#projectNotes .v6-notebook[hidden],#projectNotes .v74-block-toolbar[hidden],#projectNotes .v74-blocks[hidden],#projectNotes #projectNotesList[hidden]{display:none!important}
+#projectTabs [data-project-tab="sketch"][hidden]{display:none!important}
+#projectNotes.v6-notebook-pane{padding:12px;overflow:visible}
+.v76-notebook-ui{display:grid;gap:10px;min-width:0}
+.v76-page-controls,.v76-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.v76-page-controls select{flex:1;min-width:120px;max-width:330px;padding:10px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink)}
+.v76-page-controls .secondary-button{min-height:40px}
+.v76-icon,.v76-toolbar button{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:39px;min-height:39px;font-size:19px;padding:6px;display:grid;place-items:center}
+.v76-toolbar{padding:4px 0 8px;border-bottom:1px solid var(--line)}
+.v76-tool-divider{width:1px;height:24px;background:var(--line);margin:0 3px}
+.v76-toolbar .v76-on{border-color:var(--secondary-ui);background:var(--wash);box-shadow:inset 0 0 0 1px var(--secondary-ui)}
+.v76-page-wrap{width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+.v76-page-surface{position:relative;min-height:740px;width:100%;border-radius:11px;overflow:hidden;background-color:var(--surface);background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 35px,color-mix(in srgb,var(--line) 62%,transparent) 35px,color-mix(in srgb,var(--line) 62%,transparent) 36px);box-shadow:inset 0 0 0 1px var(--line);touch-action:pan-y}
+.v76-page-surface.v76-is-drawing{touch-action:none}
+#v76Ink{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;z-index:2}
+.v76-item{position:absolute;min-width:120px;min-height:45px;border:1px solid transparent;border-radius:7px;padding:27px 7px 6px;background:color-mix(in srgb,var(--surface) 87%,transparent);z-index:3}
+.v76-item:focus-within,.v76-item:hover{border-color:var(--line)}
+.v76-rich{min-height:28px;outline:none;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;font-family:"Bradley Hand","Noteworthy","Chalkboard SE","Comic Sans MS",cursive;font-size:19px;line-height:1.55;color:var(--ink)}
+.v76-rich:empty:before{content:"Tap to write...";color:var(--muted);pointer-events:none}
+.v76-rich ul{margin:0;padding-left:1.2em}
+.v76-rich b,.v76-rich strong{font-weight:800}
+.v76-rich i,.v76-rich em{font-style:italic}
+.v76-grip,.v76-remove{position:absolute;top:1px;width:27px;height:25px;border:none;border-radius:5px;background:transparent;color:var(--muted);font-size:16px;line-height:1}
+.v76-grip{left:1px;touch-action:none;cursor:grab}
+.v76-remove{right:1px}
+.v76-photo{width:100%;height:auto;max-height:440px;object-fit:contain;display:block;border-radius:6px}
+.v76-size-tools{display:flex;gap:5px;justify-content:end;margin:4px 0 0}
+.v76-size-tools button{width:30px;height:28px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.v76-tip{font-size:12px;color:var(--muted);line-height:1.45;margin:0 2px 2px}
+.v76-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:480px){.v76-page-controls,.v76-toolbar{gap:5px}.v76-toolbar button{min-width:35px;min-height:35px}.v76-page-surface{min-height:740px}.v76-rich{font-size:18px}}
