@@ -4,6 +4,15 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.6 — Video link previews
+
+- Paste a YouTube **Shorts**, standard `watch?v=`, or `youtu.be` URL into **Brainstorm → Project → Library → + Add → Link**. The Gallery and List views show a thumbnail card with a large Play button, instead of a long URL.
+- Existing saved YouTube links receive the preview automatically without changing their saved records; regular links, code, images, and files are unchanged.
+- Tapping Play loads a privacy-enhanced YouTube embedded player within Canvas; **Open on YouTube** still opens the original link. Some videos cannot be embedded because of uploader restrictions or Safari content blockers; the original link remains usable.
+- The image thumbnail is fetched from YouTube's image host when a card appears. The playable iframe is not loaded until Play is tapped. An offline view shows the card with a play icon, but an internet connection is required for the actual video.
+- Video titles, likes, view counts, and comments aren't fetched automatically (no YouTube metadata API). Give the link a descriptive title if desired.
+- The existing project Library entry remains a plain URL in all complete backup exports/imports; no video file is downloaded or stored in Canvas.
+
 ## Canvas v8.5 — Data integrity and safe restore
 
 - **Complete backups now include SHA-256 integrity checks.** The v2 JSON backup stores a checksum for the planner state and each attached image, file, saved sketch, and available unfinished sketch draft.
