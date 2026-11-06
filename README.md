@@ -125,3 +125,11 @@ Keep a complete backup before trying the gesture changes on an important project
 - **Misc:** Insert picture only. Other insert options are intentionally deferred.
 - **Text boxes:** Tap empty note space to create a text box automatically; the separate Text-box and Select buttons are removed. Existing six-dot resize and press-and-hold move gestures stay intact.
 - **Layout:** Three compact labeled icon groups fit mobile widths. Data structure and existing notes are unchanged.
+
+## Canvas v8.0 — iPhone Notes touch and typography repair
+
+- Note text boxes are completely transparent over pictures, even when focused or overlapped. Images are beneath text objects in stacking order.
+- Text toolbar now offers just three sizes in the same handwritten font: Small (15px mobile), Medium (18px mobile, the previous size), Large (24px mobile). Each text box saves its choice separately; the selected size also becomes the page's default for future boxes.
+- Short touch on text still focuses editing; long-hold touch suppresses iOS native select-all/context menu while initiating the 450ms move gesture. A separate touch cancellation handler restores focus and attempts to place the caret at the touched point.
+- Existing notes with no size metadata render Medium. This update preserves all previously saved text, image, ink, and page data.
+- If iOS text copy/selection needs refinement on physical hardware, evaluate an explicit Edit mode or dedicated move handle rather than allowing the default long-press to compete with dragging.

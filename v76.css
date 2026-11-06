@@ -68,3 +68,27 @@
   .v79-tool-group+.v79-tool-group{padding-left:8px}
   .v79-tool-buttons button{width:36px;height:36px;min-width:36px;min-height:36px}
 }
+
+/* v8.0 — transparent notebook text objects, readable default size and iOS-safe touch. */
+.v76-item.v76-text{background:transparent!important;z-index:5}
+.v76-item.v76-text .v76-rich{background:transparent!important}
+.v76-item.v76-image{z-index:3}
+.v76-item.v76-text:hover,.v76-item.v76-text:focus-within{background:transparent!important}
+.v76-rich[data-font-size="small"]{font-size:16px;line-height:1.5}
+.v76-rich[data-font-size="medium"],.v76-rich:not([data-font-size]){font-size:19px;line-height:1.55}
+.v76-rich[data-font-size="large"]{font-size:25px;line-height:1.5}
+.v80-text-size{
+  width:88px;min-height:39px;padding:5px 7px;
+  border:1px solid var(--line);border-radius:10px;
+  background:var(--surface);color:var(--ink);font-size:12px;
+}
+.v76-text,.v76-photo{-webkit-touch-callout:none}
+.v76-text.v80-touch-pending .v76-rich,.v76-text.v76-moving .v76-rich{
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none
+}
+@media(max-width:480px){
+ .v76-rich[data-font-size="small"]{font-size:15px}
+ .v76-rich[data-font-size="medium"],.v76-rich:not([data-font-size]){font-size:18px}
+ .v76-rich[data-font-size="large"]{font-size:24px}
+ .v80-text-size{width:85px;min-height:36px}
+}

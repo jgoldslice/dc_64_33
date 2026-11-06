@@ -178,3 +178,61 @@ test('Notes have only Text, Pen and Misc tool groups, with tap-to-type', async (
   await expect(eraser).toHaveAttribute('aria-pressed','false');
   expect(errors).toEqual([]);
 });
+
+test('Text stays transparent over images and size choices persist independently', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', e=>errors.push(e.message));
+  await page.goto(baseURL);
+  await page.locator('[data-tab="brainstorm"]').click();
+  page.once('dialog', d=>d.accept('Transparency Test'));
+  await page.locator('#newProject').click();
+  const text=page.locator('#v76Surface .v76-text').first();
+  await expect(text).toBeVisible();
+  const rich=text.locator('.v76-rich');
+  await rich.fill('This text should float over a picture');
+  const size=page.locator('#v80TextSize');
+  await expect(size).toHaveValue('medium');
+  await size.selectOption('small');
+  await expect(rich).toHaveAttribute('data-font-size','small');
+  const savedText=await rich.textContent();
+  await size.selectOption('large');
+  await expect(rich).toHaveAttribute('data-font-size','large');
+  const color=await text.evaluate(el=>({
+    box:getComputedStyle(el).backgroundColor,
+    rich:getComputedStyle(el.querySelector('.v76-rich')).backgroundColor,
+    font:getComputedStyle(el.querySelector('.v76-rich')).fontSize
+  }));
+  expect(color.box).toBe('rgba(0, 0, 0, 0)');
+  expect(color.rich).toBe('rgba(0, 0, 0, 0)');
+  expect(parseFloat(color.font)).toBeGreaterThan(20);
+  expect(await rich.textContent()).toBe(savedText);
+  await page.reload();
+  await page.locator('[data-tab="brainstorm"]').click();
+  await page.locator('[data-v6-project]').filter({hasText:'Transparency Test'}).click();
+  await expect(page.locator('#v76Surface .v76-text .v76-rich').first()).toHaveAttribute('data-font-size','large');
+  await expect(page.locator('#v76Surface .v76-text .v76-rich').first()).toHaveText(savedText);
+  expect(errors).toEqual([]);
+});
+
+
+
+test('Notebook touchstart cancels the native long-press selection gesture', async ({page}) => {
+  const errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(baseURL);
+  await page.locator('[data-tab="brainstorm"]').click();
+  page.once('dialog',d=>d.accept('Touch Safety Test'));
+  await page.locator('#newProject').click();
+  const rich=page.locator('#v76Surface .v76-text .v76-rich').first();
+  await rich.fill('iPhone selection protection');
+  const rect=await rich.boundingBox();
+  const canceled=await page.evaluate(({x,y})=>{
+    const target=document.elementFromPoint(x,y);
+    const touch=new Touch({identifier:99,target,clientX:x,clientY:y});
+    const event=new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[touch],changedTouches:[touch],targetTouches:[touch]});
+    target.dispatchEvent(event);return event.defaultPrevented;
+  },{x:rect.x+30,y:rect.y+12});
+  expect(canceled).toBe(true);
+  expect(await page.evaluate(()=>window.getSelection()?.toString()||'')).toBe('');
+  expect(errors).toEqual([]);
+});
