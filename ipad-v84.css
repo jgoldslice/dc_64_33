@@ -99,7 +99,7 @@
   .v76-page-controls{gap:10px}
   .v76-page-controls select{max-width:410px}
   .v76-grip,.v76-remove{min-width:36px;min-height:36px}
-  .v76-page-surface,.v76-rich{user-select:text}
+  /* Keep notebook touch/selection policy in v76.css; do not override gestures. */
   .canvas-turn-layer{left:var(--canvas-ipad-rail-width)}
   .modal{max-width:min(670px,calc(100vw - var(--canvas-ipad-rail-width) - 70px))}
 }
