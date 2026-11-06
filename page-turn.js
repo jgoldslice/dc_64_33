@@ -45,6 +45,7 @@
     sheet.append(snapshot(document.getElementById(from)),fold);
     layer.append(underneath,sheet);
     document.body.append(layer);
+    sheet.style.transformOrigin=direction<0?'left center':'right center';
     overlay={layer,underneath,sheet,direction};
   }
   function progress(p){
