@@ -1354,7 +1354,15 @@ document.addEventListener('click',e=>{
   if(tabButton){v6ProjectTab=tabButton.dataset.projectTab;if(v6ProjectTab==='sketch')v6SketchEditing=false;v6Render();return;}
   const taskButton=match('[data-v6-task]');if(taskButton){v6ActionToTask(taskButton.dataset.v6Task);return;}
   const removeAction=match('[data-v6-remove-action]');if(removeAction){
-    const p=v6Project();if(!p)return;p.actions=p.actions.filter(a=>String(a.id)!==String(removeAction.dataset.v6RemoveAction));save();v6RenderActions(p);return;
+    const p=v6Project();if(!p)return;
+    const id=String(removeAction.dataset.v6RemoveAction);
+    const action=p.actions.find(a=>String(a.id)===id);
+    if(!action||!confirm('Remove this project action? Linked Blueprint tasks will be kept.'))return;
+    // Preserve any linked Blueprint task rather than silently deleting it.
+    const task=state.tasks.find(t=>String(t.id)===String(action.taskId));
+    if(task)task.projectActionId='';
+    p.actions=p.actions.filter(a=>String(a.id)!==id);
+    save();v6RenderActions(p);return;
   }
   if(match('#libraryAddToggle')){const menu=$('libraryAddChoices');menu.hidden=!menu.hidden;$('libraryAddToggle').setAttribute('aria-expanded',String(!menu.hidden));return;}
   const libraryButton=match('[data-library-add]');if(libraryButton){v6CloseLibraryMenu();v6AddLibrary(libraryButton.dataset.libraryAdd);return;}
