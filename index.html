@@ -329,6 +329,7 @@
 <link rel="stylesheet" href="polish-v82.css">
 <link rel="stylesheet" href="page-turn.css">
 <link rel="stylesheet" href="ipad-v84.css">
+<link rel="stylesheet" href="video-v86.css">
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -1359,7 +1360,7 @@ function v6AddLibrary(type){
   if(type==='link'){
     let url=prompt('Link URL');if(url===null)return;url=url.trim();
     try{const u=new URL(url);if(!['https:','http:'].includes(u.protocol))throw Error();url=u.href;}catch{alert('Enter a valid http or https URL.');return;}
-    const title=prompt('Link title',url)||url;
+    const title=prompt('Link title',window.canvasVideoLink?.label(url)||url)||(window.canvasVideoLink?.label(url)||url);
     p.library.push({id:v6Id(),type:'link',title:title.slice(0,180),url,created:v6Now()});
   }else{
     const title=prompt('Code snippet title');if(!title?.trim())return;
@@ -1573,4 +1574,5 @@ v6Normalize();v6Render();
 <script src="page-turn.js"></script>
 <script src="polish-v82.js"></script>
 <script src="ipad-v84.js"></script>
+<script src="video-v86.js"></script>
 </body></html>
