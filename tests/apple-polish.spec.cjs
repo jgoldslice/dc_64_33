@@ -70,7 +70,7 @@ test('complete backup includes page images and import remaps all referenced imag
   await expect(image).toBeVisible();
   const originalKey=await image.getAttribute('data-v76-image-key');
   await page.locator('#canvasHomeButton').click();
-  await page.locator('#customizeButton').click();
+  await page.locator('#paletteLauncher').click();
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportData').click()]);
   const payload=JSON.parse(await fs.readFile(await download.path(),'utf8'));
   const backupPage=payload.state.projects.find(p=>p.title==='Backup Roundtrip').notePages[0];
