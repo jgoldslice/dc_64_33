@@ -29,6 +29,7 @@
     });
   }
   document.addEventListener('click',e=>{
+    if(!(e.target instanceof Element))return;
     const project=e.target.closest('[data-v77-open-project]');
     if(project){
       const id=project.dataset.v77OpenProject;
