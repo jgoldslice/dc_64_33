@@ -1,0 +1,110 @@
+'use strict';
+/* Canvas v8.7: lightweight event entry from Week. Same state.events storage. */
+(function(){
+  const grid=document.getElementById('weekGrid');
+  const add=document.getElementById('addWeekEvent');
+  if(!grid||!add)return;
+  const overlay=document.createElement('div');
+  overlay.id='v87EventBack';
+  overlay.className='v87-event-back';
+  overlay.hidden=true;
+  overlay.innerHTML=[
+    '<form id="v87EventForm" class="v87-event-sheet" role="dialog" aria-modal="true" aria-labelledby="v87EventTitle">',
+      '<div class="v87-event-heading"><h2 id="v87EventTitle">Add event</h2>',
+        '<button type="button" id="v87EventClose" class="v87-event-close" aria-label="Close event form">×</button></div>',
+      '<p id="v87EventDate" class="v87-event-date"></p>',
+      '<div id="v87EventDates" class="v87-event-days" role="group" aria-label="Choose a day this week" hidden></div>',
+      '<label class="v87-event-label" for="v87EventName">Event name',
+        '<input id="v87EventName" name="title" type="text" maxlength="160" placeholder="What\'s happening?" autocomplete="off" required></label>',
+      '<label class="v87-event-label" for="v87EventTime">Time',
+        '<input id="v87EventTime" name="time" type="time" value="09:00" required></label>',
+      '<div class="v87-event-actions">',
+        '<button type="button" id="v87EventCancel" class="secondary-button">Cancel</button>',
+        '<button type="submit" class="primary-button">Add event</button>',
+      '</div>',
+    '</form>'
+  ].join('');
+  document.body.append(overlay);
+  const form=overlay.querySelector('#v87EventForm');
+  const label=overlay.querySelector('#v87EventDate');
+  const dates=overlay.querySelector('#v87EventDates');
+  const name=overlay.querySelector('#v87EventName');
+  const time=overlay.querySelector('#v87EventTime');
+  const cancel=overlay.querySelector('#v87EventCancel');
+  const x=overlay.querySelector('#v87EventClose');
+  let chosen='',previous=null;
+  const weekDates=()=>Array.from({length:7},(_,i)=>iso(plusDays(selectedWeek,i)));
+  const friendly=date=>new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  function valid(date){return /^\d{4}-\d{2}-\d{2}$/.test(date)&&weekDates().includes(date);}
+  function choose(date){
+    if(!valid(date))return;
+    chosen=date;label.textContent=friendly(date);
+    dates.querySelectorAll('[data-v87-date]').forEach(b=>{
+      b.setAttribute('aria-pressed',String(b.dataset.v87Date===date));
+    });
+  }
+  function close(restore=true){
+    if(overlay.hidden)return;
+    overlay.hidden=true;form.reset();dates.hidden=true;chosen='';
+    if(restore)(previous?.isConnected?previous:add).focus({preventScroll:true});
+    previous=null;
+  }
+  function open(date,fromDay,trigger){
+    if(!overlay.hidden)close(false);
+    previous=trigger||document.activeElement;
+    dates.replaceChildren();
+    const week=weekDates();
+    if(!week.includes(date))date=week.includes(localToday())?localToday():week[0];
+    dates.hidden=!!fromDay;
+    for(const day of week){
+      const d=new Date(day+'T12:00:00'),chip=document.createElement('button');
+      chip.type='button';chip.className='v87-day-option';
+      chip.dataset.v87Date=day;
+      chip.textContent=d.toLocaleDateString('en-US',{weekday:'short',day:'numeric'});
+      chip.setAttribute('aria-label',friendly(day));
+      chip.addEventListener('click',()=>choose(day));
+      dates.append(chip);
+    }
+    form.reset();choose(date);overlay.hidden=false;
+    requestAnimationFrame(()=>name.focus());
+  }
+  add.addEventListener('click',()=>open('',false,add));
+  grid.addEventListener('click',e=>{
+    const item=e.target instanceof Element?e.target.closest('[data-week-event-date]'):null;
+    if(item&&grid.contains(item))open(item.dataset.weekEventDate,true,item);
+  });
+  grid.addEventListener('keydown',e=>{
+    if(e.key!=='Enter'&&e.key!==' ')return;
+    const item=e.target;
+    if(!(item instanceof Element)||!item.matches('[data-week-event-date]'))return;
+    e.preventDefault();open(item.dataset.weekEventDate,true,item);
+  });
+  overlay.addEventListener('click',e=>{
+    if(e.target===overlay||e.target===x||e.target===cancel)close();
+  });
+  document.addEventListener('keydown',e=>{
+    if(overlay.hidden)return;
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();return;}
+    if(e.key!=='Tab')return;
+    const focusable=[...form.querySelectorAll('button:not([disabled]),input:not([disabled])')]
+      .filter(el=>el.getClientRects().length);
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  },true);
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    const title=name.value.trim(),value=time.value;
+    if(!title){name.focus();return;}
+    if(!valid(chosen)){label.textContent='Choose a day in the displayed week.';return;}
+    if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value)){time.focus();return;}
+    const date=chosen;
+    state.events.push({id:uid(),title,date,time:value});
+    save();
+    close(false);render();
+    const cell=[...grid.querySelectorAll('[data-week-event-date]')]
+      .find(el=>el.dataset.weekEventDate===date);
+    (cell||add).focus({preventScroll:true});
+  });
+})();
