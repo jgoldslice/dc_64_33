@@ -1,0 +1,25 @@
+/* Canvas v7.7 — less is more */
+#today .focus-card[hidden]{display:none!important}
+#goalsList .v77-goal-card{padding:17px}
+.v77-goal-card .goal{padding:0;border:0}
+.v77-goal-card .goal summary{align-items:flex-start}
+.v77-goal-heading{display:grid;gap:6px;min-width:0}
+.v77-goal-category{text-transform:uppercase;letter-spacing:1.2px;color:var(--secondary-ui);font-size:10px;font-weight:700}
+.v77-goal-card .goal h3{font-size:21px;line-height:1.24;font-weight:750;margin:0 0 2px;overflow-wrap:anywhere}
+.v77-goal-card .goal summary .muted{font-size:12px}
+.v77-goal-card .goal .progress{margin:15px 0 9px}
+.v77-goal-step{align-items:flex-start;gap:10px}
+.v77-goal-step>input[type=checkbox]{flex:none;margin:10px 0}
+.v77-step-area{min-width:0;flex:1}
+.v77-step-trigger{width:100%;min-height:41px;padding:9px 0;text-align:left;font-size:14px;line-height:1.5;color:var(--ink);background:none;border:0;cursor:pointer;overflow-wrap:anywhere}
+.v77-step-trigger:after{content:'⋯';font-size:16px;color:var(--muted);float:right;padding-left:8px}
+.v77-goal-step.done .v77-step-trigger{text-decoration:line-through;color:var(--muted)}
+.v77-step-menu[hidden]{display:none!important}
+.v77-step-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:6px 0 10px}
+.v77-step-menu button{border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-size:12px;font-weight:650;padding:10px 6px;text-align:center;min-height:39px}
+.v77-step-menu button:disabled{opacity:.65;cursor:default}
+.v77-today-project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.v77-project-folder{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:12px;min-height:88px;padding:13px;border:1px solid var(--line);border-radius:13px;color:var(--ink);background:var(--bg);text-align:left}
+.v77-project-folder svg{width:23px;height:23px;stroke:var(--secondary-ui);stroke-width:1.7;fill:none;stroke-linejoin:round}
+.v77-project-folder span{font-weight:700;font-size:13px;line-height:1.35;overflow-wrap:anywhere}
+@media(max-width:420px){.v77-goal-card .goal h3{font-size:20px}.v77-goal-step{gap:8px}.v77-step-menu button{font-size:11px}}
