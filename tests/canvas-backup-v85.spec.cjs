@@ -140,10 +140,11 @@ test('tampered or partial media and state checksums are rejected before write or
     {...archive,attachments:archive.attachments.map((a,i)=>i===0?{...a,base64:'AAAA'}:a)},
     {...archive,attachments:archive.attachments.slice(1)}
   ]){
+    const previous=errors.length;
     await page.locator('#importFile').setInputFiles({
       name:'bad.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(mutated))
     });
-    await expect.poll(()=>errors.length).toBeGreaterThan(0);
+    await expect.poll(()=>errors.length).toBe(previous+1);
     expect(await page.evaluate(()=>localStorage.getItem('jgold-planner-v1'))).toBe(original);
     expect(await keys(page)).toEqual(beforeKeys);
   }
