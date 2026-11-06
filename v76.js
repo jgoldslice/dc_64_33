@@ -44,7 +44,7 @@
   const todoTab=document.querySelector('[data-project-tab="actions"]');if(todoTab)todoTab.textContent='To-Do';
   const todoHeading=document.querySelector('#projectActions h2');if(todoHeading)todoHeading.textContent='To-Do';
   const todoInput=document.getElementById('projectActionInput');if(todoInput){todoInput.placeholder='Add a to-do...';todoInput.setAttribute('aria-label','New project to-do');}
-  let mode='select',lastKey='',selectedText=null;
+  let mode='select',lastKey='',lastPageRef=null,selectedText=null;
   const newId=()=>v6Id();
   function plainHTML(txt){return esc(txt).replace(/\r\n?/g,'\n').replace(/\n/g,'<br>');}
   function cleanHTML(html){
@@ -168,8 +168,10 @@
     initializePages(p);
     const page=p.notePages.find(pg=>String(pg.id)===String(p.activeNotePageId))||p.notePages[0];
     const key=String(p.id)+':'+String(page.id);
-    if(!force&&key===lastKey)return;
-    lastKey=key;selectedText=null;
+    // After a full backup import, ids may be identical even though the
+    // underlying page objects (including attachment keys) have changed.
+    if(!force&&key===lastKey&&page===lastPageRef)return;
+    lastKey=key;lastPageRef=page;selectedText=null;
     pageSelect.replaceChildren();
     p.notePages.forEach(pg=>{
       const opt=document.createElement('option');opt.value=pg.id;opt.textContent=pg.title;pageSelect.append(opt);
@@ -403,15 +405,18 @@
   // iOS may select the entire editable block before the 450-ms hold.
   // Cancel native touch behavior for note content; restore short taps
   // explicitly so normal typing continues.
+  const gestureElement=e=>e.target instanceof Element?e.target:e.target?.parentElement;
   root.addEventListener('touchstart',e=>{
     if(mode==='pen'||mode==='erase'||e.touches.length!==1)return;
-    if(e.target.closest('.v76-item')&&!e.target.closest('button'))e.preventDefault();
+    const el=gestureElement(e);
+    if(el?.closest('.v76-item')&&!el.closest('button'))e.preventDefault();
   },{passive:false});
   root.addEventListener('contextmenu',e=>{
-    if(e.target.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
+    if(gestureElement(e)?.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
   });
   root.addEventListener('selectstart',e=>{
-    if(e.target.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
+    // Selectstart can originate from a Text node rather than an Element.
+    if(gestureElement(e)?.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
   });
   function endInteraction(e){
     if(pendingHold?.pointerId===e.pointerId){
