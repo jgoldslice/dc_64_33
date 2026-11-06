@@ -1413,15 +1413,22 @@ document.addEventListener('click',e=>{
       ...(p.contentBlocks||[]).map(b=>b.key),
       ...(p.notePages||[]).flatMap(page=>(page.objects||[]).map(o=>o.key))
     ].filter(Boolean));
-    v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
+    const oldState=structuredClone(state);
     state.projects=state.projects.filter(x=>String(x.id)!==String(p.id));
+    // Persist before deleting binary attachments. On a storage failure,
+    // return to the original project instead of destroying the user's files.
+    save();
+    let saved=false;
+    try{saved=localStorage.getItem(STORAGE_KEY)===JSON.stringify(state);}catch{}
+    if(!saved){state=oldState;v6Render();renderIdeas();return;}
     const referencedElsewhere=key=>state.projects.some(other=>
       (other.library||[]).some(r=>r.key===key)||
       (other.contentBlocks||[]).some(b=>b.key===key)||
       (other.notePages||[]).some(pg=>(pg.objects||[]).some(o=>o.key===key))
     );
     for(const key of keys)if(!referencedElsewhere(key))v6Blob('delete',key).catch(()=>{});
-    window.v6ActiveProjectId=null;v6Canvas.dataset.project='';save();v6Render();renderIdeas();return;
+    v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
+    window.v6ActiveProjectId=null;v6Canvas.dataset.project='';v6Render();renderIdeas();return;
   }
   const tabButton=match('[data-project-tab]');
   if(tabButton){
