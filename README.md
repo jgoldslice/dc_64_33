@@ -4,6 +4,15 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.14 — Wider Brainstorm notebook and compact project switching
+
+- Removed **A place to think** and **Capture what comes to mind** from the Brainstorm header while keeping its title.
+- On an open project, the second **Projects** column no longer takes up roughly a quarter of the tablet workspace. **Project switching** instead lives in a compact selector in the project header, beside the existing Projects back link and project actions.
+- The **notebook's Pages** sidebar stays next to the ruled sheet and uses the extra space for a wider writing/drawing surface, including iPad landscape.
+- Switch directly from one project to another through the header selector without returning to the project library. All project content, page names, drawings, attachments, actions and previous notes remain tied to their original project.
+- Narrow iPad Split View and phones keep the selector on a separate compact header line to avoid horizontal overflow. Main Brainstorm project-library view still shows all project folders and supports creating projects.
+- No data migration or backup format change. Automated regression tests cover iPad width, page navigation, project switching, UI text, phone/compact layout and unchanged project settings.
+
 ## Canvas v8.13 — Delete completed tasks directly from Blueprint
 
 - In **Blueprint → Tasks → All Tasks**, checking off a task immediately reveals a **Delete** action beside **Edit** on that row. Incomplete tasks retain **Edit** only.
