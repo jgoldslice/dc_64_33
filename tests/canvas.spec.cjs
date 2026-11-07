@@ -198,6 +198,8 @@ test('Text stays transparent over images and size choices persist independently'
   const text=page.locator('#v76Surface .v76-text').first();
   await expect(text).toBeVisible();
   const rich=text.locator('.v76-rich');
+  await rich.click();await rich.click();
+  await expect(rich).toHaveAttribute('contenteditable','true');
   await rich.fill('This text should float over a picture');
   const size=page.locator('#v80TextSize');
   await expect(size).toHaveValue('medium');
@@ -233,7 +235,12 @@ test('Notebook touchstart cancels the native long-press selection gesture', asyn
   page.once('dialog',d=>d.accept('Touch Safety Test'));
   await page.locator('#newProject').click();
   const rich=page.locator('#v76Surface .v76-text .v76-rich').first();
+  await rich.click();await rich.click();
+  await expect(rich).toHaveAttribute('contenteditable','true');
   await rich.fill('iPhone selection protection');
+  // Exit editing, then select to exercise the handles' touch-selection guard.
+  await page.locator('#v76Surface').click({position:{x:15,y:590}});
+  await rich.click();
   const rect=await rich.boundingBox();
   // Select the object first; its handles now suppress native selection,
   // whereas unselected text and blank-paper scrolling remain usable.
