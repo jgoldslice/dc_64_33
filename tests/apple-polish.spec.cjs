@@ -31,19 +31,26 @@ test('tabs remember their own scroll positions without expanding navigation',asy
   expect(errors).toEqual([]);
 });
 
-test('project workspace remains single-pane on phone and gains a rail on wide viewport',async({page})=>{
+test('project workspace stays full-width with compact project switching at every viewport size',async({page})=>{
   await page.goto(url);
   await openNewProject(page,'Responsive Project');
-  const rail=page.locator('.v81-project-rail');
   await expect(page.locator('.v81-project-layout')).toBeVisible();
-  await expect(rail).toBeHidden();
-  await page.setViewportSize({width:1060,height:850});
-  await expect(rail).toBeVisible();
-  await expect(rail.locator('[data-v81-switch-project]')).toHaveCount(1);
-  await expect(rail.locator('button[aria-current="true"]')).toContainText('Responsive Project');
-  await expect(page.locator('.v81-project-main [data-project-tab="notes"]')).toBeVisible();
-  await page.setViewportSize({width:390,height:844});
-  await expect(rail).toBeHidden();
+  await expect(page.locator('.v81-project-rail')).toHaveCount(0);
+  const picker=page.locator('#v814ProjectSelect');
+  const id=await page.evaluate(()=>String(v6Project().id));
+  await expect(picker).toHaveValue(id);
+  for(const viewport of [{width:390,height:844},{width:1060,height:850},{width:1366,height:1024}]){
+    await page.setViewportSize(viewport);
+    await expect(picker).toBeVisible();
+    const width=await page.evaluate(()=>{
+      const outer=document.querySelector('.v81-project-layout').getBoundingClientRect();
+      const inner=document.querySelector('.v81-project-main').getBoundingClientRect();
+      return {outer:outer.width,inner:inner.width,overflow:document.documentElement.scrollWidth-innerWidth};
+    });
+    expect(Math.abs(width.outer-width.inner)).toBeLessThan(3);
+    expect(width.overflow).toBeLessThanOrEqual(2);
+    await expect(page.locator('.v81-project-main [data-project-tab="notes"]')).toBeVisible();
+  }
   await expect(page.locator('#v76Editor')).toBeVisible();
 });
 

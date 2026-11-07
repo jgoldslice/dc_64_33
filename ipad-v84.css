@@ -97,10 +97,7 @@
   #today>.stack{max-width:none;margin:0;gap:15px}
   .week-layout{grid-template-columns:minmax(0,1fr);gap:17px}
   .week-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-  /* Existing mobile two-pane project rail waits until there is actual space
-     beyond the global iPad sidebar; narrow notebooks stay one-column. */
-  #projectWorkspace .v81-project-layout{grid-template-columns:minmax(0,1fr)}
-  #projectWorkspace .v81-project-rail{display:none}
+  /* Project switching now belongs in the workspace header. */
   .v76-page-wrap{max-width:100%}
   .v76-page-surface{min-height:800px}
   .v76-toolbar{gap:17px;overflow-x:auto}
@@ -119,20 +116,15 @@
   .week-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media (min-width:1040px) and (max-width:1179px) and (min-height:600px){
-  #projectWorkspace .v81-project-layout{grid-template-columns:minmax(175px,24%) minmax(0,1fr);gap:18px}
-  #projectWorkspace .v81-project-rail{display:block;position:sticky;top:18px}
 }
 @media (min-width:1180px) and (min-height:600px){
   .week-layout{grid-template-columns:minmax(240px,310px) minmax(0,1fr);align-items:start}
   .week-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-  #projectWorkspace .v81-project-layout{grid-template-columns:minmax(185px,22%) minmax(0,1fr);gap:18px}
-  #projectWorkspace .v81-project-rail{display:block;position:sticky;top:18px}
   .v6-project-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media (min-width:1500px) and (min-height:600px){
   .week-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
   .v6-project-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-  #projectWorkspace .v81-project-layout{grid-template-columns:minmax(215px,21%) minmax(0,1fr);gap:24px}
   .v76-page-surface{min-height:980px}
 }
 @media (min-width:740px) and (min-height:600px) and (hover:hover){

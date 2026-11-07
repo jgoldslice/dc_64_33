@@ -41,28 +41,42 @@ button:focus-visible, a:focus-visible, .v81-project-rail button:focus-visible {
   max-height:min(85dvh,760px);
   overscroll-behavior-y:contain;
 }
-/* A project stays an independent workspace on narrow screens.
- * On a wide window, let the user keep project folders beside their notes. */
-.v81-project-layout {display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
-.v81-project-main {min-width:0}
-.v81-project-rail {display:none}
-.v81-project-switch {
-  display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;
-  color:var(--ink);background:transparent;border:1px solid transparent;
-  border-radius:11px;text-align:left;font-weight:650;
+/* Brainstorm: project switching belongs in the header, not a second sidebar.
+ * Leave the notebook's separate Pages rail to v76.css. */
+.v81-project-layout{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:0;min-width:0;width:100%
 }
-.v81-project-switch[aria-current="true"] {
-  border-color:var(--line);background:var(--wash)
+.v81-project-main{min-width:0;width:100%}
+#brainstorm .view-header{margin-bottom:16px}
+#brainstorm .view-header h1{margin-bottom:0}
+#projectWorkspace .v6-project-head{gap:10px}
+.v814-project-tools{display:flex;gap:8px;align-items:center;min-width:0;margin-left:auto}
+.v814-project-switch{display:block;min-width:0;max-width:min(45vw,240px)}
+.v814-project-switch select{
+  display:block;width:100%;min-width:110px;max-width:100%;
+  min-height:44px;padding:10px 30px 10px 13px;
+  border:1px solid var(--line);border-radius:11px;
+  background:var(--surface);color:var(--ink);
+  font:600 13px/1.3 system-ui,-apple-system,sans-serif;
+  overflow:hidden;text-overflow:ellipsis;cursor:pointer;
 }
-.v81-project-switch svg{width:21px;height:21px;flex:none;stroke:var(--secondary-ui);fill:none;stroke-width:1.6;stroke-linejoin:round}
-.v81-project-switch span{min-width:0;overflow-wrap:anywhere}
-.v81-project-rail h3 {font-size:13px;margin:2px 7px 12px;color:var(--muted);font-weight:700}
-@media(min-width:850px) {
-  .v81-project-layout {grid-template-columns:minmax(205px,25%) minmax(0,1fr);gap:18px;align-items:start}
-  .v81-project-rail {display:block;position:sticky;top:16px;min-width:0;padding:15px 10px;border:1px solid var(--line);border-radius:17px;background:var(--surface)}
-  .v81-project-main .v6-project-title {font-size:30px}
-  #projectNotes {min-width:0}
-  #projectWorkspace .v76-notebook-ui {max-width:none}
+.v814-project-switch select:focus-visible{
+  outline:2px solid var(--secondary-ui);outline-offset:2px
+}
+#projectWorkspace #renameProject{flex:none;min-width:44px;min-height:44px}
+#projectWorkspace .v6-project-title{
+  font-size:clamp(23px,2.6vw,31px);margin:0 0 13px
+}
+@media(max-width:700px){
+  #projectWorkspace .v6-project-head{flex-wrap:wrap}
+  #projectWorkspace .v814-project-tools{order:3;flex:0 0 100%;margin-left:0}
+  #projectWorkspace .v814-project-switch{width:100%;max-width:100%}
+  #projectWorkspace .v814-project-switch select{min-width:0}
+  #projectWorkspace .v82-project-header-actions{margin-left:auto}
+}
+@media(max-width:480px){
+  .v814-project-tools{gap:4px}
+  .v814-project-switch select{font-size:12px;padding-left:10px}
 }
 @media(max-width:365px) {
   .shell {padding-inline:12px}
