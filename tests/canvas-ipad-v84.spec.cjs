@@ -65,25 +65,31 @@ test.describe('Canvas adaptive iPad workspace',()=>{
 
 test.describe('Canvas iPad landscape and notebook',()=>{
   test.beforeEach(async({page})=>{await page.setViewportSize({width:1366,height:1024});});
-  test('large iPad shows project navigation and the notebook beside it',async({page})=>{
+  test('large iPad switches projects from the header and gives the notebook the full workspace width',async({page})=>{
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(base);
     await page.locator('[data-tab="brainstorm"]').click();
     page.once('dialog',d=>d.accept('Notebook on iPad'));
     await page.locator('#newProject').click();
     await expect(page.locator('#v76Editor')).toBeVisible();
-    await expect(page.locator('.v81-project-rail')).toBeVisible();
-    await expect(page.locator('#v76Surface')).toBeVisible();
+    await expect(page.locator('.v81-project-rail')).toHaveCount(0);
+    await expect(page.locator('#v814ProjectSelect')).toBeVisible();
+    await expect(page.locator('.v811-page-rail')).toBeVisible();
     const bounds=await page.evaluate(()=>{
       const nav=document.querySelector('.bottom-nav').getBoundingClientRect();
-      const rail=document.querySelector('.v81-project-rail').getBoundingClientRect();
+      const layout=document.querySelector('.v81-project-layout').getBoundingClientRect();
+      const main=document.querySelector('.v81-project-main').getBoundingClientRect();
+      const pages=document.querySelector('.v811-page-rail').getBoundingClientRect();
       const sheet=document.getElementById('v76Surface').getBoundingClientRect();
-      return {navRight:nav.right,railLeft:rail.left,railRight:rail.right,
-        sheetLeft:sheet.left,sheetRight:sheet.right,viewport:innerWidth,
+      return {navRight:nav.right,layoutLeft:layout.left,layoutWidth:layout.width,
+        mainWidth:main.width,pagesRight:pages.right,sheetLeft:sheet.left,
+        sheetWidth:sheet.width,sheetRight:sheet.right,viewport:innerWidth,
         contentWidth:document.documentElement.scrollWidth};
     });
-    expect(bounds.railLeft).toBeGreaterThanOrEqual(bounds.navRight);
-    expect(bounds.sheetLeft).toBeGreaterThan(bounds.railRight);
+    expect(bounds.layoutLeft).toBeGreaterThanOrEqual(bounds.navRight);
+    expect(Math.abs(bounds.mainWidth-bounds.layoutWidth)).toBeLessThan(3);
+    expect(bounds.sheetLeft).toBeGreaterThan(bounds.pagesRight);
+    expect(bounds.sheetWidth).toBeGreaterThan(540);
     expect(bounds.sheetRight).toBeLessThanOrEqual(bounds.viewport+2);
     expect(bounds.contentWidth).toBeLessThanOrEqual(bounds.viewport+2);
     expect(errors).toEqual([]);
