@@ -220,3 +220,28 @@ test('responsive iPad, compact Split View and phone layouts retain zoom controls
   }
   expect(errors).toEqual([]);
 });
+
+test('starting a two-finger pinch cancels a pending pen stroke instead of leaving a stray mark',async({page})=>{
+  const errors=await openNotebook(page,'Pinch Drawing Safety');
+  await page.locator('[data-v76-mode="pen"]').click();
+  const at=await page.locator('#v76Ink').evaluate(el=>{
+    const r=el.getBoundingClientRect();
+    return {x:r.left+Math.min(r.width/3,150),y:Math.min(innerHeight-110,r.top+160)};
+  });
+  await page.mouse.move(at.x,at.y);
+  await page.mouse.down();
+  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await page.evaluate(()=>{
+    const target=document.getElementById('v815ZoomViewport'),r=target.getBoundingClientRect();
+    const p=new Touch({identifier:1,target,clientX:r.left+110,clientY:r.top+180});
+    const q=new Touch({identifier:2,target,clientX:r.left+210,clientY:r.top+180});
+    target.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,
+      touches:[p,q],changedTouches:[p,q],targetTouches:[p,q]}));
+    target.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,
+      touches:[],changedTouches:[p,q],targetTouches:[]}));
+  });
+  await page.mouse.up();
+  await expect(page.locator('#v76Ink polyline')).toHaveCount(0);
+  expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(0);
+  expect(errors).toEqual([]);
+});
