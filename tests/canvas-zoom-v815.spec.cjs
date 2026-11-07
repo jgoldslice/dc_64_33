@@ -258,3 +258,29 @@ test('starting a two-finger pinch cancels a pending pen stroke instead of leavin
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(0);
   expect(errors).toEqual([]);
 });
+
+test('zoom stays within a fixed notebook viewport and does not move the Safari document',async({page})=>{
+  const errors=await openNotebook(page,'Zoom Viewport');
+  const measure=()=>page.evaluate(()=>{
+    const viewport=document.getElementById('v815ZoomViewport');
+    const rect=viewport.getBoundingClientRect();
+    return {
+      height:rect.height,top:rect.top,outerY:window.scrollY,
+      documentHeight:document.documentElement.scrollHeight,
+      innerHeight:viewport.scrollHeight,viewHeight:viewport.clientHeight,
+      paperWidth:document.getElementById('v76Surface').getBoundingClientRect().width
+    };
+  });
+  const before=await measure();
+  await page.evaluate(()=>{
+    for(let i=0;i<7;i++)document.getElementById('v815ZoomIn').click();
+  });
+  const after=await measure();
+  approx(after.height,before.height,2);
+  approx(after.top,before.top,2);
+  approx(after.outerY,before.outerY,2);
+  approx(after.documentHeight,before.documentHeight,5);
+  expect(after.innerHeight).toBeGreaterThan(after.viewHeight);
+  expect(after.paperWidth).toBeGreaterThan(before.paperWidth);
+  expect(errors).toEqual([]);
+});
