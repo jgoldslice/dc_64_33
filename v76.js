@@ -104,7 +104,7 @@
     return selectedText&&surface.contains(selectedText)?selectedText:null;
   }
   function applyMode(next){
-    mode=next;root.querySelectorAll('[data-v76-mode]').forEach(btn=>{
+    mode=next;if(next!=='select')selectBox(null);root.querySelectorAll('[data-v76-mode]').forEach(btn=>{
       const on=btn.dataset.v76Mode===next;btn.classList.toggle('v76-on',on);btn.setAttribute('aria-pressed',String(on));
     });
     surface.classList.toggle('v76-is-drawing',next==='pen'||next==='erase');
@@ -322,8 +322,9 @@
     const width=Math.max(170,Math.min(360,surface.clientWidth-Math.max(0,x)-20));
     const o={id:newId(),type:'text',x:Math.max(0,Math.round(x)),y:Math.max(0,Math.round(y)),width,html:'',fontSize:sizeName(page.defaultTextSize)};
     page.objects.push(o);growPage(page,y+150);persist();drawPage(ctx.p,page);
-    const box=surface.querySelector('[data-v76-item="'+o.id+'"] .v76-rich');
-    if(box){box.focus();selectedText=box;}applyMode('select');
+    const box=surface.querySelector('[data-v76-item="'+o.id+'"]');
+    if(box)enterTextEdit(box);
+    applyMode('select');
   }
   function position(e){
     const rect=surface.getBoundingClientRect();
@@ -433,7 +434,7 @@
     const rem=e.target.closest('[data-v76-remove]');
     if(rem){
       const ctx=current();if(!ctx)return;
-      ctx.page.objects=ctx.page.objects.filter(o=>String(o.id)!==String(rem.dataset.v76Remove));persist();drawPage(ctx.p,ctx.page);return;
+      ctx.page.objects=ctx.page.objects.filter(o=>String(o.id)!==String(rem.dataset.v76Remove));selectedItemId=null;persist();drawPage(ctx.p,ctx.page);return;
     }
   });
   surface.addEventListener('focusin',e=>{if(e.target.matches('.v76-rich'))selectedText=e.target;});
@@ -467,126 +468,149 @@
   document.getElementById('v76ImageInput').addEventListener('change',async e=>{
     const file=e.target.files?.[0];e.target.value='';if(file)await insertImage(file);
   });
-  // The six-dot handle changes the saved width ONLY. Long-pressing the object
-  // (not its handle or controls) changes its saved position ONLY.
-  const HOLD_MS=450;
-  let interaction=null,pendingHold=null,holdTimer=null;
-  function clearPendingHold(){
-    if(holdTimer!==null)clearTimeout(holdTimer);
-    if(pendingHold?.box)pendingHold.box.classList.remove('v80-touch-pending');
-    holdTimer=null;pendingHold=null;
-  }
-  function startInteraction(session){
+  // OneNote-style object manipulation. Tap once to reveal selection handles.
+  // Drag the selected object or center control to move. Drag any edge/corner
+  // to resize in either direction. Tap selected text again to edit its content.
+  let interaction=null;
+  function startManipulation(e,box,obj,page,kind,edge=''){
+    const capture=e.target.closest('button[data-v811-resize],button[data-v811-move]')||box;
+    const scale=surface.getBoundingClientRect();
+    const session={
+      pointerId:e.pointerId,capture,box,obj,page,kind,edge,
+      x:e.clientX,y:e.clientY,
+      scaleX:surface.clientWidth/Math.max(1,scale.width),
+      scaleY:surface.clientHeight/Math.max(1,scale.height),
+      startX:parseFloat(box.style.left)||0,
+      startY:parseFloat(box.style.top)||0,
+      startWidth:box.offsetWidth,
+      startHeight:box.offsetHeight,
+      changed:false
+    };
     interaction=session;
-    session.box.classList.add(session.kind==='resize'?'v76-resizing':'v76-moving');
-    try{session.capture.setPointerCapture(session.pointerId);}catch(_){}
+    box.classList.add(kind==='resize'?'v76-resizing':'v76-moving');
+    e.preventDefault();
+    try{capture.setPointerCapture(e.pointerId);}catch(_){}
   }
   root.addEventListener('pointerdown',e=>{
-    if(e.button!==0||interaction||pendingHold)return;
-    const grip=e.target.closest('[data-v76-drag]');
-    if(grip){
-      const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===String(grip.dataset.v76Drag));
-      if(!obj)return;
-      const box=grip.closest('.v76-item');
-      // Commit the actual displayed anchor before changing width so a previously
-      // edge-clamped box does not jump when it shrinks.
-      obj.x=parseFloat(box.style.left)||0;
-      e.preventDefault();
-      startInteraction({kind:'resize',pointerId:e.pointerId,capture:grip,box,obj,page:ctx.page,
-        x:e.clientX,startWidth:visibleWidth(obj),changed:false});
+    if(mode==='pen'||mode==='erase'||interaction||
+      (e.pointerType==='mouse'&&e.button!==0))return;
+    const el=e.target instanceof Element?e.target:e.target?.parentElement;
+    if(!el)return;
+    if(el.closest('[data-v76-remove],[data-v811-edit]'))return;
+    const box=el.closest('.v76-item');
+    if(!box||!surface.contains(box)){
+      if(el===surface||el===ink)selectBox(null);
       return;
     }
-    const box=e.target.closest('.v76-item');
-    if(!box||e.target.closest('button,.v76-size-tools')||mode==='pen'||mode==='erase')return;
-    const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===String(box.dataset.v76Item));
+    const ctx=current();
+    const obj=ctx?.page.objects.find(o=>String(o.id)===box.dataset.v76Item);
     if(!obj)return;
-    const session={kind:'move',pointerId:e.pointerId,capture:box,box,obj,page:ctx.page,
-      x:e.clientX,y:e.clientY,startX:parseFloat(box.style.left)||0,
-      startY:parseFloat(box.style.top)||0,changed:false};
-    pendingHold=session;
-    // Temporarily disable native selection while classifying touch as
-    // tap-to-edit or hold-to-move.
-    if(e.pointerType==='touch'){
-      box.classList.add('v80-touch-pending');
-      e.preventDefault();
+    const wasSelected=selectedItemId===String(obj.id);
+    selectBox(obj.id);
+    const resize=el.closest('[data-v811-resize]');
+    if(resize){
+      startManipulation(e,box,obj,ctx.page,'resize',resize.dataset.v811Resize);
+      return;
     }
-    holdTimer=setTimeout(()=>{
-      if(pendingHold!==session)return;
-      clearPendingHold();
-      if(document.activeElement?.isContentEditable)document.activeElement.blur();
-      const selection=window.getSelection();
-      if(selection)selection.removeAllRanges();
-      startInteraction(session);
-    },HOLD_MS);
+    const move=el.closest('[data-v811-move]');
+    if(move||wasSelected&&!box.classList.contains('v811-editing')){
+      startManipulation(e,box,obj,ctx.page,'move');
+      return;
+    }
+    if(!box.classList.contains('v811-editing'))e.preventDefault();
   });
   root.addEventListener('pointermove',e=>{
-    if(pendingHold&&pendingHold.pointerId===e.pointerId){
-      if(Math.hypot(e.clientX-pendingHold.x,e.clientY-pendingHold.y)>10)clearPendingHold();
-    }
-    if(!interaction||interaction.pointerId!==e.pointerId)return;
-    const d=interaction;
-    if(d.kind==='resize'){
-      // Dragging the handle right expands the box; left contracts it.
-      const maxWidth=Math.max(135,surface.clientWidth-(parseFloat(d.box.style.left)||0)-8);
-      const width=Math.min(maxWidth,Math.max(135,Math.round(d.startWidth+e.clientX-d.x)));
-      if(width!==d.obj.width){d.obj.width=width;d.changed=true;}
+    const d=interaction;if(!d||e.pointerId!==d.pointerId)return;
+    e.preventDefault();
+    const dx=(e.clientX-d.x)*d.scaleX;
+    const dy=(e.clientY-d.y)*d.scaleY;
+    if(d.kind==='move'){
+      if(!d.changed&&Math.hypot(dx,dy)<3)return;
+      const maxX=Math.max(0,surface.clientWidth-d.startWidth-8);
+      const x=Math.min(maxX,Math.max(0,Math.round(d.startX+dx)));
+      const y=Math.max(0,Math.round(d.startY+dy));
+      if(x!==Number(d.obj.x)||y!==Number(d.obj.y)){d.obj.x=x;d.obj.y=y;d.changed=true;}
     }else{
-      const width=visibleWidth(d.obj);
-      const maxX=Math.max(0,surface.clientWidth-width-8);
-      const x=Math.min(maxX,Math.max(0,Math.round(d.startX+e.clientX-d.x)));
-      const y=Math.max(0,Math.round(d.startY+e.clientY-d.y));
-      if(x!==d.obj.x||y!==d.obj.y){d.obj.x=x;d.obj.y=y;d.changed=true;}
+      const edge=d.edge;
+      const minW=Math.min(120,Math.max(70,surface.clientWidth-18));
+      const minH=52;
+      const right=d.startX+d.startWidth,bottom=d.startY+d.startHeight;
+      let x=d.startX,y=d.startY,w=d.startWidth,h=d.startHeight;
+      if(edge.includes('w')){
+        x=Math.min(right-minW,Math.max(0,Math.round(d.startX+dx)));
+        w=right-x;
+      }else if(edge.includes('e')){
+        w=Math.min(Math.max(minW,Math.round(d.startWidth+dx)),
+          Math.max(minW,surface.clientWidth-d.startX-8));
+      }
+      if(edge.includes('n')){
+        y=Math.min(bottom-minH,Math.max(0,Math.round(d.startY+dy)));
+        h=bottom-y;
+      }else if(edge.includes('s')){
+        h=Math.max(minH,Math.round(d.startHeight+dy));
+      }
+      if(x!==Number(d.obj.x)||y!==Number(d.obj.y)||
+        w!==Number(d.obj.width)||h!==Number(d.obj.height)){
+        d.obj.x=x;d.obj.y=y;d.obj.width=w;d.obj.height=h;
+        d.changed=true;
+      }
     }
-    placeBox(d.box,d.obj);
-    growPage(d.page,(parseFloat(d.box.style.top)||0)+d.box.offsetHeight+80);
+    if(d.changed){
+      placeBox(d.box,d.obj);
+      growPage(d.page,(parseFloat(d.box.style.top)||0)+d.box.offsetHeight+90);
+    }
   });
-  function focusOnTap(e,session){
-    if(session.obj.type!=='text')return;
-    const rich=session.box.querySelector('.v76-rich');
-    if(!rich)return;
-    rich.focus({preventScroll:true});
-    selectedText=rich;
-    textSizeSelect.value=sizeName(session.obj.fontSize);
-    // iOS Safari supports caretRangeFromPoint; position the cursor where
-    // the finger landed rather than blindly appending all new text.
-    const range=document.caretRangeFromPoint?.(e.clientX,e.clientY);
-    if(range&&rich.contains(range.startContainer)){
-      const selection=window.getSelection();
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+  function finishManipulation(e){
+    const d=interaction;
+    if(!d||e.pointerId!==d.pointerId)return;
+    interaction=null;
+    d.box.classList.remove('v76-moving','v76-resizing');
+    if(d.changed)persist();
+    else if(d.kind==='move'&&d.obj.type==='text'&&
+      !e.target.closest('[data-v811-move]')&&e.type==='pointerup'){
+      enterTextEdit(d.box,{x:e.clientX,y:e.clientY});
     }
   }
-  // iOS may select the entire editable block before the 450-ms hold.
-  // Cancel native touch behavior for note content; restore short taps
-  // explicitly so normal typing continues.
+  root.addEventListener('pointerup',finishManipulation);
+  root.addEventListener('pointercancel',finishManipulation);
+  root.addEventListener('click',e=>{
+    const edit=e.target.closest('[data-v811-edit]');
+    if(edit){
+      const box=edit.closest('.v76-item');
+      enterTextEdit(box);
+      return;
+    }
+  });
+  root.addEventListener('dblclick',e=>{
+    const box=e.target.closest('.v76-item.v76-text');
+    if(box&&mode==='select')enterTextEdit(box,{x:e.clientX,y:e.clientY});
+  });
+  // The selected object's handles own touch input; normal text editing and
+  // vertical page scrolling remain native when no object is selected.
   const gestureElement=e=>e.target instanceof Element?e.target:e.target?.parentElement;
   root.addEventListener('touchstart',e=>{
     if(mode==='pen'||mode==='erase'||e.touches.length!==1)return;
     const el=gestureElement(e);
-    if(el?.closest('.v76-item')&&!el.closest('button'))e.preventDefault();
+    if(el?.closest('.v811-selected')&&!el.closest('.v811-editing .v76-rich')&&
+      !el.closest('.v811-object-actions'))e.preventDefault();
   },{passive:false});
   root.addEventListener('contextmenu',e=>{
-    if(gestureElement(e)?.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
+    if(gestureElement(e)?.closest('.v811-selected')&&!gestureElement(e)?.closest('.v811-editing .v76-rich'))e.preventDefault();
   });
   root.addEventListener('selectstart',e=>{
-    // Selectstart can originate from a Text node rather than an Element.
-    if(gestureElement(e)?.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
+    if(gestureElement(e)?.closest('.v811-selected')&&
+      !gestureElement(e)?.closest('.v811-editing .v76-rich'))e.preventDefault();
   });
-  function endInteraction(e){
-    if(pendingHold?.pointerId===e.pointerId){
-      const session=pendingHold;
-      clearPendingHold();
-      if(session.capture&&e.pointerType==='touch'&&e.type==='pointerup')focusOnTap(e,session);
+  root.addEventListener('dragstart',e=>{
+    if(gestureElement(e)?.closest('.v76-item'))e.preventDefault();
+  });
+  root.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&selectedItemId){
+      const active=surface.querySelector('.v811-selected .v76-rich');
+      if(active?.isContentEditable)active.blur();
+      selectBox(null);
     }
-    if(!interaction||interaction.pointerId!==e.pointerId)return;
-    const d=interaction;interaction=null;
-    d.box.classList.remove('v76-moving','v76-resizing');
-    if(d.changed)persist();
-  }
-  root.addEventListener('pointerup',endInteraction);
-  root.addEventListener('pointercancel',endInteraction);
-  // Prevent the native drag-image ghost from intercepting long-press movement.
-  root.addEventListener('dragstart',e=>{if(e.target.closest('.v76-item'))e.preventDefault();});
+  });
   // Convert the Pencil's screen contact into actual SVG user coordinates.
   // getScreenCTM covers scrolling, Safari zoom, responsive sizing and CSS
   // transforms; unlike simple rect subtraction it also handles SVG scaling.
