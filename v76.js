@@ -191,6 +191,30 @@
     e.preventDefault();
     setNoteZoom(noteZoom*Math.exp(-e.deltaY*.006),{x:e.clientX,y:e.clientY});
   },{passive:false});
+  function cancelDrawingForPinch(){
+    // iPad fingers should navigate the page without leaving stray Pencil marks
+    // or moving a selected image while a second finger joins the gesture.
+    if(activeStroke){
+      const pending=activeStroke;activeStroke=null;
+      pending.page.strokes=pending.page.strokes.filter(s=>s!==pending.stroke);
+      strokesView(pending.page);
+    }
+    if(activeErase){
+      const pending=activeErase;activeErase=null;
+      pending.page.strokes=pending.originalStrokes;
+      strokesView(pending.page);
+      persist();
+    }
+    if(interaction){
+      const d=interaction;interaction=null;
+      for(const key of ['x','y','width','height']){
+        if(d.original[key]===undefined)delete d.obj[key];
+        else d.obj[key]=d.original[key];
+      }
+      d.box.classList.remove('v76-moving','v76-resizing');
+      placeBox(d.box,d.obj);
+    }
+  }
   const touchDistance=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
   const touchMid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
   zoomViewport.addEventListener('touchstart',e=>{
@@ -198,6 +222,7 @@
     const d=touchDistance(e.touches[0],e.touches[1]);
     if(d<10)return;
     e.preventDefault();
+    cancelDrawingForPinch();
     activePinch={startDistance:d,startZoom:noteZoom};
     suppressPageClickUntil=Date.now()+400;
   },{passive:false});
@@ -220,6 +245,7 @@
   let safariGesture=null;
   zoomViewport.addEventListener('gesturestart',e=>{
     e.preventDefault();
+    if(!activePinch)cancelDrawingForPinch();
     safariGesture={zoom:noteZoom};
     suppressPageClickUntil=Date.now()+400;
   },{passive:false});
@@ -627,6 +653,7 @@
       startY:parseFloat(box.style.top)||0,
       startWidth:box.offsetWidth,
       startHeight:box.offsetHeight,
+      original:{x:obj.x,y:obj.y,width:obj.width,height:obj.height},
       changed:false
     };
     interaction=session;
@@ -831,7 +858,8 @@
     e.preventDefault();ink.setPointerCapture(e.pointerId);
     const pt=inkPosition(e);
     if(mode==='erase'){
-      activeErase={id:e.pointerId,page:ctx.page,last:pt};
+      activeErase={id:e.pointerId,page:ctx.page,last:pt,
+        originalStrokes:(ctx.page.strokes||[]).slice()};
       eraseSweep(ctx.page,pt,[e]); // A tap is also an eraser gesture.
       return;
     }
