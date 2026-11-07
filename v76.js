@@ -24,6 +24,7 @@
         '<button type="button" data-v76-mode="pen" aria-label="Draw; tap again to stop drawing" aria-pressed="false" title="Draw">✎</button>'+
         '<button type="button" data-v76-mode="erase" aria-label="Erase drawing strokes; tap again to stop erasing" aria-pressed="false" title="Eraser">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.3 20.4 3.6 15.7a2.2 2.2 0 0 1 0-3.1l9-9a2.2 2.2 0 0 1 3.1 0l4.7 4.7a2.2 2.2 0 0 1 0 3.1l-9 9a2.2 2.2 0 0 1-3.1 0Z"/><path d="M12 21h9"/></svg></button>'+
+        '<button type="button" id="v818InkColor" class="v818-color-trigger" aria-label="Pen color: Black" aria-expanded="false" aria-haspopup="true" aria-controls="v818InkPalette" title="Choose drawing color"><span id="v818ColorPreview" class="v818-color-preview" aria-hidden="true"></span><span class="v818-color-chevron" aria-hidden="true">⌄</span></button>'+
         '<button type="button" id="v76UndoInk" aria-label="Undo last drawing stroke" title="Undo drawing">↶</button>'+
       '</div></div>'+
       '<div class="v79-tool-group" role="group" aria-label="Misc"><div class="v79-tool-buttons">'+
@@ -51,6 +52,74 @@
   const textSizeSelect=document.getElementById('v80TextSize');
   const validSizes=new Set(['small','medium','large']);
   const sizeName=value=>validSizes.has(value)?value:'medium';
+  // Colors belong to the drawing tool, not the app theme; existing stroke
+  // colors remain untouched. A remembered choice only affects NEW strokes.
+  const inkColors=[
+    {name:'White',hex:'#ffffff'}, {name:'Black',hex:'#111111'},
+    {name:'Red',hex:'#d73537'}, {name:'Yellow',hex:'#e5b900'},
+    {name:'Blue',hex:'#2362dd'}, {name:'Green',hex:'#16834b'}
+  ];
+  const colorButton=document.getElementById('v818InkColor');
+  const colorPreview=document.getElementById('v818ColorPreview');
+  const colorPalette=document.createElement('div');
+  colorPalette.id='v818InkPalette';
+  colorPalette.className='v818-ink-palette';
+  colorPalette.setAttribute('role','group');
+  colorPalette.setAttribute('aria-label','Drawing colors');
+  colorPalette.hidden=true;
+  colorPalette.innerHTML='<div class="v818-palette-caption">Pen color</div>'+
+    '<div class="v818-palette-colors">'+inkColors.map(item=>
+      '<button type="button" data-ink-color="'+item.hex+'" aria-label="'+item.name+
+      '" aria-pressed="false" title="'+item.name+'" style="--ink-swatch:'+item.hex+
+      '"><span aria-hidden="true"></span></button>').join('')+'</div>';
+  // A body-level popover is not clipped by the horizontally scrolling toolbar.
+  document.body.append(colorPalette);
+  let selectedInkColor='#111111';
+  try{
+    const remembered=localStorage.getItem('canvas:penColor');
+    if(inkColors.some(item=>item.hex===remembered))selectedInkColor=remembered;
+  }catch(_){}
+  function refreshInkColor(){
+    const current=inkColors.find(item=>item.hex===selectedInkColor)||inkColors[1];
+    colorPreview.style.background=current.hex;
+    colorButton.setAttribute('aria-label','Pen color: '+current.name);
+    colorButton.title='Pen color: '+current.name;
+    colorPalette.querySelectorAll('[data-ink-color]').forEach(button=>
+      button.setAttribute('aria-pressed',String(button.dataset.inkColor===selectedInkColor)));
+  }
+  function toggleInkPalette(open){
+    colorPalette.hidden=!open;
+    colorButton.setAttribute('aria-expanded',String(open));
+    if(!open)return;
+    const rect=colorButton.getBoundingClientRect();
+    const width=250, gap=8;
+    colorPalette.style.left=Math.max(10,Math.min(window.innerWidth-width-10,rect.left))+'px';
+    const height=98;
+    colorPalette.style.top=(rect.bottom+gap+height>window.innerHeight
+      ?Math.max(10,rect.top-height-gap):rect.bottom+gap)+'px';
+  }
+  colorButton.addEventListener('click',()=>toggleInkPalette(colorPalette.hidden));
+  colorPalette.addEventListener('click',event=>{
+    const button=event.target.closest('[data-ink-color]');
+    if(!button)return;
+    selectedInkColor=button.dataset.inkColor;
+    try{localStorage.setItem('canvas:penColor',selectedInkColor);}catch(_){}
+    refreshInkColor();
+    toggleInkPalette(false);
+    applyMode('pen');
+    colorButton.focus({preventScroll:true});
+  });
+  document.addEventListener('pointerdown',event=>{
+    if(!colorPalette.hidden && !colorPalette.contains(event.target) &&
+       !colorButton.contains(event.target))toggleInkPalette(false);
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&!colorPalette.hidden){
+      toggleInkPalette(false);colorButton.focus({preventScroll:true});
+    }
+  });
+  window.addEventListener('resize',()=>{if(!colorPalette.hidden)toggleInkPalette(false);});
+  refreshInkColor();
   // These remain in the DOM for backwards compatibility, but are no longer the UI.
   for(const id of ['projectNotebook','v74Blocks','v74BlockImage','projectNotesList']){
     const el=document.getElementById(id);if(el)el.hidden=true;
@@ -279,20 +348,41 @@
   }
   updateZoomControls();
 
+  // Quadratic mid-point curves make Pencil handwriting fluid without
+  // rewriting its saved raw points (which erasing, backups and undo use).
+  function smoothInkPath(points){
+    if(!points?.length)return '';
+    const first=points[0],last=points[points.length-1];
+    let path='M'+first.x+' '+first.y;
+    if(points.length===1 || (points.length===2&&
+      Math.hypot(last.x-first.x,last.y-first.y)<.01)){
+      // A tiny capped segment renders a tap as a visible round dot.
+      return path+' l0.01 0';
+    }
+    if(points.length===2)return path+' L'+last.x+' '+last.y;
+    for(let i=1;i<points.length-1;i++){
+      const p=points[i],n=points[i+1];
+      path+=' Q'+p.x+' '+p.y+' '+((p.x+n.x)/2)+' '+((p.y+n.y)/2);
+    }
+    return path+' Q'+last.x+' '+last.y+' '+last.x+' '+last.y;
+  }
+  function makeInkElement(stroke){
+    const el=document.createElementNS('http://www.w3.org/2000/svg','path');
+    el.classList.add('v818-ink-stroke');
+    el.setAttribute('d',smoothInkPath(stroke.points||[]));
+    el.setAttribute('fill','none');
+    el.setAttribute('stroke',stroke.color||'#111111');
+    el.setAttribute('stroke-width',String(stroke.width||2.5));
+    el.setAttribute('stroke-linecap','round');
+    el.setAttribute('stroke-linejoin','round');
+    return el;
+  }
   function strokesView(page){
     ink.replaceChildren();
-    // A tablet media query can make the *displayed* page 800/980px high
-    // even though page.height is still 740. Matching the actual drawing
-    // surface avoids SVG's default centered letterbox and Pencil drift.
+    // Match the displayed sheet, including iPad sizing and notebook zoom.
     ink.setAttribute('preserveAspectRatio','none');
     ink.setAttribute('viewBox','0 0 '+Math.max(1,surface.clientWidth)+' '+Math.max(1,surface.clientHeight));
-    for(const stroke of page.strokes||[]){
-      const poly=document.createElementNS('http://www.w3.org/2000/svg','polyline');
-      poly.setAttribute('points',stroke.points.map(pt=>pt.x+','+pt.y).join(' '));
-      poly.setAttribute('fill','none');poly.setAttribute('stroke',stroke.color||'#bda8da');
-      poly.setAttribute('stroke-width',String(stroke.width||2.5));poly.setAttribute('stroke-linecap','round');
-      poly.setAttribute('stroke-linejoin','round');ink.append(poly);
-    }
+    for(const stroke of page.strokes||[])ink.append(makeInkElement(stroke));
   }
   function visibleWidth(item){
     // Responsive fallback is temporary: moving an object never alters its saved width.
@@ -874,9 +964,11 @@
       eraseSweep(ctx.page,pt,[e]); // A tap is also an eraser gesture.
       return;
     }
-    const css=getComputedStyle(document.documentElement);
-    const stroke={id:newId(),points:[pt,pt],width:2.5,color:css.getPropertyValue('--secondary-ui').trim()||'#a58a60'};
-    ctx.page.strokes.push(stroke);activeStroke={id:e.pointerId,stroke,page:ctx.page};strokesView(ctx.page);
+    const stroke={id:newId(),points:[pt,pt],width:2.5,color:selectedInkColor};
+    ctx.page.strokes.push(stroke);
+    const element=makeInkElement(stroke);
+    ink.append(element);
+    activeStroke={id:e.pointerId,stroke,page:ctx.page,element};
   });
   ink.addEventListener('pointermove',e=>{
     if(activeErase&&e.pointerId===activeErase.id){
@@ -885,15 +977,27 @@
       return;
     }
     if(!activeStroke||e.pointerId!==activeStroke.id)return;
-    activeStroke.stroke.points.push(...pointerSamples(e).map(inkPosition));
-    strokesView(activeStroke.page);
+    for(const sample of pointerSamples(e)){
+      const point=inkPosition(sample);
+      const last=activeStroke.stroke.points.at(-1);
+      if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
+    }
+    // Update only the active path instead of rebuilding every previous stroke.
+    activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
   });
   const finishStroke=e=>{
     if(activeErase&&e.pointerId===activeErase.id){
       if(e.type==='pointerup')eraseSweep(activeErase.page,activeErase.last,[e]);
       activeErase=null;
     }
-    if(activeStroke&&activeStroke.id===e.pointerId){activeStroke=null;persist();}
+    if(activeStroke&&activeStroke.id===e.pointerId){
+      if(e.type==='pointerup'){
+        const point=inkPosition(e),last=activeStroke.stroke.points.at(-1);
+        if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
+      }
+      activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+      activeStroke=null;persist();
+    }
   };
   ink.addEventListener('pointerup',finishStroke);
   ink.addEventListener('pointercancel',finishStroke);
