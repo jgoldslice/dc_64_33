@@ -16,12 +16,14 @@ test('Add Event commits the date only after scroll settles and never advances tw
   const dates=await week(page);
   const original=await dates.locator('[aria-pressed="true"]').getAttribute('data-v87-date');
   // Disable snap to stage a still-in-progress native drag at the next week.
-  await dates.evaluate(el=>{
+  const duringScroll=await dates.evaluate(el=>{
     el.style.scrollSnapType='none';
     el.scrollLeft=2*el.clientWidth;
     el.dispatchEvent(new Event('scroll'));
+    // Read synchronously, before a browser-generated scrollend can arrive.
+    return el.querySelector('[aria-pressed="true"]')?.dataset.v87Date;
   });
-  await expect(dates.locator('[aria-pressed="true"]')).toHaveAttribute('data-v87-date',original);
+  expect(duringScroll).toBe(original);
   await dates.evaluate(el=>el.dispatchEvent(new Event('scrollend')));
   const next=await page.evaluate(value=>iso(plusDays(new Date(value+'T12:00:00'),7)),original);
   await expect(dates.locator('[aria-pressed="true"]')).toHaveAttribute('data-v87-date',next);
