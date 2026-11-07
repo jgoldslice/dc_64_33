@@ -33,7 +33,9 @@ test('tap a weekday to add an event with only name and time, save and reopen',as
   const date=await day.getAttribute('data-week-event-date');
   await day.click();
   await expect(page.locator('#v87EventBack')).toBeVisible();
-  await expect(page.locator('#v87EventDates')).toBeHidden();
+  // v8.16 always shows week chips so a tapped day can be moved to another week.
+  await expect(page.locator('#v87EventDates')).toBeVisible();
+  await expect(page.locator('#v87EventDates [data-v87-date="'+date+'"]').first()).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('#v87EventForm input')).toHaveCount(2);
   await addEvent(page,{title:'Chemistry lab',time:'15:45'});
   const saved=await page.evaluate(()=>state.events.find(e=>e.title==='Chemistry lab'));

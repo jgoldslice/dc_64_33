@@ -18,22 +18,34 @@
     if(document.querySelector('.modal-back.open'))return true;
     return [...document.querySelectorAll('[role="dialog"],.opening-overlay')].some(el=>!el.hidden&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden');
   }
-  function snapshot(view){
+  function snapshot(view,position){
     const copy=view.cloneNode(true);
     copy.removeAttribute('id');
     copy.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
     copy.classList.add('canvas-turn-snapshot');
     copy.setAttribute('aria-hidden','true');
     copy.inert=true;
+    // The real .view lives inside .shell, with padding, an iPad sidebar and
+    // a scroll offset. A naked clone at (0,0) jumps UP and LEFT on touchstart.
+    // Pin both paper copies to the current on-screen coordinates instead.
     copy.style.display='block';
-    copy.style.marginTop=(-window.scrollY)+'px';
+    copy.style.position='absolute';
+    copy.style.margin='0';
+    copy.style.left=position.x+'px';
+    copy.style.top=position.y+'px';
+    copy.style.width=position.width+'px';
+    copy.style.minHeight=Math.max(position.height,innerHeight-position.y)+'px';
     return copy;
   }
   function clear(){overlay?.layer.remove();overlay=null;turning=false;}
   function create(from,to,direction){
     if(overlay)return;
+    const source=document.getElementById(from),destination=document.getElementById(to);
+    if(!source||!destination)return;
+    const sourceRect=source.getBoundingClientRect();
     const layer=document.createElement('div');
     layer.className='canvas-turn-layer';
+    layer.dataset.direction=direction<0?'forward':'back';
     layer.setAttribute('aria-hidden','true');
     const underneath=document.createElement('div');
     underneath.className='canvas-turn-under';
@@ -41,10 +53,17 @@
     sheet.className='canvas-turn-sheet';
     const fold=document.createElement('div');
     fold.className='canvas-turn-fold';
-    underneath.append(snapshot(document.getElementById(to)));
-    sheet.append(snapshot(document.getElementById(from)),fold);
     layer.append(underneath,sheet);
     document.body.append(layer);
+    const layerRect=layer.getBoundingClientRect();
+    const position={
+      x:sourceRect.left-layerRect.left,
+      y:sourceRect.top-layerRect.top,
+      width:sourceRect.width,
+      height:sourceRect.height
+    };
+    underneath.append(snapshot(destination,position));
+    sheet.append(snapshot(source,position),fold);
     sheet.style.transformOrigin=direction<0?'left center':'right center';
     overlay={layer,underneath,sheet,direction};
   }
@@ -52,16 +71,19 @@
     if(!overlay)return;
     const v=clamp(p,0,1);
     const angle=(overlay.direction<0?-1:1)*v*85;
-    overlay.sheet.style.transform='rotateY('+angle+'deg)';
-    overlay.sheet.style.opacity=String(1-Math.max(0,v-.85)*3);
-    overlay.underneath.style.opacity=String(.78+.22*v);
-    overlay.sheet.style.setProperty('--canvas-fold-opacity',String(.12+.5*v));
+    // Gentle lift and a directional fold give the sheet some paper-like depth
+    // without reflowing the actual page or shifting its starting position.
+    overlay.sheet.style.transform='translate3d(0,'+(-3*v)+'px,0) rotateY('+angle+'deg)';
+    overlay.sheet.style.opacity=String(1-Math.max(0,v-.88)*2.7);
+    overlay.underneath.style.opacity=String(.88+.12*v);
+    overlay.sheet.style.setProperty('--canvas-fold-opacity',String(.10+.64*v));
+    overlay.sheet.style.setProperty('--canvas-paper-shadow',String(.12+.24*v));
   }
   function settle(commit,to,p){
     if(!overlay){if(commit)tab(to);return;}
     turning=true;
-    const duration=reduce()?0:Math.round((commit?1-p:p)*320);
-    overlay.sheet.style.transition='transform '+duration+'ms cubic-bezier(.22,.7,.2,1),opacity '+duration+'ms ease';
+    const duration=reduce()?0:Math.round((commit?1-p:p)*310);
+    overlay.sheet.style.transition='transform '+duration+'ms cubic-bezier(.2,.75,.18,1),opacity '+duration+'ms ease';
     overlay.underneath.style.transition='opacity '+duration+'ms ease';
     progress(commit?1:0);
     const layer=overlay.layer;

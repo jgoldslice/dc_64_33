@@ -4,6 +4,15 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.16 — Paper-like page turns and sliding calendar weeks
+
+- Fixed a paper-swipe visual jump: snapshots now use the actual on-screen coordinates of the current app view (including iPad navigation, content padding, and vertical scroll) instead of appearing at the origin of an overlay. A subtle reversible hinge rotation, directional edge shadow, and 3px gesture-tied lift approximate a paper turn, inspired by Apple Books. The app's real DOM, data, and scroll remain untouched.
+- The swipe animation is interactive while dragging and completes or cancels on release. Reduce Motion remains respected, and editable controls are excluded from global swipes. It is an efficient web CSS treatment, not a native Apple Books curl renderer.
+- The **Week at a Glance** calendar can move to previous/next weeks by swiping horizontally or tapping compact arrows inside the calendar. Existing week arrows at the top are unchanged. Horizontal calendar gestures do not trigger a main-tab page turn, and vertical scrolling remains enabled.
+- **Add Event** now has previous/next-week controls and swipeable weekday chips. Event name/time entries are retained when browsing weeks, and the same weekday stays selected. You can schedule as far forward/backward as needed without leaving the form.
+- After adding an event on a different week, the Week calendar shows the week where the event was saved. Events still use the existing state storage and backup schema; no migration.
+- Regression tests check calendar gestures, date correctness and persistence, event modal navigation, page-turn snapshot alignment, and reduced-motion handling. Real Safari touch testing remains advisable.
+
 ## Canvas v8.15 — Notebook zoom (50%–500%)
 
 - Notes now support **pinch-to-zoom** on touchscreens and **Ctrl/Command + trackpad wheel** inside the notebook, without zooming the rest of Canvas.
