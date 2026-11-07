@@ -150,9 +150,13 @@
     if(!dateGesture||e.changedTouches.length!==1)return;
     const g=dateGesture,t=e.changedTouches[0];dateGesture=null;
     const dx=t.clientX-g.x,dy=t.clientY-g.y;
-    if(!e.isTrusted&&Math.abs(dx)>64&&Math.abs(dx)>Math.abs(dy)*1.5&&
-      Math.abs(dates.scrollLeft-g.left)<6)shiftDateWeek(dx<0?1:-1);
-    else{
+    if(Math.abs(dx)>64&&Math.abs(dx)>Math.abs(dy)*1.5&&
+      Math.abs(dates.scrollLeft-g.left)<6){
+      // A fast flick can end before Safari moves the snap strip.
+      // Commit once immediately rather than waiting for delayed momentum.
+      dateScrollLocked=true;clearTimeout(dateScrollTimer);
+      shiftDateWeek(dx<0?1:-1);
+    }else{
       // If the finger was held still, scrollend/debounce may already have
       // fired while the gesture guard was active; settle after release.
       clearTimeout(dateScrollTimer);
@@ -234,9 +238,11 @@
       if(!calendarGesture||e.changedTouches.length!==1)return;
       const g=calendarGesture,t=e.changedTouches[0];calendarGesture=null;
       const dx=t.clientX-g.x,dy=t.clientY-g.y;
-      if(!e.isTrusted&&Math.abs(dx)>=65&&Math.abs(dx)>Math.abs(dy)*1.5&&
-         Math.abs(weekWindow.scrollLeft-g.left)<6)shiftCalendar(dx<0?1:-1);
-      else{
+      if(Math.abs(dx)>=65&&Math.abs(dx)>Math.abs(dy)*1.5&&
+         Math.abs(weekWindow.scrollLeft-g.left)<6){
+        calendarScrollLocked=true;clearTimeout(calendarScrollTimer);
+        shiftCalendar(dx<0?1:-1);
+      }else{
         clearTimeout(calendarScrollTimer);
         calendarScrollTimer=setTimeout(settleCalendar,280);
       }
