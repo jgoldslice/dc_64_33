@@ -567,11 +567,14 @@ function canvasSaveStatus(failed){
   }
   if(notice){notice.hidden=!failed;notice.style.display=failed?'flex':'none';}
 }
-function save(){
+function save(verify=false){
   try{
     const serialized=JSON.stringify(state);
     if(typeof serialized!=='string')throw new TypeError('Unable to serialize Canvas data');
     localStorage.setItem(STORAGE_KEY,serialized);
+    // Destructive operations verify the manifest before deleting attachments.
+    if(verify&&localStorage.getItem(STORAGE_KEY)!==serialized)
+      throw new Error('Canvas save verification failed');
     canvasUnsaved=false;canvasSaveStatus(false);
     return true;
   }catch(error){
@@ -1349,8 +1352,16 @@ async function v6Upload(files){
   const p=v6Project();if(!p)return;
   for(const file of files){if(file.size>40*1024*1024){alert(file.name+' exceeds 40 MB');continue;}
     const id=v6Id(),key='v6-'+id;
-    try{await v6Blob('put',key,file);p.library.push({id,type:'file',title:file.name,mime:file.type||'application/octet-stream',key,size:file.size,created:v6Now()});save();}
-    catch(err){alert('Unable to save '+file.name+': '+err.message);}
+    try{
+      await v6Blob('put',key,file);
+      const record={id,type:'file',title:file.name,mime:file.type||'application/octet-stream',key,size:file.size,created:v6Now()};
+      p.library.push(record);
+      if(!save(true)){
+        p.library=p.library.filter(item=>item!==record);
+        await v6Blob('delete',key);
+        throw Error('Planner save failed; the uploaded file was not added');
+      }
+    }catch(err){alert('Unable to save '+file.name+': '+err.message);}
   }
   v6Render();
 }
@@ -1369,7 +1380,12 @@ async function v6OpenResource(id){
 }
 async function v6DeleteResource(id){
   const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));if(!r||!confirm('Remove '+r.title+'?'))return;
-  p.library=p.library.filter(x=>String(x.id)!==String(id));save();
+  const previousLibrary=p.library;
+  p.library=p.library.filter(x=>String(x.id)!==String(id));
+  if(!save(true)){
+    p.library=previousLibrary;v6Render();
+    return; // Never delete the attachment until its manifest is safely saved.
+  }
   // Never erase a shared image from IndexedDB while a notebook page, legacy
   // block or another Library resource still needs the original blob.
   const stillReferenced=!!r.key&&state.projects.some(proj=>
@@ -1501,10 +1517,7 @@ document.addEventListener('click',e=>{
     state.projects=state.projects.filter(x=>String(x.id)!==String(p.id));
     // Persist before deleting binary attachments. On a storage failure,
     // return to the original project instead of destroying the user's files.
-    save();
-    let saved=false;
-    try{saved=localStorage.getItem(STORAGE_KEY)===JSON.stringify(state);}catch{}
-    if(!saved){state=oldState;v6Render();renderIdeas();return;}
+    if(!save(true)){state=oldState;v6Render();renderIdeas();return;}
     const referencedElsewhere=key=>state.projects.some(other=>
       (other.library||[]).some(r=>r.key===key)||
       (other.contentBlocks||[]).some(b=>b.key===key)||
