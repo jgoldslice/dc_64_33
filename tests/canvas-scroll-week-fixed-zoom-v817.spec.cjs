@@ -14,6 +14,9 @@ async function openWeek(page){
 async function nativePageScroll(page,selector,side){
   const el=page.locator(selector);
   await expect.poll(()=>el.evaluate(x=>Math.round(x.scrollLeft/Math.max(1,x.clientWidth)))).toBe(1);
+  // Re-centering deliberately disables scroll-snap for two animation frames.
+  // Only simulate the next swipe once the scroller is fully unlocked.
+  await expect.poll(()=>el.evaluate(x=>x.style.scrollSnapType)).toBe('');
   await el.evaluate(async (node,side)=>{
     node.scrollLeft=node.clientWidth*(1+side);
     await new Promise(resolve=>requestAnimationFrame(resolve));
