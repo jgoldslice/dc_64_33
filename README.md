@@ -4,6 +4,13 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.13 — Delete completed tasks directly from Blueprint
+
+- In **Blueprint → Tasks → All Tasks**, checking off a task immediately reveals a **Delete** action beside **Edit** on that row. Incomplete tasks retain **Edit** only.
+- The Delete button requires confirmation, including the task title, before removal. Cancel leaves the task complete and unchanged. Unchecking a task removes the inline Delete control.
+- Uses the existing shared task deletion logic, retaining the editor's Delete option and existing cleanup of linked Brainstorm idea actions.
+- The action works in mobile and tablet layouts and remains available for previously completed tasks after reload. No saved-data migration or backup format change.
+
 ## Canvas v8.12 — Textbox tool and deliberate note insertion
 
 - Reintroduced the **Textbox** icon to the notebook's Text tools. Select it, then tap empty paper to insert a text box at that point. The new box opens for editing and the tool automatically returns to Select, preventing accidental additional boxes.
