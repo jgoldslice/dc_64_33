@@ -174,7 +174,8 @@
     const after=surface.getBoundingClientRect();
     zoomViewport.scrollLeft+=after.left+x*noteZoom-focus.x;
     const deltaY=after.top+y*noteZoom-focus.y;
-    if(Math.abs(deltaY)>1&&Number.isFinite(deltaY))window.scrollBy(0,deltaY);
+    // Pinch scrolls the notebook itself, not Safari's entire page.
+    if(Math.abs(deltaY)>1&&Number.isFinite(deltaY))zoomViewport.scrollTop+=deltaY;
   }
   function changeZoomStep(direction){
     const next=direction>0
