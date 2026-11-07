@@ -152,7 +152,11 @@ test('Notes have only Text, Pen and Misc tool groups, with tap-to-type', async (
   page.once('dialog', d => d.accept('Minimal Toolbar Test'));
   await page.locator('#newProject').click();
   const toolbar = page.locator('#v76Editor .v76-toolbar');
-  await expect(toolbar.locator('.v79-tool-title')).toHaveText(['Text','Pen','Misc']);
+  // v8.10 uses a compact icon-only toolbar but preserves the accessible groups.
+  await expect(toolbar.locator('.v79-tool-title')).toHaveCount(0);
+  await expect(toolbar.locator('.v79-tool-group[aria-label="Text"]')).toHaveCount(1);
+  await expect(toolbar.locator('.v79-tool-group[aria-label="Pen"]')).toHaveCount(1);
+  await expect(toolbar.locator('.v79-tool-group[aria-label="Misc"]')).toHaveCount(1);
   await expect(toolbar.locator('button')).toHaveCount(5);
   await expect(toolbar.locator('[data-v76-format="bold"],[data-v76-format="italic"],[data-v76-mode="text"],[data-v76-mode="select"]')).toHaveCount(0);
   await expect(toolbar.locator('[data-v76-format="insertUnorderedList"]')).toBeVisible();
