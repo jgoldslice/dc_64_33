@@ -37,7 +37,7 @@
           '<button type="button" id="v815ZoomIn" aria-label="Zoom in" title="Zoom in">+</button>'+
         '</div></div>'+
     '</div><div class="v811-note-body"><aside class="v811-page-rail" aria-label="Notebook pages"><div class="v811-pages-heading"><strong>Pages</strong><button type="button" id="v811NewPage" aria-label="Add note page" title="Add page">+</button></div><div id="v811PageList" class="v811-page-list"></div></aside><div id="v815ZoomViewport" class="v76-page-wrap"><div id="v815ZoomStage" class="v815-zoom-stage"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div></div></div>'+
-    '<p class="v76-tip">Tap an object to select it, drag to move, or use the handles to resize. Tap selected text again to edit. Select Textbox, then tap empty paper to add a new text box. Tap empty paper otherwise to deselect. Saves automatically.</p>'+
+    '<p class="v76-tip">Tap an object to select it, drag to move, or use the handles to resize. Tap selected text again to edit. Select Textbox, then tap empty paper to add a new text box. Tap empty paper otherwise to deselect. Pinch to zoom (50%–500%) or use − / + above. Saves automatically.</p>'+
     '<input type="file" id="v76ImageInput" accept="image/*" hidden></div>';
   pane.insertAdjacentHTML('beforeend',editorHtml);
   const root=document.getElementById('v76Editor'),surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
@@ -127,6 +127,121 @@
     surface.classList.toggle('v76-is-drawing',next==='pen'||next==='erase');
     ink.style.pointerEvents=(next==='pen'||next==='erase')?'auto':'none';
   }
+  // v8.15: a bounded, whole-page visual zoom (50%–500%). The note's x/y,
+  // dimensions, strokes and attachment keys always stay in unscaled units.
+  function updateZoomControls(){
+    zoomResetButton.textContent=Math.round(noteZoom*100)+'%';
+    zoomResetButton.setAttribute('title','Reset note zoom to 100%');
+    zoomOutButton.disabled=noteZoom<=ZOOM_MIN+.0001;
+    zoomInButton.disabled=noteZoom>=ZOOM_MAX-.0001;
+  }
+  function syncZoomLayout(){
+    if(!zoomViewport.clientWidth)return; // An inactive project may be hidden.
+    const baseWidth=zoomViewport.clientWidth;
+    const priorWidth=surface.clientWidth;
+    surface.style.width=baseWidth+'px';
+    const baseHeight=Math.max(1,surface.offsetHeight);
+    zoomStage.style.width=Math.ceil(baseWidth*noteZoom)+'px';
+    zoomStage.style.height=Math.ceil(baseHeight*noteZoom)+'px';
+    surface.style.transform='scale('+noteZoom+')';
+    // The ink's viewBox uses the *unscaled* surface dimensions; its screen
+    // CTM includes the zoom and maps Pencil events accurately at any level.
+    if(priorWidth!==surface.clientWidth){
+      const ctx=current();if(ctx)strokesView(ctx.page);
+    }
+  }
+  function zoomAnchor(){
+    const rect=zoomViewport.getBoundingClientRect();
+    const left=Math.max(rect.left,0),right=Math.min(rect.right,innerWidth);
+    const top=Math.max(rect.top,0),bottom=Math.min(rect.bottom,innerHeight);
+    return {
+      x:left<right?(left+right)/2:rect.left+rect.width/2,
+      y:top<bottom?(top+bottom)/2:rect.top+Math.min(rect.height/2,200)
+    };
+  }
+  function setNoteZoom(value,anchor){
+    const next=Math.round(Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,value))*1000)/1000;
+    if(!Number.isFinite(next)||Math.abs(next-noteZoom)<.0005)return;
+    const before=surface.getBoundingClientRect();
+    const focus=anchor||zoomAnchor();
+    // Preserve the local point below the pinch center or the toolbar's
+    // viewport center, even if the scrolled sheet was previously zoomed.
+    const x=(focus.x-before.left)/noteZoom;
+    const y=(focus.y-before.top)/noteZoom;
+    noteZoom=next;
+    syncZoomLayout();
+    updateZoomControls();
+    const after=surface.getBoundingClientRect();
+    zoomViewport.scrollLeft+=after.left+x*noteZoom-focus.x;
+    const deltaY=after.top+y*noteZoom-focus.y;
+    if(Math.abs(deltaY)>1&&Number.isFinite(deltaY))window.scrollBy(0,deltaY);
+  }
+  function changeZoomStep(direction){
+    const next=direction>0
+      ?ZOOM_STEPS.find(value=>value>noteZoom+.002)
+      :ZOOM_STEPS.slice().reverse().find(value=>value<noteZoom-.002);
+    if(next!==undefined)setNoteZoom(next);
+  }
+  zoomOutButton.addEventListener('click',()=>changeZoomStep(-1));
+  zoomInButton.addEventListener('click',()=>changeZoomStep(1));
+  zoomResetButton.addEventListener('click',()=>setNoteZoom(1));
+  // Ctrl/Command+wheel includes common trackpad pinch gestures on desktop.
+  zoomViewport.addEventListener('wheel',e=>{
+    if(!e.ctrlKey&&!e.metaKey)return;
+    e.preventDefault();
+    setNoteZoom(noteZoom*Math.exp(-e.deltaY*.006),{x:e.clientX,y:e.clientY});
+  },{passive:false});
+  const touchDistance=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+  const touchMid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
+  zoomViewport.addEventListener('touchstart',e=>{
+    if(e.touches.length!==2)return;
+    const d=touchDistance(e.touches[0],e.touches[1]);
+    if(d<10)return;
+    e.preventDefault();
+    activePinch={startDistance:d,startZoom:noteZoom};
+    suppressPageClickUntil=Date.now()+400;
+  },{passive:false});
+  zoomViewport.addEventListener('touchmove',e=>{
+    if(!activePinch||e.touches.length!==2)return;
+    e.preventDefault();
+    const a=e.touches[0],b=e.touches[1];
+    setNoteZoom(activePinch.startZoom*touchDistance(a,b)/activePinch.startDistance,touchMid(a,b));
+    suppressPageClickUntil=Date.now()+400;
+  },{passive:false});
+  function endPinch(e){
+    if(!activePinch||e.touches.length>=2)return;
+    activePinch=null;
+    suppressPageClickUntil=Date.now()+400;
+  }
+  zoomViewport.addEventListener('touchend',endPinch,{passive:true});
+  zoomViewport.addEventListener('touchcancel',endPinch,{passive:true});
+  // iPad Safari exposes GestureEvents on some builds. Prevent its native page
+  // magnification inside the notebook and use the same bounded zoom.
+  let safariGesture=null;
+  zoomViewport.addEventListener('gesturestart',e=>{
+    e.preventDefault();
+    safariGesture={zoom:noteZoom};
+    suppressPageClickUntil=Date.now()+400;
+  },{passive:false});
+  zoomViewport.addEventListener('gesturechange',e=>{
+    if(!safariGesture)return;
+    e.preventDefault();
+    if(!activePinch)setNoteZoom(safariGesture.zoom*e.scale,{x:e.clientX,y:e.clientY});
+    suppressPageClickUntil=Date.now()+400;
+  },{passive:false});
+  zoomViewport.addEventListener('gestureend',e=>{
+    e.preventDefault();safariGesture=null;
+    suppressPageClickUntil=Date.now()+400;
+  },{passive:false});
+  // Page content or container dimensions may change after text editing,
+  // rotation, Stage Manager resizing, or an iPad split-screen transition.
+  if(typeof ResizeObserver==='function'){
+    const observer=new ResizeObserver(()=>syncZoomLayout());
+    observer.observe(zoomViewport);
+    observer.observe(surface);
+  }
+  updateZoomControls();
+
   function strokesView(page){
     ink.replaceChildren();
     // A tablet media query can make the *displayed* page 800/980px high
