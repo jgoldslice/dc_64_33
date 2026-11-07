@@ -278,7 +278,7 @@
 .v815-zoom-tools{margin-left:auto;flex:none}
 .v815-zoom-tools .v79-tool-buttons{gap:3px}
 .v815-zoom-tools .v79-tool-buttons button{
-  height:40px;min-height:40px;width:38px;min-width:38px;
+  height:44px;min-height:44px;width:44px;min-width:44px;
   border-radius:9px;font-weight:700;font-size:20px;
 }
 .v815-zoom-tools #v815ZoomReset{
@@ -290,7 +290,7 @@
 .v815-zoom-tools button:disabled:active{transform:none}
 @media(max-width:500px){
   .v815-zoom-tools{margin-left:0}
-  .v815-zoom-tools .v79-tool-buttons button{min-width:36px;width:36px}
+  .v815-zoom-tools .v79-tool-buttons button{min-width:44px;width:44px}
   .v815-zoom-tools #v815ZoomReset{min-width:58px;width:auto}
 }
 @media(prefers-reduced-motion:reduce){
