@@ -105,8 +105,46 @@
       if(Math.abs(dx)>=58&&Math.abs(dx)>Math.abs(dy)*1.5)onStep(dx<0?1:-1);
     },{passive:true});
     element.addEventListener('touchcancel',()=>{gesture=null;},{passive:true});
+    // Allow click-and-drag on a Mac/desktop, without turning a dragged day
+    // into an accidental calendar event.
+    let mouseStart=null,suppressClickUntil=0;
+    element.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='mouse'&&e.button===0)
+        mouseStart={x:e.clientX,y:e.clientY};
+    });
+    element.addEventListener('pointerup',e=>{
+      if(!mouseStart)return;
+      const dx=e.clientX-mouseStart.x,dy=e.clientY-mouseStart.y;
+      mouseStart=null;
+      if(Math.abs(dx)>=58&&Math.abs(dx)>Math.abs(dy)*1.5){
+        suppressClickUntil=Date.now()+400;
+        onStep(dx<0?1:-1);
+      }
+    });
+    element.addEventListener('pointercancel',()=>{mouseStart=null;});
+    element.addEventListener('click',e=>{
+      if(Date.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation();}
+    },true);
   }
   addHorizontalSwipe(dates,changeEventWeek);
+  // Apple trackpads send horizontal wheel deltas; keyboard users can move
+  // through the dates with arrow keys, even though the duplicate buttons hide.
+  let lastEventWheel=0;
+  dates.addEventListener('wheel',e=>{
+    if(Math.abs(e.deltaX)<24||Math.abs(e.deltaX)<Math.abs(e.deltaY)*1.3)return;
+    if(e.cancelable)e.preventDefault();
+    const now=Date.now();if(now-lastEventWheel<450)return;
+    lastEventWheel=now;changeEventWeek(e.deltaX>0?1:-1);
+  },{passive:false});
+  dates.addEventListener('keydown',e=>{
+    if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+    e.preventDefault();
+    const direction=e.key==='ArrowRight'?1:-1;
+    const next=iso(plusDays(new Date(chosen+'T12:00:00'),direction));
+    if(!weekDates().includes(next))changeEventWeek(direction);
+    choose(next);
+    dates.querySelector('[aria-pressed="true"]')?.focus();
+  });
 
   function shiftCalendar(step){
     const button=document.getElementById(step>0?'nextWeek':'prevWeek');
@@ -121,6 +159,13 @@
   document.getElementById('v816CalendarPrev')?.addEventListener('click',()=>shiftCalendar(-1));
   document.getElementById('v816CalendarNext')?.addEventListener('click',()=>shiftCalendar(1));
   addHorizontalSwipe(grid,shiftCalendar);
+  grid.setAttribute('tabindex','0');
+  grid.addEventListener('keydown',e=>{
+    if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+    e.preventDefault();
+    shiftCalendar(e.key==='ArrowRight'?1:-1);
+    grid.focus({preventScroll:true});
+  });
   // Horizontal trackpad scrolling is available on desktop Safari as well.
   let lastWheelTurn=0;
   grid.addEventListener('wheel',e=>{
