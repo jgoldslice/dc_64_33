@@ -952,10 +952,26 @@
     const coalesced=e.getCoalescedEvents?.();
     return coalesced?.length?coalesced:[e];
   };
-  let activeStroke=null,activeErase=null;
+  let activeStroke=null,activeErase=null,inkFrame=0;
+  function queueInkRender(){
+    if(inkFrame)return;
+    // Pencil can send several coalesced events per frame. Update the live
+    // SVG path once per display frame, while retaining all sampled points.
+    inkFrame=requestAnimationFrame(()=>{
+      inkFrame=0;
+      if(activeStroke)activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+    });
+  }
+  function flushInkRender(){
+    if(inkFrame){cancelAnimationFrame(inkFrame);inkFrame=0;}
+    if(activeStroke)activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+  }
   ink.addEventListener('pointerdown',e=>{
     const ctx=current();if(!ctx||(mode!=='pen'&&mode!=='erase'))return;
     if(e.pointerType==='mouse'&&e.button!==0)return;
+    // Never allow a second touch to replace an active Pencil stroke; Safari
+    // may dispatch pointerdown before touchstart detects a two-finger pinch.
+    if(activePinch||activeStroke||activeErase||(e.pointerType==='touch'&&!e.isPrimary))return;
     e.preventDefault();ink.setPointerCapture(e.pointerId);
     const pt=inkPosition(e);
     if(mode==='erase'){
@@ -983,19 +999,30 @@
       if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
     }
     // Update only the active path instead of rebuilding every previous stroke.
-    activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+    queueInkRender();
   });
   const finishStroke=e=>{
     if(activeErase&&e.pointerId===activeErase.id){
-      if(e.type==='pointerup')eraseSweep(activeErase.page,activeErase.last,[e]);
-      activeErase=null;
+      const pending=activeErase;activeErase=null;
+      if(e.type==='pointercancel'){
+        // A cancelled pinch/gesture must not commit a partial eraser sweep.
+        pending.page.strokes=pending.originalStrokes;
+        strokesView(pending.page);persist();
+      }else if(e.type==='pointerup')eraseSweep(pending.page,pending.last,[e]);
     }
     if(activeStroke&&activeStroke.id===e.pointerId){
+      if(e.type==='pointercancel'){
+        const pending=activeStroke;activeStroke=null;
+        if(inkFrame){cancelAnimationFrame(inkFrame);inkFrame=0;}
+        pending.page.strokes=pending.page.strokes.filter(stroke=>stroke!==pending.stroke);
+        pending.element.remove(); // An interrupted Pencil mark is not saved.
+        return;
+      }
       if(e.type==='pointerup'){
         const point=inkPosition(e),last=activeStroke.stroke.points.at(-1);
         if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
       }
-      activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+      flushInkRender();
       activeStroke=null;persist();
     }
   };
