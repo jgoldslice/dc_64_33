@@ -92,3 +92,8 @@
  .v76-rich[data-font-size="large"]{font-size:24px}
  .v80-text-size{width:85px;min-height:36px}
 }
+
+/* Canvas v8.10 — quiet, single-line notebook tools without group headings. */
+.v76-toolbar{align-items:center}
+.v79-tool-group{display:flex;align-items:center;gap:0}
+.v76-page-surface.v76-is-drawing #v76Ink{cursor:crosshair}

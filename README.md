@@ -4,6 +4,15 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.10 — Continuous eraser and cleaner notebook tools
+
+- The notebook toolbar uses **icons only**; the visible Text, Pen, and Misc headings are removed. The three groups keep their descriptive accessibility labels.
+- The eraser icon is a clear outlined eraser without the extra diagonal slash inside the drawing.
+- **Tap or drag** in Eraser mode to remove any handwritten stroke touched by the eraser path. Long, sparse strokes are correctly detected even when the eraser crosses between their saved vertices. Sweeping across multiple marks in one gesture removes all intersected strokes, leaving unrelated marks, photos, and note text alone.
+- Supports mouse, finger, and browser Pencil pointer events; preserves original pen/stroke format and saves erasures as they happen, including midway through a drag.
+- Eraser behavior is **stroke-based**: touching part of one pen stroke removes that entire stroke. Fine-grained segment erasing remains a possible future addition.
+- Automated regressions cover tap erase, continuous multi-stroke drag, sparse line crossings, safe blank-space gestures, persistence after reload, and simulated iPad Pencil input. On-device Safari/Pencil testing is still worthwhile.
+
 ## Canvas v8.9 — iPad Pencil alignment and notebook icons
 
 - Replaced the notebook's former backspace-style eraser glyph with a recognizable **eraser icon**, and the grid-like Image glyph with a **photo icon**. Existing tool names and operations are unchanged.
