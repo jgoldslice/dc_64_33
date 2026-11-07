@@ -67,10 +67,16 @@ button:focus-visible, a:focus-visible, .v81-project-rail button:focus-visible {
 #projectWorkspace .v6-project-title{
   font-size:clamp(23px,2.6vw,31px);margin:0 0 13px
 }
+@media(max-width:700px){
+  #projectWorkspace .v6-project-head{flex-wrap:wrap}
+  #projectWorkspace .v814-project-tools{order:3;flex:0 0 100%;margin-left:0}
+  #projectWorkspace .v814-project-switch{width:100%;max-width:100%}
+  #projectWorkspace .v814-project-switch select{min-width:0}
+  #projectWorkspace .v82-project-header-actions{margin-left:auto}
+}
 @media(max-width:480px){
   .v814-project-tools{gap:4px}
-  .v814-project-switch{max-width:45vw}
-  .v814-project-switch select{font-size:12px;min-width:105px;padding-left:8px}
+  .v814-project-switch select{font-size:12px;padding-left:10px}
 }
 @media(max-width:365px) {
   .shell {padding-inline:12px}
