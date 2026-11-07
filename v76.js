@@ -28,11 +28,12 @@
         '<button type="button" id="v76AddImage" aria-label="Insert picture" title="Insert picture">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></button>'+
       '</div></div>'+
-    '</div><div class="v76-page-wrap"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div>'+
-    '<p class="v76-tip">Tap blank space to type. Drag ⠿ to resize; press and hold content to move. Tap Pen or Eraser again to return to typing. Saves automatically.</p>'+
+    '</div><div class="v811-note-body"><aside class="v811-page-rail" aria-label="Notebook pages"><div class="v811-pages-heading"><strong>Pages</strong><button type="button" id="v811NewPage" aria-label="Add note page" title="Add page">+</button></div><div id="v811PageList" class="v811-page-list"></div></aside><div class="v76-page-wrap"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div></div>'+
+    '<p class="v76-tip">Tap an object to select it, drag to move, or use the handles to resize. Tap selected text again to edit. Tap blank space to type. Saves automatically.</p>'+
     '<input type="file" id="v76ImageInput" accept="image/*" hidden></div>';
   pane.insertAdjacentHTML('beforeend',editorHtml);
   const root=document.getElementById('v76Editor'),surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
+  const pageList=document.getElementById('v811PageList');
   const pageSelect=document.getElementById('v76PageSelect');
   const textSizeSelect=document.getElementById('v80TextSize');
   const validSizes=new Set(['small','medium','large']);
@@ -46,7 +47,7 @@
   const todoTab=document.querySelector('[data-project-tab="actions"]');if(todoTab)todoTab.textContent='To-Do';
   const todoHeading=document.querySelector('#projectActions h2');if(todoHeading)todoHeading.textContent='To-Do';
   const todoInput=document.getElementById('projectActionInput');if(todoInput){todoInput.placeholder='Add a to-do...';todoInput.setAttribute('aria-label','New project to-do');}
-  let mode='select',lastKey='',lastPageRef=null,selectedText=null;
+  let mode='select',lastKey='',lastPageRef=null,selectedText=null,selectedItemId=null;
   const newId=()=>v6Id();
   function plainHTML(txt){return esc(txt).replace(/\r\n?/g,'\n').replace(/\n/g,'<br>');}
   function cleanHTML(html){
@@ -103,7 +104,7 @@
     return selectedText&&surface.contains(selectedText)?selectedText:null;
   }
   function applyMode(next){
-    mode=next;root.querySelectorAll('[data-v76-mode]').forEach(btn=>{
+    mode=next;if(next!=='select')selectBox(null);root.querySelectorAll('[data-v76-mode]').forEach(btn=>{
       const on=btn.dataset.v76Mode===next;btn.classList.toggle('v76-on',on);btn.setAttribute('aria-pressed',String(on));
     });
     surface.classList.toggle('v76-is-drawing',next==='pen'||next==='erase');
@@ -134,17 +135,59 @@
     el.style.left=Math.min(Math.max(0,Number(item.x)||0),maxX)+'px';
     el.style.top=Math.max(0,Number(item.y)||0)+'px';
     el.style.width=width+'px';
+    const height=Number(item.height);
+    const sized=Number.isFinite(height)&&height>=52;
+    el.style.height=sized?height+'px':'';
+    el.dataset.v811Sized=String(sized);
+    el.classList.toggle('v811-near-top',(Number(item.y)||0)<62);
+    // Keep existing images in their natural aspect ratio until explicitly resized.
+  }
+  function selectBox(id){
+    selectedItemId=id==null?null:String(id);
+    for(const box of surface.querySelectorAll('.v76-item')){
+      const selected=box.dataset.v76Item===selectedItemId;
+      box.classList.toggle('v811-selected',selected);
+      box.setAttribute('aria-selected',String(selected));
+      if(!selected){
+        const rich=box.querySelector('.v76-rich');
+        if(rich){rich.contentEditable='false';box.classList.remove('v811-editing');}
+      }
+    }
+  }
+  function enterTextEdit(box,point){
+    if(!box?.classList.contains('v76-text'))return;
+    selectBox(box.dataset.v76Item);
+    box.classList.add('v811-editing');
+    const rich=box.querySelector('.v76-rich');
+    if(!rich)return;
+    rich.contentEditable='true';
+    rich.focus({preventScroll:true});
+    selectedText=rich;
+    const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===String(box.dataset.v76Item));
+    if(obj)textSizeSelect.value=sizeName(obj.fontSize);
+    if(point){
+      const range=document.caretRangeFromPoint?.(point.x,point.y);
+      if(range&&rich.contains(range.startContainer)){
+        const selection=window.getSelection();
+        selection?.removeAllRanges();selection?.addRange(range);
+      }
+    }
   }
   function addRenderedObject(item,p,page){
-    const box=document.createElement('div');box.className='v76-item v76-'+item.type;box.dataset.v76Item=item.id;
+    const box=document.createElement('div');
+    box.className='v76-item v76-'+item.type;
+    box.dataset.v76Item=item.id;
+    box.setAttribute('role','group');
+    box.setAttribute('aria-label',item.type==='image'?'Notebook picture':'Notebook text');
+    box.setAttribute('aria-selected','false');
     placeBox(box,item);
-    const grip=document.createElement('button');grip.type='button';grip.className='v76-grip';grip.dataset.v76Drag=item.id;
-    grip.textContent='⠿';grip.title='Drag left or right to resize';grip.setAttribute('aria-label','Resize '+item.type);box.append(grip);
-    const remove=document.createElement('button');remove.type='button';remove.className='v76-remove';remove.dataset.v76Remove=item.id;
-    remove.textContent='×';remove.setAttribute('aria-label','Remove '+item.type);
     if(item.type==='text'){
-      const el=document.createElement('div');el.className='v76-rich';el.dataset.v76Text=item.id;
-      el.contentEditable='true';el.spellcheck=true;el.setAttribute('role','textbox');el.setAttribute('aria-label','Editable note text');
+      const el=document.createElement('div');
+      el.className='v76-rich';
+      el.dataset.v76Text=item.id;
+      el.contentEditable='false';
+      el.spellcheck=true;el.setAttribute('role','textbox');
+      el.setAttribute('aria-label','Editable note text');
       el.dataset.fontSize=sizeName(item.fontSize);
       el.innerHTML=cleanHTML(item.html);
       el.addEventListener('focus',()=>{
@@ -154,21 +197,101 @@
       });
       box.append(el);
     }else if(item.type==='image'){
-      const img=document.createElement('img');img.className='v76-photo';img.alt=item.alt||'Note picture';img.draggable=false;img.dataset.v76ImageKey=item.key;
+      const img=document.createElement('img');
+      img.className='v76-photo';
+      img.alt=item.alt||'Note picture';
+      img.draggable=false;
+      img.dataset.v76ImageKey=item.key;
       box.append(img);
       const projectId=String(p.id),pageId=String(page.id),key=item.key;
       v6Blob('get',key).then(blob=>{
-        if(!blob||String(v6Project()?.id)!==projectId||String(current()?.page.id)!==pageId||!box.isConnected)return;
-        const url=URL.createObjectURL(blob);img.onload=()=>URL.revokeObjectURL(url);img.onerror=()=>URL.revokeObjectURL(url);img.src=url;
+        if(!blob||String(v6Project()?.id)!==projectId||
+           String(current()?.page.id)!==pageId||!box.isConnected)return;
+        const url=URL.createObjectURL(blob);
+        img.onload=()=>URL.revokeObjectURL(url);
+        img.onerror=()=>URL.revokeObjectURL(url);
+        img.src=url;
       }).catch(()=>{});
     }
-    box.append(remove);surface.append(box);
+    // A single tap selects; these 8 handles then resize in *both* directions.
+    // The center control can move the selected item without a long-press.
+    for(const edge of ['nw','n','ne','e','se','s','sw','w']){
+      const handle=document.createElement('button');
+      handle.type='button';
+      handle.className='v811-resize-handle v811-handle-'+edge;
+      handle.dataset.v811Resize=edge;
+      handle.setAttribute('aria-label','Resize '+item.type+' from '+({
+        nw:'top left',n:'top',ne:'top right',e:'right',
+        se:'bottom right',s:'bottom',sw:'bottom left',w:'left'
+      }[edge]));
+      handle.title='Drag to resize';
+      box.append(handle);
+    }
+    const move=document.createElement('button');
+    move.type='button';move.className='v811-move-control';
+    move.dataset.v811Move=String(item.id);
+    move.title='Drag to move';move.setAttribute('aria-label','Move '+item.type);
+    move.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg>';
+    box.append(move);
+    const actions=document.createElement('div');
+    actions.className='v811-object-actions';
+    if(item.type==='text'){
+      const edit=document.createElement('button');
+      edit.type='button';edit.textContent='Edit';
+      edit.dataset.v811Edit=String(item.id);
+      edit.setAttribute('aria-label','Edit selected note text');
+      actions.append(edit);
+    }
+    const remove=document.createElement('button');
+    remove.type='button';remove.className='v811-delete';
+    remove.dataset.v76Remove=item.id;
+    remove.textContent='Delete';
+    remove.setAttribute('aria-label','Delete selected '+item.type);
+    actions.append(remove);
+    box.append(actions);
+    surface.append(box);
+    if(selectedItemId===String(item.id))selectBox(selectedItemId);
   }
   function drawPage(p,page){
     surface.querySelectorAll('.v76-item').forEach(el=>el.remove());
     const height=Math.max(740,Number(page.height)||740);page.height=height;surface.style.height=height+'px';
     for(const item of page.objects||[])addRenderedObject(item,p,page);
     strokesView(page);
+  }
+  function renderPageList(p){
+    if(!pageList)return;
+    pageList.replaceChildren();
+    for(const page of p.notePages||[]){
+      const active=String(page.id)===String(p.activeNotePageId);
+      const row=document.createElement('div');
+      row.className='v811-page-row';
+      row.classList.toggle('v811-current',active);
+      const open=document.createElement('button');
+      open.type='button';
+      open.className='v811-page-link';
+      open.dataset.v811PageId=String(page.id);
+      open.setAttribute('aria-current',active?'page':'false');
+      const icon=document.createElement('span');
+      icon.className='v811-page-icon';icon.setAttribute('aria-hidden','true');
+      icon.textContent='▤';
+      const copy=document.createElement('span');copy.className='v811-page-labels';
+      const title=document.createElement('strong');
+      title.textContent=page.title||'Untitled page';
+      const preview=document.createElement('small');
+      const words=(page.objects||[]).filter(o=>o.type==='text')
+        .map(o=>String(o.html||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim())
+        .filter(Boolean).join(' ');
+      preview.textContent=words?words.slice(0,62):'No additional text';
+      copy.append(title,preview);open.append(icon,copy);
+      const rename=document.createElement('button');
+      rename.type='button';rename.className='v811-page-rename';
+      rename.dataset.v811RenameId=String(page.id);
+      rename.textContent='•••';
+      rename.title='Rename page';
+      rename.setAttribute('aria-label','Rename '+(page.title||'page'));
+      row.append(open,rename);
+      pageList.append(row);
+    }
   }
   function renderPage(p,force=false){
     initializePages(p);
@@ -177,12 +300,13 @@
     // After a full backup import, ids may be identical even though the
     // underlying page objects (including attachment keys) have changed.
     if(!force&&key===lastKey&&page===lastPageRef)return;
-    lastKey=key;lastPageRef=page;selectedText=null;
+    lastKey=key;lastPageRef=page;selectedText=null;selectedItemId=null;
     pageSelect.replaceChildren();
     p.notePages.forEach(pg=>{
       const opt=document.createElement('option');opt.value=pg.id;opt.textContent=pg.title;pageSelect.append(opt);
     });
     pageSelect.value=String(page.id);
+    renderPageList(p);
     textSizeSelect.value=sizeName(page.defaultTextSize);
     drawPage(p,page);applyMode('select');
   }
@@ -199,8 +323,9 @@
     const width=Math.max(170,Math.min(360,surface.clientWidth-Math.max(0,x)-20));
     const o={id:newId(),type:'text',x:Math.max(0,Math.round(x)),y:Math.max(0,Math.round(y)),width,html:'',fontSize:sizeName(page.defaultTextSize)};
     page.objects.push(o);growPage(page,y+150);persist();drawPage(ctx.p,page);
-    const box=surface.querySelector('[data-v76-item="'+o.id+'"] .v76-rich');
-    if(box){box.focus();selectedText=box;}applyMode('select');
+    const box=surface.querySelector('[data-v76-item="'+o.id+'"]');
+    if(box)enterTextEdit(box);
+    applyMode('select');
   }
   function position(e){
     const rect=surface.getBoundingClientRect();
@@ -213,6 +338,31 @@
   pageSelect.addEventListener('change',()=>{
     const ctx=current();if(!ctx)return;ctx.p.activeNotePageId=pageSelect.value;persist();renderPage(ctx.p,true);
   });
+  // The iPad page rail and compact top selector use the same page data and
+  // the existing New/Rename actions, so backups and notes remain unchanged.
+  document.getElementById('v811NewPage').addEventListener('click',()=>{
+    document.getElementById('v76NewPage').click();
+  });
+  pageList.addEventListener('click',e=>{
+    const button=e.target.closest('button');if(!button)return;
+    if(button.dataset.v811PageId){
+      const id=button.dataset.v811PageId;
+      if(id===pageSelect.value)return;
+      pageSelect.value=id;
+      pageSelect.dispatchEvent(new Event('change',{bubbles:true}));
+      return;
+    }
+    if(button.dataset.v811RenameId){
+      const ctx=current(),pg=ctx?.p.notePages.find(pg=>String(pg.id)===button.dataset.v811RenameId);
+      if(!pg)return;
+      const text=prompt('Rename page',pg.title||'Page');
+      if(text===null)return;
+      const title=text.trim().slice(0,80);
+      if(!title)return;
+      pg.title=title;persist();renderPage(ctx.p,true);
+    }
+  });
+
   document.getElementById('v76NewPage').addEventListener('click',()=>{
     const ctx=current();if(!ctx)return;
     const n=ctx.p.notePages.length+1;
@@ -285,7 +435,7 @@
     const rem=e.target.closest('[data-v76-remove]');
     if(rem){
       const ctx=current();if(!ctx)return;
-      ctx.page.objects=ctx.page.objects.filter(o=>String(o.id)!==String(rem.dataset.v76Remove));persist();drawPage(ctx.p,ctx.page);return;
+      ctx.page.objects=ctx.page.objects.filter(o=>String(o.id)!==String(rem.dataset.v76Remove));selectedItemId=null;persist();drawPage(ctx.p,ctx.page);return;
     }
   });
   surface.addEventListener('focusin',e=>{if(e.target.matches('.v76-rich'))selectedText=e.target;});
@@ -319,126 +469,149 @@
   document.getElementById('v76ImageInput').addEventListener('change',async e=>{
     const file=e.target.files?.[0];e.target.value='';if(file)await insertImage(file);
   });
-  // The six-dot handle changes the saved width ONLY. Long-pressing the object
-  // (not its handle or controls) changes its saved position ONLY.
-  const HOLD_MS=450;
-  let interaction=null,pendingHold=null,holdTimer=null;
-  function clearPendingHold(){
-    if(holdTimer!==null)clearTimeout(holdTimer);
-    if(pendingHold?.box)pendingHold.box.classList.remove('v80-touch-pending');
-    holdTimer=null;pendingHold=null;
-  }
-  function startInteraction(session){
+  // OneNote-style object manipulation. Tap once to reveal selection handles.
+  // Drag the selected object or center control to move. Drag any edge/corner
+  // to resize in either direction. Tap selected text again to edit its content.
+  let interaction=null;
+  function startManipulation(e,box,obj,page,kind,edge=''){
+    const capture=e.target.closest('button[data-v811-resize],button[data-v811-move]')||box;
+    const scale=surface.getBoundingClientRect();
+    const session={
+      pointerId:e.pointerId,capture,box,obj,page,kind,edge,
+      x:e.clientX,y:e.clientY,
+      scaleX:surface.clientWidth/Math.max(1,scale.width),
+      scaleY:surface.clientHeight/Math.max(1,scale.height),
+      startX:parseFloat(box.style.left)||0,
+      startY:parseFloat(box.style.top)||0,
+      startWidth:box.offsetWidth,
+      startHeight:box.offsetHeight,
+      changed:false
+    };
     interaction=session;
-    session.box.classList.add(session.kind==='resize'?'v76-resizing':'v76-moving');
-    try{session.capture.setPointerCapture(session.pointerId);}catch(_){}
+    box.classList.add(kind==='resize'?'v76-resizing':'v76-moving');
+    e.preventDefault();
+    try{capture.setPointerCapture(e.pointerId);}catch(_){}
   }
   root.addEventListener('pointerdown',e=>{
-    if(e.button!==0||interaction||pendingHold)return;
-    const grip=e.target.closest('[data-v76-drag]');
-    if(grip){
-      const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===String(grip.dataset.v76Drag));
-      if(!obj)return;
-      const box=grip.closest('.v76-item');
-      // Commit the actual displayed anchor before changing width so a previously
-      // edge-clamped box does not jump when it shrinks.
-      obj.x=parseFloat(box.style.left)||0;
-      e.preventDefault();
-      startInteraction({kind:'resize',pointerId:e.pointerId,capture:grip,box,obj,page:ctx.page,
-        x:e.clientX,startWidth:visibleWidth(obj),changed:false});
+    if(mode==='pen'||mode==='erase'||interaction||
+      (e.pointerType==='mouse'&&e.button!==0))return;
+    const el=e.target instanceof Element?e.target:e.target?.parentElement;
+    if(!el)return;
+    if(el.closest('[data-v76-remove],[data-v811-edit]'))return;
+    const box=el.closest('.v76-item');
+    if(!box||!surface.contains(box)){
+      if(el===surface||el===ink)selectBox(null);
       return;
     }
-    const box=e.target.closest('.v76-item');
-    if(!box||e.target.closest('button,.v76-size-tools')||mode==='pen'||mode==='erase')return;
-    const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===String(box.dataset.v76Item));
+    const ctx=current();
+    const obj=ctx?.page.objects.find(o=>String(o.id)===box.dataset.v76Item);
     if(!obj)return;
-    const session={kind:'move',pointerId:e.pointerId,capture:box,box,obj,page:ctx.page,
-      x:e.clientX,y:e.clientY,startX:parseFloat(box.style.left)||0,
-      startY:parseFloat(box.style.top)||0,changed:false};
-    pendingHold=session;
-    // Temporarily disable native selection while classifying touch as
-    // tap-to-edit or hold-to-move.
-    if(e.pointerType==='touch'){
-      box.classList.add('v80-touch-pending');
-      e.preventDefault();
+    const wasSelected=selectedItemId===String(obj.id);
+    selectBox(obj.id);
+    const resize=el.closest('[data-v811-resize]');
+    if(resize){
+      startManipulation(e,box,obj,ctx.page,'resize',resize.dataset.v811Resize);
+      return;
     }
-    holdTimer=setTimeout(()=>{
-      if(pendingHold!==session)return;
-      clearPendingHold();
-      if(document.activeElement?.isContentEditable)document.activeElement.blur();
-      const selection=window.getSelection();
-      if(selection)selection.removeAllRanges();
-      startInteraction(session);
-    },HOLD_MS);
+    const move=el.closest('[data-v811-move]');
+    if(move||wasSelected&&!box.classList.contains('v811-editing')){
+      startManipulation(e,box,obj,ctx.page,'move');
+      return;
+    }
+    if(!box.classList.contains('v811-editing'))e.preventDefault();
   });
   root.addEventListener('pointermove',e=>{
-    if(pendingHold&&pendingHold.pointerId===e.pointerId){
-      if(Math.hypot(e.clientX-pendingHold.x,e.clientY-pendingHold.y)>10)clearPendingHold();
-    }
-    if(!interaction||interaction.pointerId!==e.pointerId)return;
-    const d=interaction;
-    if(d.kind==='resize'){
-      // Dragging the handle right expands the box; left contracts it.
-      const maxWidth=Math.max(135,surface.clientWidth-(parseFloat(d.box.style.left)||0)-8);
-      const width=Math.min(maxWidth,Math.max(135,Math.round(d.startWidth+e.clientX-d.x)));
-      if(width!==d.obj.width){d.obj.width=width;d.changed=true;}
+    const d=interaction;if(!d||e.pointerId!==d.pointerId)return;
+    e.preventDefault();
+    const dx=(e.clientX-d.x)*d.scaleX;
+    const dy=(e.clientY-d.y)*d.scaleY;
+    if(d.kind==='move'){
+      if(!d.changed&&Math.hypot(dx,dy)<3)return;
+      const maxX=Math.max(0,surface.clientWidth-d.startWidth-8);
+      const x=Math.min(maxX,Math.max(0,Math.round(d.startX+dx)));
+      const y=Math.max(0,Math.round(d.startY+dy));
+      if(x!==Number(d.obj.x)||y!==Number(d.obj.y)){d.obj.x=x;d.obj.y=y;d.changed=true;}
     }else{
-      const width=visibleWidth(d.obj);
-      const maxX=Math.max(0,surface.clientWidth-width-8);
-      const x=Math.min(maxX,Math.max(0,Math.round(d.startX+e.clientX-d.x)));
-      const y=Math.max(0,Math.round(d.startY+e.clientY-d.y));
-      if(x!==d.obj.x||y!==d.obj.y){d.obj.x=x;d.obj.y=y;d.changed=true;}
+      const edge=d.edge;
+      const minW=Math.min(120,Math.max(70,surface.clientWidth-18));
+      const minH=52;
+      const right=d.startX+d.startWidth,bottom=d.startY+d.startHeight;
+      let x=d.startX,y=d.startY,w=d.startWidth,h=d.startHeight;
+      if(edge.includes('w')){
+        x=Math.min(right-minW,Math.max(0,Math.round(d.startX+dx)));
+        w=right-x;
+      }else if(edge.includes('e')){
+        w=Math.min(Math.max(minW,Math.round(d.startWidth+dx)),
+          Math.max(minW,surface.clientWidth-d.startX-8));
+      }
+      if(edge.includes('n')){
+        y=Math.min(bottom-minH,Math.max(0,Math.round(d.startY+dy)));
+        h=bottom-y;
+      }else if(edge.includes('s')){
+        h=Math.max(minH,Math.round(d.startHeight+dy));
+      }
+      if(x!==Number(d.obj.x)||y!==Number(d.obj.y)||
+        w!==Number(d.obj.width)||h!==Number(d.obj.height)){
+        d.obj.x=x;d.obj.y=y;d.obj.width=w;d.obj.height=h;
+        d.changed=true;
+      }
     }
-    placeBox(d.box,d.obj);
-    growPage(d.page,(parseFloat(d.box.style.top)||0)+d.box.offsetHeight+80);
+    if(d.changed){
+      placeBox(d.box,d.obj);
+      growPage(d.page,(parseFloat(d.box.style.top)||0)+d.box.offsetHeight+90);
+    }
   });
-  function focusOnTap(e,session){
-    if(session.obj.type!=='text')return;
-    const rich=session.box.querySelector('.v76-rich');
-    if(!rich)return;
-    rich.focus({preventScroll:true});
-    selectedText=rich;
-    textSizeSelect.value=sizeName(session.obj.fontSize);
-    // iOS Safari supports caretRangeFromPoint; position the cursor where
-    // the finger landed rather than blindly appending all new text.
-    const range=document.caretRangeFromPoint?.(e.clientX,e.clientY);
-    if(range&&rich.contains(range.startContainer)){
-      const selection=window.getSelection();
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+  function finishManipulation(e){
+    const d=interaction;
+    if(!d||e.pointerId!==d.pointerId)return;
+    interaction=null;
+    d.box.classList.remove('v76-moving','v76-resizing');
+    if(d.changed)persist();
+    else if(d.kind==='move'&&d.obj.type==='text'&&
+      !e.target.closest('[data-v811-move]')&&e.type==='pointerup'){
+      enterTextEdit(d.box,{x:e.clientX,y:e.clientY});
     }
   }
-  // iOS may select the entire editable block before the 450-ms hold.
-  // Cancel native touch behavior for note content; restore short taps
-  // explicitly so normal typing continues.
+  root.addEventListener('pointerup',finishManipulation);
+  root.addEventListener('pointercancel',finishManipulation);
+  root.addEventListener('click',e=>{
+    const edit=e.target.closest('[data-v811-edit]');
+    if(edit){
+      const box=edit.closest('.v76-item');
+      enterTextEdit(box);
+      return;
+    }
+  });
+  root.addEventListener('dblclick',e=>{
+    const box=e.target.closest('.v76-item.v76-text');
+    if(box&&mode==='select')enterTextEdit(box,{x:e.clientX,y:e.clientY});
+  });
+  // The selected object's handles own touch input; normal text editing and
+  // vertical page scrolling remain native when no object is selected.
   const gestureElement=e=>e.target instanceof Element?e.target:e.target?.parentElement;
   root.addEventListener('touchstart',e=>{
     if(mode==='pen'||mode==='erase'||e.touches.length!==1)return;
     const el=gestureElement(e);
-    if(el?.closest('.v76-item')&&!el.closest('button'))e.preventDefault();
+    if(el?.closest('.v811-selected')&&!el.closest('.v811-editing .v76-rich')&&
+      !el.closest('.v811-object-actions'))e.preventDefault();
   },{passive:false});
   root.addEventListener('contextmenu',e=>{
-    if(gestureElement(e)?.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
+    if(gestureElement(e)?.closest('.v811-selected')&&!gestureElement(e)?.closest('.v811-editing .v76-rich'))e.preventDefault();
   });
   root.addEventListener('selectstart',e=>{
-    // Selectstart can originate from a Text node rather than an Element.
-    if(gestureElement(e)?.closest('.v76-item')&&(pendingHold||interaction?.kind==='move'))e.preventDefault();
+    if(gestureElement(e)?.closest('.v811-selected')&&
+      !gestureElement(e)?.closest('.v811-editing .v76-rich'))e.preventDefault();
   });
-  function endInteraction(e){
-    if(pendingHold?.pointerId===e.pointerId){
-      const session=pendingHold;
-      clearPendingHold();
-      if(session.capture&&e.pointerType==='touch'&&e.type==='pointerup')focusOnTap(e,session);
+  root.addEventListener('dragstart',e=>{
+    if(gestureElement(e)?.closest('.v76-item'))e.preventDefault();
+  });
+  root.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&selectedItemId){
+      const active=surface.querySelector('.v811-selected .v76-rich');
+      if(active?.isContentEditable)active.blur();
+      selectBox(null);
     }
-    if(!interaction||interaction.pointerId!==e.pointerId)return;
-    const d=interaction;interaction=null;
-    d.box.classList.remove('v76-moving','v76-resizing');
-    if(d.changed)persist();
-  }
-  root.addEventListener('pointerup',endInteraction);
-  root.addEventListener('pointercancel',endInteraction);
-  // Prevent the native drag-image ghost from intercepting long-press movement.
-  root.addEventListener('dragstart',e=>{if(e.target.closest('.v76-item'))e.preventDefault();});
+  });
   // Convert the Pencil's screen contact into actual SVG user coordinates.
   // getScreenCTM covers scrolling, Safari zoom, responsive sizing and CSS
   // transforms; unlike simple rect subtraction it also handles SVG scaling.

@@ -4,6 +4,16 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.11 — OneNote-style notebook editing and page navigation
+
+- **Select instead of long-press:** Tap any notebook text box or picture once to reveal a selection outline, eight edge/corner resize handles, a center Move control, and a small Edit (text) / Delete action bar. The previous six-dot grip is removed.
+- Drag the selected object or its Move control to reposition it. Use left/right, top/bottom, or corner handles to resize from any edge; both positions and sizes persist in the existing notebook project.
+- Tap selected text again, or choose Edit, to type normally. Blank-page tapping still creates a new text box. Pen and Eraser modes remain independent of object selection and keep their existing ink behavior.
+- **Named page list on iPad:** A slim vertical Pages sidebar appears to the left of the ruled notebook whenever the actual notebook is wide enough. Tap to switch pages, **+** to add, and **•••** beside a page to rename it. It shares the existing note-page data with the dropdown, rather than creating a second copy.
+- Narrow Split View, Stage Manager, and iPhone windows retain the compact top page picker. The page list adapts to the notebook's available width, not a guessed device type.
+- Objects may now store an optional explicit height after vertical resizing; old content without it keeps the original natural height. Backup files continue using the existing Canvas state format.
+- Automated browser tests cover keyboard and pointer selection, image/text resizing, persistence, named page switching and renaming, and responsive tablet layout. Physical iPad Safari and Apple Pencil testing are still recommended.
+
 ## Canvas v8.10 — Continuous eraser and cleaner notebook tools
 
 - The notebook toolbar uses **icons only**; the visible Text, Pen, and Misc headings are removed. The three groups keep their descriptive accessibility labels.

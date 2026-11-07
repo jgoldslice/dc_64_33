@@ -67,81 +67,94 @@ test('Project shortcuts open the workspace and note pages persist after refresh'
 });
 
 
-test('Six-dot grip resizes a text box, hold-and-drag moves it, and both values persist', async ({ page }) => {
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.stack||error.message));
+test('Tap selects note text; left and right resize handles work, move control repositions, data persists', async ({ page }) => {
+  const errors=[];page.on('pageerror',e=>errors.push(e.stack||e.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog', d => d.accept('Resize Test'));
+  page.once('dialog',d=>d.accept('Resize Test'));
   await page.locator('#newProject').click();
-  const box = page.locator('#v76Surface .v76-text').first();
+  const box=page.locator('#v76Surface .v76-text').first();
   await expect(box).toBeVisible();
-  const metrics = async () => box.evaluate(el => ({
-    left: parseFloat(el.style.left), top: parseFloat(el.style.top), width: parseFloat(el.style.width)
+  await expect(box.locator('.v76-grip')).toHaveCount(0);
+  const rich=box.locator('.v76-rich');
+  await rich.click();
+  await expect(box).toHaveClass(/v811-selected/);
+  await expect(box.locator('.v811-resize-handle')).toHaveCount(8);
+  const metrics=()=>box.evaluate(el=>({
+    left:parseFloat(el.style.left),top:parseFloat(el.style.top),
+    width:parseFloat(el.style.width),height:el.offsetHeight
   }));
-  const before = await metrics();
-  const grip = await box.locator('.v76-grip').boundingBox();
-  await page.mouse.move(grip.x + grip.width/2, grip.y + grip.height/2);
-  await page.mouse.down();
-  await page.mouse.move(grip.x + grip.width/2 - 72, grip.y + grip.height/2, { steps: 6 });
-  await page.mouse.up();
-  const shrunk = await metrics();
-  expect(shrunk.width).toBeLessThan(before.width - 40);
-  expect(shrunk.left).toBeCloseTo(before.left, 0);
-  const rich = box.locator('.v76-rich');
-  await rich.fill('Moving should not change the width');
-  const rect = await rich.boundingBox();
-  const x = rect.x + Math.min(45,rect.width/2), y = rect.y + 13;
-  await page.mouse.move(x,y);
-  await page.mouse.down();
-  await page.waitForTimeout(560);
-  await page.mouse.move(x+40,y+20,{steps:8});
-  await page.mouse.up();
-  const moved = await metrics();
-  expect(moved.left).toBeGreaterThan(shrunk.left+20);
-  expect(moved.width).toBeCloseTo(shrunk.width,0);
+  const drag=async (selector,dx,dy=0)=>{
+    const rect=await box.locator(selector).boundingBox();
+    const x=rect.x+rect.width/2,y=rect.y+rect.height/2;
+    await page.mouse.move(x,y);await page.mouse.down();
+    await page.mouse.move(x+dx,y+dy,{steps:8});await page.mouse.up();
+  };
+  const before=await metrics();
+  // With the new page sidebar, the starting text box can nearly fill the
+  // remaining paper. Contract first; expanding back then has room to work.
+  await drag('.v811-handle-e',-70);
+  const shrunkRight=await metrics();
+  expect(shrunkRight.width).toBeLessThan(before.width-35);
+  await drag('.v811-handle-e',55);
+  const wide=await metrics();
+  expect(wide.width).toBeGreaterThan(shrunkRight.width+35);
+  await drag('.v811-handle-w',40);
+  const narrow=await metrics();
+  expect(narrow.width).toBeLessThan(wide.width-20);
+  expect(narrow.left).toBeGreaterThan(wide.left+20);
+  // This narrow paper is right-edge constrained after resizing; moving
+  // downward still exercises the same pointer-captured move path.
+  await drag('.v811-move-control',0,40);
+  const moved=await metrics();
+  expect(moved.top).toBeGreaterThan(narrow.top+20);
+  expect(moved.width).toBeCloseTo(narrow.width,0);
+  await rich.click({position:{x:34,y:13}});
+  await expect(rich).toHaveAttribute('contenteditable','true');
+  await rich.fill('Moving should not lose my note');
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Resize Test'}).click();
-  const persisted = await metrics();
+  const persisted=await metrics();
   expect(persisted.left).toBeCloseTo(moved.left,0);
   expect(persisted.width).toBeCloseTo(moved.width,0);
+  await expect(box.locator('.v76-rich')).toHaveText('Moving should not lose my note');
   expect(errors).toEqual([]);
 });
 
-test('Images use the same grip for resizing and long-press to move; page controls are clear', async ({ page }) => {
+test('Pictures use OneNote-style selection, corner resizing and a move control instead of six dots', async ({ page }) => {
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog', d => d.accept('Photo Test'));
+  page.once('dialog',d=>d.accept('Photo Test'));
   await page.locator('#newProject').click();
   await page.locator('#v76PageMore').click();
   await expect(page.locator('#v76PageMenu')).toBeVisible();
   await expect(page.locator('#v76RenamePage')).toHaveText('Rename page');
   await expect(page.locator('#v76DeletePage')).toHaveText('Delete page');
   await page.locator('#v76PageMore').click();
-  const imgBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP+ZJRdGAAAAABJRU5ErkJggg==','base64');
+  const imgBytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP+ZJRdGAAAAABJRU5ErkJggg==','base64');
   await page.locator('#v76ImageInput').setInputFiles({name:'test.png',mimeType:'image/png',buffer:imgBytes});
-  const box = page.locator('#v76Surface .v76-image').first();
+  const box=page.locator('#v76Surface .v76-image').first();
   await expect(box).toBeVisible();
-  await expect(box.locator('.v76-size-tools')).toHaveCount(0);
-  const width = async () => box.evaluate(el=>parseFloat(el.style.width));
-  const initial = await width();
-  const grip = await box.locator('.v76-grip').boundingBox();
-  await page.mouse.move(grip.x+8,grip.y+9);
-  await page.mouse.down();
-  await page.mouse.move(grip.x-48,grip.y+9,{steps:5});
+  await expect(box.locator('.v76-grip')).toHaveCount(0);
+  await box.locator('.v76-photo').click();
+  await expect(box).toHaveClass(/v811-selected/);
+  const rect=await box.locator('.v811-handle-se').boundingBox();
+  const initial=await box.evaluate(el=>({w:el.offsetWidth,h:el.offsetHeight}));
+  await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);
+  await page.mouse.down();await page.mouse.move(rect.x+rect.width/2+55,rect.y+rect.height/2+48,{steps:6});
   await page.mouse.up();
-  const resized = await width();
-  expect(resized).toBeLessThan(initial-25);
-  const beforeX = await box.evaluate(el=>parseFloat(el.style.left));
-  const pic = await box.locator('.v76-photo').boundingBox();
-  const x = pic.x+Math.min(50,pic.width/2), y=pic.y+Math.min(30,pic.height/2);
-  await page.mouse.move(x,y);await page.mouse.down();
-  await page.waitForTimeout(540);
-  await page.mouse.move(x+36,y+22,{steps:5});await page.mouse.up();
-  const afterX = await box.evaluate(el=>parseFloat(el.style.left));
-  expect(afterX).toBeGreaterThan(beforeX+15);
-  expect(await width()).toBeCloseTo(resized,0);
+  const bigger=await box.evaluate(el=>({w:el.offsetWidth,h:el.offsetHeight}));
+  expect(bigger.w).toBeGreaterThan(initial.w+25);
+  expect(bigger.h).toBeGreaterThan(initial.h+25);
+  const beforeY=await box.evaluate(el=>parseFloat(el.style.top));
+  const move=await box.locator('.v811-move-control').boundingBox();
+  await page.mouse.move(move.x+move.width/2,move.y+move.height/2);await page.mouse.down();
+  // The wider photo is right-edge constrained. Move it vertically instead.
+  await page.mouse.move(move.x+move.width/2,move.y+move.height/2+40,{steps:6});await page.mouse.up();
+  const afterY=await box.evaluate(el=>parseFloat(el.style.top));
+  expect(afterY).toBeGreaterThan(beforeY+20);
+  expect(await box.evaluate(el=>el.offsetWidth)).toBeCloseTo(bigger.w,0);
 });
 
 test('Notes have only Text, Pen and Misc tool groups, with tap-to-type', async ({ page }) => {
@@ -193,6 +206,8 @@ test('Text stays transparent over images and size choices persist independently'
   const text=page.locator('#v76Surface .v76-text').first();
   await expect(text).toBeVisible();
   const rich=text.locator('.v76-rich');
+  await rich.click({position:{x:34,y:13}});await rich.click({position:{x:34,y:13}});
+  await expect(rich).toHaveAttribute('contenteditable','true');
   await rich.fill('This text should float over a picture');
   const size=page.locator('#v80TextSize');
   await expect(size).toHaveValue('medium');
@@ -220,23 +235,29 @@ test('Text stays transparent over images and size choices persist independently'
 
 
 
-test('Notebook touchstart cancels the native long-press selection gesture', async ({page}) => {
+test('Selected notebook controls prevent native long-press selection but text editing stays native',async({page})=>{
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept('Touch Safety Test'));
   await page.locator('#newProject').click();
-  const rich=page.locator('#v76Surface .v76-text .v76-rich').first();
-  await rich.fill('iPhone selection protection');
-  const rect=await rich.boundingBox();
-  const canceled=await page.evaluate(({x,y})=>{
-    const target=document.elementFromPoint(x,y);
+  const box=page.locator('#v76Surface .v76-text').first();
+  const rich=box.locator('.v76-rich');
+  await rich.click({position:{x:34,y:13}});
+  await expect(box).toHaveClass(/v811-selected/);
+  const dispatch=(selector)=>page.evaluate(selector=>{
+    const target=document.querySelector(selector);
+    if(!target)throw Error('Touch target missing: '+selector);
+    const bounds=target.getBoundingClientRect(),x=bounds.left+bounds.width/2,y=bounds.top+bounds.height/2;
     const touch=new Touch({identifier:99,target,clientX:x,clientY:y});
-    const event=new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[touch],changedTouches:[touch],targetTouches:[touch]});
+    const event=new TouchEvent('touchstart',{bubbles:true,cancelable:true,
+      touches:[touch],changedTouches:[touch],targetTouches:[touch]});
     target.dispatchEvent(event);return event.defaultPrevented;
-  },{x:rect.x+30,y:rect.y+12});
-  expect(canceled).toBe(true);
-  expect(await page.evaluate(()=>window.getSelection()?.toString()||'')).toBe('');
+  },selector);
+  expect(await dispatch('.v811-selected .v811-move-control')).toBe(true);
+  await rich.click({position:{x:34,y:13}});
+  await expect(rich).toHaveAttribute('contenteditable','true');
+  expect(await dispatch('.v811-editing .v76-rich')).toBe(false);
   expect(errors).toEqual([]);
 });

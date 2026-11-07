@@ -97,3 +97,159 @@
 .v76-toolbar{align-items:center}
 .v79-tool-group{display:flex;align-items:center;gap:0}
 .v76-page-surface.v76-is-drawing #v76Ink{cursor:crosshair}
+
+/* Canvas v8.11 — OneNote-like selectable objects and vertical notebook pages.
+   Keep notebook data in the existing per-project notePages and objects arrays. */
+.v811-note-body{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0;align-items:start}
+.v811-page-rail{display:none;min-width:0}
+.v76-notebook-ui{container-type:inline-size}
+.v811-pages-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 5px 11px}
+.v811-pages-heading strong{font-size:14px;letter-spacing:-.15px;color:var(--ink)}
+.v811-pages-heading button{
+  border:1px solid var(--line);background:var(--wash);color:var(--secondary-ui);
+  display:grid;place-items:center;width:38px;height:38px;min-width:38px;
+  border-radius:11px;font-size:24px;cursor:pointer
+}
+.v811-page-list{display:grid;gap:6px;align-content:start}
+.v811-page-row{
+  display:flex;min-width:0;align-items:center;gap:3px;padding:4px;
+  border-radius:12px;border:1px solid transparent;
+}
+.v811-page-row.v811-current{
+  border-color:var(--line);
+  background:color-mix(in srgb,var(--secondary-ui) 12%,var(--surface))
+}
+.v811-page-link{
+  min-width:0;flex:1;display:flex;gap:9px;align-items:center;
+  background:transparent;color:var(--ink);border:0;border-radius:9px;
+  padding:9px 4px;text-align:left;cursor:pointer
+}
+.v811-page-icon{flex:none;display:grid;place-items:center;font-size:19px;color:var(--secondary-ui)}
+.v811-page-labels{display:grid;gap:4px;min-width:0}
+.v811-page-labels strong{
+  font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700
+}
+.v811-page-labels small{
+  font-size:11px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.v811-page-rename{
+  flex:none;width:35px;min-height:40px;border:0;background:transparent;
+  border-radius:8px;color:var(--muted);font-weight:750;cursor:pointer
+}
+.v811-page-row:not(:hover):not(.v811-current) .v811-page-rename{opacity:.55}
+.v811-page-link:focus-visible,.v811-page-rename:focus-visible,
+.v811-pages-heading button:focus-visible{
+  outline:2px solid var(--secondary-ui);outline-offset:1px
+}
+@container (min-width:680px){
+  .v811-note-body{grid-template-columns:minmax(145px,185px) minmax(0,1fr);gap:16px}
+  .v811-page-rail{
+    display:block;position:sticky;top:12px;
+    max-height:min(72vh,820px);overflow-y:auto;overscroll-behavior:contain;
+    padding:12px 7px 10px;border:1px solid var(--line);border-radius:15px;
+    background:color-mix(in srgb,var(--surface) 94%,var(--wash))
+  }
+  #v76PageSelect,#v76NewPage{display:none}
+}
+@container (min-width:950px){
+  .v811-note-body{grid-template-columns:210px minmax(0,1fr);gap:20px}
+}
+.v76-item{
+  padding:6px;min-width:90px;min-height:52px;
+  background:transparent;touch-action:pan-y;
+}
+.v76-item.v76-text{background:transparent!important}
+.v76-item.v76-image{padding:5px}
+.v76-item.v811-selected{
+  border:1px solid var(--secondary-ui)!important;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--secondary-ui) 40%,transparent);
+  z-index:12;
+  touch-action:none;
+}
+.v76-item.v811-selected.v76-moving,.v76-item.v811-selected.v76-resizing{
+  box-shadow:0 0 0 2px var(--secondary-ui);cursor:grabbing;
+}
+.v76-item.v811-selected:not(.v811-editing) .v76-rich{
+  -webkit-user-select:none;user-select:none;touch-action:none;cursor:grab;
+}
+.v76-item.v811-editing .v76-rich{
+  -webkit-user-select:text;user-select:text;touch-action:auto;cursor:text
+}
+.v76-item[data-v811-sized="true"].v76-image .v76-photo{
+  height:100%;max-height:none;object-fit:contain
+}
+.v76-item[data-v811-sized="true"].v76-text .v76-rich{min-height:100%}
+.v76-item .v76-photo{
+  -webkit-user-select:none;user-select:none;touch-action:none
+}
+.v811-resize-handle,.v811-move-control,.v811-object-actions{display:none}
+.v811-selected:not(.v811-editing) .v811-resize-handle{
+  position:absolute;display:grid;place-items:center;
+  width:30px;height:30px;padding:0;
+  background:transparent;border:0;border-radius:50%;
+  z-index:20;touch-action:none;cursor:grab
+}
+.v811-resize-handle::before{
+  content:'';display:block;width:12px;height:12px;
+  border:2px solid var(--secondary-ui);
+  background:var(--surface);border-radius:50%;
+  box-shadow:0 1px 4px #0004
+}
+.v811-handle-nw{left:-15px;top:-15px;cursor:nwse-resize!important}
+.v811-handle-n{left:calc(50% - 15px);top:-15px;cursor:ns-resize!important}
+.v811-handle-ne{right:-15px;top:-15px;cursor:nesw-resize!important}
+.v811-handle-e{right:-15px;top:calc(50% - 15px);cursor:ew-resize!important}
+.v811-handle-se{right:-15px;bottom:-15px;cursor:nwse-resize!important}
+.v811-handle-s{left:calc(50% - 15px);bottom:-15px;cursor:ns-resize!important}
+.v811-handle-sw{left:-15px;bottom:-15px;cursor:nesw-resize!important}
+.v811-handle-w{left:-15px;top:calc(50% - 15px);cursor:ew-resize!important}
+.v811-handle-e::before,.v811-handle-w::before,
+.v811-handle-n::before,.v811-handle-s::before{border-radius:3px}
+.v811-selected:not(.v811-editing) .v811-move-control{
+  position:absolute;left:calc(50% - 21px);top:calc(50% - 21px);
+  z-index:19;display:grid;place-items:center;
+  width:42px;height:42px;padding:8px;
+  background:var(--surface);border:1.5px solid var(--secondary-ui);
+  border-radius:50%;box-shadow:0 1px 9px #0004;
+  color:var(--ink);touch-action:none;cursor:grab
+}
+/* On text, keep the move control to one side so a second tap in the
+   middle enters editing instead of hitting the drag button. Pictures retain
+   the centered OneNote-style move control. */
+.v811-selected.v76-text:not(.v811-editing) .v811-move-control{
+  left:auto;right:9px;top:calc(50% - 18px);
+  width:36px;height:36px;padding:6px
+}
+.v811-move-control svg{
+  width:24px;height:24px;stroke:currentColor;stroke-width:1.5;
+  fill:none;stroke-linecap:round;stroke-linejoin:round
+}
+.v811-selected:not(.v811-editing) .v811-object-actions{
+  position:absolute;z-index:25;
+  display:flex;align-items:center;gap:1px;
+  bottom:calc(100% + 7px);left:0;width:max-content;
+  max-width:100%;padding:4px;
+  border-radius:12px;
+  background:var(--surface);border:1px solid var(--line);
+  box-shadow:0 4px 18px #0004
+}
+.v811-selected.v811-near-top:not(.v811-editing) .v811-object-actions{
+  bottom:auto;top:calc(100% + 8px)
+}
+.v811-object-actions button{
+  border:0;border-radius:8px;background:transparent;color:var(--ink);
+  min-height:37px;padding:7px 13px;font-size:12px;font-weight:650;cursor:pointer
+}
+.v811-object-actions .v811-delete{color:#d87470}
+.v811-object-actions button:hover{background:var(--wash)}
+.v811-object-actions button:focus-visible,.v811-resize-handle:focus-visible,
+.v811-move-control:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:2px}
+.v76-grip,.v76-remove{display:none!important}
+.v76-page-wrap{min-width:0}
+@media(hover:hover){
+  .v811-page-row:hover{background:var(--wash)}
+}
+@media(prefers-reduced-motion:reduce){
+  .v811-page-row,.v811-resize-handle{transition:none}
+}
