@@ -50,6 +50,7 @@ test('Project shortcuts open the workspace and note pages persist after refresh'
   page.once('dialog', d => d.accept('Ideas'));
   await page.locator('#v76NewPage').click();
   await expect(page.locator('#v76PageSelect option')).toHaveCount(2);
+  await page.locator('[data-v76-mode="text"]').click();
   await page.locator('#v76Surface').click({ position: { x: 35, y: 175 } });
   const latestText = page.locator('.v76-rich').last();
   await latestText.fill('Draft sketch concept');
@@ -157,7 +158,7 @@ test('Pictures use OneNote-style selection, corner resizing and a move control i
   expect(await box.evaluate(el=>el.offsetWidth)).toBeCloseTo(bigger.w,0);
 });
 
-test('Notes have only Text, Pen and Misc tool groups, with tap-to-type', async ({ page }) => {
+test('Notebook toolbar has a Textbox tool; blank taps create text only when it is selected', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(baseURL);
@@ -170,8 +171,9 @@ test('Notes have only Text, Pen and Misc tool groups, with tap-to-type', async (
   await expect(toolbar.locator('.v79-tool-group[aria-label="Text"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Pen"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Misc"]')).toHaveCount(1);
-  await expect(toolbar.locator('button')).toHaveCount(5);
-  await expect(toolbar.locator('[data-v76-format="bold"],[data-v76-format="italic"],[data-v76-mode="text"],[data-v76-mode="select"]')).toHaveCount(0);
+  await expect(toolbar.locator('button')).toHaveCount(6);
+  await expect(toolbar.locator('[data-v76-format="bold"],[data-v76-format="italic"],[data-v76-mode="select"]')).toHaveCount(0);
+  await expect(toolbar.locator('[data-v76-mode="text"]')).toBeVisible();
   await expect(toolbar.locator('[data-v76-format="insertUnorderedList"]')).toBeVisible();
   await expect(toolbar.locator('[data-v76-mode="pen"]')).toBeVisible();
   await expect(toolbar.locator('[data-v76-mode="erase"]')).toBeVisible();
@@ -179,7 +181,13 @@ test('Notes have only Text, Pen and Misc tool groups, with tap-to-type', async (
   await expect(toolbar.locator('#v76AddImage')).toBeVisible();
   const before = await page.locator('#v76Surface .v76-text').count();
   await page.locator('#v76Surface').click({ position: { x: 35, y: 200 } });
+  await expect(page.locator('#v76Surface .v76-text')).toHaveCount(before);
+  const textbox=toolbar.locator('[data-v76-mode="text"]');
+  await textbox.click();
+  await expect(textbox).toHaveAttribute('aria-pressed','true');
+  await page.locator('#v76Surface').click({ position: { x: 35, y: 200 } });
   await expect(page.locator('#v76Surface .v76-text')).toHaveCount(before+1);
+  await expect(textbox).toHaveAttribute('aria-pressed','false');
   const lastText = page.locator('#v76Surface .v76-rich').last();
   await lastText.fill('A new text box appeared');
   await expect(lastText).toHaveText('A new text box appeared');
