@@ -28,11 +28,12 @@
         '<button type="button" id="v76AddImage" aria-label="Insert picture" title="Insert picture">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></button>'+
       '</div></div>'+
-    '</div><div class="v76-page-wrap"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div>'+
-    '<p class="v76-tip">Tap blank space to type. Drag ⠿ to resize; press and hold content to move. Tap Pen or Eraser again to return to typing. Saves automatically.</p>'+
+    '</div><div class="v811-note-body"><aside class="v811-page-rail" aria-label="Notebook pages"><div class="v811-pages-heading"><strong>Pages</strong><button type="button" id="v811NewPage" aria-label="Add note page" title="Add page">+</button></div><div id="v811PageList" class="v811-page-list"></div></aside><div class="v76-page-wrap"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div></div>'+
+    '<p class="v76-tip">Tap an object to select it, drag to move, or use the handles to resize. Tap selected text again to edit. Tap blank space to type. Saves automatically.</p>'+
     '<input type="file" id="v76ImageInput" accept="image/*" hidden></div>';
   pane.insertAdjacentHTML('beforeend',editorHtml);
   const root=document.getElementById('v76Editor'),surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
+  const pageList=document.getElementById('v811PageList');
   const pageSelect=document.getElementById('v76PageSelect');
   const textSizeSelect=document.getElementById('v80TextSize');
   const validSizes=new Set(['small','medium','large']);
@@ -46,7 +47,7 @@
   const todoTab=document.querySelector('[data-project-tab="actions"]');if(todoTab)todoTab.textContent='To-Do';
   const todoHeading=document.querySelector('#projectActions h2');if(todoHeading)todoHeading.textContent='To-Do';
   const todoInput=document.getElementById('projectActionInput');if(todoInput){todoInput.placeholder='Add a to-do...';todoInput.setAttribute('aria-label','New project to-do');}
-  let mode='select',lastKey='',lastPageRef=null,selectedText=null;
+  let mode='select',lastKey='',lastPageRef=null,selectedText=null,selectedItemId=null;
   const newId=()=>v6Id();
   function plainHTML(txt){return esc(txt).replace(/\r\n?/g,'\n').replace(/\n/g,'<br>');}
   function cleanHTML(html){
