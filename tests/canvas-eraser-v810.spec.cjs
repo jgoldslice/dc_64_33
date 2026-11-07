@@ -25,7 +25,7 @@ async function loadStrokes(page,strokes){
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Eraser sweep test'}).click();
   await expect(page.locator('#v76Editor')).toBeVisible();
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(strokes.length);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(strokes.length);
 }
 async function selectEraser(page){
   const eraser=page.locator('[data-v76-mode="erase"]');
@@ -92,13 +92,13 @@ test('dragging the eraser across several strokes removes every crossed stroke an
   const objects=await page.evaluate(()=>v6Project().notePages[0].objects.length);
   await selectEraser(page);
   await mouseSweep(page,{x:35,y:205},{x:237,y:205});
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.map(s=>s.id))).toEqual(['stroke-untouched']);
   expect(await page.evaluate(()=>v6Project().notePages[0].objects.length)).toBe(objects);
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Eraser sweep test'}).click();
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.map(s=>s.id))).toEqual(['stroke-untouched']);
   expect(errors).toEqual([]);
 });
@@ -108,7 +108,7 @@ test('crossing the middle of a sparse line erases it even when no saved point is
   await loadStrokes(page,[line('sparse',40,220,320,220),line('far',45,400,320,400)]);
   await selectEraser(page);
   await mouseSweep(page,{x:180,y:120},{x:180,y:295});
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes[0].id)).toBe('far');
 });
 
@@ -120,7 +120,7 @@ test('eraser still removes one touched stroke on a simple tap and leaves distant
   await page.mouse.move(at.x,at.y);
   await page.mouse.down();
   await page.mouse.up();
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.map(s=>s.id))).toEqual(['far']);
 });
 
@@ -134,7 +134,7 @@ test('simulated Apple Pencil drag works on iPad landscape and preserves the orig
   ]);
   await selectEraser(page);
   await penSweep(page,{x:35,y:180},{x:215,y:180});
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes[0].id)).toBe('pencil-untouched');
   await page.locator('[data-v76-mode="erase"]').click();
   await expect(page.locator('[data-v76-mode="erase"]')).toHaveAttribute('aria-pressed','false');
@@ -148,5 +148,5 @@ test('an eraser gesture on blank paper does not delete other marks',async({page}
   await loadStrokes(page,[line('top',50,90,250,90),line('bottom',50,420,250,420)]);
   await selectEraser(page);
   await mouseSweep(page,{x:40,y:255},{x:290,y:255});
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(2);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(2);
 });
