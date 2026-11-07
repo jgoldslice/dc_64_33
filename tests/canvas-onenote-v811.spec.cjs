@@ -59,7 +59,7 @@ test('page list can create, rename, switch and restore notes across reload',asyn
   await expect(list.locator('.v811-page-labels strong').last()).toHaveText('Ideas and Sketches');
   // The new page starts with editable text, ready to type.
   const rich=page.locator('#v76Surface .v76-rich').first();
-  await rich.click();await rich.click();
+  await rich.click({position:{x:34,y:13}});await rich.click({position:{x:34,y:13}});
   await expect(rich).toHaveAttribute('contenteditable','true');
   await rich.fill('Diagram goes on this page');
   await list.locator('[data-v811-page-id="'+original+'"]').click();
@@ -101,7 +101,7 @@ test('selection outline has eight handles, move control, and edits text on a sec
   await expect(box.locator('.v811-move-control')).toBeVisible();
   await expect(box.locator('.v811-object-actions')).toBeVisible();
   await expect(rich).toHaveAttribute('contenteditable','false');
-  await rich.click();
+  await rich.click({position:{x:34,y:13}});
   await expect(rich).toHaveAttribute('contenteditable','true');
   await rich.fill('Type in the selected text box');
   await expect(rich).toHaveText('Type in the selected text box');
