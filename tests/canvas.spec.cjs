@@ -171,7 +171,8 @@ test('Notebook toolbar has a Textbox tool; blank taps create text only when it i
   await expect(toolbar.locator('.v79-tool-group[aria-label="Text"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Pen"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Misc"]')).toHaveCount(1);
-  await expect(toolbar.locator('button')).toHaveCount(9);
+  await expect(toolbar.locator('button')).toHaveCount(10); // Includes the six-color pen chooser.
+  await expect(toolbar.locator('#v818InkColor')).toBeVisible();
   await expect(toolbar.locator('.v815-zoom-tools[aria-label="Notebook zoom"]')).toBeVisible();
   await expect(toolbar.locator('#v815ZoomReset')).toHaveText('100%');
   await expect(toolbar.locator('[data-v76-format="bold"],[data-v76-format="italic"],[data-v76-mode="select"]')).toHaveCount(0);
