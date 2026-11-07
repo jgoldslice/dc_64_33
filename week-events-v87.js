@@ -128,7 +128,12 @@
     if(dateScrollLocked||overlay.hidden)return;
     shownDateWeek();
     const page=Math.max(0,Math.min(2,Math.round(dates.scrollLeft/Math.max(1,dates.clientWidth))));
-    if(page!==1)renderDays(); // Recenter an identical week, ready to swipe again indefinitely.
+    if(page!==1){
+      // A browser can fire scrollend AND our debounce callback for one snap.
+      // Lock synchronously so the same gesture never advances twice.
+      dateScrollLocked=true;clearTimeout(dateScrollTimer);
+      renderDays();
+    }
   }
   dates.addEventListener('scroll',()=>{
     if(dateScrollLocked||overlay.hidden)return;
@@ -196,7 +201,11 @@
   function settleCalendar(){
     if(calendarScrollLocked||!weekWindow?.clientWidth)return;
     const page=Math.max(0,Math.min(2,Math.round(weekWindow.scrollLeft/weekWindow.clientWidth)));
-    if(page!==1)shiftCalendar(page===2?1:-1);
+    if(page!==1){
+      // Lock before render() so a second scrollend/timer cannot skip a week.
+      calendarScrollLocked=true;clearTimeout(calendarScrollTimer);
+      shiftCalendar(page===2?1:-1);
+    }
   }
   if(weekWindow){
     const observer=new MutationObserver(renderAdjacentWeeks);
