@@ -214,6 +214,13 @@
   border-radius:50%;box-shadow:0 1px 9px #0004;
   color:var(--ink);touch-action:none;cursor:grab
 }
+/* On text, keep the move control to one side so a second tap in the
+   middle enters editing instead of hitting the drag button. Pictures retain
+   the centered OneNote-style move control. */
+.v811-selected.v76-text:not(.v811-editing) .v811-move-control{
+  left:auto;right:9px;top:calc(50% - 18px);
+  width:36px;height:36px;padding:6px
+}
 .v811-move-control svg{
   width:24px;height:24px;stroke:currentColor;stroke-width:1.5;
   fill:none;stroke-linecap:round;stroke-linejoin:round
