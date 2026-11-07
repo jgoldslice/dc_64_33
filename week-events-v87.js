@@ -202,6 +202,14 @@
     const observer=new MutationObserver(renderAdjacentWeeks);
     observer.observe(grid,{childList:true});
     renderAdjacentWeeks();
+    // Week is often hidden on launch. Recenter once it becomes visible,
+    // otherwise the first tab visit could show the previous-week preview.
+    if(typeof ResizeObserver==='function'){
+      const weekSizeObserver=new ResizeObserver(()=>centerCalendar());
+      weekSizeObserver.observe(weekWindow);
+    }
+    new MutationObserver(()=>requestAnimationFrame(centerCalendar))
+      .observe(document.getElementById('week'),{attributes:true,attributeFilter:['class']});
     weekWindow.addEventListener('scroll',()=>{
       if(calendarScrollLocked)return;
       clearTimeout(calendarScrollTimer);
