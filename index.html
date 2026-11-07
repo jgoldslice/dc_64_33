@@ -1357,9 +1357,10 @@ async function v6Upload(files){
       const record={id,type:'file',title:file.name,mime:file.type||'application/octet-stream',key,size:file.size,created:v6Now()};
       p.library.push(record);
       if(!save(true)){
-        p.library=p.library.filter(item=>item!==record);
-        await v6Blob('delete',key);
-        throw Error('Planner save failed; the uploaded file was not added');
+        // A save can be ambiguous (for example, storage read-back failed).
+        // Preserve both the file and its in-memory library entry so Retry
+        // can persist it; never destroy freshly uploaded bytes on a failure.
+        throw Error('File is held on this device, but its library entry is not yet saved. Keep Canvas open and tap Retry.');
       }
     }catch(err){alert('Unable to save '+file.name+': '+err.message);}
   }
