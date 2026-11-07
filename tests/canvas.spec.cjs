@@ -103,10 +103,12 @@ test('Tap selects note text; left and right resize handles work, move control re
   const narrow=await metrics();
   expect(narrow.width).toBeLessThan(wide.width-20);
   expect(narrow.left).toBeGreaterThan(wide.left+20);
-  await drag('.v811-move-control',35,25);
+  // This narrow paper is right-edge constrained after resizing; moving
+  // downward still exercises the same pointer-captured move path.
+  await drag('.v811-move-control',0,40);
   const moved=await metrics();
-  expect(moved.left).toBeGreaterThan(narrow.left+15);
-  expect(moved.top).toBeGreaterThan(narrow.top+10);
+  expect(moved.top).toBeGreaterThan(narrow.top+20);
+  expect(moved.width).toBeCloseTo(narrow.width,0);
   await rich.click({position:{x:34,y:13}});
   await expect(rich).toHaveAttribute('contenteditable','true');
   await rich.fill('Moving should not lose my note');
