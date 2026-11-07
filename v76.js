@@ -31,6 +31,7 @@
         '<button type="button" id="v76AddImage" aria-label="Insert picture" title="Insert picture">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></button>'+
       '</div></div>'+
+      '<div class="v79-tool-group" role="group" aria-label="Save drawing"><div class="v79-tool-buttons"><button type="button" id="v819SaveSketch" aria-label="Add drawing to project library" title="Save drawing to Library">Save sketch</button></div></div>'+
       '<div class="v79-tool-group v815-zoom-tools" role="group" aria-label="Notebook zoom">'+
         '<div class="v79-tool-buttons">'+
           '<button type="button" id="v815ZoomOut" aria-label="Zoom out" title="Zoom out">−</button>'+
@@ -38,7 +39,6 @@
           '<button type="button" id="v815ZoomIn" aria-label="Zoom in" title="Zoom in">+</button>'+
         '</div></div>'+
     '</div><div class="v811-note-body"><aside class="v811-page-rail" aria-label="Notebook pages"><div class="v811-pages-heading"><strong>Pages</strong><button type="button" id="v811NewPage" aria-label="Add note page" title="Add page">+</button></div><div id="v811PageList" class="v811-page-list"></div></aside><div id="v815ZoomViewport" class="v76-page-wrap"><div id="v815ZoomStage" class="v815-zoom-stage"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div></div></div>'+
-    '<p class="v76-tip">Tap an object to select it, drag to move, or use the handles to resize. Tap selected text again to edit. Select Textbox, then tap empty paper to add a new text box. Tap empty paper otherwise to deselect. Pinch to zoom (50%–500%) or use − / + above. Saves automatically.</p>'+
     '<input type="file" id="v76ImageInput" accept="image/*" hidden></div>';
   pane.insertAdjacentHTML('beforeend',editorHtml);
   const root=document.getElementById('v76Editor'),surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
@@ -266,9 +266,8 @@
     // iPad fingers should navigate the page without leaving stray Pencil marks
     // or moving a selected image while a second finger joins the gesture.
     if(activeStroke){
-      const pending=activeStroke;activeStroke=null;
-      pending.page.strokes=pending.page.strokes.filter(s=>s!==pending.stroke);
-      strokesView(pending.page);
+      // A second finger begins navigation, not Undo: retain sampled ink.
+      flushInkRender();activeStroke=null;persist();
     }
     if(activeErase){
       const pending=activeErase;activeErase=null;
@@ -734,6 +733,39 @@
       growPage(ctx.page,y+300);persist();drawPage(ctx.p,ctx.page);
     }catch(err){alert('Could not save image on this device: '+err.message);}
   }
+  document.getElementById('v819SaveSketch').addEventListener('click',async()=>{
+    const ctx=current();if(!ctx)return;
+    if(activeStroke){flushInkRender();activeStroke=null;persist();}
+    if(!ctx.page.strokes?.length){alert('Draw something first to save a sketch.');return;}
+    const title=prompt('Sketch name','Sketch '+((ctx.p.library||[]).filter(r=>r.type==='sketch').length+1));
+    if(!title?.trim())return;
+    try{
+      // Export the page's ink as PNG; leave the original editable note intact.
+      const width=Math.max(1,Math.round(surface.clientWidth));
+      const height=Math.max(1,Math.round(surface.clientHeight));
+      const clone=ink.cloneNode(true);
+      clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+      clone.setAttribute('width',String(width));
+      clone.setAttribute('height',String(height));
+      clone.setAttribute('viewBox','0 0 '+width+' '+height);
+      clone.setAttribute('preserveAspectRatio','none');
+      const url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml'}));
+      try{
+        const image=new Image();
+        await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('Could not render sketch'));image.src=url;});
+        const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+        canvas.getContext('2d').drawImage(image,0,0,width,height);
+        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+        if(!blob)throw Error('Could not encode sketch');
+        const id=newId(),key='v6-'+id;
+        await v6Blob('put',key,blob);
+        if(!Array.isArray(ctx.p.library))ctx.p.library=[];
+        ctx.p.library.push({id,type:'sketch',title:title.trim().slice(0,160),key,mime:'image/png',created:Date.now()});
+        if(!save(true))throw Error('Sketch bytes are retained, but its library entry is not yet saved. Keep Canvas open and tap Retry.');
+        v6RenderLibrary(ctx.p);
+      }finally{URL.revokeObjectURL(url);}
+    }catch(err){alert('Could not add sketch to Library: '+err.message);}
+  });
   document.getElementById('v76AddImage').addEventListener('click',()=>document.getElementById('v76ImageInput').click());
   document.getElementById('v76ImageInput').addEventListener('change',async e=>{
     const file=e.target.files?.[0];e.target.value='';if(file)await insertImage(file);
@@ -952,10 +984,26 @@
     const coalesced=e.getCoalescedEvents?.();
     return coalesced?.length?coalesced:[e];
   };
-  let activeStroke=null,activeErase=null;
+  let activeStroke=null,activeErase=null,inkFrame=0;
+  function queueInkRender(){
+    if(inkFrame)return;
+    // Pencil can send several coalesced events per frame. Update the live
+    // SVG path once per display frame, while retaining all sampled points.
+    inkFrame=requestAnimationFrame(()=>{
+      inkFrame=0;
+      if(activeStroke)activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+    });
+  }
+  function flushInkRender(){
+    if(inkFrame){cancelAnimationFrame(inkFrame);inkFrame=0;}
+    if(activeStroke)activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+  }
   ink.addEventListener('pointerdown',e=>{
     const ctx=current();if(!ctx||(mode!=='pen'&&mode!=='erase'))return;
     if(e.pointerType==='mouse'&&e.button!==0)return;
+    // Never allow a second touch to replace an active Pencil stroke; Safari
+    // may dispatch pointerdown before touchstart detects a two-finger pinch.
+    if(activePinch||activeStroke||activeErase||(e.pointerType==='touch'&&!e.isPrimary))return;
     e.preventDefault();ink.setPointerCapture(e.pointerId);
     const pt=inkPosition(e);
     if(mode==='erase'){
@@ -983,19 +1031,27 @@
       if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
     }
     // Update only the active path instead of rebuilding every previous stroke.
-    activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+    queueInkRender();
   });
   const finishStroke=e=>{
     if(activeErase&&e.pointerId===activeErase.id){
-      if(e.type==='pointerup')eraseSweep(activeErase.page,activeErase.last,[e]);
-      activeErase=null;
+      const pending=activeErase;activeErase=null;
+      if(e.type==='pointercancel'){
+        // A cancelled pinch/gesture must not commit a partial eraser sweep.
+        pending.page.strokes=pending.originalStrokes;
+        strokesView(pending.page);persist();
+      }else if(e.type==='pointerup')eraseSweep(pending.page,pending.last,[e]);
     }
     if(activeStroke&&activeStroke.id===e.pointerId){
+      if(e.type==='pointercancel'){
+        // Safari cancels a pen pointer during a pinch; keep the existing mark.
+        flushInkRender();activeStroke=null;persist();return;
+      }
       if(e.type==='pointerup'){
         const point=inkPosition(e),last=activeStroke.stroke.points.at(-1);
         if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
       }
-      activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+      flushInkRender();
       activeStroke=null;persist();
     }
   };

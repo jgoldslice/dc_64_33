@@ -113,33 +113,24 @@
     chosen=iso(plusDays(modalWeek,day));
     renderDays();
   }
-  function shownDateWeek(){
-    if(!trackWeek||!dates.clientWidth)return;
-    const nearest=Math.max(0,Math.min(2,Math.round(dates.scrollLeft/dates.clientWidth)));
-    const candidate=plusDays(trackWeek,(nearest-1)*7);
-    if(!modalWeek||iso(candidate)!==iso(modalWeek)){
-      const day=chosen?weekdayIndex(chosen):0;
-      modalWeek=candidate;
-      chosen=iso(plusDays(modalWeek,day));
-      displayChosen();
-    }
-  }
   function settleDateScroll(){
-    if(dateScrollLocked||overlay.hidden)return;
-    shownDateWeek();
-    const page=Math.max(0,Math.min(2,Math.round(dates.scrollLeft/Math.max(1,dates.clientWidth))));
-    if(page!==1){
-      // A browser can fire scrollend AND our debounce callback for one snap.
-      // Lock synchronously so the same gesture never advances twice.
-      dateScrollLocked=true;clearTimeout(dateScrollTimer);
-      renderDays();
-    }
+    if(dateScrollLocked||overlay.hidden||!dates.clientWidth||dateGesture)return;
+    const page=Math.max(0,Math.min(2,Math.round(dates.scrollLeft/dates.clientWidth)));
+    // A swipe is provisional until native scrolling settles. A partial drag
+    // returning to the center must not silently change the selected date.
+    if(page===1)return;
+    dateScrollLocked=true;clearTimeout(dateScrollTimer);
+    const day=chosen?weekdayIndex(chosen):0;
+    modalWeek=plusDays(trackWeek,(page-1)*7);
+    chosen=iso(plusDays(modalWeek,day));
+    renderDays(); // Recenters while locked; one gesture commits exactly once.
   }
   dates.addEventListener('scroll',()=>{
     if(dateScrollLocked||overlay.hidden)return;
-    shownDateWeek();
     clearTimeout(dateScrollTimer);
-    dateScrollTimer=setTimeout(settleDateScroll,140);
+    // Fallback for Safari builds without dependable scrollend. Do not update
+    // chosen while the user is still dragging or native snap is in motion.
+    dateScrollTimer=setTimeout(settleDateScroll,280);
   },{passive:true});
   dates.addEventListener('scrollend',()=>{clearTimeout(dateScrollTimer);settleDateScroll();},{passive:true});
   dates.addEventListener('keydown',e=>{
@@ -159,8 +150,18 @@
     if(!dateGesture||e.changedTouches.length!==1)return;
     const g=dateGesture,t=e.changedTouches[0];dateGesture=null;
     const dx=t.clientX-g.x,dy=t.clientY-g.y;
-    if(!e.isTrusted&&Math.abs(dx)>64&&Math.abs(dx)>Math.abs(dy)*1.5&&
-      Math.abs(dates.scrollLeft-g.left)<6)shiftDateWeek(dx<0?1:-1);
+    if(Math.abs(dx)>64&&Math.abs(dx)>Math.abs(dy)*1.5&&
+      Math.abs(dates.scrollLeft-g.left)<6){
+      // A fast flick can end before Safari moves the snap strip.
+      // Commit once immediately rather than waiting for delayed momentum.
+      dateScrollLocked=true;clearTimeout(dateScrollTimer);
+      shiftDateWeek(dx<0?1:-1);
+    }else{
+      // If the finger was held still, scrollend/debounce may already have
+      // fired while the gesture guard was active; settle after release.
+      clearTimeout(dateScrollTimer);
+      dateScrollTimer=setTimeout(settleDateScroll,280);
+    }
   },{passive:true});
   dates.addEventListener('touchcancel',()=>{dateGesture=null;},{passive:true});
 
@@ -199,7 +200,7 @@
     // A MutationObserver on #weekGrid rebuilds adjacent weeks after render().
   }
   function settleCalendar(){
-    if(calendarScrollLocked||!weekWindow?.clientWidth)return;
+    if(calendarScrollLocked||calendarGesture||!weekWindow?.clientWidth)return;
     const page=Math.max(0,Math.min(2,Math.round(weekWindow.scrollLeft/weekWindow.clientWidth)));
     if(page!==1){
       // Lock before render() so a second scrollend/timer cannot skip a week.
@@ -222,7 +223,7 @@
     weekWindow.addEventListener('scroll',()=>{
       if(calendarScrollLocked)return;
       clearTimeout(calendarScrollTimer);
-      calendarScrollTimer=setTimeout(settleCalendar,140);
+      calendarScrollTimer=setTimeout(settleCalendar,280);
     },{passive:true});
     weekWindow.addEventListener('scrollend',()=>{
       clearTimeout(calendarScrollTimer);
@@ -237,8 +238,14 @@
       if(!calendarGesture||e.changedTouches.length!==1)return;
       const g=calendarGesture,t=e.changedTouches[0];calendarGesture=null;
       const dx=t.clientX-g.x,dy=t.clientY-g.y;
-      if(!e.isTrusted&&Math.abs(dx)>=65&&Math.abs(dx)>Math.abs(dy)*1.5&&
-         Math.abs(weekWindow.scrollLeft-g.left)<6)shiftCalendar(dx<0?1:-1);
+      if(Math.abs(dx)>=65&&Math.abs(dx)>Math.abs(dy)*1.5&&
+         Math.abs(weekWindow.scrollLeft-g.left)<6){
+        calendarScrollLocked=true;clearTimeout(calendarScrollTimer);
+        shiftCalendar(dx<0?1:-1);
+      }else{
+        clearTimeout(calendarScrollTimer);
+        calendarScrollTimer=setTimeout(settleCalendar,280);
+      }
     },{passive:true});
     weekWindow.addEventListener('touchcancel',()=>{calendarGesture=null;},{passive:true});
     weekWindow.addEventListener('keydown',e=>{
