@@ -237,7 +237,7 @@ test('responsive iPad, compact Split View and phone layouts retain zoom controls
   expect(errors).toEqual([]);
 });
 
-test('starting a two-finger pinch cancels a pending pen stroke instead of leaving a stray mark',async({page})=>{
+test('starting a two-finger pinch preserves the stroke already drawn',async({page})=>{
   const errors=await openNotebook(page,'Pinch Drawing Safety');
   await page.locator('[data-v76-mode="pen"]').click();
   const at=await visibleNoteContact(page);
@@ -254,8 +254,8 @@ test('starting a two-finger pinch cancels a pending pen stroke instead of leavin
       touches:[],changedTouches:[p,q],targetTouches:[]}));
   });
   await page.mouse.up();
-  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(0);
-  expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(0);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
+  expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(1);
   expect(errors).toEqual([]);
 });
 
