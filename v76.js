@@ -30,12 +30,23 @@
         '<button type="button" id="v76AddImage" aria-label="Insert picture" title="Insert picture">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></button>'+
       '</div></div>'+
-    '</div><div class="v811-note-body"><aside class="v811-page-rail" aria-label="Notebook pages"><div class="v811-pages-heading"><strong>Pages</strong><button type="button" id="v811NewPage" aria-label="Add note page" title="Add page">+</button></div><div id="v811PageList" class="v811-page-list"></div></aside><div class="v76-page-wrap"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div></div>'+
+      '<div class="v79-tool-group v815-zoom-tools" role="group" aria-label="Notebook zoom">'+
+        '<div class="v79-tool-buttons">'+
+          '<button type="button" id="v815ZoomOut" aria-label="Zoom out" title="Zoom out">−</button>'+
+          '<button type="button" id="v815ZoomReset" aria-label="Reset note zoom to 100 percent" title="Reset zoom to 100%">100%</button>'+
+          '<button type="button" id="v815ZoomIn" aria-label="Zoom in" title="Zoom in">+</button>'+
+        '</div></div>'+
+    '</div><div class="v811-note-body"><aside class="v811-page-rail" aria-label="Notebook pages"><div class="v811-pages-heading"><strong>Pages</strong><button type="button" id="v811NewPage" aria-label="Add note page" title="Add page">+</button></div><div id="v811PageList" class="v811-page-list"></div></aside><div id="v815ZoomViewport" class="v76-page-wrap"><div id="v815ZoomStage" class="v815-zoom-stage"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div></div></div>'+
     '<p class="v76-tip">Tap an object to select it, drag to move, or use the handles to resize. Tap selected text again to edit. Select Textbox, then tap empty paper to add a new text box. Tap empty paper otherwise to deselect. Saves automatically.</p>'+
     '<input type="file" id="v76ImageInput" accept="image/*" hidden></div>';
   pane.insertAdjacentHTML('beforeend',editorHtml);
   const root=document.getElementById('v76Editor'),surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
   const pageList=document.getElementById('v811PageList');
+  const zoomViewport=document.getElementById('v815ZoomViewport');
+  const zoomStage=document.getElementById('v815ZoomStage');
+  const zoomOutButton=document.getElementById('v815ZoomOut');
+  const zoomInButton=document.getElementById('v815ZoomIn');
+  const zoomResetButton=document.getElementById('v815ZoomReset');
   const pageSelect=document.getElementById('v76PageSelect');
   const textSizeSelect=document.getElementById('v80TextSize');
   const validSizes=new Set(['small','medium','large']);
@@ -50,6 +61,10 @@
   const todoHeading=document.querySelector('#projectActions h2');if(todoHeading)todoHeading.textContent='To-Do';
   const todoInput=document.getElementById('projectActionInput');if(todoInput){todoInput.placeholder='Add a to-do...';todoInput.setAttribute('aria-label','New project to-do');}
   let mode='select',lastKey='',lastPageRef=null,selectedText=null,selectedItemId=null;
+  // Notebook zoom is a viewing preference, NOT a data transformation.
+  let noteZoom=1,activePinch=null,suppressPageClickUntil=0;
+  const ZOOM_MIN=.5,ZOOM_MAX=5;
+  const ZOOM_STEPS=[.5,.75,1,1.25,1.5,1.75,2,2.5,3,4,5];
   const newId=()=>v6Id();
   function plainHTML(txt){return esc(txt).replace(/\r\n?/g,'\n').replace(/\n/g,'<br>');}
   function cleanHTML(html){
@@ -259,6 +274,7 @@
     const height=Math.max(740,Number(page.height)||740);page.height=height;surface.style.height=height+'px';
     for(const item of page.objects||[])addRenderedObject(item,p,page);
     strokesView(page);
+    syncZoomLayout();
   }
   function renderPageList(p){
     if(!pageList)return;
@@ -302,6 +318,7 @@
     // After a full backup import, ids may be identical even though the
     // underlying page objects (including attachment keys) have changed.
     if(!force&&key===lastKey&&page===lastPageRef)return;
+    if(key!==lastKey){noteZoom=1;zoomViewport.scrollLeft=0;updateZoomControls();}
     lastKey=key;lastPageRef=page;selectedText=null;selectedItemId=null;
     pageSelect.replaceChildren();
     p.notePages.forEach(pg=>{
@@ -317,7 +334,7 @@
   v6RenderNotes=function(p){oldRenderNotes(p);renderPage(p);};
   function growPage(page,needed){
     if(needed<=page.height)return;
-    page.height=Math.ceil((needed+160)/180)*180;surface.style.height=page.height+'px';strokesView(page);
+    page.height=Math.ceil((needed+160)/180)*180;surface.style.height=page.height+'px';strokesView(page);syncZoomLayout();
   }
   function createText(x,y){
     const ctx=current();if(!ctx)return;
@@ -331,9 +348,12 @@
   }
   function position(e){
     const rect=surface.getBoundingClientRect();
-    return {x:Math.round(e.clientX-rect.left),y:Math.round(e.clientY-rect.top)};
+    const sx=surface.clientWidth/Math.max(1,rect.width);
+    const sy=surface.clientHeight/Math.max(1,rect.height);
+    return {x:Math.round((e.clientX-rect.left)*sx),y:Math.round((e.clientY-rect.top)*sy)};
   }
   surface.addEventListener('click',e=>{
+    if(Date.now()<suppressPageClickUntil)return;
     if(e.target!==surface&&e.target!==ink)return; // Existing objects never insert text.
     if(mode==='text'){
       const pt=position(e);
@@ -727,6 +747,7 @@
     const ctx=current();if(!ctx||!ctx.page.strokes.length)return;ctx.page.strokes.pop();persist();strokesView(ctx.page);
   });
   window.addEventListener('resize',()=>{
+    syncZoomLayout();
     const ctx=current();if(ctx)strokesView(ctx.page);
   });
   applyMode('select');
