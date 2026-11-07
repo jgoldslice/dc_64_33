@@ -102,7 +102,7 @@ test('Tap selects note text; left and right resize handles work, move control re
   const moved=await metrics();
   expect(moved.left).toBeGreaterThan(narrow.left+15);
   expect(moved.top).toBeGreaterThan(narrow.top+10);
-  await rich.click();
+  await rich.click({position:{x:34,y:13}});
   await expect(rich).toHaveAttribute('contenteditable','true');
   await rich.fill('Moving should not lose my note');
   await page.reload();
@@ -198,7 +198,7 @@ test('Text stays transparent over images and size choices persist independently'
   const text=page.locator('#v76Surface .v76-text').first();
   await expect(text).toBeVisible();
   const rich=text.locator('.v76-rich');
-  await rich.click();await rich.click();
+  await rich.click({position:{x:34,y:13}});await rich.click({position:{x:34,y:13}});
   await expect(rich).toHaveAttribute('contenteditable','true');
   await rich.fill('This text should float over a picture');
   const size=page.locator('#v80TextSize');
@@ -235,7 +235,7 @@ test('Notebook touchstart cancels the native long-press selection gesture', asyn
   page.once('dialog',d=>d.accept('Touch Safety Test'));
   await page.locator('#newProject').click();
   const rich=page.locator('#v76Surface .v76-text .v76-rich').first();
-  await rich.click();await rich.click();
+  await rich.click({position:{x:34,y:13}});await rich.click({position:{x:34,y:13}});
   await expect(rich).toHaveAttribute('contenteditable','true');
   await rich.fill('iPhone selection protection');
   // Exit editing, then select to exercise the handles' touch-selection guard.
