@@ -113,33 +113,24 @@
     chosen=iso(plusDays(modalWeek,day));
     renderDays();
   }
-  function shownDateWeek(){
-    if(!trackWeek||!dates.clientWidth)return;
-    const nearest=Math.max(0,Math.min(2,Math.round(dates.scrollLeft/dates.clientWidth)));
-    const candidate=plusDays(trackWeek,(nearest-1)*7);
-    if(!modalWeek||iso(candidate)!==iso(modalWeek)){
-      const day=chosen?weekdayIndex(chosen):0;
-      modalWeek=candidate;
-      chosen=iso(plusDays(modalWeek,day));
-      displayChosen();
-    }
-  }
   function settleDateScroll(){
-    if(dateScrollLocked||overlay.hidden)return;
-    shownDateWeek();
-    const page=Math.max(0,Math.min(2,Math.round(dates.scrollLeft/Math.max(1,dates.clientWidth))));
-    if(page!==1){
-      // A browser can fire scrollend AND our debounce callback for one snap.
-      // Lock synchronously so the same gesture never advances twice.
-      dateScrollLocked=true;clearTimeout(dateScrollTimer);
-      renderDays();
-    }
+    if(dateScrollLocked||overlay.hidden||!dates.clientWidth||dateGesture)return;
+    const page=Math.max(0,Math.min(2,Math.round(dates.scrollLeft/dates.clientWidth)));
+    // A swipe is provisional until native scrolling settles. A partial drag
+    // returning to the center must not silently change the selected date.
+    if(page===1)return;
+    dateScrollLocked=true;clearTimeout(dateScrollTimer);
+    const day=chosen?weekdayIndex(chosen):0;
+    modalWeek=plusDays(trackWeek,(page-1)*7);
+    chosen=iso(plusDays(modalWeek,day));
+    renderDays(); // Recenters while locked; one gesture commits exactly once.
   }
   dates.addEventListener('scroll',()=>{
     if(dateScrollLocked||overlay.hidden)return;
-    shownDateWeek();
     clearTimeout(dateScrollTimer);
-    dateScrollTimer=setTimeout(settleDateScroll,140);
+    // Fallback for Safari builds without dependable scrollend. Do not update
+    // chosen while the user is still dragging or native snap is in motion.
+    dateScrollTimer=setTimeout(settleDateScroll,280);
   },{passive:true});
   dates.addEventListener('scrollend',()=>{clearTimeout(dateScrollTimer);settleDateScroll();},{passive:true});
   dates.addEventListener('keydown',e=>{
@@ -199,7 +190,7 @@
     // A MutationObserver on #weekGrid rebuilds adjacent weeks after render().
   }
   function settleCalendar(){
-    if(calendarScrollLocked||!weekWindow?.clientWidth)return;
+    if(calendarScrollLocked||calendarGesture||!weekWindow?.clientWidth)return;
     const page=Math.max(0,Math.min(2,Math.round(weekWindow.scrollLeft/weekWindow.clientWidth)));
     if(page!==1){
       // Lock before render() so a second scrollend/timer cannot skip a week.
@@ -222,7 +213,7 @@
     weekWindow.addEventListener('scroll',()=>{
       if(calendarScrollLocked)return;
       clearTimeout(calendarScrollTimer);
-      calendarScrollTimer=setTimeout(settleCalendar,140);
+      calendarScrollTimer=setTimeout(settleCalendar,280);
     },{passive:true});
     weekWindow.addEventListener('scrollend',()=>{
       clearTimeout(calendarScrollTimer);
