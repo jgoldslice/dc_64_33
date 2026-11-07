@@ -22,16 +22,16 @@ async function swipe(page,selector,start,end){
     target.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,touches:[],targetTouches:[],changedTouches:[b]}));
   },{start,end});
 }
-test('the calendar week arrows change the real displayed week and preserve the Week tab',async({page})=>{
+test('calendar uses swipe-first navigation and keyboard arrows without duplicate visible buttons',async({page})=>{
   const errors=await openWeek(page);
   const monday=await observedWeek(page);
   const following=await isoAfter(page,7);
-  await expect(page.locator('#v816CalendarPrev')).toBeVisible();
-  await expect(page.locator('#v816CalendarNext')).toBeVisible();
-  await page.locator('#v816CalendarNext').click();
+  await expect(page.locator('#v816CalendarPrev')).toBeHidden();
+  await expect(page.locator('#v816CalendarNext')).toBeHidden();
+  await page.locator('#weekGrid').focus();
+  await page.keyboard.press('ArrowRight');
   expect(await observedWeek(page)).toBe(following);
-  await expect(page.locator('#weekGrid [data-week-event-date]')).toHaveCount(7);
-  await page.locator('#v816CalendarPrev').click();
+  await page.keyboard.press('ArrowLeft');
   expect(await observedWeek(page)).toBe(monday);
   await expect(page.locator('#week')).toBeVisible();
   expect(errors).toEqual([]);
@@ -62,16 +62,18 @@ test('Add Event next/previous week preserves typed details and selected weekday'
   await page.locator('#addWeekEvent').click();
   await expect(page.locator('#v87EventBack')).toBeVisible();
   await expect(page.locator('#v87EventDates [data-v87-date]')).toHaveCount(7);
+  await expect(page.locator('#v816EventPrev')).toBeHidden();
+  await expect(page.locator('#v816EventNext')).toBeHidden();
   const chosen=await page.locator('#v87EventDates [aria-pressed="true"]').getAttribute('data-v87-date');
   await page.locator('#v87EventName').fill('Next week planning');
   await page.locator('#v87EventTime').fill('14:15');
-  await page.locator('#v816EventNext').click();
+  await swipe(page,'#v87EventDates',{x:320,y:470},{x:165,y:471});
   const second=await page.locator('#v87EventDates [aria-pressed="true"]').getAttribute('data-v87-date');
   const expected=await page.evaluate(chosen=>iso(plusDays(new Date(chosen+'T12:00:00'),7)),chosen);
   expect(second).toBe(expected);
   await expect(page.locator('#v87EventName')).toHaveValue('Next week planning');
   await expect(page.locator('#v87EventTime')).toHaveValue('14:15');
-  await page.locator('#v816EventPrev').click();
+  await swipe(page,'#v87EventDates',{x:165,y:470},{x:320,y:471});
   await expect(page.locator('#v87EventDates [aria-pressed="true"]')).toHaveAttribute('data-v87-date',chosen);
   expect(await observedWeek(page)).toBe(first);
   await page.locator('#v87EventCancel').click();
@@ -82,8 +84,8 @@ test('Add Event can schedule a future week and opens that calendar week on save'
   const errors=await openWeek(page);
   const initialEvents=await observedEvents(page);
   await page.locator('#addWeekEvent').click();
-  await page.locator('#v816EventNext').click();
-  await page.locator('#v816EventNext').click();
+  await swipe(page,'#v87EventDates',{x:320,y:470},{x:165,y:471});
+  await swipe(page,'#v87EventDates',{x:320,y:470},{x:165,y:471});
   const target=await page.locator('#v87EventDates [data-v87-date]').last().getAttribute('data-v87-date');
   await page.locator('#v87EventDates [data-v87-date="'+target+'"]').click();
   await page.locator('#v87EventName').fill('Future calendar event');
