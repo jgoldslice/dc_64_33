@@ -91,9 +91,14 @@ test('Tap selects note text; left and right resize handles work, move control re
     await page.mouse.move(x+dx,y+dy,{steps:8});await page.mouse.up();
   };
   const before=await metrics();
-  await drag('.v811-handle-e',75);
+  // With the new page sidebar, the starting text box can nearly fill the
+  // remaining paper. Contract first; expanding back then has room to work.
+  await drag('.v811-handle-e',-70);
+  const shrunkRight=await metrics();
+  expect(shrunkRight.width).toBeLessThan(before.width-35);
+  await drag('.v811-handle-e',55);
   const wide=await metrics();
-  expect(wide.width).toBeGreaterThan(before.width+35);
+  expect(wide.width).toBeGreaterThan(shrunkRight.width+35);
   await drag('.v811-handle-w',40);
   const narrow=await metrics();
   expect(narrow.width).toBeLessThan(wide.width-20);
@@ -140,12 +145,13 @@ test('Pictures use OneNote-style selection, corner resizing and a move control i
   const bigger=await box.evaluate(el=>({w:el.offsetWidth,h:el.offsetHeight}));
   expect(bigger.w).toBeGreaterThan(initial.w+25);
   expect(bigger.h).toBeGreaterThan(initial.h+25);
-  const beforeX=await box.evaluate(el=>parseFloat(el.style.left));
+  const beforeY=await box.evaluate(el=>parseFloat(el.style.top));
   const move=await box.locator('.v811-move-control').boundingBox();
   await page.mouse.move(move.x+move.width/2,move.y+move.height/2);await page.mouse.down();
-  await page.mouse.move(move.x+move.width/2+38,move.y+move.height/2+22,{steps:6});await page.mouse.up();
-  const afterX=await box.evaluate(el=>parseFloat(el.style.left));
-  expect(afterX).toBeGreaterThan(beforeX+15);
+  // The wider photo is right-edge constrained. Move it vertically instead.
+  await page.mouse.move(move.x+move.width/2,move.y+move.height/2+40,{steps:6});await page.mouse.up();
+  const afterY=await box.evaluate(el=>parseFloat(el.style.top));
+  expect(afterY).toBeGreaterThan(beforeY+20);
   expect(await box.evaluate(el=>el.offsetWidth)).toBeCloseTo(bigger.w,0);
 });
 
@@ -244,7 +250,7 @@ test('Notebook touchstart cancels the native long-press selection gesture', asyn
   const rect=await rich.boundingBox();
   // Select the object first; its handles now suppress native selection,
   // whereas unselected text and blank-paper scrolling remain usable.
-  await rich.click();
+  await rich.click({position:{x:34,y:13}});
   const canceled=await page.evaluate(({x,y})=>{
     const target=document.elementFromPoint(x,y);
     const touch=new Touch({identifier:99,target,clientX:x,clientY:y});
