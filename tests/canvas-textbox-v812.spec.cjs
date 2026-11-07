@@ -73,7 +73,7 @@ test('tapping existing text or picture with Textbox armed never creates a duplic
   const picture=page.locator('#v76Surface .v76-image').first();
   await expect(picture).toBeVisible();
   const beforePhotoTap=await boxes.count();
-  await tool.click();
+  // Inserting an image doesn't change the explicitly armed Textbox tool.
   await expect(tool).toHaveAttribute('aria-pressed','true');
   await picture.locator('.v76-photo').click();
   await expect(picture).toHaveClass(/v811-selected/);
