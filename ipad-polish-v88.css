@@ -1,0 +1,88 @@
+/* Canvas v8.8 — iPad Notes + Week usability polish (data-preserving).
+   Loaded last so it can refine earlier layouts without rewriting the editor. */
+
+/* Keep app-wide decorative copy out of the Week/Brainstorm workspaces. */
+#week .eyebrow,
+#week .focus-prompt,
+.canvas-ipad-brand-copy small{display:none!important}
+
+/* Full habit names matter more than fitting them on a single line. */
+#weekHabits .week-table{grid-template-columns:minmax(116px,1fr) repeat(7,minmax(16px,20px));gap:3px;overflow-x:auto}
+#weekHabits .week-table .habit-name{
+  min-width:0;white-space:normal;overflow:visible;text-overflow:clip;
+  overflow-wrap:anywhere;word-break:normal;line-height:1.3;
+}
+#weekHabits .week-table input{width:16px;height:16px;margin:5px 0}
+#weekHabits .week-table .dow{font-size:10px}
+
+/* On larger tablets and desktop, priorities live below habits, while the
+   calendar becomes the principal right-hand panel and stretches with the rail. */
+@media (min-width:980px) and (min-height:600px){
+  #week .week-v4{
+    display:grid;
+    grid-template-columns:minmax(260px,320px) minmax(0,1fr);
+    grid-template-areas:"focus calendar" "habits calendar" "priorities calendar";
+    grid-template-rows:auto auto minmax(0,1fr);
+    align-items:start;column-gap:16px;row-gap:14px
+  }
+  #week .v4-week-calendar{
+    align-self:stretch;display:flex;flex-direction:column;min-height:0
+  }
+  #week .v817-week-viewport{display:flex;flex:1 1 auto;min-height:0}
+  #week .v817-week-track{flex:1 0 100%;align-items:stretch}
+  #week .v817-week-panel{height:100%;grid-template-rows:repeat(2,minmax(145px,1fr));align-content:stretch}
+  #week .v4-week-habits,#week .v4-week-priorities{align-self:start}
+}
+@media (min-width:740px) and (max-width:979px) and (min-height:600px){
+  /* A full-width calendar is more legible in narrow iPad split view. */
+  #week .week-v4{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"focus" "calendar" "habits" "priorities";
+  }
+}
+
+/* A pen should never summon Safari's text magnifier or blue selection
+   handles. Real text editing (the .v811-editing state) remains selectable. */
+#v76Surface .v76-item:not(.v811-editing),
+#v76Surface .v76-item:not(.v811-editing) *{
+  -webkit-user-select:none!important;user-select:none!important;
+  -webkit-touch-callout:none!important;
+}
+#v76Surface.v76-is-drawing,
+#v76Surface.v76-is-drawing *{
+  -webkit-user-select:none!important;user-select:none!important;
+  -webkit-touch-callout:none!important;
+}
+#v76Surface:not(.v76-is-drawing) .v76-item.v811-editing .v76-rich{
+  -webkit-user-select:text!important;user-select:text!important;
+  -webkit-touch-callout:default!important;
+}
+
+/* Prevent the Save sketch control from splitting across three lines. */
+#v819SaveSketch{white-space:nowrap;overflow-wrap:normal;min-width:max-content;
+  font-size:13px;line-height:1.2;padding-inline:12px}
+#projectNotes .v76-toolbar{flex-wrap:nowrap}
+
+/* The entire iPad Notes workspace fits in one screen. The paper itself is
+   allowed to pan when the user deliberately zooms beyond the visible area. */
+@media (min-width:740px) and (min-height:600px){
+  html:has(body.canvas-v88-notes-fit),
+  body.canvas-v88-notes-fit{height:100%;overflow-y:hidden;overscroll-behavior-y:none}
+  body.canvas-v88-notes-fit .shell{padding-bottom:0}
+  body.canvas-v88-notes-fit #brainstorm>.view-header{margin-bottom:12px}
+  body.canvas-v88-notes-fit #projectWorkspace .v6-project-title{margin-bottom:9px}
+  body.canvas-v88-notes-fit #projectWorkspace .v6-project-tabs{margin-bottom:8px}
+  body.canvas-v88-notes-fit #projectNotes{padding:10px;overflow:hidden}
+  body.canvas-v88-notes-fit #projectNotes .v76-notebook-ui{gap:7px}
+  body.canvas-v88-notes-fit #projectNotes .v76-toolbar{padding-block:3px 6px}
+  body.canvas-v88-notes-fit #v815ZoomViewport{
+    height:var(--v88-pad-height,55dvh);
+    min-height:240px;max-height:none;
+    overflow:auto;overscroll-behavior:contain
+  }
+  body.canvas-v88-notes-fit .v811-page-rail{
+    position:relative;top:auto;
+    max-height:var(--v88-pad-height,55dvh);
+    overflow-y:auto
+  }
+}
