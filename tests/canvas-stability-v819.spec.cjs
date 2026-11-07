@@ -87,3 +87,29 @@ test('interrupted Pencil stroke leaves no saved or visible mark',async({page})=>
   await expect(ink.locator('path.v818-ink-stroke')).toHaveCount(0);
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(0);
 });
+
+test('failed upload index save preserves the file in memory for a later retry',async({page})=>{
+  await page.goto(base);
+  await page.locator('[data-tab="brainstorm"]').click();
+  page.once('dialog',dialog=>dialog.accept('Upload recovery test'));
+  await page.locator('#newProject').click();
+  const result=await page.evaluate(async()=>{
+    const p=v6Project();
+    const originalSet=Storage.prototype.setItem,originalAlert=window.alert;
+    Storage.prototype.setItem=function(name,value){
+      if(name===STORAGE_KEY)return;
+      return originalSet.call(this,name,value);
+    };
+    window.alert=()=>{};
+    try{await v6Upload([new File(['important draft'],'Uncommitted.txt',{type:'text/plain'})]);}
+    finally{Storage.prototype.setItem=originalSet;window.alert=originalAlert;}
+    const file=p.library.find(item=>item.title==='Uncommitted.txt');
+    const hasBytes=!!(file&&await v6Blob('get',file.key));
+    const retrySaved=save(true);
+    const disk=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return {hasRecord:!!file,hasBytes,retrySaved,
+      persisted:disk.projects.some(project=>String(project.id)===String(p.id)&&
+        project.library.some(item=>item.title==='Uncommitted.txt'))};
+  });
+  expect(result).toEqual({hasRecord:true,hasBytes:true,retrySaved:true,persisted:true});
+});
