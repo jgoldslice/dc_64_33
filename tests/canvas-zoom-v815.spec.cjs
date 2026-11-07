@@ -172,12 +172,14 @@ test('Textbox insertion uses correct note coordinates at 200% and does not creat
   });
   await page.mouse.click(screen.x,screen.y);
   await expect(page.locator('#v76Surface .v76-text')).toHaveCount(before+1);
-  const saved=await page.evaluate(()=>{
+  const saved=await page.evaluate(screen=>{
     const p=v6Project().notePages[0],s=document.getElementById('v76Surface');
     const item=p.objects[p.objects.length-1],rect=s.getBoundingClientRect();
-    return {item,localX:(window.__notebookZoomTestX-rect.left)/2};
-  }).catch(()=>null);
-  expect(saved?.item?.type).toBe('text');
+    return {item,expectedX:(screen.x-rect.left)/2-10,expectedY:(screen.y-rect.top)/2-20};
+  },screen);
+  expect(saved.item.type).toBe('text');
+  approx(saved.item.x,saved.expectedX,3);
+  approx(saved.item.y,saved.expectedY,3);
   await expect(page.locator('[data-v76-mode="text"]')).toHaveAttribute('aria-pressed','false');
   await page.mouse.click(screen.x+50,screen.y+100);
   await expect(page.locator('#v76Surface .v76-text')).toHaveCount(before+1);
