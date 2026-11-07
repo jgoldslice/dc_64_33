@@ -296,3 +296,27 @@
 @media(prefers-reduced-motion:reduce){
   .v815-zoom-stage>.v76-page-surface{transition:none}
 }
+
+/* Canvas v8.17 — a fixed notebook viewing window. Zoom grows/rotates only
+   the note sheet inside this independently scrollable window, never the app. */
+#v815ZoomViewport{
+  display:block;position:relative;width:100%;min-width:0;
+  height:clamp(480px,68svh,900px);
+  min-height:0;max-height:none;
+  overflow:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  background:var(--surface);
+  border:1px solid var(--line);border-radius:11px;
+  touch-action:pan-x pan-y;
+}
+#v815ZoomViewport .v815-zoom-stage{
+  min-height:1px;flex:none;
+  /* It is fine for zoomed-in paper to be wider than the window:
+     the two scrollbars belong to the notebook, not the document. */
+}
+#v815ZoomViewport .v76-page-surface{
+  box-shadow:none;border-radius:0;
+}
+@media(max-width:600px){
+  #v815ZoomViewport{height:clamp(410px,62svh,740px)}
+}

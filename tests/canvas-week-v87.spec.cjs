@@ -53,7 +53,7 @@ test('top-right plus picks a day from the displayed week and saves the chosen da
   const date=await day.getAttribute('data-week-event-date');
   await page.locator('#addWeekEvent').click();
   await expect(page.locator('#v87EventDates')).toBeVisible();
-  await expect(page.locator('#v87EventDates [data-v87-date]')).toHaveCount(7);
+  await expect(page.locator('#v87EventDates [data-v87-date]')).toHaveCount(21);
   await page.locator('#v87EventDates [data-v87-date="'+date+'"]').click();
   await expect(page.locator('#v87EventDates [data-v87-date="'+date+'"]')).toHaveAttribute('aria-pressed','true');
   await addEvent(page,{title:'Soccer game',time:'18:00'});

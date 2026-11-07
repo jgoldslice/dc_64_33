@@ -4,6 +4,14 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.17 — Swipable weeks and a fixed notebook viewing window
+
+- **Add Event** uses a horizontally scrollable, CSS-snap date bar with a previous/current/next week. The redundant previous/next-week arrow buttons are removed. Swipe left or right to move through weeks repeatedly; the bar recycles around the selected week after each snap. The selected weekday follows the scroll, and the event name/time remain untouched until Save or Cancel. Keyboard left/right also shifts a week.
+- **Week at a Glance** uses a native horizontal three-week scroller. The actual current week remains the center panel; adjacent weeks render as previews during finger/trackpad movement and refresh when scrolling settles. The small redundant arrows inside the card are removed, but the main Week header's Previous/Next controls remain as accessible alternatives. Click a day to add an event as before.
+- **Notebook zoom stays inside the notebook:** The pad is now a fixed-size internal scroll viewport on phone/iPad, rather than resizing the surrounding document and pushing other sections around. The actual note objects and strokes still scale together from 50%–500% and can be panned within the pad. Zoom-center correction uses the note's own vertical scroll instead of scrolling the whole browser page.
+- The Pages sidebar and toolbar remain stationary, and the project notebook data, attachments, event storage and exported backup format are unchanged. Safari gesture events are prevented only when originating inside the notebook.
+- Additional browser regression checks cover native week scrolling, repeated date navigation, event detail preservation, fixed notebook bounds at multiple zoom levels, inner scrolling and Safari gesture interception. Real iPad Safari/Apple Pencil QA remains advised.
+
 ## Canvas v8.16 — Paper-like page turns and sliding calendar weeks
 
 - Fixed a paper-swipe visual jump: snapshots now use the actual on-screen coordinates of the current app view (including iPad navigation, content padding, and vertical scroll) instead of appearing at the origin of an overlay. A subtle reversible hinge rotation, directional edge shadow, and 3px gesture-tied lift approximate a paper turn, inspired by Apple Books. The app's real DOM, data, and scroll remain untouched.

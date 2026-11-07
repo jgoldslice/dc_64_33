@@ -174,7 +174,9 @@
     const after=surface.getBoundingClientRect();
     zoomViewport.scrollLeft+=after.left+x*noteZoom-focus.x;
     const deltaY=after.top+y*noteZoom-focus.y;
-    if(Math.abs(deltaY)>1&&Number.isFinite(deltaY))window.scrollBy(0,deltaY);
+    // Zoom is confined to the notebook window. Never scroll the entire app:
+    // that felt like Safari was enlarging and shifting the whole page.
+    if(Math.abs(deltaY)>1&&Number.isFinite(deltaY))zoomViewport.scrollTop+=deltaY;
   }
   function changeZoomStep(direction){
     const next=direction>0
@@ -259,6 +261,15 @@
     e.preventDefault();safariGesture=null;
     suppressPageClickUntil=Date.now()+400;
   },{passive:false});
+  // Safari can dispatch native gesture events at the document capture phase
+  // before the note's normal event handlers run. Constrain browser pinch to
+  // the notebook only, leaving browser zoom outside the notebook untouched.
+  document.addEventListener('gesturestart',e=>{
+    if(zoomViewport.contains(e.target)&&e.cancelable)e.preventDefault();
+  },{capture:true,passive:false});
+  document.addEventListener('gesturechange',e=>{
+    if(zoomViewport.contains(e.target)&&e.cancelable)e.preventDefault();
+  },{capture:true,passive:false});
   // Page content or container dimensions may change after text editing,
   // rotation, Stage Manager resizing, or an iPad split-screen transition.
   if(typeof ResizeObserver==='function'){
