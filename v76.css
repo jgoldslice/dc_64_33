@@ -296,3 +296,16 @@
 @media(prefers-reduced-motion:reduce){
   .v815-zoom-stage>.v76-page-surface{transition:none}
 }
+
+/* v8.17: fixed viewing frame. Enlarged paper scrolls within Notes, not the app. */
+#v815ZoomViewport{
+  position:relative;box-sizing:border-box;width:100%;
+  height:clamp(380px,68dvh,780px);min-height:0;
+  overflow:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x pan-y;scroll-behavior:auto;
+}
+#v815ZoomStage{margin:0;min-width:0}
+@media(max-width:500px){
+  #v815ZoomViewport{height:clamp(360px,64dvh,620px)}
+}
