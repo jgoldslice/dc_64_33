@@ -40,14 +40,14 @@ async function draw(page,pen=false){
     await page.mouse.move(end.x,end.y,{steps:5});
     await page.mouse.up();
   }
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   const geo=await page.evaluate(()=>{
     const ink=document.getElementById('v76Ink');
     const surface=document.getElementById('v76Surface');
-    const points=ink.querySelector('polyline').points;
+    const points=v6Project().notePages[0].strokes[0].points;
     const matrix=ink.getScreenCTM();
-    const first=new DOMPoint(points.getItem(0).x,points.getItem(0).y).matrixTransform(matrix);
-    const last=new DOMPoint(points.getItem(points.numberOfItems-1).x,points.getItem(points.numberOfItems-1).y).matrixTransform(matrix);
+    const first=new DOMPoint(points[0].x,points[0].y).matrixTransform(matrix);
+    const last=new DOMPoint(points.at(-1).x,points.at(-1).y).matrixTransform(matrix);
     return {
       first:{x:first.x,y:first.y},
       last:{x:last.x,y:last.y},
@@ -77,7 +77,7 @@ for(const viewport of [{width:834,height:1194},{width:1366,height:1024}]){
     await page.reload();
     await page.locator('[data-tab="brainstorm"]').click();
     await page.locator('[data-v6-project]').filter({hasText:'Pencil alignment test'}).click();
-    await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+    await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
     const saved=await page.evaluate(()=>v6Project().notePages[0].strokes);
     expect(saved.length).toBe(1);
   });
@@ -93,7 +93,7 @@ test('notebook stays aligned for pointer input on compact and resized tablet win
     const surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
     return ink.viewBox.baseVal.height===surface.clientHeight;
   })).toBe(true);
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
 });
 test('erase and photo have descriptive SVG icons, labels and retain existing behavior',async({page})=>{
   await page.setViewportSize({width:834,height:1194});
@@ -119,4 +119,38 @@ test('erase and photo have descriptive SVG icons, labels and retain existing beh
   });
   await photo.click();
   expect(await page.evaluate(()=>window.__imageInputActivated)).toBe(true);
+});
+
+test('new pen strokes are dark, smooth curves and a six-color palette persists across reloads',async({page})=>{
+  const errors=await openNotebook(page);
+  const colorButton=page.locator('#v818InkColor');
+  await colorButton.click();
+  const options=page.locator('#v818InkPalette [data-ink-color]');
+  await expect(options).toHaveCount(6);
+  const names=await options.evaluateAll(elements=>elements.map(el=>el.getAttribute('aria-label')));
+  expect(names).toEqual(['White','Black','Red','Yellow','Blue','Green']);
+  await page.locator('#v818InkPalette [aria-label="Blue"]').click();
+  await expect(colorButton).toHaveAttribute('aria-label','Pen color: Blue');
+  await expect(page.locator('[data-v76-mode="pen"]')).toHaveAttribute('aria-pressed','true');
+  const at=await contact(page);
+  await page.mouse.move(at.x,at.y);
+  await page.mouse.down();
+  for(let i=1;i<=8;i++)await page.mouse.move(at.x+i*8,at.y+Math.sin(i/2)*15);
+  await page.mouse.up();
+  const path=page.locator('#v76Ink path.v818-ink-stroke');
+  await expect(path).toHaveCount(1);
+  await expect(path).toHaveAttribute('stroke','#2362dd');
+  const d=await path.getAttribute('d');
+  expect(d).toContain(' Q');
+  expect(await page.evaluate(()=>v6Project().notePages[0].strokes[0].color)).toBe('#2362dd');
+  await page.reload();
+  await page.locator('[data-tab="brainstorm"]').click();
+  await page.locator('[data-v6-project]').filter({hasText:'Pencil alignment test'}).click();
+  await expect(page.locator('#v818InkColor')).toHaveAttribute('aria-label','Pen color: Blue');
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveAttribute('stroke','#2362dd');
+  await page.locator('#v818InkColor').click();
+  await page.locator('#v818InkPalette [aria-label="Black"]').click();
+  await expect(page.locator('#v818InkColor')).toHaveAttribute('aria-label','Pen color: Black');
+  await expect(page.locator('#v818InkPalette')).toBeHidden();
+  expect(errors).toEqual([]);
 });
