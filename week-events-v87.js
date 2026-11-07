@@ -152,6 +152,12 @@
     const dx=t.clientX-g.x,dy=t.clientY-g.y;
     if(!e.isTrusted&&Math.abs(dx)>64&&Math.abs(dx)>Math.abs(dy)*1.5&&
       Math.abs(dates.scrollLeft-g.left)<6)shiftDateWeek(dx<0?1:-1);
+    else{
+      // If the finger was held still, scrollend/debounce may already have
+      // fired while the gesture guard was active; settle after release.
+      clearTimeout(dateScrollTimer);
+      dateScrollTimer=setTimeout(settleDateScroll,280);
+    }
   },{passive:true});
   dates.addEventListener('touchcancel',()=>{dateGesture=null;},{passive:true});
 
@@ -230,6 +236,10 @@
       const dx=t.clientX-g.x,dy=t.clientY-g.y;
       if(!e.isTrusted&&Math.abs(dx)>=65&&Math.abs(dx)>Math.abs(dy)*1.5&&
          Math.abs(weekWindow.scrollLeft-g.left)<6)shiftCalendar(dx<0?1:-1);
+      else{
+        clearTimeout(calendarScrollTimer);
+        calendarScrollTimer=setTimeout(settleCalendar,280);
+      }
     },{passive:true});
     weekWindow.addEventListener('touchcancel',()=>{calendarGesture=null;},{passive:true});
     weekWindow.addEventListener('keydown',e=>{
