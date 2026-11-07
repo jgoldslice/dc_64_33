@@ -135,17 +135,58 @@
     el.style.left=Math.min(Math.max(0,Number(item.x)||0),maxX)+'px';
     el.style.top=Math.max(0,Number(item.y)||0)+'px';
     el.style.width=width+'px';
+    const height=Number(item.height);
+    const sized=Number.isFinite(height)&&height>=52;
+    el.style.height=sized?height+'px':'';
+    el.dataset.v811Sized=String(sized);
+    // Keep existing images in their natural aspect ratio until explicitly resized.
+  }
+  function selectBox(id){
+    selectedItemId=id==null?null:String(id);
+    for(const box of surface.querySelectorAll('.v76-item')){
+      const selected=box.dataset.v76Item===selectedItemId;
+      box.classList.toggle('v811-selected',selected);
+      box.setAttribute('aria-selected',String(selected));
+      if(!selected){
+        const rich=box.querySelector('.v76-rich');
+        if(rich){rich.contentEditable='false';box.classList.remove('v811-editing');}
+      }
+    }
+  }
+  function enterTextEdit(box,point){
+    if(!box?.classList.contains('v76-text'))return;
+    selectBox(box.dataset.v76Item);
+    box.classList.add('v811-editing');
+    const rich=box.querySelector('.v76-rich');
+    if(!rich)return;
+    rich.contentEditable='true';
+    rich.focus({preventScroll:true});
+    selectedText=rich;
+    const ctx=current(),obj=ctx?.page.objects.find(o=>String(o.id)===String(box.dataset.v76Item));
+    if(obj)textSizeSelect.value=sizeName(obj.fontSize);
+    if(point){
+      const range=document.caretRangeFromPoint?.(point.x,point.y);
+      if(range&&rich.contains(range.startContainer)){
+        const selection=window.getSelection();
+        selection?.removeAllRanges();selection?.addRange(range);
+      }
+    }
   }
   function addRenderedObject(item,p,page){
-    const box=document.createElement('div');box.className='v76-item v76-'+item.type;box.dataset.v76Item=item.id;
+    const box=document.createElement('div');
+    box.className='v76-item v76-'+item.type;
+    box.dataset.v76Item=item.id;
+    box.setAttribute('role','group');
+    box.setAttribute('aria-label',item.type==='image'?'Notebook picture':'Notebook text');
+    box.setAttribute('aria-selected','false');
     placeBox(box,item);
-    const grip=document.createElement('button');grip.type='button';grip.className='v76-grip';grip.dataset.v76Drag=item.id;
-    grip.textContent='⠿';grip.title='Drag left or right to resize';grip.setAttribute('aria-label','Resize '+item.type);box.append(grip);
-    const remove=document.createElement('button');remove.type='button';remove.className='v76-remove';remove.dataset.v76Remove=item.id;
-    remove.textContent='×';remove.setAttribute('aria-label','Remove '+item.type);
     if(item.type==='text'){
-      const el=document.createElement('div');el.className='v76-rich';el.dataset.v76Text=item.id;
-      el.contentEditable='true';el.spellcheck=true;el.setAttribute('role','textbox');el.setAttribute('aria-label','Editable note text');
+      const el=document.createElement('div');
+      el.className='v76-rich';
+      el.dataset.v76Text=item.id;
+      el.contentEditable='false';
+      el.spellcheck=true;el.setAttribute('role','textbox');
+      el.setAttribute('aria-label','Editable note text');
       el.dataset.fontSize=sizeName(item.fontSize);
       el.innerHTML=cleanHTML(item.html);
       el.addEventListener('focus',()=>{
@@ -155,15 +196,60 @@
       });
       box.append(el);
     }else if(item.type==='image'){
-      const img=document.createElement('img');img.className='v76-photo';img.alt=item.alt||'Note picture';img.draggable=false;img.dataset.v76ImageKey=item.key;
+      const img=document.createElement('img');
+      img.className='v76-photo';
+      img.alt=item.alt||'Note picture';
+      img.draggable=false;
+      img.dataset.v76ImageKey=item.key;
       box.append(img);
       const projectId=String(p.id),pageId=String(page.id),key=item.key;
       v6Blob('get',key).then(blob=>{
-        if(!blob||String(v6Project()?.id)!==projectId||String(current()?.page.id)!==pageId||!box.isConnected)return;
-        const url=URL.createObjectURL(blob);img.onload=()=>URL.revokeObjectURL(url);img.onerror=()=>URL.revokeObjectURL(url);img.src=url;
+        if(!blob||String(v6Project()?.id)!==projectId||
+           String(current()?.page.id)!==pageId||!box.isConnected)return;
+        const url=URL.createObjectURL(blob);
+        img.onload=()=>URL.revokeObjectURL(url);
+        img.onerror=()=>URL.revokeObjectURL(url);
+        img.src=url;
       }).catch(()=>{});
     }
-    box.append(remove);surface.append(box);
+    // A single tap selects; these 8 handles then resize in *both* directions.
+    // The center control can move the selected item without a long-press.
+    for(const edge of ['nw','n','ne','e','se','s','sw','w']){
+      const handle=document.createElement('button');
+      handle.type='button';
+      handle.className='v811-resize-handle v811-handle-'+edge;
+      handle.dataset.v811Resize=edge;
+      handle.setAttribute('aria-label','Resize '+item.type+' from '+({
+        nw:'top left',n:'top',ne:'top right',e:'right',
+        se:'bottom right',s:'bottom',sw:'bottom left',w:'left'
+      }[edge]));
+      handle.title='Drag to resize';
+      box.append(handle);
+    }
+    const move=document.createElement('button');
+    move.type='button';move.className='v811-move-control';
+    move.dataset.v811Move=String(item.id);
+    move.title='Drag to move';move.setAttribute('aria-label','Move '+item.type);
+    move.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M2 12h20M12 2l-3 3m3-3 3 3M12 22l-3-3m3 3 3-3M2 12l3-3m-3 3 3 3M22 12l-3-3m3 3-3 3"/></svg>';
+    box.append(move);
+    const actions=document.createElement('div');
+    actions.className='v811-object-actions';
+    if(item.type==='text'){
+      const edit=document.createElement('button');
+      edit.type='button';edit.textContent='Edit';
+      edit.dataset.v811Edit=String(item.id);
+      edit.setAttribute('aria-label','Edit selected note text');
+      actions.append(edit);
+    }
+    const remove=document.createElement('button');
+    remove.type='button';remove.className='v811-delete';
+    remove.dataset.v76Remove=item.id;
+    remove.textContent='Delete';
+    remove.setAttribute('aria-label','Delete selected '+item.type);
+    actions.append(remove);
+    box.append(actions);
+    surface.append(box);
+    if(selectedItemId===String(item.id))selectBox(selectedItemId);
   }
   function drawPage(p,page){
     surface.querySelectorAll('.v76-item').forEach(el=>el.remove());
