@@ -116,6 +116,9 @@ test('page turn snapshot remains aligned with the source view at the start of a 
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);
+  // Wait for Canvas's opening quote/animation to finish. Real swipes are
+  // intentionally blocked while an opening overlay is visible.
+  await expect(page.locator('#openingOverlay')).toBeHidden({timeout:10000});
   await page.evaluate(()=>window.scrollTo(0,0));
   const geometry=await page.evaluate(()=>{
     const target=document.querySelector('#today .view-header h1');
