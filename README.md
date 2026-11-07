@@ -4,6 +4,15 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.15 — Notebook zoom (50%–500%)
+
+- Notes now support **pinch-to-zoom** on touchscreens and **Ctrl/Command + trackpad wheel** inside the notebook, without zooming the rest of Canvas.
+- A compact **− / percentage / +** toolbar provides predictable steps of 50%, 75%, 100%, 125%, 150%, 175%, 200%, 250%, 300%, 400%, and 500%. Tap the displayed percentage to return to **100%**. Controls disable at the two limits.
+- Zoom scales the **whole ruled page**, including typed text, inserted pictures, handwritten strokes and selection handles. It reserves scaled scrolling space so the page stays scrollable even at 500%.
+- Uses the existing SVG screen transformation for Pencil positions; note insertion, moving, and resizing continue to use unscaled coordinates, so zoom **does not change stored sizes, locations, drawings, or backup data**.
+- Zoom is a temporary view setting, initially 100% and reset to 100% when switching pages. iPad and compact/phone layouts use the same behavior.
+- Automated browser tests exercise both boundaries, zoom steps, synthetic pinch events, simulated zoomed Pencil input, text box positioning, page switching and responsive layout. On-device Safari/Apple Pencil verification is still advisable.
+
 ## Canvas v8.14 — Wider Brainstorm notebook and compact project switching
 
 - Removed **A place to think** and **Capture what comes to mind** from the Brainstorm header while keeping its title.

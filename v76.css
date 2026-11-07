@@ -253,3 +253,46 @@
 @media(prefers-reduced-motion:reduce){
   .v811-page-row,.v811-resize-handle{transition:none}
 }
+
+
+/* Canvas v8.15 — zoom the entire notebook sheet (text, pictures and ink)
+   without changing note data. The stage supplies the layout space that CSS
+   transforms alone do not reserve, so 500% zoom remains scrollable. */
+.v815-zoom-stage{
+  position:relative;
+  width:100%;
+  margin:0 auto;
+  min-width:0;
+  isolation:isolate;
+}
+.v815-zoom-stage>.v76-page-surface{
+  position:absolute;
+  left:0;top:0;
+  transform-origin:0 0;
+  will-change:transform;
+}
+/* Browsers may scroll with one finger while a second finger starts a
+   notebook-specific pinch, rather than enlarging Safari's entire viewport. */
+#v815ZoomViewport{touch-action:pan-x pan-y;overscroll-behavior-x:contain}
+.v815-zoom-stage>.v76-page-surface:not(.v76-is-drawing){touch-action:pan-x pan-y}
+.v815-zoom-tools{margin-left:auto;flex:none}
+.v815-zoom-tools .v79-tool-buttons{gap:3px}
+.v815-zoom-tools .v79-tool-buttons button{
+  height:44px;min-height:44px;width:44px;min-width:44px;
+  border-radius:9px;font-weight:700;font-size:20px;
+}
+.v815-zoom-tools #v815ZoomReset{
+  width:auto;min-width:64px;padding:0 7px;
+  font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;
+  letter-spacing:-.1px;white-space:nowrap
+}
+.v815-zoom-tools button:disabled{opacity:.38;cursor:default}
+.v815-zoom-tools button:disabled:active{transform:none}
+@media(max-width:500px){
+  .v815-zoom-tools{margin-left:0}
+  .v815-zoom-tools .v79-tool-buttons button{min-width:44px;width:44px}
+  .v815-zoom-tools #v815ZoomReset{min-width:58px;width:auto}
+}
+@media(prefers-reduced-motion:reduce){
+  .v815-zoom-stage>.v76-page-surface{transition:none}
+}
