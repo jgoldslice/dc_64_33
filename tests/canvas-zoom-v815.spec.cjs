@@ -163,16 +163,16 @@ test('Pencil stroke follows actual screen contact after 200% zoom',async({page})
     await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:point.x+40,y:point.y+30,buttons:1,button:'left',pointerType:'pen'});
     await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:point.x+40,y:point.y+30,buttons:0,button:'left',clickCount:1,pointerType:'pen'});
   }finally{await cdp.detach();}
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   const result=await page.evaluate(()=>{
     const ink=document.getElementById('v76Ink');
-    const p=ink.querySelector('polyline').points.getItem(0);
+    const p=v6Project().notePages[0].strokes[0].points[0];
     const screen=new DOMPoint(p.x,p.y).matrixTransform(ink.getScreenCTM());
     return {x:screen.x,y:screen.y,points:v6Project().notePages[0].strokes[0].points};
   });
   expect(Math.hypot(result.x-point.x,result.y-point.y)).toBeLessThan(2.5);
   await page.locator('#v815ZoomReset').click();
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(1);
   expect(errors).toEqual([]);
 });
@@ -243,7 +243,7 @@ test('starting a two-finger pinch cancels a pending pen stroke instead of leavin
   const at=await visibleNoteContact(page);
   await page.mouse.move(at.x,at.y);
   await page.mouse.down();
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   await page.evaluate(()=>{
     const target=document.getElementById('v815ZoomViewport'),r=target.getBoundingClientRect();
     const p=new Touch({identifier:1,target,clientX:r.left+110,clientY:r.top+180});
@@ -254,7 +254,7 @@ test('starting a two-finger pinch cancels a pending pen stroke instead of leavin
       touches:[],changedTouches:[p,q],targetTouches:[]}));
   });
   await page.mouse.up();
-  await expect(page.locator('#v76Ink polyline')).toHaveCount(0);
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(0);
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(0);
   expect(errors).toEqual([]);
 });
