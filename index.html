@@ -319,6 +319,14 @@
 #v6ImageFull{max-width:100%;max-height:100%;object-fit:contain}
 @media(max-width:520px){.v6-library-gallery{gap:6px;grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+  /* Canvas v8.13: destructive action appears only after completing a task. */
+  .entry .task-row-actions{display:inline-flex;align-items:center;gap:7px;flex:none}
+  .entry .task-row-actions .edit-small{min-height:40px;padding:8px 4px;white-space:nowrap;cursor:pointer}
+  .entry .task-row-actions .delete-completed-task{color:#b0524d}
+  .entry .task-row-actions .delete-completed-task:hover,
+  .entry .task-row-actions .delete-completed-task:focus-visible{color:#dc7771;text-decoration:underline}
+  .entry .task-row-actions button:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:2px;border-radius:5px}
+
   </style>
 
   <link rel="stylesheet" href="v74.css">
@@ -598,7 +606,7 @@ function applyTheme(){
 }
 const roman=n=>{const symbols=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];let out='';for(const [v,a] of symbols)while(n>=v){out+=a;n-=v;}return out;};
 const ranked=()=>state.tasks.filter(t=>t.priority&&!t.done).sort((a,b)=>(a.priorityRank||9999)-(b.priorityRank||9999)||String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
-function taskRow(t){const rank=ranked().findIndex(x=>String(x.id)===String(t.id))+1;const detail=t.dueDate?'Deadline '+new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}>${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}<span class="entry-text">${esc(t.title)}${detail?'<small class="task-due">'+esc(detail)+'</small>':''}</span><button class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button></div>`;}
+function taskRow(t){const rank=ranked().findIndex(x=>String(x.id)===String(t.id))+1;const detail=t.dueDate?'Deadline '+new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}>${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}<span class="entry-text">${esc(t.title)}${detail?'<small class="task-due">'+esc(detail)+'</small>':''}</span><span class="task-row-actions"><button type="button" class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button>${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+esc(t.id)+'" aria-label="Delete completed task '+esc(t.title)+'">Delete</button>':''}</span></div>`;}
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}
 function habitToggle(h,date){return `<input type="checkbox" data-habit-check="${h.id}" data-date="${date}" aria-label="${esc(h.title)} ${date}" ${h.days[date]?'checked':''}>`;}
 function habitTable(week){const dates=Array.from({length:7},(_,i)=>iso(plusDays(week,i)));return `<div class="week-table"><span></span>${['M','T','W','T','F','S','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${state.habits.map(h=>`<span class="habit-name" title="${esc(h.title)}">${esc(h.title)}</span>${dates.map(date=>isScheduled(h,date)?`<label>${habitToggle(h,date)}</label>`:'<span class="off">·</span>').join('')}`).join('')}</div>`;}
@@ -1008,6 +1016,12 @@ document.addEventListener('click',(e)=>{
   if(e.target.closest('#addToday')){const options=$('todayAddOptions'),open=options.hidden;options.hidden=!open;$('addToday').setAttribute('aria-expanded',String(open));return;}
   if(!e.target.closest('.add-menu')&&$('todayAddOptions')&&!$('todayAddOptions').hidden){$('todayAddOptions').hidden=true;$('addToday').setAttribute('aria-expanded','false');}
   const mover=e.target.closest('[data-priority-move]');if(mover){const ordered=ranked(),i=ordered.findIndex(x=>String(x.id)===mover.dataset.priorityMove),j=i+Number(mover.dataset.dir);if(i>=0&&j>=0&&j<ordered.length){[ordered[i],ordered[j]]=[ordered[j],ordered[i]];ordered.forEach((x,k)=>x.priorityRank=k+1);save();render();}return;}
+  const deleteCompleted=e.target.closest('[data-delete-completed-task]');
+  if(deleteCompleted){
+    const task=state.tasks.find(t=>String(t.id)===String(deleteCompleted.dataset.deleteCompletedTask));
+    if(task?.done)deletePlannerItem('task',task.id);
+    return;
+  }
   const editTask=e.target.closest('[data-edit-task]');if(editTask){openModal('task',editTask.dataset.editTask);return;}
   const editEvent=e.target.closest('[data-edit-event]');if(editEvent){openModal('event',editEvent.dataset.editEvent);return;}
   const editHabit=e.target.closest('[data-edit-habit]');if(editHabit){openModal('habit',editHabit.dataset.editHabit);return;}
@@ -1093,7 +1107,9 @@ function deletePlannerItem(type,id,fromModal=false){
   if(!item)return false;
   const message=type==='goal'
     ?'Delete goal "'+item.title+'"? This cannot be undone. Connected tasks and habits will stay, but will no longer be linked to this goal.'
-    :'Delete this item? This cannot be undone.';
+    :type==='task'&&item.done
+      ?'Delete completed task "'+item.title+'"? This cannot be undone.'
+      :'Delete this item? This cannot be undone.';
   if(!confirm(message))return false;
   if(type==='goal'){
     for(const t of state.tasks.filter(t=>String(t.goalId)===String(id))){t.goalId='';t.actionId='';t.actionIndex='';}
