@@ -257,6 +257,41 @@
     for(const item of page.objects||[])addRenderedObject(item,p,page);
     strokesView(page);
   }
+  function renderPageList(p){
+    if(!pageList)return;
+    pageList.replaceChildren();
+    for(const page of p.notePages||[]){
+      const active=String(page.id)===String(p.activeNotePageId);
+      const row=document.createElement('div');
+      row.className='v811-page-row';
+      row.classList.toggle('v811-current',active);
+      const open=document.createElement('button');
+      open.type='button';
+      open.className='v811-page-link';
+      open.dataset.v811PageId=String(page.id);
+      open.setAttribute('aria-current',active?'page':'false');
+      const icon=document.createElement('span');
+      icon.className='v811-page-icon';icon.setAttribute('aria-hidden','true');
+      icon.textContent='▤';
+      const copy=document.createElement('span');copy.className='v811-page-labels';
+      const title=document.createElement('strong');
+      title.textContent=page.title||'Untitled page';
+      const preview=document.createElement('small');
+      const words=(page.objects||[]).filter(o=>o.type==='text')
+        .map(o=>String(o.html||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim())
+        .filter(Boolean).join(' ');
+      preview.textContent=words?words.slice(0,62):'No additional text';
+      copy.append(title,preview);open.append(icon,copy);
+      const rename=document.createElement('button');
+      rename.type='button';rename.className='v811-page-rename';
+      rename.dataset.v811RenameId=String(page.id);
+      rename.textContent='•••';
+      rename.title='Rename page';
+      rename.setAttribute('aria-label','Rename '+(page.title||'page'));
+      row.append(open,rename);
+      pageList.append(row);
+    }
+  }
   function renderPage(p,force=false){
     initializePages(p);
     const page=p.notePages.find(pg=>String(pg.id)===String(p.activeNotePageId))||p.notePages[0];
@@ -264,12 +299,13 @@
     // After a full backup import, ids may be identical even though the
     // underlying page objects (including attachment keys) have changed.
     if(!force&&key===lastKey&&page===lastPageRef)return;
-    lastKey=key;lastPageRef=page;selectedText=null;
+    lastKey=key;lastPageRef=page;selectedText=null;selectedItemId=null;
     pageSelect.replaceChildren();
     p.notePages.forEach(pg=>{
       const opt=document.createElement('option');opt.value=pg.id;opt.textContent=pg.title;pageSelect.append(opt);
     });
     pageSelect.value=String(page.id);
+    renderPageList(p);
     textSizeSelect.value=sizeName(page.defaultTextSize);
     drawPage(p,page);applyMode('select');
   }
@@ -300,6 +336,31 @@
   pageSelect.addEventListener('change',()=>{
     const ctx=current();if(!ctx)return;ctx.p.activeNotePageId=pageSelect.value;persist();renderPage(ctx.p,true);
   });
+  // The iPad page rail and compact top selector use the same page data and
+  // the existing New/Rename actions, so backups and notes remain unchanged.
+  document.getElementById('v811NewPage').addEventListener('click',()=>{
+    document.getElementById('v76NewPage').click();
+  });
+  pageList.addEventListener('click',e=>{
+    const button=e.target.closest('button');if(!button)return;
+    if(button.dataset.v811PageId){
+      const id=button.dataset.v811PageId;
+      if(id===pageSelect.value)return;
+      pageSelect.value=id;
+      pageSelect.dispatchEvent(new Event('change',{bubbles:true}));
+      return;
+    }
+    if(button.dataset.v811RenameId){
+      const ctx=current(),pg=ctx?.p.notePages.find(pg=>String(pg.id)===button.dataset.v811RenameId);
+      if(!pg)return;
+      const text=prompt('Rename page',pg.title||'Page');
+      if(text===null)return;
+      const title=text.trim().slice(0,80);
+      if(!title)return;
+      pg.title=title;persist();renderPage(ctx.p,true);
+    }
+  });
+
   document.getElementById('v76NewPage').addEventListener('click',()=>{
     const ctx=current();if(!ctx)return;
     const n=ctx.p.notePages.length+1;
