@@ -61,7 +61,7 @@ test('failed planner save does not allow an attached file to be deleted',async({
   expect(result).toEqual({linked:true,hasBlob:true,persisted:true});
 });
 
-test('interrupted Pencil stroke leaves no saved or visible mark',async({page})=>{
+test('interrupted Pencil stroke retains ink already drawn',async({page})=>{
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Pencil cancel test'));
@@ -84,8 +84,8 @@ test('interrupted Pencil stroke leaves no saved or visible mark',async({page})=>
   })));
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:p.x+65,y:p.y+15,button:'left',buttons:0,clickCount:1,pointerType:'pen'});
   await cdp.detach();
-  await expect(ink.locator('path.v818-ink-stroke')).toHaveCount(0);
-  expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(0);
+  await expect(ink.locator('path.v818-ink-stroke')).toHaveCount(1);
+  expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(1);
 });
 
 test('failed upload index save preserves the file in memory for a later retry',async({page})=>{
@@ -112,4 +112,32 @@ test('failed upload index save preserves the file in memory for a later retry',a
         project.library.some(item=>item.title==='Uncommitted.txt'))};
   });
   expect(result).toEqual({hasRecord:true,hasBytes:true,retrySaved:true,persisted:true});
+});
+
+test('notebook has no instruction paragraph and can save ink to project library',async({page})=>{
+  await page.goto(base);
+  await page.locator('[data-tab="brainstorm"]').click();
+  page.once('dialog',dialog=>dialog.accept('Sketch export'));
+  await page.locator('#newProject').click();
+  await expect(page.locator('.v76-tip')).toHaveCount(0);
+  await expect(page.locator('#v819SaveSketch')).toBeVisible();
+  await page.evaluate(()=>{
+    const p=v6Project();
+    p.notePages[0].strokes.push({id:'test-ink',points:[{x:10,y:20},{x:40,y:55}],width:3,color:'#111111'});
+    save();
+  });
+  // Reopen notebook to paint the seeded ink before SVG serialization.
+  await page.locator('[data-tab="today"]').click();
+  await page.locator('[data-tab="brainstorm"]').click();
+  page.once('dialog',dialog=>dialog.accept('Notebook sketch'));
+  await page.locator('#v819SaveSketch').click();
+  await expect.poll(()=>page.evaluate(()=>v6Project().library.filter(x=>x.type==='sketch').length)).toBe(1);
+  const result=await page.evaluate(async()=>{
+    const r=v6Project().library.find(x=>x.type==='sketch');
+    const blob=await v6Blob('get',r.key);
+    return {type:blob?.type,size:blob?.size,strokes:v6Project().notePages[0].strokes.length};
+  });
+  expect(result.type).toBe('image/png');
+  expect(result.size).toBeGreaterThan(100);
+  expect(result.strokes).toBe(1);
 });
