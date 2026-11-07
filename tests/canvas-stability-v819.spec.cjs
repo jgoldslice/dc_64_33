@@ -121,14 +121,13 @@ test('notebook has no instruction paragraph and can save ink to project library'
   await page.locator('#newProject').click();
   await expect(page.locator('.v76-tip')).toHaveCount(0);
   await expect(page.locator('#v819SaveSketch')).toBeVisible();
-  await page.evaluate(()=>{
-    const p=v6Project();
-    p.notePages[0].strokes.push({id:'test-ink',points:[{x:10,y:20},{x:40,y:55}],width:3,color:'#111111'});
-    save();
-  });
-  // Reopen notebook to paint the seeded ink before SVG serialization.
-  await page.locator('[data-tab="today"]').click();
-  await page.locator('[data-tab="brainstorm"]').click();
+  await page.locator('[data-v76-mode="pen"]').click();
+  const rect=await page.locator('#v76Ink').boundingBox();
+  await page.mouse.move(rect.x+rect.width/2,rect.y+80);
+  await page.mouse.down();
+  await page.mouse.move(rect.x+rect.width/2+50,rect.y+100,{steps:5});
+  await page.mouse.up();
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   page.once('dialog',dialog=>dialog.accept('Notebook sketch'));
   await page.locator('#v819SaveSketch').click();
   await expect.poll(()=>page.evaluate(()=>v6Project().library.filter(x=>x.type==='sketch').length)).toBe(1);
