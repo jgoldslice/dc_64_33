@@ -258,3 +258,19 @@ test('starting a two-finger pinch cancels a pending pen stroke instead of leavin
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(0);
   expect(errors).toEqual([]);
 });
+
+
+test('notebook paper stays unruled at every zoom level',async({page})=>{
+  await openNotebook(page,'Blank Paper');
+  for(const zoom of ['50%','100%','250%']){
+    if(zoom==='50%')await page.locator('#v815ZoomOut').click();
+    if(zoom==='100%')await page.locator('#v815ZoomReset').click();
+    if(zoom==='250%'){
+      await page.locator('#v815ZoomIn').click();
+      await page.locator('#v815ZoomIn').click();
+      await page.locator('#v815ZoomIn').click();
+      await page.locator('#v815ZoomIn').click();
+    }
+    await expect(page.locator('#v76Surface')).toHaveCSS('background-image','none');
+  }
+});
