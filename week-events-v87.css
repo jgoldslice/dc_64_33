@@ -79,3 +79,36 @@
 @media(prefers-reduced-motion:reduce){
   #weekGrid [data-week-event-date]{transition:none}
 }
+
+/* Canvas v8.16 — horizontal week navigation, compact arrows and future dates. */
+.v816-calendar-tools{display:flex;align-items:center;gap:6px;margin-left:auto}
+.v816-calendar-arrow,
+.v816-modal-week-controls button{
+  display:grid;place-items:center;flex:none;
+  width:44px;height:44px;min-width:44px;min-height:44px;
+  padding:0;border:1px solid var(--line);border-radius:12px;
+  background:var(--surface);color:var(--secondary-ui);
+  font:normal 24px/1 system-ui,sans-serif;cursor:pointer
+}
+.v816-calendar-arrow:focus-visible,
+.v816-modal-week-controls button:focus-visible{
+  outline:3px solid var(--secondary-ui);outline-offset:2px
+}
+.v816-week-swipe{touch-action:pan-y;overscroll-behavior-x:contain}
+.v816-modal-week-controls{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;margin:-8px 0 -8px
+}
+.v816-modal-week-controls span{
+  flex:1;min-width:0;text-align:center;color:var(--muted);
+  font-size:12px;font-weight:650;line-height:1.4
+}
+.v87-event-days{touch-action:pan-y}
+@media(max-width:420px){
+  .v816-calendar-tools{gap:4px}
+  .v816-calendar-arrow{width:37px;min-width:37px;height:44px}
+  .v816-modal-week-controls span{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  .v816-week-swipe,.v87-event-days{scroll-behavior:auto}
+}
