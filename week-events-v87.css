@@ -112,3 +112,52 @@
 @media(prefers-reduced-motion:reduce){
   .v816-week-swipe,.v87-event-days{scroll-behavior:auto}
 }
+
+/* Canvas v8.17 — native horizontally scrollable, snapping week strips.
+ * The note editor, modal fields and outer app never have to translate. */
+.v817-date-heading{
+  margin:-8px 0 -12px;
+  display:flex;justify-content:center;min-height:20px;
+}
+.v817-date-heading span{font-size:13px;font-weight:700}
+.v817-date-scroller{
+  display:block;
+  width:100%;
+  min-width:0;
+  overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  touch-action:pan-x pan-y;
+  border-radius:10px;
+}
+.v817-date-scroller::-webkit-scrollbar{display:none}
+.v817-date-track{display:flex;width:100%;align-items:stretch}
+.v817-date-week{
+  flex:0 0 100%;width:100%;min-width:0;
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:4px;scroll-snap-align:start;scroll-snap-stop:always;
+}
+.v817-date-week .v87-day-option{min-width:0}
+.v817-date-scroller:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:2px}
+.v817-week-viewport{
+  width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;touch-action:pan-x pan-y;
+  border-radius:12px;
+}
+.v817-week-viewport::-webkit-scrollbar{display:none}
+.v817-week-track{display:flex;width:100%;align-items:stretch}
+.v817-week-panel{
+  flex:0 0 100%;min-width:0;width:100%;
+  scroll-snap-align:start;scroll-snap-stop:always;
+}
+.v817-week-panel[aria-hidden="true"]{
+  pointer-events:none;user-select:none;-webkit-user-select:none;
+}
+@media(prefers-reduced-motion:reduce){
+  .v817-date-scroller,.v817-week-viewport{scroll-behavior:auto}
+}
