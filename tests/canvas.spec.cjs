@@ -235,31 +235,29 @@ test('Text stays transparent over images and size choices persist independently'
 
 
 
-test('Notebook touchstart cancels the native long-press selection gesture', async ({page}) => {
+test('Selected notebook controls prevent native long-press selection but text editing stays native',async({page})=>{
   const errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept('Touch Safety Test'));
   await page.locator('#newProject').click();
-  const rich=page.locator('#v76Surface .v76-text .v76-rich').first();
-  await rich.click({position:{x:34,y:13}});await rich.click({position:{x:34,y:13}});
-  await expect(rich).toHaveAttribute('contenteditable','true');
-  await rich.fill('iPhone selection protection');
-  // Exit editing, then select to exercise the handles' touch-selection guard.
-  await page.locator('#v76Surface').click({position:{x:15,y:590}});
-  await rich.click();
-  const rect=await rich.boundingBox();
-  // Select the object first; its handles now suppress native selection,
-  // whereas unselected text and blank-paper scrolling remain usable.
+  const box=page.locator('#v76Surface .v76-text').first();
+  const rich=box.locator('.v76-rich');
   await rich.click({position:{x:34,y:13}});
-  const canceled=await page.evaluate(({x,y})=>{
-    const target=document.elementFromPoint(x,y);
+  await expect(box).toHaveClass(/v811-selected/);
+  const dispatch=(selector)=>page.evaluate(selector=>{
+    const target=document.querySelector(selector);
+    if(!target)throw Error('Touch target missing: '+selector);
+    const bounds=target.getBoundingClientRect(),x=bounds.left+bounds.width/2,y=bounds.top+bounds.height/2;
     const touch=new Touch({identifier:99,target,clientX:x,clientY:y});
-    const event=new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[touch],changedTouches:[touch],targetTouches:[touch]});
+    const event=new TouchEvent('touchstart',{bubbles:true,cancelable:true,
+      touches:[touch],changedTouches:[touch],targetTouches:[touch]});
     target.dispatchEvent(event);return event.defaultPrevented;
-  },{x:rect.x+30,y:rect.y+12});
-  expect(canceled).toBe(true);
-  expect(await page.evaluate(()=>window.getSelection()?.toString()||'')).toBe('');
+  },selector);
+  expect(await dispatch('.v811-selected .v811-move-control')).toBe(true);
+  await rich.click({position:{x:34,y:13}});
+  await expect(rich).toHaveAttribute('contenteditable','true');
+  expect(await dispatch('.v811-editing .v76-rich')).toBe(false);
   expect(errors).toEqual([]);
 });
