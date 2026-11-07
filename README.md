@@ -4,11 +4,19 @@
 
 Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Canvas v8.12 — Textbox tool and deliberate note insertion
+
+- Reintroduced the **Textbox** icon to the notebook's Text tools. Select it, then tap empty paper to insert a text box at that point. The new box opens for editing and the tool automatically returns to Select, preventing accidental additional boxes.
+- When Textbox isn't selected, tapping empty paper only deselects the current object and dismisses its text keyboard. It never creates a new box.
+- Tapping existing text or images never inserts another box, even if the Textbox tool is armed; objects remain selectable, movable, resizable, and editable.
+- Pressing the bullet-list formatting button or changing text size without an active editor does not create extra text boxes.
+- Existing project notes, pictures, strokes, and backup formats are unchanged. Phone and iPad layouts use the same rule.
+
 ## Canvas v8.11 — OneNote-style notebook editing and page navigation
 
 - **Select instead of long-press:** Tap any notebook text box or picture once to reveal a selection outline, eight edge/corner resize handles, a center Move control, and a small Edit (text) / Delete action bar. The previous six-dot grip is removed.
 - Drag the selected object or its Move control to reposition it. Use left/right, top/bottom, or corner handles to resize from any edge; both positions and sizes persist in the existing notebook project.
-- Tap selected text again, or choose Edit, to type normally. Blank-page tapping still creates a new text box. Pen and Eraser modes remain independent of object selection and keep their existing ink behavior.
+- Tap selected text again, or choose Edit, to type normally. New text boxes are added only with the explicit Textbox tool. Pen and Eraser modes remain independent of object selection and keep their existing ink behavior.
 - **Named page list on iPad:** A slim vertical Pages sidebar appears to the left of the ruled notebook whenever the actual notebook is wide enough. Tap to switch pages, **+** to add, and **•••** beside a page to rename it. It shares the existing note-page data with the dropdown, rather than creating a second copy.
 - Narrow Split View, Stage Manager, and iPhone windows retain the compact top page picker. The page list adapts to the notebook's available width, not a guessed device type.
 - Objects may now store an optional explicit height after vertical resizing; old content without it keeps the original natural height. Backup files continue using the existing Canvas state format.

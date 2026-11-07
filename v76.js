@@ -13,6 +13,8 @@
     '<button type="button" id="v76DeletePage">Delete page</button></div></div>'+
     '<div class="v76-toolbar" role="toolbar" aria-label="Notebook tools">'+
       '<div class="v79-tool-group" role="group" aria-label="Text"><div class="v79-tool-buttons">'+
+        '<button type="button" data-v76-mode="text" class="v812-textbox-button" aria-label="Textbox: tap the page to insert a text box" aria-pressed="false" title="Insert textbox">'+
+          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M7 9h10M12 9v7"/></svg></button>'+
         '<button type="button" data-v76-format="insertUnorderedList" aria-label="Add or remove bullet list" title="Bullet list">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="4.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/></svg>'+
         '</button><select id="v80TextSize" class="v80-text-size" aria-label="Text size" title="Text size">'+
@@ -29,7 +31,7 @@
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></button>'+
       '</div></div>'+
     '</div><div class="v811-note-body"><aside class="v811-page-rail" aria-label="Notebook pages"><div class="v811-pages-heading"><strong>Pages</strong><button type="button" id="v811NewPage" aria-label="Add note page" title="Add page">+</button></div><div id="v811PageList" class="v811-page-list"></div></aside><div class="v76-page-wrap"><div id="v76Surface" class="v76-page-surface" aria-label="Freeform notebook page"><svg id="v76Ink" xmlns="http://www.w3.org/2000/svg"></svg></div></div></div>'+
-    '<p class="v76-tip">Tap an object to select it, drag to move, or use the handles to resize. Tap selected text again to edit. Tap blank space to type. Saves automatically.</p>'+
+    '<p class="v76-tip">Tap an object to select it, drag to move, or use the handles to resize. Tap selected text again to edit. Select Textbox, then tap empty paper to add a new text box. Tap empty paper otherwise to deselect. Saves automatically.</p>'+
     '<input type="file" id="v76ImageInput" accept="image/*" hidden></div>';
   pane.insertAdjacentHTML('beforeend',editorHtml);
   const root=document.getElementById('v76Editor'),surface=document.getElementById('v76Surface'),ink=document.getElementById('v76Ink');
@@ -332,8 +334,18 @@
     return {x:Math.round(e.clientX-rect.left),y:Math.round(e.clientY-rect.top)};
   }
   surface.addEventListener('click',e=>{
-    if(mode==='pen'||mode==='erase')return;
-    if(e.target===surface||e.target===ink){const pt=position(e);createText(Math.max(8,pt.x-10),Math.max(8,pt.y-20));}
+    if(e.target!==surface&&e.target!==ink)return; // Existing objects never insert text.
+    if(mode==='text'){
+      const pt=position(e);
+      createText(Math.max(8,pt.x-10),Math.max(8,pt.y-20));
+      // createText returns to Select, preventing accidental extra boxes.
+    }else if(mode==='select'){
+      selectBox(null);
+      // Dismiss the keyboard when tapping empty paper while editing text.
+      const active=document.activeElement;
+      if(active?.classList?.contains('v76-rich'))active.blur();
+      selectedText=null;
+    }
   });
   pageSelect.addEventListener('change',()=>{
     const ctx=current();if(!ctx)return;ctx.p.activeNotePageId=pageSelect.value;persist();renderPage(ctx.p,true);
@@ -412,13 +424,8 @@
   root.addEventListener('click',e=>{
     const format=e.target.closest('[data-v76-format]');
     if(format){
-      let el=selectionInEditor();
-      if(!el){
-        const ctx=current();if(!ctx)return;
-        const nextY=Math.max(24,...ctx.page.objects.map(o=>(Number(o.y)||0)+(o.type==='image'?250:110)+14));
-        createText(14,nextY);
-        el=selectionInEditor();
-      }
+      // Formatting an existing box must never create a new one implicitly.
+      const el=selectionInEditor();
       if(!el)return;
       el.focus();
       document.execCommand(format.dataset.v76Format,false,null);
