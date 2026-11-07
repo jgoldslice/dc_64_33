@@ -22,6 +22,25 @@ async function zoomTo(page,target){
   }
   throw Error('Zoom '+target+'% was not reached');
 }
+async function visibleNoteContact(page){
+  // A 2x sheet is clipped by its horizontal scroll viewport; choosing a
+  // point on the full transformed SVG rect can click *under* the Pages rail.
+  await page.evaluate(()=>document.getElementById('v815ZoomViewport')
+    .scrollIntoView({block:'start',behavior:'instant'}));
+  return page.evaluate(()=>{
+    const paper=document.getElementById('v76Surface').getBoundingClientRect();
+    const viewport=document.getElementById('v815ZoomViewport').getBoundingClientRect();
+    const left=Math.max(paper.left,viewport.left,0)+12;
+    const right=Math.min(paper.right,viewport.right,innerWidth)-12;
+    const top=Math.max(paper.top,viewport.top,0)+12;
+    const bottom=Math.min(paper.bottom,viewport.bottom,innerHeight)-12;
+    if(right-left<80||bottom-top<170)throw Error('Not enough visible note page to test pointer events');
+    return {
+      x:Math.min(right-18,left+Math.min(145,(right-left)/3)),
+      y:Math.min(bottom-18,top+Math.min(240,(bottom-top)*.55))
+    };
+  });
+}
 async function metrics(page){
   return page.evaluate(()=>{
     const viewport=document.getElementById('v815ZoomViewport');
@@ -133,12 +152,10 @@ test('Pencil stroke follows actual screen contact after 200% zoom',async({page})
   const errors=await openNotebook(page);
   await zoomTo(page,200);
   await page.locator('[data-v76-mode="pen"]').click();
-  const point=await page.evaluate(()=>{
-    const rect=document.getElementById('v76Ink').getBoundingClientRect();
-    const x=Math.max(70,Math.min(innerWidth-120,rect.left+Math.min(180,rect.width*.35)));
-    const y=Math.max(100,Math.min(innerHeight-120,Math.max(rect.top+80,220)));
-    return {x,y};
-  });
+  const point=await visibleNoteContact(page);
+  expect(await page.evaluate(point=>{
+    return document.elementFromPoint(point.x,point.y)?.closest('#v76Ink')!==null;
+  },point)).toBe(true);
   const cdp=await page.context().newCDPSession(page);
   try{
     await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:point.x,y:point.y,buttons:0,pointerType:'pen'});
@@ -165,11 +182,10 @@ test('Textbox insertion uses correct note coordinates at 200% and does not creat
   await zoomTo(page,200);
   await page.locator('[data-v76-mode="text"]').click();
   const before=await page.locator('#v76Surface .v76-text').count();
-  const screen=await page.evaluate(()=>{
-    const s=document.getElementById('v76Surface'),r=s.getBoundingClientRect();
-    return {x:Math.max(65,Math.min(innerWidth-120,r.left+115)),
-      y:Math.max(130,Math.min(innerHeight-130,Math.max(r.top+200,300)))};
-  });
+  const screen=await visibleNoteContact(page);
+  expect(await page.evaluate(screen=>{
+    return document.elementFromPoint(screen.x,screen.y)?.id==='v76Surface';
+  },screen)).toBe(true);
   await page.mouse.click(screen.x,screen.y);
   await expect(page.locator('#v76Surface .v76-text')).toHaveCount(before+1);
   const saved=await page.evaluate(screen=>{
@@ -224,10 +240,7 @@ test('responsive iPad, compact Split View and phone layouts retain zoom controls
 test('starting a two-finger pinch cancels a pending pen stroke instead of leaving a stray mark',async({page})=>{
   const errors=await openNotebook(page,'Pinch Drawing Safety');
   await page.locator('[data-v76-mode="pen"]').click();
-  const at=await page.locator('#v76Ink').evaluate(el=>{
-    const r=el.getBoundingClientRect();
-    return {x:r.left+Math.min(r.width/3,150),y:Math.min(innerHeight-110,r.top+160)};
-  });
+  const at=await visibleNoteContact(page);
   await page.mouse.move(at.x,at.y);
   await page.mouse.down();
   await expect(page.locator('#v76Ink polyline')).toHaveCount(1);
