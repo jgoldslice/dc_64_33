@@ -139,6 +139,7 @@
     const sized=Number.isFinite(height)&&height>=52;
     el.style.height=sized?height+'px':'';
     el.dataset.v811Sized=String(sized);
+    el.classList.toggle('v811-near-top',(Number(item.y)||0)<62);
     // Keep existing images in their natural aspect ratio until explicitly resized.
   }
   function selectBox(id){
