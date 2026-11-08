@@ -1,4 +1,4 @@
-# Canvas — Version 5
+# Blueprint — Version 5
 
 > “Life is a canvas. So by God, start painting.”
 
