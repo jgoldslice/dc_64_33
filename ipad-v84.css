@@ -51,9 +51,9 @@
   }
   .canvas-ipad-collapse{
     display:grid;place-items:center;position:fixed;z-index:31;
-    left:calc(var(--canvas-ipad-rail-width) - 45px);
+    left:calc(var(--canvas-ipad-rail-width) - 51px);
     top:calc(env(safe-area-inset-top) + 30px);
-    width:32px;height:38px;
+    width:44px;height:44px;
     border:0;border-radius:10px;background:transparent;color:var(--muted);
     padding:7px;transition:left 200ms ease
   }
@@ -80,7 +80,7 @@
     flex-direction:column;gap:8px;padding:4px 0 42px;min-height:103px
   }
   body.canvas-ipad-sidebar-collapsed .canvas-ipad-collapse{
-    left:calc(var(--canvas-ipad-rail-width) / 2 - 16px);
+    left:calc(var(--canvas-ipad-rail-width) / 2 - 22px);
     top:calc(env(safe-area-inset-top) + 67px)
   }
   body.canvas-ipad-sidebar-collapsed .canvas-ipad-brand-copy,
@@ -100,7 +100,10 @@
   /* Project switching now belongs in the workspace header. */
   .v76-page-wrap{max-width:100%}
   .v76-page-surface{min-height:800px}
-  .v76-toolbar{gap:17px;overflow-x:auto}
+  .v76-toolbar{gap:10px;overflow-x:auto}
+  .v76-toolbar button,.v76-toolbar select{min-height:44px}
+  .v76-toolbar button{min-width:44px}
+  .v87-event-back .v87-event-sheet{width:min(100%,480px)}
   .v76-page-controls{gap:10px}
   .v76-page-controls select{max-width:410px}
   .v76-grip,.v76-remove{min-width:36px;min-height:36px}
@@ -109,13 +112,14 @@
   .modal{max-width:min(670px,calc(100vw - var(--canvas-ipad-rail-width) - 70px))}
 }
 @media (min-width:980px) and (min-height:600px){
-  #today>.stack{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #today>.stack>section:nth-child(2),
-  #today>.stack>section:last-child{grid-column:1/-1}
+  #today>.stack{
+    grid-template-columns:minmax(0,3fr) minmax(0,2fr);
+    align-items:start
+  }
+  #today>.stack>section:has(#todayGlance){grid-row:span 2}
+  #today>.stack>section:has(#v77TodayProjects){grid-column:1/-1}
   .v6-project-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .week-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-}
-@media (min-width:1040px) and (max-width:1179px) and (min-height:600px){
 }
 @media (min-width:1180px) and (min-height:600px){
   .week-layout{grid-template-columns:minmax(240px,310px) minmax(0,1fr);align-items:start}
