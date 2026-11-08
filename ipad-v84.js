@@ -9,7 +9,7 @@
   header.innerHTML=
     '<div class="canvas-ipad-brand" aria-hidden="true">'+
       '<span class="canvas-ipad-brand-mark">◒</span>'+
-      '<span class="canvas-ipad-brand-copy"><strong>Canvas</strong><small>Shape your days</small></span>'+
+      '<span class="canvas-ipad-brand-copy"><strong>Blueprint</strong></span>'+
     '</div>';
   nav.prepend(header);
   const footer=document.createElement('p');
