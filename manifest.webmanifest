@@ -1,5 +1,5 @@
 {
-  "name": "Canvas",
+  "name": "Blueprint",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f7f4ed",
@@ -11,5 +11,6 @@
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "short_name": "Blueprint"
 }

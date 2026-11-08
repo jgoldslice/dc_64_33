@@ -6,7 +6,8 @@
   <meta name="theme-color" content="#f7f4ed">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Canvas</title>
+  <title>Blueprint</title>
+  <meta name="apple-mobile-web-app-title" content="Blueprint">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <style>
@@ -356,7 +357,7 @@
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
 </svg>
 <div class="shell">
-  <header class="app-header"><button type="button" class="palette-launch" id="paletteLauncher" aria-label="Customize colors" title="Customize colors"><svg class="palette-logo" viewBox="0 0 48 48" aria-hidden="true"><path class="palette-base" d="M24 4C12.9 4 4 12.9 4 24s8.9 20 20 20h3.8c3.7 0 6.3-2.5 6.3-5.6 0-2-1.4-3.2-1.4-5.1 0-2.4 1.8-4.2 4.3-4.2h1.3c3.6 0 5.7-2.2 5.7-5.7C44 12.7 35.1 4 24 4Z"/><circle class="palette-dot" cx="14" cy="21" r="3.2"/><circle class="palette-dot" cx="20" cy="12.6" r="3.2"/><circle class="palette-dot" cx="29.7" cy="14" r="3.2"/><circle class="palette-dot" cx="19.2" cy="31" r="3.2"/><circle class="palette-hole" cx="37.2" cy="35.2" r="3"/></svg></button><button type="button" class="brand brand-home" id="canvasHomeButton" aria-label="Go to Today (Canvas Home)">Canvas</button></header>
+  <header class="app-header"><button type="button" class="palette-launch" id="paletteLauncher" aria-label="Customize colors" title="Customize colors"><svg class="palette-logo" viewBox="0 0 48 48" aria-hidden="true"><path class="palette-base" d="M24 4C12.9 4 4 12.9 4 24s8.9 20 20 20h3.8c3.7 0 6.3-2.5 6.3-5.6 0-2-1.4-3.2-1.4-5.1 0-2.4 1.8-4.2 4.3-4.2h1.3c3.6 0 5.7-2.2 5.7-5.7C44 12.7 35.1 4 24 4Z"/><circle class="palette-dot" cx="14" cy="21" r="3.2"/><circle class="palette-dot" cx="20" cy="12.6" r="3.2"/><circle class="palette-dot" cx="29.7" cy="14" r="3.2"/><circle class="palette-dot" cx="19.2" cy="31" r="3.2"/><circle class="palette-hole" cx="37.2" cy="35.2" r="3"/></svg></button><button type="button" class="brand brand-home" id="canvasHomeButton" aria-label="Go to Today (Blueprint Home)">Blueprint</button></header>
   <main>
     <section class="view active" id="today" aria-labelledby="todayTitle">
       <div class="view-header"><div><div class="eyebrow">Your day, simplified</div><h1 id="todayTitle">Today</h1><p class="muted" id="todayDate"></p></div></div>
@@ -378,11 +379,11 @@
       </div>
     </section>
     <section class="view" id="myplan" aria-labelledby="myplanTitle">
-      <div class="view-header"><div><div class="eyebrow">Everything in one place</div><h1 id="myplanTitle">Blueprint</h1></div></div>
-      <div class="segmented plan-tabs" role="tablist" aria-label="Blueprint sections"><button type="button" data-plan-tab="tasks" role="tab" class="selected" aria-selected="true">Tasks</button><button type="button" data-plan-tab="goals" role="tab" aria-selected="false">Goals</button><button type="button" data-plan-tab="habits" role="tab" aria-selected="false">Habits</button></div>
-    <section class="plan-panel active" id="tasks" aria-label="Tasks"><div class="plan-toolbar"><span class="muted">All tasks and priorities</span><button class="primary-button" data-open="task">+ Task</button></div><div class="stack"><section class="card"><div class="card-heading"><h2>Priority Order</h2></div><div id="tasksPriority"></div></section><section class="card"><div class="card-heading"><h2>All Tasks</h2></div><div id="allTasks"></div></section></div></section>
-    <section class="plan-panel" id="goals" aria-label="Goals">
-      <div class="plan-toolbar"><span class="muted">Goals & steps</span><button class="primary-button" data-open="goal">+ Goal</button></div>
+      <div class="view-header"><div><h1 id="myplanTitle">Goals</h1></div></div>
+      <div class="segmented plan-tabs" role="tablist" aria-label="Goals, tasks, and habits sections"><button type="button" data-plan-tab="tasks" role="tab" aria-selected="false">Tasks</button><button type="button" data-plan-tab="goals" role="tab" class="selected" aria-selected="true">Goals</button><button type="button" data-plan-tab="habits" role="tab" aria-selected="false">Habits</button></div>
+    <section class="plan-panel" id="tasks" aria-label="Tasks"><div class="plan-toolbar"><span class="muted">All tasks and priorities</span><button class="primary-button" data-open="task">+ Task</button></div><div class="stack"><section class="card"><div class="card-heading"><h2>Priority Order</h2></div><div id="tasksPriority"></div></section><section class="card"><div class="card-heading"><h2>All Tasks</h2></div><div id="allTasks"></div></section></div></section>
+    <section class="plan-panel active" id="goals" aria-label="Goals">
+      <div class="plan-toolbar" style="justify-content:flex-end"><button class="primary-button" data-open="goal">+ Goal</button></div>
       <section class="card category-card"><div class="card-heading"><h2>Categories</h2><button type="button" class="text-button" id="manageCategories">Manage</button></div><div id="categoryChips" class="category-chips"></div><div id="categoryManager" hidden></div></section>
       <div class="stack" id="goalsList"></div>
     </section>
@@ -446,7 +447,7 @@
       <section class="card"><div class="card-heading"><h2>Appearance</h2></div><div class="segmented" role="group" aria-label="Appearance mode"><button data-appearance="light">Light</button><button data-appearance="dark">Dark</button><button data-appearance="system">System</button></div></section>
       <section class="card"><h2>Primary Color</h2><p class="color-selection" id="primaryColorName" aria-live="polite"></p><div class="swatches" id="primarySwatches"></div><label class="color-input">Custom color <input type="color" id="primaryCustom" aria-label="Custom primary color"></label></section>
       <section class="card"><h2>Secondary Color</h2><p class="color-selection" id="secondaryColorName" aria-live="polite"></p><div class="swatches" id="secondarySwatches"></div><label class="color-input">Custom color <input type="color" id="secondaryCustom" aria-label="Custom secondary color"></label></section>
-      <section class="card"><div class="card-heading"><h2>Opening</h2></div>
+      <section class="card" id="openingCustomization" hidden style="display:none"><div class="card-heading"><h2>Opening</h2></div>
         <label class="setting-label">Style<select id="openingMode"><option value="both">Animation + message</option><option value="animation">Animation only</option><option value="quote">Message only</option><option value="none">None</option></select></label>
         <label class="setting-label">Opening Message<textarea id="openingMessageInput" rows="3" maxlength="280" placeholder="Write your message..."></textarea></label>
         <button type="button" class="secondary-button" id="previewOpening">Preview Opening</button>
@@ -458,7 +459,7 @@
 <nav class="bottom-nav" aria-label="Main navigation">
   <button class="active" data-tab="today"><svg class="icon"><use href="#i-today"/></svg><span>Today</span></button>
   <button data-tab="week"><svg class="icon"><use href="#i-calendar"/></svg><span>Week</span></button>
-  <button data-tab="myplan"><svg class="icon"><use href="#i-plan"/></svg><span>Blueprint</span></button>
+  <button data-tab="myplan"><svg class="icon"><use href="#i-plan"/></svg><span>Goals</span></button>
   <button data-tab="brainstorm"><svg class="icon"><use href="#i-brainstorm"/></svg><span>Brainstorm</span></button>
 </nav>
 <div id="openingOverlay" class="opening-overlay" hidden role="button" tabindex="0" aria-label="Skip opening">
@@ -515,7 +516,7 @@ const defaults = {
   primary:'#78927d',secondary:'#c6ae83',appearance:'system',
   todayFocus:'',weeklyFocus:'',
   categories:['Personal','Physical','Research','Spiritual'],ideas:[],projects:[],brainstormDraft:'',
-  openingMode:'both',openingMessage:'Life is a canvas. So by God, start painting.',
+  openingMode:'none',openingMessage:'',
   tasks:[{id:1,title:'Review class notes',date:today,done:false,priority:true},{id:2,title:'Make progress on research',date:today,done:false,priority:true},{id:3,title:'Go to the gym',date:today,done:false,priority:false}],
   events:[{id:1,title:'Class',date:today,time:'08:00'},{id:2,title:'Lab',date:today,time:'10:00'},{id:3,title:'Research',date:today,time:'13:30'}],
   habits:[{id:1,title:'Scripture / Prayer',days:{}},{id:2,title:'Exercise',days:{}}],
@@ -562,7 +563,7 @@ function canvasSaveStatus(failed){
     notice.id='canvasSaveWarning';
     notice.setAttribute('role','alert');
     notice.style.cssText='position:fixed;z-index:9999;bottom:calc(80px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:480px;margin:auto;padding:12px 14px;border:1px solid #b65b40;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 4px 16px #0002;display:flex;gap:10px;align-items:center;justify-content:space-between';
-    const message=document.createElement('span');message.textContent='Changes not saved on this device. Keep Canvas open and retry, or export a backup.';
+    const message=document.createElement('span');message.textContent='Changes not saved on this device. Keep Blueprint open and retry, or export a backup.';
     const retry=document.createElement('button');retry.type='button';retry.textContent='Retry';retry.setAttribute('aria-label','Retry saving changes');retry.addEventListener('click',()=>save());
     notice.append(message,retry);document.body.append(notice);
   }
@@ -571,16 +572,16 @@ function canvasSaveStatus(failed){
 function save(verify=false){
   try{
     const serialized=JSON.stringify(state);
-    if(typeof serialized!=='string')throw new TypeError('Unable to serialize Canvas data');
+    if(typeof serialized!=='string')throw new TypeError('Unable to serialize Blueprint data');
     localStorage.setItem(STORAGE_KEY,serialized);
     // Destructive operations verify the manifest before deleting attachments.
     if(verify&&localStorage.getItem(STORAGE_KEY)!==serialized)
-      throw new Error('Canvas save verification failed');
+      throw new Error('Blueprint save verification failed');
     canvasUnsaved=false;canvasSaveStatus(false);
     return true;
   }catch(error){
     canvasUnsaved=true;canvasSaveStatus(true);
-    console.error('Canvas local save failed',error);
+    console.error('Blueprint local save failed',error);
     return false;
   }
 }
@@ -624,19 +625,11 @@ function closeOpening(){
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   pendingOpeningTimer=setTimeout(()=>{overlay.hidden=true;overlay.classList.remove('closing');pendingOpeningTimer=null;},reduced?0:340);
 }
-function showOpening(preview=false){
-  clearTimeout(pendingOpeningTimer);
-  const mode=state.openingMode,overlay=$('openingOverlay');
-  if(mode==='none'){overlay.hidden=true;return;}
-  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  overlay.hidden=true;overlay.className='opening-overlay';
-  if(mode==='quote'||reduced)overlay.classList.add('message-only');
-  if(mode==='animation'&&!reduced)overlay.classList.add('no-message');
-  $('openingLast').textContent=mode==='animation'?'Canvas':(state.openingMessage.trim()||'Canvas');
-  // Restart animations for each preview or fresh launch.
-  void overlay.offsetWidth;overlay.hidden=false;
-  const duration=reduced?900:mode==='quote'?1750:3800;
-  pendingOpeningTimer=setTimeout(closeOpening,duration);
+function showOpening(){
+  // Blueprint opens immediately. Keep legacy settings/data for backwards compatibility.
+  clearTimeout(pendingOpeningTimer);pendingOpeningTimer=null;
+  const overlay=$('openingOverlay');
+  if(overlay){overlay.hidden=true;overlay.classList.remove('closing');}
 }
 
 function render(){
@@ -879,7 +872,7 @@ function openModal(type,id=null,parent=null){
 function closeModal(){$('modalBack').classList.remove('open');modalMode=null;modalId=null;modalParent=null;}
 function uid(){return Date.now()+Math.floor(Math.random()*100000);}
 let lastMainTab='today';
-let activePlanTab='tasks';
+let activePlanTab='goals';
 // Keep one scroll position for each main destination. Returning to a view
 // shouldn't make someone search for the project or task they were reading.
 const canvasScrollPositions=new Map();
@@ -1008,7 +1001,7 @@ document.addEventListener('click',(e)=>{
   if(e.target.closest('#paletteLauncher')){tab($('customize').classList.contains('active')?lastMainTab:'customize');return;}
   if(e.target.closest('#closeCustomize')){tab(lastMainTab);return;}
   const inner=e.target.closest('[data-plan-tab]');if(inner){planTab(inner.dataset.planTab);return;}
-  const t=e.target.closest('[data-tab]');if(t){tab(t.dataset.tab);return;}
+  const t=e.target.closest('[data-tab]');if(t){if(t.dataset.tab==='myplan')planTab('goals');else tab(t.dataset.tab);return;}
   const addStep=e.target.closest('[data-step-add]');if(addStep){const rows=readGoalStepRows();rows.push({id:'a-'+uid(),title:''});renderGoalStepRows(rows);$('goalStepsEditor').lastElementChild?.querySelector('input')?.focus();return;}
   const stepBtn=e.target.closest('[data-step-move],[data-step-remove]');
   if(stepBtn){const rows=readGoalStepRows(),row=stepBtn.closest('.goal-step-row'),i=[...$('goalStepsEditor').children].indexOf(row);
@@ -1125,7 +1118,7 @@ function deletePlannerItem(type,id,fromModal=false){
   save();if(fromModal)closeModal();render();return true;
 }
 $('deleteModal').onclick=()=>deletePlannerItem(modalMode,modalId,true);
-$('exportData').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='canvas-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);};
+$('exportData').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='blueprint-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);};
 $('importData').onclick=()=>$('importFile').click();
 $('importFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;try{await window.v74ImportBackup(file);}catch(err){alert('Could not import backup: '+err.message);}finally{e.target.value='';}});
 const systemMode=matchMedia('(prefers-color-scheme: dark)');
@@ -1361,7 +1354,7 @@ async function v6Upload(files){
         // A save can be ambiguous (for example, storage read-back failed).
         // Preserve both the file and its in-memory library entry so Retry
         // can persist it; never destroy freshly uploaded bytes on a failure.
-        throw Error('File is held on this device, but its library entry is not yet saved. Keep Canvas open and tap Retry.');
+        throw Error('File is held on this device, but its library entry is not yet saved. Keep Blueprint open and tap Retry.');
       }
     }catch(err){alert('Unable to save '+file.name+': '+err.message);}
   }

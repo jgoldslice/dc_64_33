@@ -153,7 +153,7 @@
  function validatePlannerShape(data){
    if(!data||typeof data!=='object'||Array.isArray(data)||
      !Array.isArray(data.tasks)||!Array.isArray(data.goals)||!Array.isArray(data.habits)||
-     (data.projects!==undefined&&!Array.isArray(data.projects)))throw Error('Unrecognized Canvas backup data');
+     (data.projects!==undefined&&!Array.isArray(data.projects)))throw Error('Unrecognized Blueprint backup data');
    const ids=new Set();
    for(const p of data.projects||[]){
      if(!p||typeof p!=='object'||Array.isArray(p)||p.id==null)throw Error('Invalid project in backup');
@@ -234,7 +234,7 @@
    if(canvasUnsaved)throw Error('Some current edits have not been saved. Export your current work before importing');
    if(!inspected.complete &&
      !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return;
-   if(!confirm('Replace your current Canvas data with this backup? Export a complete backup of your current data first.'))return;
+   if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return;
 
    const originalState=state,created=[],draftChanges=[];
    let next,committed=false;
@@ -296,8 +296,8 @@
    window.v6ActiveProjectId=null;
    try{v6Normalize();render();v6Render();}
    catch(error){console.error('Imported data saved, but the view needs refresh',error);
-     alert('Canvas backup restored, but the view needs a reload. Your imported data was saved.');return;}
-   alert('Canvas backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.'));
+     alert('Blueprint backup restored, but the view needs a reload. Your imported data was saved.');return;}
+   alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.'));
  }
  document.getElementById('exportData').onclick=async()=>{
    try{await exportCompleteBackup();}
