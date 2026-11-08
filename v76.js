@@ -761,7 +761,7 @@
         await v6Blob('put',key,blob);
         if(!Array.isArray(ctx.p.library))ctx.p.library=[];
         ctx.p.library.push({id,type:'sketch',title:title.trim().slice(0,160),key,mime:'image/png',created:Date.now()});
-        if(!save(true))throw Error('Sketch bytes are retained, but its library entry is not yet saved. Keep Canvas open and tap Retry.');
+        if(!save(true))throw Error('Sketch bytes are retained, but its library entry is not yet saved. Keep Blueprint open and tap Retry.');
         v6RenderLibrary(ctx.p);
       }finally{URL.revokeObjectURL(url);}
     }catch(err){alert('Could not add sketch to Library: '+err.message);}
