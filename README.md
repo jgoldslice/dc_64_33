@@ -2,6 +2,13 @@
 
 Blueprint is a minimalist, mobile-first life and project planner for goals, weekly planning, tasks, habits, notes, and creative ideas. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
+## Blueprint v8.9.1 — iPad layout and touch QA
+
+- Preserve the v8.8 full-height Notes pad and v8.19 Pencil/attachment fixes; improve the iPad Notes toolbar with wrapping 44px touch targets while leaving iPhone's compact toolbar unchanged.
+- Make the iPad sidebar collapse control at least 44px in both sidebar states, and expand the Add Event sheet for tablet touch input.
+- On wide iPads, place Today at a Glance beside Habits and Top Priorities, with Projects spanning the bottom. The Week layout remains governed by the newer v8.8 calendar-first styles rather than the outdated v8.19 draft.
+- No planner schema, localStorage, IndexedDB, navigation gesture, or saved-note changes. Test on a real iPad, especially Notes fit with the keyboard open, Pencil pinch gestures, weekly swipes, and complete backup export.
+
 ## Blueprint v8.9 — Rebrand and direct-to-Goals navigation
 
 - Rename the web app, installed home-screen title, iPad sidebar, and app icon to **Blueprint**; label the former Blueprint navigation tab **Goals**.
