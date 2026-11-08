@@ -1,0 +1,32 @@
+const { test, expect } = require('@playwright/test');
+const base = 'http://127.0.0.1:8765/';
+test('Blueprint opens without splash and navigates directly to Goals', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto(base);
+  await expect(page).toHaveTitle('Blueprint');
+  await expect(page.locator('#canvasHomeButton')).toHaveText('Blueprint');
+  await expect(page.locator('#openingOverlay')).toBeHidden();
+  await expect(page.locator('#openingCustomization')).toBeHidden();
+  await page.locator('.bottom-nav button[data-tab="myplan"]').click();
+  await expect(page.locator('#myplan')).toBeVisible();
+  await expect(page.locator('#myplanTitle')).toHaveText('Goals');
+  await expect(page.locator('#goals')).toBeVisible();
+  await expect(page.locator('#tasks')).toBeHidden();
+  await expect(page.locator('#myplan .eyebrow')).toHaveCount(0);
+  await page.locator('[data-plan-tab="tasks"]').click();
+  await expect(page.locator('#tasks')).toBeVisible();
+  await page.locator('.bottom-nav button[data-tab="today"]').click();
+  await page.locator('.bottom-nav button[data-tab="myplan"]').click();
+  await expect(page.locator('#goals')).toBeVisible();
+  await expect(page.locator('#openingOverlay')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+test('iPad sidebar has Blueprint branding without tagline', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 1024 });
+  await page.goto(base);
+  const brand=page.locator('.canvas-ipad-brand-copy');
+  await expect(brand).toHaveText('Blueprint');
+  await expect(brand.locator('small')).toHaveCount(0);
+  await expect(page.locator('.bottom-nav button[data-tab="myplan"] span')).toHaveText('Goals');
+});
