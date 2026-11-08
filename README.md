@@ -1,8 +1,15 @@
-# Blueprint — Version 5
+# Blueprint — Version 8.9
 
-> “Life is a canvas. So by God, start painting.”
+Blueprint is a minimalist, mobile-first life and project planner for goals, weekly planning, tasks, habits, notes, and creative ideas. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
 
-Canvas is a minimalist, mobile-first life-design planner. Inspired by Doctrine and Covenants 64:33: “Out of small things proceedeth that which is great.”
+## Blueprint v8.9 — Rebrand and direct-to-Goals navigation
+
+- Rename the web app, installed home-screen title, iPad sidebar, and app icon to **Blueprint**; label the former Blueprint navigation tab **Goals**.
+- Open the Goals panel by default when selecting that tab, while retaining access to Tasks and Habits and all existing saved data.
+- Remove the Blueprint page eyebrow and Goals panel subtitle, and hide the former opening customization controls.
+- Disable the startup animation and quotation even when an older device still has a saved opening preference. Keep legacy data and technical storage keys for backwards compatibility.
+- Refresh the offline asset cache, and add regression checks for branding and navigation.
+
 
 ## Canvas v8.17 — Swipable weeks and a fixed notebook viewing window
 
