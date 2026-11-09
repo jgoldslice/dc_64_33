@@ -733,38 +733,77 @@
       growPage(ctx.page,y+300);persist();drawPage(ctx.p,ctx.page);
     }catch(err){alert('Could not save image on this device: '+err.message);}
   }
-  document.getElementById('v819SaveSketch').addEventListener('click',async()=>{
+  // An unverified manifest write must not leave a phantom Library row. Keep
+  // the already-written PNG in IndexedDB and reuse its id/key when retried.
+  // Editable notebook strokes are never removed by this export operation.
+  let pendingSketchSave=null,sketchSaveBusy=false;
+  const sketchSaveButton=document.getElementById('v819SaveSketch');
+  function updateSketchSaveButton(){
+    sketchSaveButton.disabled=sketchSaveBusy;
+    sketchSaveButton.textContent=pendingSketchSave?'Retry sketch save':'Save sketch';
+  }
+  sketchSaveButton.addEventListener('click',async()=>{
+    if(sketchSaveBusy)return; // Double taps cannot stage duplicate PNGs.
     const ctx=current();if(!ctx)return;
-    if(activeStroke){flushInkRender();activeStroke=null;persist();}
-    if(!ctx.page.strokes?.length){alert('Draw something first to save a sketch.');return;}
-    const title=prompt('Sketch name','Sketch '+((ctx.p.library||[]).filter(r=>r.type==='sketch').length+1));
-    if(!title?.trim())return;
+    if(pendingSketchSave&&pendingSketchSave.project!==ctx.p){
+      alert('Return to '+pendingSketchSave.project.title+' and retry that sketch before saving a different one.');
+      return;
+    }
+    let sketchTitle='';
+    if(!pendingSketchSave){
+      if(activeStroke){flushInkRender();activeStroke=null;persist();}
+      if(!ctx.page.strokes?.length){alert('Draw something first to save a sketch.');return;}
+      const entered=prompt('Sketch name','Sketch '+((ctx.p.library||[]).filter(r=>r.type==='sketch').length+1));
+      if(!entered?.trim())return;
+      sketchTitle=entered.trim().slice(0,160);
+    }
+    sketchSaveBusy=true;updateSketchSaveButton();
     try{
-      // Export the page's ink as PNG; leave the original editable note intact.
-      const width=Math.max(1,Math.round(surface.clientWidth));
-      const height=Math.max(1,Math.round(surface.clientHeight));
-      const clone=ink.cloneNode(true);
-      clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
-      clone.setAttribute('width',String(width));
-      clone.setAttribute('height',String(height));
-      clone.setAttribute('viewBox','0 0 '+width+' '+height);
-      clone.setAttribute('preserveAspectRatio','none');
-      const url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml'}));
-      try{
-        const image=new Image();
-        await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('Could not render sketch'));image.src=url;});
-        const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
-        canvas.getContext('2d').drawImage(image,0,0,width,height);
-        const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
-        if(!blob)throw Error('Could not encode sketch');
+      if(!pendingSketchSave){
+        // Snapshot the ink before awaiting image encoding; never touch
+        // the source stroke array or the editable notebook SVG.
+        const width=Math.max(1,Math.round(surface.clientWidth));
+        const height=Math.max(1,Math.round(surface.clientHeight));
+        const clone=ink.cloneNode(true);
+        clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+        clone.setAttribute('width',String(width));
+        clone.setAttribute('height',String(height));
+        clone.setAttribute('viewBox','0 0 '+width+' '+height);
+        clone.setAttribute('preserveAspectRatio','none');
+        const url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml'}));
+        let blob;
+        try{
+          const image=new Image();
+          await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('Could not render sketch'));image.src=url;});
+          const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+          canvas.getContext('2d').drawImage(image,0,0,width,height);
+          blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+          if(!blob)throw Error('Could not encode sketch');
+        }finally{URL.revokeObjectURL(url);}
         const id=newId(),key='v6-'+id;
-        await v6Blob('put',key,blob);
-        if(!Array.isArray(ctx.p.library))ctx.p.library=[];
-        ctx.p.library.push({id,type:'sketch',title:title.trim().slice(0,160),key,mime:'image/png',created:Date.now()});
-        if(!save(true))throw Error('Sketch bytes are retained, but its library entry is not yet saved. Keep Blueprint open and tap Retry.');
-        v6RenderLibrary(ctx.p);
-      }finally{URL.revokeObjectURL(url);}
+        await v6Blob('put',key,blob); // IndexedDB transaction must complete first.
+        pendingSketchSave={
+          project:ctx.p,
+          record:{id,type:'sketch',title:sketchTitle,key,mime:'image/png',created:Date.now()}
+        };
+      }
+      const pending=pendingSketchSave,project=pending.project,record=pending.record;
+      if(!state.projects?.includes(project))
+        throw Error('The original project is no longer available. The sketch bytes have not been deleted.');
+      if(!Array.isArray(project.library))project.library=[];
+      const exists=project.library.some(item=>String(item.id)===String(record.id));
+      if(!exists)project.library.push(record);
+      if(!save(true)){
+        // save(true) might have written but failed verification. Keep the
+        // *same* record and bytes pending, yet remove its unverified UI row.
+        // A retry recommits the same ID, never another duplicate.
+        if(!exists)project.library=project.library.filter(item=>String(item.id)!==String(record.id));
+        throw Error('Planner storage is unavailable. The sketch PNG is retained on this device; tap Retry sketch save when storage is available.');
+      }
+      pendingSketchSave=null;
+      v6RenderLibrary(project);
     }catch(err){alert('Could not add sketch to Library: '+err.message);}
+    finally{sketchSaveBusy=false;updateSketchSaveButton();}
   });
   document.getElementById('v76AddImage').addEventListener('click',()=>document.getElementById('v76ImageInput').click());
   document.getElementById('v76ImageInput').addEventListener('change',async e=>{
