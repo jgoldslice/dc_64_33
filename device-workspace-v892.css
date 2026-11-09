@@ -1,0 +1,85 @@
+/* Blueprint 8.9.2 — iPad creation, iPhone viewing.
+   Presentation only: the Notes data model, pointer math and saved state stay unchanged. */
+
+/* The active project title already explains where the user is. */
+#brainstorm:has(#projectWorkspace:not([hidden])) > .view-header{display:none}
+
+@media (min-width:740px) and (min-height:600px){
+  /* An explicit iPad focus control complements the existing global rail toggle. */
+  #v892FocusCanvas{
+    width:44px;min-width:44px;height:44px;min-height:44px;
+    display:grid;place-items:center;padding:8px;
+    border:1px solid var(--line);border-radius:11px;
+    background:var(--surface);color:var(--secondary-ui);
+    flex:none
+  }
+  #v892FocusCanvas svg{width:20px;height:20px;fill:none;stroke:currentColor;
+    stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  #v892FocusCanvas[aria-pressed="true"]{background:var(--wash);border-color:var(--secondary-ui)}
+  #v892FocusCanvas:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:3px}
+  body.canvas-v88-notes-fit .shell{
+    padding-top:calc(env(safe-area-inset-top) + 12px);
+  }
+  body.canvas-v88-notes-fit .app-header{margin-bottom:9px}
+  #projectWorkspace .v6-project-head{gap:9px;margin-bottom:4px}
+  #projectWorkspace .v6-project-title{font-size:clamp(22px,2.1vw,28px);margin:0 0 7px}
+  #projectWorkspace .v6-project-tabs{margin-bottom:6px}
+  /* When the global rail is collapsed, prefer usable ink width and the Pages rail. */
+  body.canvas-v88-notes-fit.canvas-ipad-sidebar-collapsed .shell{
+    padding-inline:clamp(14px,1.8vw,26px)
+  }
+  #projectNotes .v811-pages-heading button,
+  #projectNotes .v811-page-rename{min-height:44px;min-width:44px}
+  #projectNotes .v811-page-link{min-height:44px}
+}
+
+/* Phone is the companion view: more of the project should be visible above
+   the fold, with editing still available rather than restricted or removed. */
+@media (max-width:739px), (max-height:599px){
+  #v892FocusCanvas{display:none!important}
+  #brainstorm:has(#projectWorkspace:not([hidden])) .view-header{margin:0}
+  #projectWorkspace .v6-project-head{
+    flex-wrap:nowrap;align-items:center;gap:6px;margin-bottom:4px;
+  }
+  #projectWorkspace #backProjects{
+    flex:none;white-space:nowrap;min-height:44px;padding-inline:5px;font-size:12px
+  }
+  #projectWorkspace .v814-project-tools{
+    order:initial;display:flex;flex:1 1 0;width:auto;min-width:0;margin:0;gap:4px
+  }
+  #projectWorkspace .v814-project-switch{width:100%;min-width:0;max-width:none;flex:1 1 0}
+  #projectWorkspace .v814-project-switch select{
+    width:100%;min-width:0;max-width:100%;font-size:12px;padding-inline:9px 23px
+  }
+  #projectWorkspace .v82-project-header-actions{flex:none;min-width:0;gap:4px;margin:0}
+  /* Keep the ChatGPT action available, but use its compact external-link symbol. */
+  #projectWorkspace .v82-develop{
+    width:44px;min-width:44px;height:44px;min-height:44px;
+    overflow:hidden;font-size:0;padding:0
+  }
+  #projectWorkspace .v82-develop::after{content:"↗";font-size:22px;line-height:1}
+  #projectWorkspace .v6-project-title{
+    font-size:clamp(20px,5.4vw,24px);line-height:1.2;margin:6px 0 8px
+  }
+  #projectWorkspace .v6-project-tabs{margin-bottom:8px}
+  #projectWorkspace .v6-project-tabs button{min-height:44px}
+  #projectNotes .v76-notebook-ui{gap:8px}
+  #projectNotes .v76-toolbar{
+    max-width:100%;overflow-x:auto;overflow-y:hidden;
+    flex-wrap:nowrap;scroll-padding-inline:8px;
+    overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch
+  }
+  #projectNotes .v76-toolbar .v79-tool-group{flex:none}
+  #projectNotes .v76-toolbar button,#projectNotes .v76-toolbar select{flex-shrink:0}
+}
+
+/* Very narrow split screens should wrap naturally, not clip header actions. */
+@media (max-width:350px) {
+  #projectWorkspace .v6-project-head{flex-wrap:wrap}
+  #projectWorkspace #backProjects{order:0}
+  #projectWorkspace .v82-project-header-actions{order:1;margin-left:auto}
+  #projectWorkspace .v814-project-tools{order:2;flex-basis:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  #v892FocusCanvas{transition:none}
+}
