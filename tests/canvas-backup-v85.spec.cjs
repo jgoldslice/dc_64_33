@@ -20,11 +20,12 @@ async function seed(page){
         notePages:[{id:'page-a',title:'Page 1',height:740,objects:[
           {id:'obj-a',type:'image',key:'backup-shared-image',x:12,y:50,width:180},
           {id:'text-a',type:'text',x:10,y:10,width:210,html:'A thought',fontSize:'small'}
-        ],strokes:[]}]},
+        ],strokes:[{id:'pen-a',color:'#111111',width:2.5,points:[{x:10,y:10},{x:24,y:28}]}]}]},
       {id:'p-backup-b',title:'Second Project',notes:[],actions:[],library:[
         {id:'sketch-a',type:'sketch',title:'Concept',key:'backup-sketch',mime:'image/png'}],
         notePages:[{id:'page-b',title:'Page 1',height:740,objects:[],strokes:[]}]}
     ];
+    state.events=[{id:'event-a',title:'Plant watering check',date:'2026-11-09',time:'12:30'}];
     state.tasks=[{id:'task-a',title:'Finish test',done:false,projectId:'p-backup-a',projectActionId:'act-a'}];
     state.goals=[{id:'goal-a',title:'Develop Canvas',category:'Personal',actions:[{id:'step-a',title:'Backup',done:false}]}];
     state.habits=[{id:'habit-a',title:'Study',days:{},schedule:[0,1,2,3,4,5,6]}];
@@ -70,6 +71,8 @@ test('v2 export hashes state and every shared image/sketch/draft without droppin
   expect(archive.stateSha256).toMatch(/^[a-f0-9]{64}$/);
   expect(archive.state.projects).toHaveLength(2);
   expect(archive.state.projects[0].notePages[0].objects[1].html).toBe('A thought');
+  expect(archive.state.projects[0].notePages[0].strokes[0].points).toHaveLength(2);
+  expect(archive.state.events[0]).toMatchObject({title:'Plant watering check',date:'2026-11-09',time:'12:30'});
   expect(archive.attachments.map(a=>a.key).sort()).toEqual([
     'backup-note-image','backup-shared-image','backup-sketch','v6-draft-p-backup-b'
   ]);
@@ -100,6 +103,7 @@ test('complete backup imports into clean storage, remaps shared images and retai
         text:pA.notePages[0].objects[1].html,
         task:state.tasks[0].id,linkedAction:pA.actions[0].taskId,
         goal:state.goals[0].id,habit:state.habits[0].id,
+        event:state.events[0],ink:pA.notePages[0].strokes[0],
         photo:[...new Uint8Array(await photo.arrayBuffer())],
         note:[...new Uint8Array(await note.arrayBuffer())],
         sketch:[...new Uint8Array(await sketch.arrayBuffer())],
@@ -114,6 +118,8 @@ test('complete backup imports into clean storage, remaps shared images and retai
     expect(result.linkedAction).toBe('task-a');
     expect(result.goal).toBe('goal-a');
     expect(result.habit).toBe('habit-a');
+    expect(result.event).toMatchObject({id:'event-a',date:'2026-11-09',time:'12:30'});
+    expect(result.ink.points).toEqual([{x:10,y:10},{x:24,y:28}]);
     expect(result.photo).toEqual([137,80,78,71,13,10,26,10,7,6,5]);
     expect(result.note).toEqual(result.photo);
     expect(result.sketch).toEqual([137,80,78,71,13,10,26,10,9,8,7,6]);
@@ -122,9 +128,11 @@ test('complete backup imports into clean storage, remaps shared images and retai
     const persists=await restored.evaluate(async()=>({
       projects:state.projects.length,
       found:!!(await v6Blob('get',state.projects[0].library[0].key)),
-      draft:!!(await v6Blob('get','v6-draft-p-backup-b'))
+      draft:!!(await v6Blob('get','v6-draft-p-backup-b')),
+      event:state.events.some(e=>e.id==='event-a'),
+      ink:state.projects[0].notePages[0].strokes.length
     }));
-    expect(persists).toEqual({projects:2,found:true,draft:true});
+    expect(persists).toEqual({projects:2,found:true,draft:true,event:true,ink:1});
   }finally{await context.close();}
 });
 
