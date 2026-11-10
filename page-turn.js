@@ -29,6 +29,7 @@
     if(frame){cancelAnimationFrame(frame);frame=0;}
     if(!motion){turning=false;return;}
     if(motion.timer)clearTimeout(motion.timer);
+    if(motion.onTransitionEnd)motion.source.removeEventListener('transitionend',motion.onTransitionEnd);
     const m=motion;motion=null;turning=false;
     for(const [view,original] of [[m.source,m.fromCSS],[m.target,m.toCSS]]){
       view.classList.remove('canvas-v91-pane','canvas-v91-source','canvas-v91-target','canvas-v91-settling');
@@ -103,7 +104,8 @@
     const remaining=commit?1-fromProgress:fromProgress;
     // Deliberately short; unlike a fixed-duration turn, an almost-complete
     // swipe never waits through the same animation as a tiny drag.
-    const duration=reduce()?0:Math.round(clamp(remaining*220,65,220));
+    const duration=reduce()?0:Math.round(clamp(remaining*220/(1+Math.min(1.1,Math.abs(velocity)*1.15)),65,220));
+    m.settleCommit=commit;
     debug.lastSettleMs=duration;
     if(!duration){finish(commit);return;}
     const easing='cubic-bezier(.2,.75,.22,1)';
@@ -117,9 +119,8 @@
       if(done||motion!==m)return;
       done=true;finish(commit);
     };
-    m.source.addEventListener('transitionend',e=>{
-      if(e.propertyName==='transform')complete();
-    },{once:true});
+    m.onTransitionEnd=e=>{if(e.propertyName==='transform'&&e.target===m.source)complete();};
+    m.source.addEventListener('transitionend',m.onTransitionEnd);
     m.timer=setTimeout(complete,duration+85);
   }
   function cancel(){
@@ -129,7 +130,7 @@
   document.addEventListener('touchstart',e=>{
     // Another gesture can immediately retarget a settling navigation. Finish
     // its state change before interpreting the new gesture; never lock the UI.
-    if(turning&&motion){debug.interruptions++;finish(motion.progress>.5);}
+    if(turning&&motion){debug.interruptions++;finish(motion.settleCommit===true);}
     gesture=null;
     if(e.touches.length!==1||blocked()||protectedTarget(e.target)||window.getSelection()?.toString().trim())return;
     const view=document.querySelector('.view.active');
@@ -137,11 +138,15 @@
     if(view.id==='brainstorm'&&!document.getElementById('projectWorkspace')?.hidden)return;
     const touch=e.touches[0];
     if(touch.clientX<28||touch.clientX>innerWidth-28)return;
-    gesture={x:touch.clientX,y:touch.clientY,id:view.id,locked:false,to:null,direction:0,progress:0};
+    gesture={x:touch.clientX,y:touch.clientY,id:view.id,locked:false,to:null,direction:0,progress:0,
+      samples:[{x:touch.clientX,t:performance.now()}]};
   },{passive:true});
   document.addEventListener('touchmove',e=>{
     if(!gesture||e.touches.length!==1)return;
     const touch=e.touches[0],dx=touch.clientX-gesture.x,dy=touch.clientY-gesture.y;
+    const now=performance.now();
+    gesture.samples.push({x:touch.clientX,t:now});
+    gesture.samples=gesture.samples.filter(sample=>now-sample.t<=130).slice(-8);
     if(!gesture.locked){
       if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)*1.25){gesture=null;return;}
       if(Math.abs(dx)<16||Math.abs(dx)<Math.abs(dy)*1.7)return;
@@ -159,16 +164,25 @@
     const g=gesture;gesture=null;
     if(!g.locked){cancel();return;}
     const touch=e.changedTouches[0],dx=touch.clientX-g.x,dy=touch.clientY-g.y;
-    const commit=dx*g.direction>=72&&Math.abs(dx)>Math.abs(dy)*1.7&&!blocked();
+    const endTime=performance.now();
+    // Ignore synthetic or ultra-short sample intervals; they cannot provide
+    // meaningful velocity and must not accidentally trigger navigation.
+    const first=g.samples.find(s=>endTime-s.t>=12)||null;
+    const duration=first?endTime-first.t:0;
+    const directedVelocity=duration>0?(touch.clientX-first.x)*g.direction/duration:0;
+    const distance=dx*g.direction;
+    const commit=(distance>=72||(distance>=36&&directedVelocity>=.5))&&
+      Math.abs(dx)>Math.abs(dy)*1.7&&!blocked();
     if(reduce()){cleanup();if(commit)tab(g.to);return;}
-    settle(commit,g.progress);
+    settle(commit,g.progress,directedVelocity);
   },{passive:true});
   document.addEventListener('touchcancel',()=>{gesture=null;if(motion)settle(false,motion.progress);},{passive:true});
   // Explicit tab taps win over an in-flight animation.
   document.querySelector('.bottom-nav')?.addEventListener('pointerdown',()=>{
     if(motion)cancel();
   },true);
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel();});
-  window.addEventListener('pagehide',cancel);
+  const flushForExit=()=>{if(turning&&motion)finish(motion.settleCommit===true);else cancel();};
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)flushForExit();});
+  window.addEventListener('pagehide',flushForExit);
   window.addEventListener('resize',()=>{if(motion)cancel();},{passive:true});
 })();
