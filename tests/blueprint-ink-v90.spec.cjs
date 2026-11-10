@@ -43,6 +43,8 @@ test('Retina PNG sketch export has higher resolution and preserves editable stro
   const before=await page.evaluate(()=>JSON.stringify(v6Project().notePages[0].strokes));
   page.once('dialog',dialog=>dialog.accept('Retina proof'));
   await page.locator('#v819SaveSketch').click();
+  // Encoding PNG and committing IndexedDB/localStorage are asynchronous.
+  await expect.poll(()=>page.evaluate(()=>v6Project().library.filter(r=>r.type==='sketch').length)).toBe(1);
   const result=await page.evaluate(async()=>{
     const item=v6Project().library.find(r=>r.type==='sketch');
     if(!item)throw Error('Sketch not saved');
