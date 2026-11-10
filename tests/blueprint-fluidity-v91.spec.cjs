@@ -69,3 +69,71 @@ test('a direct tab click interrupts animation and takes priority',async({page})=
   await expect(page.locator('#brainstorm')).toHaveClass(/active/);
   await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
 });
+
+test('a short, fast flick advances once; a slow partial drag does not',async({page})=>{
+  await start(page);
+  async function flick(elapsed){
+    return page.evaluate(async elapsed=>{
+      const target=document.querySelector('#today .view-header h1');
+      const r=target.getBoundingClientRect(),x=r.x+Math.min(90,r.width/2),y=r.y+r.height/2;
+      const touch=dx=>new Touch({identifier:19,target,clientX:x+dx,clientY:y});
+      const a=touch(0),mid=touch(-44),end=touch(-52);
+      const send=(type,ts,change)=>target.dispatchEvent(new TouchEvent(type,{
+        bubbles:true,cancelable:true,touches:ts,changedTouches:change,targetTouches:ts
+      }));
+      send('touchstart',[a],[a]);
+      send('touchmove',[mid],[mid]);
+      await new Promise(resolve=>setTimeout(resolve,elapsed));
+      send('touchend',[],[end]);
+    },elapsed);
+  }
+  await flick(210);
+  await expect(page.locator('#today')).toHaveClass(/active/);
+  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await flick(24);
+  await expect(page.locator('#week')).toHaveClass(/active/);
+  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+});
+
+test('starting another gesture while settling never double-commits a tab',async({page})=>{
+  await start(page);
+  await page.evaluate(()=>{
+    const target=document.querySelector('#today .view-header h1');
+    const r=target.getBoundingClientRect(),x=r.x+80,y=r.y+r.height/2;
+    const touch=dx=>new Touch({identifier:21,target,clientX:x+dx,clientY:y});
+    const a=touch(0),b=touch(-135);
+    const send=(type,ts,change)=>target.dispatchEvent(new TouchEvent(type,{
+      bubbles:true,cancelable:true,touches:ts,changedTouches:change,targetTouches:ts
+    }));
+    send('touchstart',[a],[a]);
+    send('touchmove',[b],[b]);
+    send('touchend',[],[b]);
+    // A second contact interrupts the settling animation. The previous
+    // commitment finishes once; no phantom second tab change occurs.
+    send('touchstart',[a],[a]);
+  });
+  await expect(page.locator('#week')).toHaveClass(/active/);
+  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  expect(await page.evaluate(()=>window.__blueprintMotionDebug.interruptions)).toBe(1);
+});
+
+test('motion preparation is instrumented and never deep-clones either view',async({page})=>{
+  await start(page);
+  const result=await page.evaluate(()=>{
+    const source=document.querySelector('#today .view-header h1');
+    const original=Node.prototype.cloneNode;
+    let deepClones=0;
+    Node.prototype.cloneNode=function(deep){if(deep)deepClones++;return original.call(this,deep);};
+    try{
+      const rect=source.getBoundingClientRect(),x=rect.x+70,y=rect.y+20;
+      const t=(dx)=>new Touch({identifier:2,target:source,clientX:x+dx,clientY:y});
+      const a=t(0),b=t(-95);
+      source.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[a],changedTouches:[a]}));
+      source.dispatchEvent(new TouchEvent('touchmove',{bubbles:true,cancelable:true,touches:[b],changedTouches:[b]}));
+      return {deepClones,prepareMs:window.__blueprintMotionDebug.lastPrepareMs};
+    }finally{Node.prototype.cloneNode=original;}
+  });
+  expect(result.deepClones).toBe(0);
+  expect(result.prepareMs).toBeGreaterThanOrEqual(0);
+  console.log('Blueprint v9.1 browser live-pane preparation:',result.prepareMs.toFixed(2),'ms (not an iPad FPS measurement)');
+});
