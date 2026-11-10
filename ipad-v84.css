@@ -9,7 +9,7 @@
     width:auto;max-width:none;min-width:0;margin:0 0 0 var(--canvas-ipad-rail-width);
     padding:calc(env(safe-area-inset-top) + 24px) clamp(24px,3.5vw,58px)
       calc(env(safe-area-inset-bottom) + 52px);
-    transition:margin-left 200ms ease
+    transition:margin-left var(--blueprint-motion-fast,155ms) var(--blueprint-motion-ease,ease)
   }
   .shell>main,.shell>.app-header{max-width:1450px;margin-inline:auto}
   .app-header{height:45px;margin-bottom:20px;justify-content:flex-end}
@@ -27,7 +27,7 @@
     border:0;border-right:1px solid var(--line);border-radius:0;
     background:color-mix(in srgb,var(--surface) 93%,var(--bg));
     box-shadow:3px 0 22px #00000008;
-    transition:width 200ms ease;
+    transition:width var(--blueprint-motion-fast,155ms) var(--blueprint-motion-ease,ease);
     overflow-y:auto;overscroll-behavior:contain;
   }
   .canvas-ipad-nav-head{
@@ -55,7 +55,7 @@
     top:calc(env(safe-area-inset-top) + 30px);
     width:44px;height:44px;
     border:0;border-radius:10px;background:transparent;color:var(--muted);
-    padding:7px;transition:left 200ms ease
+    padding:7px;transition:left var(--blueprint-motion-fast,155ms) var(--blueprint-motion-ease,ease)
   }
   .canvas-ipad-collapse svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
   .bottom-nav>button[data-tab]{
