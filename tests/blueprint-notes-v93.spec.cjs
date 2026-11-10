@@ -1,7 +1,7 @@
 'use strict';
 const {test,expect}=require('@playwright/test');
 test.use({browserName:'chromium',viewport:{width:1366,height:1024},isMobile:true,hasTouch:true});
-const base=process.env.TEST_URL||'http://127.0.0.1:4173/';
+const base=process.env.TEST_URL||'http://127.0.0.1:8765/';
 async function openNotebook(page){
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
