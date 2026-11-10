@@ -41,11 +41,12 @@
     if(!project)return;
     project.lastOpenedAt=Date.now();
     save();
+    // Base v6OpenProject already scrolls instantly once. A second
+    // requestAnimationFrame scroll here caused a redundant viewport movement
+    // (and duplicate layout work) after every project selection.
+    // oldOpenProject invokes wrapped v6Render(), which already refreshes the
+    // project selector. A second renderPicker() rebuilt every option again.
     oldOpenProject(id);
-    renderPicker();
-    requestAnimationFrame(()=>{
-      if(!workspace.hidden)workspace.scrollIntoView({behavior:'instant',block:'start'});
-    });
   };
   picker.addEventListener('change',()=>{
     const projectId=picker.value;

@@ -73,6 +73,10 @@
   }
   function renderDays(){
     if(!modalWeek)return;
+    // An old scrollend or fallback must never override a freshly selected
+    // day when the 3-week strip is replaced and recentered.
+    clearTimeout(dateScrollTimer);
+    dateScrollLocked=true;
     trackWeek=startOfWeek(modalWeek);
     const track=document.createElement('div');
     track.className='v817-date-track';
@@ -100,6 +104,7 @@
   }
   function choose(date){
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+    clearTimeout(dateScrollTimer);
     const nextWeek=startOfWeek(stamp(date));
     const switched=!modalWeek||iso(modalWeek)!==iso(nextWeek);
     chosen=date;modalWeek=nextWeek;
@@ -128,8 +133,9 @@
   dates.addEventListener('scroll',()=>{
     if(dateScrollLocked||overlay.hidden)return;
     clearTimeout(dateScrollTimer);
-    // Fallback for Safari builds without dependable scrollend. Do not update
-    // chosen while the user is still dragging or native snap is in motion.
+    // Preserve the conservative date-picker fallback. It deliberately waits
+    // for delayed Safari momentum before deciding a selected event date;
+    // selecting a day itself clears pending timers in choose().
     dateScrollTimer=setTimeout(settleDateScroll,280);
   },{passive:true});
   dates.addEventListener('scrollend',()=>{clearTimeout(dateScrollTimer);settleDateScroll();},{passive:true});
@@ -220,10 +226,12 @@
     }
     new MutationObserver(()=>requestAnimationFrame(centerCalendar))
       .observe(document.getElementById('week'),{attributes:true,attributeFilter:['class']});
+    // Use native scroll-snap and scrollend first, with a bounded Safari
+    // fallback after motion stops rather than a fixed 280ms wait.
     weekWindow.addEventListener('scroll',()=>{
       if(calendarScrollLocked)return;
       clearTimeout(calendarScrollTimer);
-      calendarScrollTimer=setTimeout(settleCalendar,280);
+      calendarScrollTimer=setTimeout(settleCalendar,155);
     },{passive:true});
     weekWindow.addEventListener('scrollend',()=>{
       clearTimeout(calendarScrollTimer);
@@ -244,7 +252,7 @@
         shiftCalendar(dx<0?1:-1);
       }else{
         clearTimeout(calendarScrollTimer);
-        calendarScrollTimer=setTimeout(settleCalendar,280);
+        calendarScrollTimer=setTimeout(settleCalendar,155);
       }
     },{passive:true});
     weekWindow.addEventListener('touchcancel',()=>{calendarGesture=null;},{passive:true});

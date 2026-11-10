@@ -113,39 +113,39 @@ test('tapping a day opens its date and still allows swiping to next week',async(
   await expect(page.locator('#v87EventDates [aria-pressed="true"]')).toHaveAttribute('data-v87-date',next);
   await page.locator('#v87EventCancel').click();
 });
-test('page turn snapshot remains aligned with the source view at the start of a horizontal swipe',async({page})=>{
-  const errors=[];
-  page.on('pageerror',e=>errors.push(e.message));
+test('live tab views remain aligned without cloning content during an interactive swipe',async({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);
-  // Wait for Canvas's opening quote/animation to finish. Real swipes are
-  // intentionally blocked while an opening overlay is visible.
   await expect(page.locator('#openingOverlay')).toBeHidden({timeout:10000});
   await page.evaluate(()=>window.scrollTo(0,0));
   const geometry=await page.evaluate(()=>{
     const target=document.querySelector('#today .view-header h1');
-    if(!target)throw Error('Missing Today title for gesture');
-    const rect=target.getBoundingClientRect(),x=rect.x+Math.min(100,rect.width/2),y=rect.y+rect.height/2;
-    const first=new Touch({identifier:1,target,clientX:x,clientY:y});
-    const moved=new Touch({identifier:1,target,clientX:x-85,clientY:y+2});
-    target.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[first],changedTouches:[first]}));
-    target.dispatchEvent(new TouchEvent('touchmove',{bubbles:true,cancelable:true,touches:[moved],changedTouches:[moved]}));
-    const layer=document.querySelector('.canvas-turn-layer');
-    if(!layer)throw Error('Swipe did not create a page-turn layer');
-    const snapshot=layer.querySelector('.canvas-turn-sheet .canvas-turn-snapshot');
-    const source=document.querySelector('#today').getBoundingClientRect();
-    const layerRect=layer.getBoundingClientRect();
+    const source=document.getElementById('today');
+    const original=source.getBoundingClientRect();
+    const t=target.getBoundingClientRect();
+    const x=t.x+Math.min(100,t.width/2),y=t.y+t.height/2;
+    const a=new Touch({identifier:1,target,clientX:x,clientY:y});
+    const b=new Touch({identifier:1,target,clientX:x-85,clientY:y+2});
+    target.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[a],changedTouches:[a]}));
+    target.dispatchEvent(new TouchEvent('touchmove',{bubbles:true,cancelable:true,touches:[b],changedTouches:[b]}));
     return {
-      x:parseFloat(snapshot.style.left)-(source.left-layerRect.left),
-      y:parseFloat(snapshot.style.top)-(source.top-layerRect.top),
-      width:parseFloat(snapshot.style.width)-source.width,
-      direction:layer.dataset.direction,
-      transform:layer.querySelector('.canvas-turn-sheet').style.transform
+      source:source.classList.contains('canvas-v91-pane'),
+      destination:document.getElementById('week').classList.contains('canvas-v91-pane'),
+      x:parseFloat(source.style.getPropertyValue('--v91-left'))-original.left,
+      y:parseFloat(source.style.getPropertyValue('--v91-top'))-original.top,
+      width:parseFloat(source.style.getPropertyValue('--v91-width'))-original.width,
+      transform:source.style.transform,
+      clones:document.querySelectorAll('.canvas-turn-snapshot').length,
+      measuredPrepares:window.__blueprintMotionDebug.prepares
     };
   });
+  expect(geometry.source).toBe(true);
+  expect(geometry.destination).toBe(true);
   expect(Math.abs(geometry.x)).toBeLessThan(1.5);
   expect(Math.abs(geometry.y)).toBeLessThan(1.5);
   expect(Math.abs(geometry.width)).toBeLessThan(1.5);
-  expect(geometry.direction).toBe('forward');
-  expect(geometry.transform).toContain('rotateY(');
+  expect(geometry.clones).toBe(0);
+  expect(geometry.measuredPrepares).toBe(1);
+  expect(geometry.transform).toContain('translate3d(');
   expect(errors).toEqual([]);
 });
