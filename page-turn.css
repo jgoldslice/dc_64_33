@@ -1,38 +1,36 @@
-/* Canvas v8.16 — reversible paper-turn inspired by a light page curl.
- * Snapshot coordinates are set in JS, preserving the live view's exact screen
- * alignment rather than jumping to the overlay's top-left corner. */
-.canvas-turn-layer{
-  position:fixed;inset:0 0 calc(70px + env(safe-area-inset-bottom)) 0;
-  z-index:50;overflow:hidden;perspective:1450px;perspective-origin:50% 48%;
-  pointer-events:none;contain:layout paint;isolation:isolate;background:var(--bg)
+/* Blueprint v9.1 · Iteration 1: restrained live-view navigation.
+   No duplicate DOM snapshots or 3D texture/layer rotation. */
+:root{
+  --blueprint-motion-feedback:110ms;
+  --blueprint-motion-fast:155ms;
+  --blueprint-motion-navigation:220ms;
+  --blueprint-motion-ease:cubic-bezier(.2,.75,.22,1);
 }
-.canvas-turn-under,.canvas-turn-sheet{
-  position:absolute;inset:0;overflow:hidden;
-  backface-visibility:hidden;transform-style:preserve-3d
+.canvas-v91-pane{
+  display:block!important;
+  position:fixed!important;
+  top:var(--v91-top)!important;
+  left:var(--v91-left)!important;
+  width:var(--v91-width)!important;
+  min-height:var(--v91-height)!important;
+  max-height:none!important;
+  margin:0!important;
+  overflow:hidden!important;
+  background:var(--bg);
+  border-radius:0;
+  pointer-events:none!important;
+  transform-origin:top left;
+  will-change:transform,opacity;
+  backface-visibility:hidden;
 }
-.canvas-turn-under{opacity:.88;background:var(--bg)}
-.canvas-turn-sheet{
-  transform-origin:left center;background:var(--bg);
-  box-shadow:8px 0 28px rgba(0,0,0,var(--canvas-paper-shadow,.12));
-  will-change:transform,opacity
+.canvas-v91-source{z-index:49}
+.canvas-v91-target{z-index:48}
+.canvas-v91-settling{pointer-events:none!important}
+@media(max-width:739px), (max-height:599px){
+  .canvas-v91-pane{
+    max-height:calc(100dvh - var(--v91-top) - 64px)!important;
+  }
 }
-.canvas-turn-sheet::after{
-  content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(90deg,transparent 62%,rgba(0,0,0,.08) 93%,rgba(255,255,255,.15));
-  opacity:var(--canvas-fold-opacity,.1)
+@media(prefers-reduced-motion:reduce){
+  .canvas-v91-pane{transition:none!important;will-change:auto!important}
 }
-.canvas-turn-fold{
-  position:absolute;right:0;top:0;bottom:0;width:36px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5) 55%,rgba(0,0,0,.15));
-  pointer-events:none;opacity:var(--canvas-fold-opacity,.1)
-}
-.canvas-turn-layer[data-direction="back"] .canvas-turn-sheet::after{
-  background:linear-gradient(270deg,transparent 62%,rgba(0,0,0,.08) 93%,rgba(255,255,255,.15))
-}
-.canvas-turn-layer[data-direction="back"] .canvas-turn-fold{
-  right:auto;left:0;
-  background:linear-gradient(270deg,transparent,rgba(255,255,255,.5) 55%,rgba(0,0,0,.15))
-}
-.canvas-turn-snapshot{display:block!important;pointer-events:none!important}
-.canvas-turn-layer .view{display:block!important}
-@media(prefers-reduced-motion:reduce){.canvas-turn-layer{display:none!important}}
