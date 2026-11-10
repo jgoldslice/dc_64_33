@@ -73,6 +73,10 @@
   }
   function renderDays(){
     if(!modalWeek)return;
+    // An old scrollend or fallback must never override a freshly selected
+    // day when the 3-week strip is replaced and recentered.
+    clearTimeout(dateScrollTimer);
+    dateScrollLocked=true;
     trackWeek=startOfWeek(modalWeek);
     const track=document.createElement('div');
     track.className='v817-date-track';
@@ -100,6 +104,7 @@
   }
   function choose(date){
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+    clearTimeout(dateScrollTimer);
     const nextWeek=startOfWeek(stamp(date));
     const switched=!modalWeek||iso(modalWeek)!==iso(nextWeek);
     chosen=date;modalWeek=nextWeek;
@@ -128,10 +133,10 @@
   dates.addEventListener('scroll',()=>{
     if(dateScrollLocked||overlay.hidden)return;
     clearTimeout(dateScrollTimer);
-    // Native scrollend commits as soon as scrolling actually ends. This
-    // shorter fallback only handles Safari versions that omit scrollend;
-    // the dateGesture guard prevents committing during an active drag.
-    dateScrollTimer=setTimeout(settleDateScroll,155);
+    // Preserve the conservative date-picker fallback. It deliberately waits
+    // for delayed Safari momentum before deciding a selected event date;
+    // selecting a day itself clears pending timers in choose().
+    dateScrollTimer=setTimeout(settleDateScroll,280);
   },{passive:true});
   dates.addEventListener('scrollend',()=>{clearTimeout(dateScrollTimer);settleDateScroll();},{passive:true});
   dates.addEventListener('keydown',e=>{
@@ -161,7 +166,7 @@
       // If the finger was held still, scrollend/debounce may already have
       // fired while the gesture guard was active; settle after release.
       clearTimeout(dateScrollTimer);
-      dateScrollTimer=setTimeout(settleDateScroll,155);
+      dateScrollTimer=setTimeout(settleDateScroll,280);
     }
   },{passive:true});
   dates.addEventListener('touchcancel',()=>{dateGesture=null;},{passive:true});
