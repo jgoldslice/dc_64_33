@@ -103,3 +103,11 @@ Native XCTest: requires the Swift files in an actual iOS/Xcode target; use Xcode
 - Separate PR #36 (iPad/iPhone layout) reconciled without unexpectedly merging that draft.
 
 Until these gates pass, keep this experimental feature disabled in production and leave existing Notes as the default editor.
+
+## Web v9.2 integration status (after consolidating PRs #36 and #37)
+
+The published web shell now includes `pencilkit-entry-v92.js`, a **strictly gated launcher**. It renders a PencilKit option only when the page runs inside a genuine iOS Capacitor app that already reports a registered `BlueprintPencil` plugin. On Safari, iPhone-sized windows, PWAs and older native builds without that plugin, no visible PencilKit entry is offered.
+
+The launcher calls `capabilities` and then `openEditor` only after an explicit user click and a warning that native drawings are saved locally and excluded from the current complete backup and iPhone sync. It never modifies existing editable web SVG strokes. Browser tests use a simulated Capacitor object to validate the gate; they **do not compile or validate native Swift**.
+
+**To enable real native PencilKit** on the iPad, the existing local `ios/App/App.xcodeproj` must receive the Swift files, have the local Capacitor plugin registered, and be rebuilt in Xcode. The WebKit/Safari URL by itself cannot run PencilKit. The app should remain in experimental/native-only mode until integrated backup, import/recovery, data alignment and physical Pencil tests pass.
