@@ -102,3 +102,29 @@ test('Reduce Motion removes project/sheet entrances and preserves full controls'
   await expect(page.locator('#v87EventBack')).toBeVisible();
   await expect(page.locator('#v87EventBack .v87-event-sheet')).toHaveCSS('animation-name','none');
 });
+
+test('dragging an overflowing tab does not collapse its document scroll position',async({page})=>{
+  await boot(page);
+  const result=await page.evaluate(()=>{
+    const source=document.getElementById('today');
+    const spacer=document.createElement('div');spacer.style.height='2400px';
+    source.append(spacer);
+    window.scrollTo(0,300);
+    const original=window.scrollY;
+    const target=source.querySelector('.view-header h1');
+    const rect=target.getBoundingClientRect(),x=rect.x+65,y=rect.y+20;
+    const t=dx=>new Touch({identifier:11,target,clientX:x+dx,clientY:y});
+    const a=t(0),b=t(-100);
+    const send=(type,touches,changed)=>target.dispatchEvent(new TouchEvent(type,{
+      bubbles:true,cancelable:true,touches,changedTouches:changed,targetTouches:touches
+    }));
+    send('touchstart',[a],[a]);
+    send('touchmove',[b],[b]);
+    const during=window.scrollY;
+    send('touchcancel',[],[b]);
+    return {original,during};
+  });
+  expect(result.original).toBeGreaterThan(200);
+  expect(Math.abs(result.during-result.original)).toBeLessThan(2);
+  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+});
