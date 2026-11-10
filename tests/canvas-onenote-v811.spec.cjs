@@ -47,15 +47,15 @@ test('page list can create, rename, switch and restore notes across reload',asyn
   const errors=await notebook(page,'Multiple Pages');
   const list=page.locator('#v811PageList');
   const original=await page.locator('#v76PageSelect').inputValue();
-  page.once('dialog',d=>d.accept('Ideas'));
   await page.locator('#v811NewPage').click();
   await expect(list.locator('.v811-page-row')).toHaveCount(2);
   expect(await page.locator('#v76PageSelect').inputValue()).not.toBe(original);
   let active=await page.locator('#v76PageSelect').inputValue();
   let names=await list.locator('.v811-page-labels strong').allTextContents();
-  expect(names).toEqual(['Page 1','Ideas']);
-  page.once('dialog',d=>d.accept('Ideas and Sketches'));
+  expect(names).toEqual(['Page 1','Page 2']);
   await list.locator('[data-v811-rename-id="'+active+'"]').click();
+  page.once('dialog',d=>d.accept('Ideas and Sketches'));
+  await page.locator('#v76RenamePage').click();
   await expect(list.locator('.v811-page-labels strong').last()).toHaveText('Ideas and Sketches');
   // The new page starts with editable text, ready to type.
   const rich=page.locator('#v76Surface .v76-rich').first();
@@ -77,7 +77,6 @@ test('page list can create, rename, switch and restore notes across reload',asyn
 });
 test('compact multitasking window hides page rail but retains top page selector and saved content',async({page})=>{
   await notebook(page);
-  page.once('dialog',d=>d.accept('Chapter 2'));
   await page.locator('#v811NewPage').click();
   await expect(page.locator('#v811PageList .v811-page-row')).toHaveCount(2);
   await page.setViewportSize({width:600,height:900});

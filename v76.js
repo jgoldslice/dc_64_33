@@ -12,6 +12,8 @@
     '<div id="v76PageMenu" class="v76-page-menu" hidden><button type="button" id="v76RenamePage">Rename page</button>'+
     '<button type="button" id="v76DeletePage">Delete page</button></div></div>'+
     '<div class="v76-toolbar" role="toolbar" aria-label="Notebook tools">'+
+      '<div class="v93-layout-tools"><button type="button" id="v93TogglePageRail" aria-label="Expand notes, hide Pages panel" title="Expand notes" aria-pressed="false">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/><path d="M9 9h6v6H9z"/></svg></button></div>'+
       '<div class="v79-tool-group" role="group" aria-label="Text"><div class="v79-tool-buttons">'+
         '<button type="button" data-v76-mode="text" class="v812-textbox-button" aria-label="Textbox: tap the page to insert a text box" aria-pressed="false" title="Insert textbox">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M7 9h10M12 9v7"/></svg></button>'+
@@ -206,17 +208,25 @@
   }
   function syncZoomLayout(){
     if(!zoomViewport.clientWidth)return; // An inactive project may be hidden.
-    const baseWidth=zoomViewport.clientWidth;
-    const priorWidth=surface.clientWidth;
-    surface.style.width=baseWidth+'px';
-    const baseHeight=Math.max(1,surface.offsetHeight);
+    const ctx=current();
+    // At reduced zoom, the complete visible white area must STILL be ink:
+    // expand the logical sheet rather than painting unwritable margins.
+    // A saved width also preserves ink placed beyond the original right edge.
+    const savedWidth=Math.max(0,Number(ctx?.page.width)||0);
+    const baseWidth=Math.ceil(Math.max(zoomViewport.clientWidth,savedWidth,
+      zoomViewport.clientWidth/noteZoom));
+    const baseHeight=Math.ceil(Math.max(740,Number(ctx?.page.height)||740,
+      zoomViewport.clientHeight/noteZoom));
+    const priorWidth=surface.clientWidth,priorHeight=surface.clientHeight;
+    const width=baseWidth+'px',height=baseHeight+'px';
+    if(surface.style.width!==width)surface.style.width=width;
+    if(surface.style.height!==height)surface.style.height=height;
     zoomStage.style.width=Math.ceil(baseWidth*noteZoom)+'px';
     zoomStage.style.height=Math.ceil(baseHeight*noteZoom)+'px';
     surface.style.transform=Math.abs(noteZoom-1)<.0005?'none':'scale('+noteZoom+')';
-    // The ink's viewBox uses the *unscaled* surface dimensions; its screen
-    // CTM includes the zoom and maps Pencil events accurately at any level.
-    if(priorWidth!==surface.clientWidth){
-      const ctx=current();if(ctx)strokesView(ctx.page);
+    // Keep SVG pointer coordinates 1:1 with the logical notebook sheet.
+    if(priorWidth!==surface.clientWidth||priorHeight!==surface.clientHeight){
+      if(ctx)strokesView(ctx.page);
     }
   }
   function zoomAnchor(){
@@ -346,6 +356,15 @@
     observer.observe(surface);
   }
   updateZoomControls();
+  const pageRailToggle=document.getElementById('v93TogglePageRail');
+  pageRailToggle.addEventListener('click',()=>{
+    const expanded=root.classList.toggle('v93-notes-expanded');
+    pageRailToggle.setAttribute('aria-pressed',String(expanded));
+    pageRailToggle.setAttribute('aria-label',
+      expanded?'Show Pages panel':'Expand notes, hide Pages panel');
+    pageRailToggle.title=expanded?'Show Pages':'Expand notes';
+    requestAnimationFrame(syncZoomLayout);
+  });
 
   // Quadratic mid-point curves make Pencil handwriting fluid without
   // rewriting its saved raw points (which erasing, backups and undo use).
@@ -519,6 +538,7 @@
   }
   function renderPageList(p){
     if(!pageList)return;
+    closePageMenu();
     pageList.replaceChildren();
     for(const page of p.notePages||[]){
       const active=String(page.id)===String(p.activeNotePageId);
@@ -546,8 +566,10 @@
       rename.type='button';rename.className='v811-page-rename';
       rename.dataset.v811RenameId=String(page.id);
       rename.textContent='•••';
-      rename.title='Rename page';
-      rename.setAttribute('aria-label','Rename '+(page.title||'page'));
+      rename.title='Page options';
+      rename.setAttribute('aria-haspopup','menu');
+      rename.setAttribute('aria-expanded','false');
+      rename.setAttribute('aria-label','Options for '+(page.title||'page'));
       row.append(open,rename);
       pageList.append(row);
     }
@@ -577,12 +599,18 @@
     if(needed<=page.height)return;
     page.height=Math.ceil((needed+160)/180)*180;surface.style.height=page.height+'px';strokesView(page);syncZoomLayout();
   }
+  function growPageWidth(page,needed){
+    const available=Math.max(zoomViewport.clientWidth,Number(page.width)||0);
+    if(needed<=available)return;
+    page.width=Math.ceil((needed+80)/100)*100;
+    syncZoomLayout();
+  }
   function createText(x,y){
     const ctx=current();if(!ctx)return;
     const {page}=ctx;
     const width=Math.max(170,Math.min(360,surface.clientWidth-Math.max(0,x)-20));
     const o={id:newId(),type:'text',x:Math.max(0,Math.round(x)),y:Math.max(0,Math.round(y)),width,html:'',fontSize:sizeName(page.defaultTextSize)};
-    page.objects.push(o);growPage(page,y+150);persist();drawPage(ctx.p,page);
+    page.objects.push(o);growPageWidth(page,x+width+30);growPage(page,y+150);persist();drawPage(ctx.p,page);
     const box=surface.querySelector('[data-v76-item="'+o.id+'"]');
     if(box)enterTextEdit(box);
     applyMode('select');
@@ -626,43 +654,68 @@
       return;
     }
     if(button.dataset.v811RenameId){
-      const ctx=current(),pg=ctx?.p.notePages.find(pg=>String(pg.id)===button.dataset.v811RenameId);
-      if(!pg)return;
-      const text=prompt('Rename page',pg.title||'Page');
-      if(text===null)return;
-      const title=text.trim().slice(0,80);
-      if(!title)return;
-      pg.title=title;persist();renderPage(ctx.p,true);
+      showPageMenu(button,button.dataset.v811RenameId);
     }
   });
 
   document.getElementById('v76NewPage').addEventListener('click',()=>{
     const ctx=current();if(!ctx)return;
-    const n=ctx.p.notePages.length+1;
-    const title=(prompt('Page name','Page '+n)||'').trim();if(!title)return;
-    const pg={id:newId(),title:title.slice(0,80),height:740,defaultTextSize:'medium',objects:[{id:newId(),type:'text',x:14,y:22,width:320,html:'',fontSize:'medium'}],strokes:[]};
+    let n=ctx.p.notePages.length+1;
+    while(ctx.p.notePages.some(pg=>pg.title==='Page '+n))n++;
+    const pg={id:newId(),title:'Page '+n,height:740,defaultTextSize:'medium',objects:[{id:newId(),type:'text',x:14,y:22,width:320,html:'',fontSize:'medium'}],strokes:[]};
     ctx.p.notePages.push(pg);ctx.p.activeNotePageId=pg.id;persist();renderPage(ctx.p,true);
   });
   const pageMore=document.getElementById('v76PageMore');
   const pageMenu=document.getElementById('v76PageMenu');
-  const closePageMenu=()=>{pageMenu.hidden=true;pageMore.setAttribute('aria-expanded','false');};
-  pageMore.addEventListener('click',()=>{
-    pageMenu.hidden=!pageMenu.hidden;pageMore.setAttribute('aria-expanded',String(!pageMenu.hidden));
-  });
-  document.addEventListener('click',e=>{if(!(e.target instanceof Element))return;if(!e.target.closest('.v76-page-controls'))closePageMenu();});
-  document.getElementById('v76RenamePage').addEventListener('click',()=>{
+  const pageMenuHome=document.querySelector('.v76-page-controls');
+  let pageMenuTarget=null;
+  function closePageMenu(){
+    pageMenu.hidden=true;pageMore.setAttribute('aria-expanded','false');
+    pageList.querySelectorAll('.v811-page-rename').forEach(button=>button.setAttribute('aria-expanded','false'));
+    pageMenuHome.append(pageMenu);
+    pageMenuTarget=null;
+  }
+  function showPageMenu(button,id){
+    const repeat=!pageMenu.hidden&&pageMenuTarget===String(id);
     closePageMenu();
+    if(repeat)return;
+    pageMenuTarget=String(id);
+    button.closest('.v811-page-row').append(pageMenu);
+    pageMenu.hidden=false;
+    button.setAttribute('aria-expanded','true');
+  }
+  pageMore.addEventListener('click',()=>{
+    const wasOpen=!pageMenu.hidden;
+    closePageMenu();
+    if(wasOpen)return;
+    pageMenuTarget=String(current()?.page.id||'');
+    pageMenu.hidden=false;pageMore.setAttribute('aria-expanded','true');
+  });
+  document.addEventListener('click',e=>{
+    if(!(e.target instanceof Element))return;
+    if(!e.target.closest('.v76-page-controls,.v811-page-rename,.v76-page-menu'))closePageMenu();
+  });
+  document.getElementById('v76RenamePage').addEventListener('click',()=>{
+    const target=pageMenuTarget;closePageMenu();
     const ctx=current();if(!ctx)return;
-    const title=(prompt('Rename page',ctx.page.title)||'').trim();if(!title)return;
-    ctx.page.title=title.slice(0,80);persist();renderPage(ctx.p,true);
+    const pg=ctx.p.notePages.find(p=>String(p.id)===target)||ctx.page;
+    const entered=prompt('Rename page',pg.title);
+    if(entered===null)return;
+    const title=entered.trim().slice(0,80);if(!title)return;
+    pg.title=title;persist();renderPage(ctx.p,true);
   });
   document.getElementById('v76DeletePage').addEventListener('click',()=>{
-    closePageMenu();
+    const target=pageMenuTarget;closePageMenu();
     const ctx=current();if(!ctx)return;
+    const pg=ctx.p.notePages.find(p=>String(p.id)===target)||ctx.page;
     if(ctx.p.notePages.length<2){alert('Keep at least one page in each project.');return;}
-    if(!confirm('Delete "'+ctx.page.title+'" and everything on this page? This cannot be undone.'))return;
-    ctx.p.notePages=ctx.p.notePages.filter(pg=>pg!==ctx.page);
-    ctx.p.activeNotePageId=ctx.p.notePages[0].id;persist();renderPage(ctx.p,true);
+    if(!confirm('Delete "'+pg.title+'" and everything on this page? This cannot be undone.'))return;
+    const index=ctx.p.notePages.indexOf(pg);
+    ctx.p.notePages=ctx.p.notePages.filter(page=>page!==pg);
+    if(String(ctx.p.activeNotePageId)===String(pg.id)){
+      ctx.p.activeNotePageId=ctx.p.notePages[Math.min(index,ctx.p.notePages.length-1)].id;
+    }
+    persist();renderPage(ctx.p,true);
   });
   textSizeSelect.addEventListener('change',()=>{
     const next=sizeName(textSizeSelect.value),ctx=current();
@@ -1044,10 +1097,11 @@
   }
   ink.addEventListener('pointerdown',e=>{
     const ctx=current();if(!ctx||(mode!=='pen'&&mode!=='erase'))return;
-    if(e.pointerType==='mouse'&&e.button!==0)return;
-    // Never allow a second touch to replace an active Pencil stroke; Safari
-    // may dispatch pointerdown before touchstart detects a two-finger pinch.
-    if(activePinch||activeStroke||activeErase||(e.pointerType==='touch'&&!e.isPrimary))return;
+    // On iPad, only Apple Pencil (pointerType=pen) makes ink. Fingers and palms
+    // belong to navigation/pinch, even while Pen or Eraser is selected.
+    // Keep a primary mouse path for desktop testing and accessibility.
+    if(e.pointerType!=='pen'&&!(e.pointerType==='mouse'&&e.button===0))return;
+    if(activePinch||activeStroke||activeErase)return;
     e.preventDefault();ink.setPointerCapture(e.pointerId);
     const pt=inkPosition(e);
     if(mode==='erase'){
@@ -1095,8 +1149,14 @@
         const point=inkPosition(e),last=activeStroke.stroke.points.at(-1);
         if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
       }
+      const completed=activeStroke;
       flushInkRender();
-      activeStroke=null;persist();
+      activeStroke=null;
+      // Writing on the expanded zoom-out sheet must survive page switches.
+      const pts=completed.stroke.points;
+      growPage(completed.page,Math.max(...pts.map(point=>point.y))+70);
+      growPageWidth(completed.page,Math.max(...pts.map(point=>point.x))+60);
+      persist();
     }
   };
   ink.addEventListener('pointerup',finishStroke);

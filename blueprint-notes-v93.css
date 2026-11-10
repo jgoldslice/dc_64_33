@@ -1,0 +1,43 @@
+/* Blueprint v9.3 — OneNote-style, pen-first iPad notebook. */
+/* All note storage continues through the existing v76 per-project notePages. */
+#v76Surface.v76-is-drawing,
+#v76Surface.v76-is-drawing #v76Ink{
+  touch-action:pan-x pan-y!important; /* fingers pan and pinch; pen draws */
+}
+#v76Surface.v76-is-drawing #v76Ink{pointer-events:auto}
+.v93-layout-tools{display:flex;align-items:center;flex:none;padding-right:8px;border-right:1px solid var(--line)}
+#v93TogglePageRail{
+  width:44px;min-width:44px;height:44px;min-height:44px;display:grid;place-items:center;
+  border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);padding:9px
+}
+#v93TogglePageRail svg{display:block;width:21px;height:21px}
+#v93TogglePageRail[aria-pressed="true"]{background:var(--wash);color:var(--secondary-ui);border-color:var(--secondary-ui)}
+#v76Editor.v93-notes-expanded .v811-note-body{grid-template-columns:minmax(0,1fr)!important}
+#v76Editor.v93-notes-expanded .v811-page-rail{display:none!important}
+.v811-page-row{position:relative;overflow:visible}
+.v811-page-row .v76-page-menu{right:0;top:calc(100% + 3px);z-index:60}
+.v811-page-rename[aria-expanded="true"]{background:var(--wash);color:var(--ink)}
+@container (min-width:680px){
+  /* The … now belongs to each page in the left column. */
+  #v76Editor .v76-page-controls{display:none}
+}
+@media (max-width:739px), (max-height:599px){
+  /* Narrow-phone layout already has a compact page select, not a Pages rail. */
+  #v93TogglePageRail{display:none}
+  .v93-layout-tools{display:none}
+}
+@media (min-width:740px) and (min-height:600px){
+  /* Move the EXISTING global navigation toggle to the upper-left corner. */
+  .canvas-ipad-collapse,
+  body.canvas-ipad-sidebar-collapsed .canvas-ipad-collapse{
+    left:12px;top:calc(env(safe-area-inset-top) + 18px);
+    width:44px;height:44px;z-index:33
+  }
+  .canvas-ipad-nav-head{padding-left:52px;padding-right:0}
+  .canvas-ipad-brand-copy strong{font-size:20px}
+  body.canvas-ipad-sidebar-collapsed .canvas-ipad-nav-head{
+    padding:57px 0 10px;min-height:118px
+  }
+  /* The project-header duplicate is no longer necessary. */
+  #v892FocusCanvas{display:none!important}
+}
