@@ -1161,7 +1161,10 @@ function v6OpenProject(id){
   // Reopening a project should return to the workspace the user left.
   v6ProjectTab=['notes','actions','library'].includes(project.lastProjectTab)?project.lastProjectTab:'notes';
   v6SketchId=null;v6SketchEditing=false;v6Render();
-  $('projectWorkspace').scrollIntoView({behavior:'smooth',block:'start'});
+  // Moving the entire document after opening a project can fight iPad Notes
+  // and the keyboard. Jump to the workspace; its own small entry transition
+  // supplies context without animating the whole scroll viewport.
+  $('projectWorkspace').scrollIntoView({behavior:'instant',block:'start'});
 }
 function v6Render(){
   v6Normalize();const p=v6Project();
