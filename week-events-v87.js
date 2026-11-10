@@ -128,9 +128,10 @@
   dates.addEventListener('scroll',()=>{
     if(dateScrollLocked||overlay.hidden)return;
     clearTimeout(dateScrollTimer);
-    // Fallback for Safari builds without dependable scrollend. Do not update
-    // chosen while the user is still dragging or native snap is in motion.
-    dateScrollTimer=setTimeout(settleDateScroll,280);
+    // Native scrollend commits as soon as scrolling actually ends. This
+    // shorter fallback only handles Safari versions that omit scrollend;
+    // the dateGesture guard prevents committing during an active drag.
+    dateScrollTimer=setTimeout(settleDateScroll,155);
   },{passive:true});
   dates.addEventListener('scrollend',()=>{clearTimeout(dateScrollTimer);settleDateScroll();},{passive:true});
   dates.addEventListener('keydown',e=>{
@@ -160,7 +161,7 @@
       // If the finger was held still, scrollend/debounce may already have
       // fired while the gesture guard was active; settle after release.
       clearTimeout(dateScrollTimer);
-      dateScrollTimer=setTimeout(settleDateScroll,280);
+      dateScrollTimer=setTimeout(settleDateScroll,155);
     }
   },{passive:true});
   dates.addEventListener('touchcancel',()=>{dateGesture=null;},{passive:true});
@@ -220,10 +221,12 @@
     }
     new MutationObserver(()=>requestAnimationFrame(centerCalendar))
       .observe(document.getElementById('week'),{attributes:true,attributeFilter:['class']});
+    // Use native scroll-snap and scrollend first, with a bounded Safari
+    // fallback after motion stops rather than a fixed 280ms wait.
     weekWindow.addEventListener('scroll',()=>{
       if(calendarScrollLocked)return;
       clearTimeout(calendarScrollTimer);
-      calendarScrollTimer=setTimeout(settleCalendar,280);
+      calendarScrollTimer=setTimeout(settleCalendar,155);
     },{passive:true});
     weekWindow.addEventListener('scrollend',()=>{
       clearTimeout(calendarScrollTimer);
@@ -244,7 +247,7 @@
         shiftCalendar(dx<0?1:-1);
       }else{
         clearTimeout(calendarScrollTimer);
-        calendarScrollTimer=setTimeout(settleCalendar,280);
+        calendarScrollTimer=setTimeout(settleCalendar,155);
       }
     },{passive:true});
     weekWindow.addEventListener('touchcancel',()=>{calendarGesture=null;},{passive:true});
