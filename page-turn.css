@@ -46,12 +46,10 @@
   from{opacity:.6}
   to{opacity:1}
 }
-#projectWorkspace:not([hidden]) .v6-project-head,
+/* Animate only the heading. Transforming the settings header or Notes
+   pane creates a stacking context that can cover project menu actions. */
 #projectWorkspace:not([hidden]) .v6-project-title{
-  animation:blueprint-v91-arrive var(--blueprint-motion-fast) var(--blueprint-motion-ease) both;
-}
-#projectWorkspace .v6-project-pane:not([hidden]){
-  animation:blueprint-v91-fade var(--blueprint-motion-feedback) ease-out both;
+  animation:blueprint-v91-arrive var(--blueprint-motion-fast) var(--blueprint-motion-ease);
 }
 #projectWorkspace .v6-project-tabs button{
   transition:background-color var(--blueprint-motion-feedback) ease,
@@ -62,9 +60,7 @@
   animation:blueprint-v91-arrive var(--blueprint-motion-fast) var(--blueprint-motion-ease) both;
 }
 @media(prefers-reduced-motion:reduce){
-  #projectWorkspace:not([hidden]) .v6-project-head,
   #projectWorkspace:not([hidden]) .v6-project-title,
-  #projectWorkspace .v6-project-pane:not([hidden]),
   #v87EventBack:not([hidden]) .v87-event-sheet{
     animation:none!important;
   }
