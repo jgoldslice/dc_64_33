@@ -66,6 +66,8 @@
         try{
           const value=await plugin.exportPage({projectId:String(project.id),pageId:String(page.id)});
           await validatePage(value);
+          if(value.projectId!==String(project.id)||value.pageId!==String(page.id))
+            throw Error('Native drawing identity does not match the requested project/page');
           pages.push(value);
         }catch(error){
           // Missing native ink is normal on legacy SVG-only pages.
