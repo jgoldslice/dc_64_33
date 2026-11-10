@@ -35,6 +35,7 @@
       view.classList.remove('canvas-v91-pane','canvas-v91-source','canvas-v91-target','canvas-v91-settling');
       view.style.cssText=original;
     }
+    if(m.parent)m.parent.style.minHeight=m.parentMinHeight;
     m.target.inert=m.targetInert;
     if(m.targetAria===null)m.target.removeAttribute('aria-hidden');
     else m.target.setAttribute('aria-hidden',m.targetAria);
@@ -52,10 +53,15 @@
     if(!source||!target)return;
     const start=performance.now();
     const rect=source.getBoundingClientRect();
+    // Taking the active view out of flow must not collapse the document and
+    // silently move its scroll position during a drag.
+    const parent=source.parentElement;
+    const parentMinHeight=parent?.style.minHeight||'';
+    if(parent)parent.style.minHeight=Math.ceil(Math.max(parent.getBoundingClientRect().height,source.offsetHeight))+'px';
     const left=rect.left+'px',top=rect.top+'px',width=rect.width+'px';
     const height=Math.max(rect.height,innerHeight-rect.top)+'px';
     const stored={
-      source,target,to,direction,width:rect.width,progress:0,
+      source,target,to,direction,width:rect.width,progress:0,parent,parentMinHeight,
       fromCSS:source.style.cssText,toCSS:target.style.cssText,
       targetInert:target.inert,targetAria:target.getAttribute('aria-hidden'),
       timer:null
