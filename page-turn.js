@@ -1,10 +1,16 @@
 'use strict';
-/* Canvas paper turn: visual-only DOM snapshots; live views and saved data stay untouched. */
+/* Blueprint v9.1 · Iteration 1.
+   Gesture-driven navigation operates on the two EXISTING tab views. It never
+   deep-clones a view, so project/Notes DOM, listeners and user data stay intact.
+   A gesture is provisional until release; a cancelled drag changes no tabs. */
 (function(){
   const tabs=['today','week','myplan','brainstorm'];
   const reduce=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let gesture=null,overlay=null,turning=false;
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+  const debug=window.__blueprintMotionDebug={
+    snapshots:0,prepares:0,lastPrepareMs:0,lastSettleMs:0,interruptions:0
+  };
+  let gesture=null,motion=null,turning=false,frame=0;
   function protectedTarget(target){
     if(!(target instanceof Element))return true;
     if(target.closest('input,textarea,select,button,canvas,svg,video,a,summary,details,[contenteditable],[role="slider"],[role="tablist"],.no-swipe,.bottom-nav,.v76-notebook-ui,.v81-project-rail,[data-no-swipe]'))return true;
@@ -16,123 +22,153 @@
   }
   function blocked(){
     if(document.querySelector('.modal-back.open'))return true;
-    return [...document.querySelectorAll('[role="dialog"],.opening-overlay')].some(el=>!el.hidden&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden');
+    return [...document.querySelectorAll('[role="dialog"],.opening-overlay')]
+      .some(el=>!el.hidden&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden');
   }
-  function snapshot(view,position){
-    const copy=view.cloneNode(true);
-    copy.removeAttribute('id');
-    copy.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
-    copy.classList.add('canvas-turn-snapshot');
-    copy.setAttribute('aria-hidden','true');
-    copy.inert=true;
-    // The real .view lives inside .shell, with padding, an iPad sidebar and
-    // a scroll offset. A naked clone at (0,0) jumps UP and LEFT on touchstart.
-    // Pin both paper copies to the current on-screen coordinates instead.
-    copy.style.display='block';
-    copy.style.position='absolute';
-    copy.style.margin='0';
-    copy.style.left=position.x+'px';
-    copy.style.top=position.y+'px';
-    copy.style.width=position.width+'px';
-    copy.style.minHeight=Math.max(position.height,innerHeight-position.y)+'px';
-    return copy;
+  function cleanup(){
+    if(frame){cancelAnimationFrame(frame);frame=0;}
+    if(!motion){turning=false;return;}
+    if(motion.timer)clearTimeout(motion.timer);
+    const m=motion;motion=null;turning=false;
+    for(const [view,original] of [[m.source,m.fromCSS],[m.target,m.toCSS]]){
+      view.classList.remove('canvas-v91-pane','canvas-v91-source','canvas-v91-target','canvas-v91-settling');
+      view.style.cssText=original;
+    }
+    m.target.inert=m.targetInert;
+    if(m.targetAria===null)m.target.removeAttribute('aria-hidden');
+    else m.target.setAttribute('aria-hidden',m.targetAria);
+    document.body.classList.remove('canvas-v91-motion-active');
   }
-  function clear(){overlay?.layer.remove();overlay=null;turning=false;}
-  function create(from,to,direction){
-    if(overlay)return;
-    const source=document.getElementById(from),destination=document.getElementById(to);
-    if(!source||!destination)return;
-    const sourceRect=source.getBoundingClientRect();
-    const layer=document.createElement('div');
-    layer.className='canvas-turn-layer';
-    layer.dataset.direction=direction<0?'forward':'back';
-    layer.setAttribute('aria-hidden','true');
-    const underneath=document.createElement('div');
-    underneath.className='canvas-turn-under';
-    const sheet=document.createElement('div');
-    sheet.className='canvas-turn-sheet';
-    const fold=document.createElement('div');
-    fold.className='canvas-turn-fold';
-    layer.append(underneath,sheet);
-    document.body.append(layer);
-    const layerRect=layer.getBoundingClientRect();
-    const position={
-      x:sourceRect.left-layerRect.left,
-      y:sourceRect.top-layerRect.top,
-      width:sourceRect.width,
-      height:sourceRect.height
+  function finish(commit){
+    if(!motion)return;
+    const destination=motion.to;
+    cleanup();
+    if(commit)tab(destination);
+  }
+  function prepare(from,to,direction){
+    if(motion)return;
+    const source=document.getElementById(from),target=document.getElementById(to);
+    if(!source||!target)return;
+    const start=performance.now();
+    const rect=source.getBoundingClientRect();
+    const left=rect.left+'px',top=rect.top+'px',width=rect.width+'px';
+    const height=Math.max(rect.height,innerHeight-rect.top)+'px';
+    const stored={
+      source,target,to,direction,width:rect.width,progress:0,
+      fromCSS:source.style.cssText,toCSS:target.style.cssText,
+      targetInert:target.inert,targetAria:target.getAttribute('aria-hidden'),
+      timer:null
     };
-    underneath.append(snapshot(destination,position));
-    sheet.append(snapshot(source,position),fold);
-    sheet.style.transformOrigin=direction<0?'left center':'right center';
-    overlay={layer,underneath,sheet,direction};
+    for(const el of [source,target]){
+      el.style.setProperty('--v91-left',left);
+      el.style.setProperty('--v91-top',top);
+      el.style.setProperty('--v91-width',width);
+      el.style.setProperty('--v91-height',height);
+      el.classList.add('canvas-v91-pane');
+    }
+    source.classList.add('canvas-v91-source');
+    target.classList.add('canvas-v91-target');
+    target.inert=true;
+    target.setAttribute('aria-hidden','true');
+    document.body.classList.add('canvas-v91-motion-active');
+    motion=stored;
+    debug.prepares++;
+    debug.lastPrepareMs=performance.now()-start;
+    paint(0);
   }
-  function progress(p){
-    if(!overlay)return;
-    const v=clamp(p,0,1);
-    const angle=(overlay.direction<0?-1:1)*v*85;
-    // Gentle lift and a directional fold give the sheet some paper-like depth
-    // without reflowing the actual page or shifting its starting position.
-    overlay.sheet.style.transform='translate3d(0,'+(-3*v)+'px,0) rotateY('+angle+'deg)';
-    overlay.sheet.style.opacity=String(1-Math.max(0,v-.88)*2.7);
-    overlay.underneath.style.opacity=String(.88+.12*v);
-    overlay.sheet.style.setProperty('--canvas-fold-opacity',String(.10+.64*v));
-    overlay.sheet.style.setProperty('--canvas-paper-shadow',String(.12+.24*v));
+  function paint(value){
+    if(!motion)return;
+    const m=motion,p=clamp(value,0,1),direction=m.direction;
+    m.progress=p;
+    // A subtle 18% parallax is calmer and cheaper than 3D page curls.
+    m.source.style.transform='translate3d('+(direction*m.width*.18*p)+'px,0,0)';
+    m.source.style.opacity=String(1-.16*p);
+    m.target.style.transform='translate3d('+(-direction*m.width*(1-p))+'px,0,0)';
+    m.target.style.opacity=String(.92+.08*p);
   }
-  function settle(commit,to,p){
-    if(!overlay){if(commit)tab(to);return;}
+  function paintSoon(value){
+    if(!motion)return;
+    motion.progress=clamp(value,0,1);
+    if(frame)return;
+    frame=requestAnimationFrame(()=>{
+      frame=0;
+      if(motion)paint(motion.progress);
+    });
+  }
+  function settle(commit,fromProgress,velocity=0){
+    if(!motion){if(commit&&gesture?.to)tab(gesture.to);return;}
+    if(frame){cancelAnimationFrame(frame);frame=0;}
+    const m=motion;
     turning=true;
-    const duration=reduce()?0:Math.round((commit?1-p:p)*310);
-    overlay.sheet.style.transition='transform '+duration+'ms cubic-bezier(.2,.75,.18,1),opacity '+duration+'ms ease';
-    overlay.underneath.style.transition='opacity '+duration+'ms ease';
-    progress(commit?1:0);
-    const layer=overlay.layer;
-    const finish=()=>{
-      if(overlay?.layer!==layer)return;
-      if(commit)tab(to);
-      clear();
+    const remaining=commit?1-fromProgress:fromProgress;
+    // Deliberately short; unlike a fixed-duration turn, an almost-complete
+    // swipe never waits through the same animation as a tiny drag.
+    const duration=reduce()?0:Math.round(clamp(remaining*220,65,220));
+    debug.lastSettleMs=duration;
+    if(!duration){finish(commit);return;}
+    const easing='cubic-bezier(.2,.75,.22,1)';
+    for(const el of [m.source,m.target]){
+      el.classList.add('canvas-v91-settling');
+      el.style.transition='transform '+duration+'ms '+easing+',opacity '+duration+'ms ease';
+    }
+    paint(commit?1:0);
+    let done=false;
+    const complete=()=>{
+      if(done||motion!==m)return;
+      done=true;finish(commit);
     };
-    if(!duration){finish();return;}
-    let finished=false;
-    const once=()=>{if(finished)return;finished=true;finish();};
-    overlay.sheet.addEventListener('transitionend',once,{once:true});
-    // A transition can be interrupted by app backgrounding; use a bounded fallback.
-    setTimeout(once,duration+90);
+    m.source.addEventListener('transitionend',e=>{
+      if(e.propertyName==='transform')complete();
+    },{once:true});
+    m.timer=setTimeout(complete,duration+85);
+  }
+  function cancel(){
+    gesture=null;
+    cleanup();
   }
   document.addEventListener('touchstart',e=>{
+    // Another gesture can immediately retarget a settling navigation. Finish
+    // its state change before interpreting the new gesture; never lock the UI.
+    if(turning&&motion){debug.interruptions++;finish(motion.progress>.5);}
     gesture=null;
-    if(turning||e.touches.length!==1||blocked()||protectedTarget(e.target)||window.getSelection()?.toString().trim())return;
+    if(e.touches.length!==1||blocked()||protectedTarget(e.target)||window.getSelection()?.toString().trim())return;
     const view=document.querySelector('.view.active');
     if(!view||!tabs.includes(view.id)||!view.contains(e.target))return;
     if(view.id==='brainstorm'&&!document.getElementById('projectWorkspace')?.hidden)return;
     const touch=e.touches[0];
     if(touch.clientX<28||touch.clientX>innerWidth-28)return;
-    gesture={x:touch.clientX,y:touch.clientY,id:view.id,locked:false,invalid:false,progress:0,to:null};
+    gesture={x:touch.clientX,y:touch.clientY,id:view.id,locked:false,to:null,direction:0,progress:0};
   },{passive:true});
   document.addEventListener('touchmove',e=>{
     if(!gesture||e.touches.length!==1)return;
-    const t=e.touches[0],dx=t.clientX-gesture.x,dy=t.clientY-gesture.y;
+    const touch=e.touches[0],dx=touch.clientX-gesture.x,dy=touch.clientY-gesture.y;
     if(!gesture.locked){
-      if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)*1.25){gesture.invalid=true;gesture=null;return;}
+      if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)*1.25){gesture=null;return;}
       if(Math.abs(dx)<16||Math.abs(dx)<Math.abs(dy)*1.7)return;
-      const i=tabs.indexOf(gesture.id),next=i+(dx<0?1:-1);
+      const next=tabs.indexOf(gesture.id)+(dx<0?1:-1);
       if(next<0||next>=tabs.length){gesture=null;return;}
       gesture.to=tabs[next];gesture.direction=dx<0?-1:1;gesture.locked=true;
-      if(!reduce())create(gesture.id,gesture.to,gesture.direction);
+      if(!reduce())prepare(gesture.id,gesture.to,gesture.direction);
     }
-    if(!gesture)return;
-    if(gesture.locked&&e.cancelable)e.preventDefault();
-    gesture.progress=clamp(Math.abs(dx)/Math.max(220,innerWidth*.68),0,1);
-    progress(gesture.progress);
+    if(e.cancelable)e.preventDefault();
+    gesture.progress=clamp(dx*gesture.direction/Math.max(220,innerWidth*.72),0,1);
+    paintSoon(gesture.progress);
   },{passive:false});
   document.addEventListener('touchend',e=>{
     if(!gesture)return;
     const g=gesture;gesture=null;
-    if(!g.locked){clear();return;}
+    if(!g.locked){cancel();return;}
     const touch=e.changedTouches[0],dx=touch.clientX-g.x,dy=touch.clientY-g.y;
-    const commit=Math.abs(dx)>=72&&Math.abs(dx)>Math.abs(dy)*1.7&&!blocked();
-    settle(commit,g.to,g.progress);
+    const commit=dx*g.direction>=72&&Math.abs(dx)>Math.abs(dy)*1.7&&!blocked();
+    if(reduce()){cleanup();if(commit)tab(g.to);return;}
+    settle(commit,g.progress);
   },{passive:true});
-  document.addEventListener('touchcancel',()=>{gesture=null;settle(false,null,overlay?0.4:0);},{passive:true});
-  window.addEventListener('pagehide',clear);
+  document.addEventListener('touchcancel',()=>{gesture=null;if(motion)settle(false,motion.progress);},{passive:true});
+  // Explicit tab taps win over an in-flight animation.
+  document.querySelector('.bottom-nav')?.addEventListener('pointerdown',()=>{
+    if(motion)cancel();
+  },true);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel();});
+  window.addEventListener('pagehide',cancel);
+  window.addEventListener('resize',()=>{if(motion)cancel();},{passive:true});
 })();
