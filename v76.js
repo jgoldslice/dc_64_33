@@ -215,7 +215,8 @@
     const savedWidth=Math.max(0,Number(ctx?.page.width)||0);
     const baseWidth=Math.ceil(Math.max(zoomViewport.clientWidth,savedWidth,
       zoomViewport.clientWidth/noteZoom));
-    const baseHeight=Math.ceil(Math.max(740,Number(ctx?.page.height)||740,
+    const cssMinHeight=parseFloat(getComputedStyle(surface).minHeight)||0;
+    const baseHeight=Math.ceil(Math.max(740,cssMinHeight,Number(ctx?.page.height)||740,
       zoomViewport.clientHeight/noteZoom));
     const priorWidth=surface.clientWidth,priorHeight=surface.clientHeight;
     const width=baseWidth+'px',height=baseHeight+'px';

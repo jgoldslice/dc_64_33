@@ -16,15 +16,15 @@ const pageOverflow=page=>page.evaluate(()=>document.documentElement.scrollWidth-
 test('portrait iPad can expand canvas to show the Pages rail without changing notebook data',async({page})=>{
   await page.setViewportSize({width:834,height:1194});
   const errors=await project(page);
-  const focus=page.locator('#v892FocusCanvas');
+  const focus=page.locator('.canvas-ipad-collapse');
   await expect(focus).toBeVisible();
-  await expect(focus).toHaveAttribute('aria-label','Expand project canvas');
+  await expect(focus).toHaveAttribute('aria-label','Collapse sidebar');
   await expect(page.locator('#brainstorm>.view-header')).toBeHidden();
   const before=await notebookWidth(page);
   const original=await page.evaluate(()=>JSON.stringify(v6Project().notePages));
   await focus.click();
   await expect(page.locator('body')).toHaveClass(/canvas-ipad-sidebar-collapsed/);
-  await expect(focus).toHaveAttribute('aria-label','Show navigation sidebar');
+  await expect(focus).toHaveAttribute('aria-label','Expand sidebar');
   await expect(focus).toHaveAttribute('aria-pressed','true');
   await expect.poll(()=>notebookWidth(page)).toBeGreaterThan(before+45);
   await expect(page.locator('.v811-page-rail')).toBeVisible();
@@ -38,14 +38,12 @@ test('portrait iPad can expand canvas to show the Pages rail without changing no
 test('iPad sidebar toggle and workspace focus reflect the same accessible state',async({page})=>{
   await page.setViewportSize({width:1194,height:834});
   const errors=await project(page);
-  const focus=page.locator('#v892FocusCanvas');
   const sidebar=page.locator('.canvas-ipad-collapse');
   await sidebar.click();
-  await expect(focus).toHaveAttribute('aria-pressed','true');
-  await expect(focus).toHaveAttribute('aria-label','Show navigation sidebar');
-  await focus.click();
+  await expect(sidebar).toHaveAttribute('aria-pressed','true');
+  await expect(sidebar).toHaveAttribute('aria-label','Expand sidebar');
+  await sidebar.click();
   await expect(sidebar).toHaveAttribute('aria-pressed','false');
-  await expect(focus).toHaveAttribute('aria-pressed','false');
   await expect(page.locator('.bottom-nav>button[data-tab]')).toHaveCount(4);
   expect(errors).toEqual([]);
 });
@@ -83,7 +81,7 @@ test('iPad layout retains good touch targets and no document overflow at multipl
   await project(page);
   for(const size of [{width:1024,height:768},{width:834,height:1194},{width:1194,height:834}]){
     await page.setViewportSize(size);
-    await expect(page.locator('#v892FocusCanvas')).toBeVisible();
+    await expect(page.locator('.canvas-ipad-collapse')).toBeVisible();
     await expect.poll(()=>pageOverflow(page)).toBeLessThanOrEqual(4);
     const buttons=await page.locator('#projectNotes .v76-toolbar button:visible').evaluateAll(nodes=>
       nodes.map(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height})));
