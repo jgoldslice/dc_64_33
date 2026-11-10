@@ -34,3 +34,39 @@
 @media(prefers-reduced-motion:reduce){
   .canvas-v91-pane{transition:none!important;will-change:auto!important}
 }
+
+
+/* Iteration 3: restrained spatial feedback. Never animate the Pencil canvas
+   or scroll the entire document when opening a project. */
+@keyframes blueprint-v91-arrive{
+  from{opacity:.25;transform:translate3d(0,5px,0)}
+  to{opacity:1;transform:none}
+}
+@keyframes blueprint-v91-fade{
+  from{opacity:.6}
+  to{opacity:1}
+}
+#projectWorkspace:not([hidden]) .v6-project-head,
+#projectWorkspace:not([hidden]) .v6-project-title{
+  animation:blueprint-v91-arrive var(--blueprint-motion-fast) var(--blueprint-motion-ease) both;
+}
+#projectWorkspace .v6-project-pane:not([hidden]){
+  animation:blueprint-v91-fade var(--blueprint-motion-feedback) ease-out both;
+}
+#projectWorkspace .v6-project-tabs button{
+  transition:background-color var(--blueprint-motion-feedback) ease,
+             border-color var(--blueprint-motion-feedback) ease,
+             color var(--blueprint-motion-feedback) ease;
+}
+#v87EventBack:not([hidden]) .v87-event-sheet{
+  animation:blueprint-v91-arrive var(--blueprint-motion-fast) var(--blueprint-motion-ease) both;
+}
+@media(prefers-reduced-motion:reduce){
+  #projectWorkspace:not([hidden]) .v6-project-head,
+  #projectWorkspace:not([hidden]) .v6-project-title,
+  #projectWorkspace .v6-project-pane:not([hidden]),
+  #v87EventBack:not([hidden]) .v87-event-sheet{
+    animation:none!important;
+  }
+  #projectWorkspace .v6-project-tabs button{transition:none!important}
+}
