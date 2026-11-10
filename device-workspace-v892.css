@@ -83,3 +83,11 @@
 @media (prefers-reduced-motion:reduce){
   #v892FocusCanvas{transition:none}
 }
+
+/* Native-only experiment: never display on the iPhone companion. Safari does
+   not create this button at all; only an installed Capacitor PencilKit plugin
+   can supply it. */
+#v92PencilKit{display:none;white-space:nowrap}
+@media (min-width:740px) and (min-height:600px){
+  #v92PencilKit{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 11px}
+}
