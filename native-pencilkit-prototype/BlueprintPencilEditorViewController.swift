@@ -176,7 +176,8 @@ final class BlueprintPencilEditorViewController: UIViewController, PKCanvasViewD
     @objc private func doneTapped() {
         do {
             let manifest = try saveCurrentPage()
-            dismiss(animated: true) { [weak self] in self?.onComplete?(.success(manifest)) }
+            let completion = onComplete
+            dismiss(animated: true) { completion?(.success(manifest)) }
         } catch {
             // Keep the editor open and the ink editable until the save succeeds.
             showError("Drawing was not saved; try again", error)
