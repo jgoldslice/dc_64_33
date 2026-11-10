@@ -212,7 +212,7 @@
     const baseHeight=Math.max(1,surface.offsetHeight);
     zoomStage.style.width=Math.ceil(baseWidth*noteZoom)+'px';
     zoomStage.style.height=Math.ceil(baseHeight*noteZoom)+'px';
-    surface.style.transform='scale('+noteZoom+')';
+    surface.style.transform=Math.abs(noteZoom-1)<.0005?'none':'scale('+noteZoom+')';
     // The ink's viewBox uses the *unscaled* surface dimensions; its screen
     // CTM includes the zoom and maps Pencil events accurately at any level.
     if(priorWidth!==surface.clientWidth){
@@ -775,8 +775,13 @@
         try{
           const image=new Image();
           await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('Could not render sketch'));image.src=url;});
-          const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
-          canvas.getContext('2d').drawImage(image,0,0,width,height);
+          // Export crisp PNGs on Retina displays without changing editable ink.
+          // Cap output to about 12 MP for unusually large notebook pages.
+          const pixels=Math.max(1,width*height);
+          const exportScale=Math.max(1,Math.min(window.devicePixelRatio||1,3,Math.sqrt(12000000/pixels)));
+          const canvas=document.createElement('canvas');
+          canvas.width=Math.round(width*exportScale);canvas.height=Math.round(height*exportScale);
+          canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
           blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
           if(!blob)throw Error('Could not encode sketch');
         }finally{URL.revokeObjectURL(url);}
