@@ -269,7 +269,8 @@
   position:absolute;
   left:0;top:0;
   transform-origin:0 0;
-  will-change:transform;
+  /* A permanent compositor hint can cache the page as a softened texture. */
+  will-change:auto;
 }
 /* Browsers may scroll with one finger while a second finger starts a
    notebook-specific pinch, rather than enlarging Safari's entire viewport. */
