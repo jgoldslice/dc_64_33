@@ -1,0 +1,131 @@
+
+/* Blueprint v9.18 — native-feeling, five-stage planning sheet */
+#myplan > .plan-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
+#myplan > .plan-tabs button{min-width:0;padding-inline:5px}
+.wb-overview-feature{background:linear-gradient(120deg,color-mix(in srgb,var(--primary) 12%,var(--surface)),var(--surface) 72%)}
+.wb-overview-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.wb-overview-top h2{font:normal clamp(25px,3vw,34px) Georgia,serif;margin:8px 0}
+.wb-overview-top .icon{height:34px;width:34px;opacity:.85}
+.wb-overview-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:18px}
+.wb-overview-actions .small{margin:0}
+.wb-overview-sections{display:grid;gap:12px;margin-top:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.wb-overview-goal{display:block;width:100%;background:transparent;border:0;border-bottom:1px solid var(--line);padding:11px 0;text-align:left;color:var(--ink)}
+.wb-overview-goal:last-child{border-bottom:0}
+.wb-overview-goal strong{font-size:14px;display:block}
+.wb-overview-goal small{font-size:11px;color:var(--muted)}
+.wb-mini-track{height:5px;background:var(--line);border-radius:6px;overflow:hidden;margin:8px 0 5px}
+.wb-mini-track>span{display:block;height:100%;background:var(--secondary);border-radius:6px}
+.wb-upcoming-line{padding:9px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center}
+.wb-upcoming-line:last-child{border:0}
+.wb-upcoming-line span:first-child{font-size:11px;color:var(--muted);width:64px;flex:none}
+.wb-upcoming-line span:last-child{font-size:13px;overflow-wrap:anywhere}
+.wb-week-shortcut{border:1px solid var(--line);border-radius:9px;min-height:35px;padding:6px 8px;background:var(--surface);color:var(--secondary-ui);font-size:11px;font-weight:650;white-space:nowrap}
+.wb-back[hidden]{display:none!important}
+.wb-back{position:fixed;inset:0;z-index:20000;padding:16px;display:grid;place-items:center;background:rgba(12,18,18,.48);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)}
+.wb-sheet{width:min(100%,1030px);height:min(840px,calc(100dvh - 32px));max-height:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 90px #0003}
+.wb-header{padding:21px 24px 12px;flex:none;border-bottom:1px solid var(--line)}
+.wb-titlebar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.wb-titlebar h2{font:normal clamp(25px,3vw,32px)/1.2 Georgia,serif;margin:5px 0 0}
+.wb-titlebar button,.wb-week-pager button{min-width:40px;min-height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:23px}
+.wb-progress-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-top:19px}
+.wb-progress-nav button{min-width:0;border:0;background:transparent;color:var(--muted);padding:6px 2px 4px;font-size:clamp(10px,1.2vw,12px);text-align:center}
+.wb-progress-nav button::before{content:'';display:block;height:4px;background:var(--line);border-radius:6px;margin-bottom:8px}
+.wb-progress-nav button[aria-current="step"]{color:var(--ink);font-weight:700}
+.wb-progress-nav button[aria-current="step"]::before{background:var(--secondary)}
+.wb-progress-nav button.wb-done::before{background:color-mix(in srgb,var(--secondary) 50%,var(--line))}
+.wb-main{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:20px 24px 28px;-webkit-overflow-scrolling:touch}
+.wb-section-heading{font:normal 22px Georgia,serif;margin:0 0 6px}
+.wb-subtext{font-size:13px;color:var(--muted);margin:0 0 19px;line-height:1.5}
+.wb-block{border:1px solid var(--line);border-radius:15px;background:var(--surface);padding:16px;margin:0 0 13px;min-width:0}
+.wb-block-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}
+.wb-block-title h3{font:normal 19px Georgia,serif;margin:0}
+.wb-block-title small,.wb-hint{font-size:12px;color:var(--muted)}
+.wb-list{display:grid;gap:3px}
+.wb-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 80%,transparent)}
+.wb-row:last-child{border-bottom:none}
+.wb-row input[type=checkbox]{width:20px;height:20px;flex:none;accent-color:var(--secondary)}
+.wb-row-main{min-width:0;flex:1;overflow-wrap:anywhere;font-size:14px}
+.wb-row-main small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.wb-row button,.wb-inline-action{border:0;background:transparent;color:var(--secondary-ui);font-size:12px;font-weight:650;padding:8px;flex:none}
+.wb-chip{display:inline-block;padding:5px 8px;border-radius:8px;background:var(--wash);font-size:11px;color:var(--ink)}
+.wb-empty{color:var(--muted);font-size:13px;margin:8px 0}
+.wb-habit-table{overflow-x:auto}
+.wb-habit-row{display:grid;grid-template-columns:minmax(120px,1.3fr) repeat(7,minmax(31px,1fr));gap:4px;align-items:center;margin:7px 0}
+.wb-habit-row>span:first-child{font-size:13px;overflow-wrap:anywhere}
+.wb-habit-row label{text-align:center;display:grid;place-items:center;min-height:37px}
+.wb-habit-row input{width:18px;height:18px;accent-color:var(--secondary)}
+.wb-habit-row .wb-off{text-align:center;color:var(--muted);font-size:13px}
+.wb-habit-head{text-align:center;font-size:11px;color:var(--muted);font-weight:650}
+.wb-goal{border:1px solid var(--line);border-radius:13px;overflow:hidden;margin-bottom:10px}
+.wb-goal>summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:10px;padding:13px 15px;list-style:none}
+.wb-goal>summary::-webkit-details-marker{display:none}
+.wb-goal-summary strong{font-size:14px;display:block}
+.wb-goal-summary small{font-size:11px;color:var(--muted)}
+.wb-goal-editor{border-top:1px solid var(--line);padding:15px;display:grid;gap:12px}
+.wb-goal-editor label,.wb-event-editor label,.wb-new-priority label{display:grid;gap:6px;font-size:12px;font-weight:650}
+.wb-goal-editor input[type=text],.wb-goal-editor textarea,.wb-goal-editor select,.wb-event-editor input,.wb-new-priority input,.wb-new-priority select,.wb-carry-date{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--ink);font-size:14px}
+.wb-goal-editor textarea{min-height:68px;resize:vertical}
+.wb-step{display:flex;align-items:center;gap:7px}
+.wb-step input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:var(--secondary)}
+.wb-step input[type=text]{flex:1;min-width:0}
+.wb-step button,.wb-order button{min-width:34px;min-height:36px;background:var(--surface);border:1px solid var(--line);border-radius:8px;color:var(--secondary-ui)}
+.wb-add-step,.wb-secondary-action{border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--secondary-ui);min-height:38px;padding:8px 12px;font-size:13px;font-weight:650}
+.wb-week-pager{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.wb-week-pager strong{font-size:14px;flex:1;text-align:center}
+.wb-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.wb-day{display:flex;flex-direction:column;gap:7px;min-width:0;min-height:145px;padding:8px 6px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.wb-day.wb-selected{border-color:var(--secondary-ui);box-shadow:inset 0 0 0 1px var(--secondary-ui)}
+.wb-day-select{border:0;background:transparent;color:var(--ink);text-align:center;padding:3px;font-weight:650;font-size:12px;min-height:30px}
+.wb-event{font-size:11px;text-align:left;line-height:1.3;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:7px 5px;overflow-wrap:anywhere}
+.wb-event time{display:block;font-size:10px;color:var(--muted);margin-top:3px}
+.wb-days-strip{display:none;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wb-days-strip button{border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);padding:9px 2px;min-width:0;min-height:54px;display:grid;justify-items:center;font-size:11px}
+.wb-days-strip button[aria-pressed=true]{border-color:var(--secondary-ui);background:var(--wash)}
+.wb-day-detail{display:none}
+.wb-event-editor{display:grid;grid-template-columns:minmax(0,2fr) minmax(105px,1fr) minmax(110px,1fr);gap:10px;align-items:end}
+.wb-event-editor .wb-event-actions{grid-column:1/-1;display:flex;gap:9px;justify-content:flex-end}
+.wb-input-button{border-radius:10px;border:1px solid var(--secondary-ui);background:var(--wash);color:var(--ink);padding:9px 12px;min-height:42px;font-weight:650}
+.wb-order{display:grid;gap:8px}
+.wb-priority{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:11px;padding:8px 10px;background:var(--surface);min-width:0}
+.wb-priority [data-wb-drag]{border:0;touch-action:none;cursor:grab;color:var(--muted);background:transparent;font-size:20px;min-width:30px;min-height:38px}
+.wb-priority.wb-drag-target{outline:2px solid var(--secondary-ui)}
+.wb-priority .wb-priority-title{flex:1;min-width:0;font-size:13px;overflow-wrap:anywhere}
+.wb-priority .wb-priority-title small{display:block;color:var(--muted);font-size:11px}
+.wb-priority-num{font:normal 18px Georgia,serif;color:var(--secondary-ui);width:22px;flex:none}
+.wb-order-actions{display:flex;gap:4px}
+.wb-new-priority{display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1fr) auto;gap:8px;align-items:end}
+.wb-review-group{border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:10px}
+.wb-review-group h3{font-size:14px;margin:0 0 9px}
+.wb-review-group p{font-size:13px;margin:5px 0;color:var(--muted)}
+.wb-footer{flex:none;border-top:1px solid var(--line);padding:12px 24px calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface)}
+.wb-footer-actions{display:flex;gap:9px;align-items:center}
+.wb-footer button{min-height:42px;border-radius:10px;padding:9px 16px;font-weight:650;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.wb-footer button.wb-primary{background:var(--primary);color:var(--surface);border-color:var(--primary)}
+.wb-footer button:disabled{opacity:.45;cursor:default}
+.wb-footer .wb-error{color:#b15140;font-size:11px;max-width:260px}
+.wb-undo{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:13px;background:var(--surface)}
+.wb-undo button{border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--secondary-ui);padding:9px 12px}
+@media(max-width:760px){
+  .wb-back{padding:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .wb-sheet{width:100%;height:100dvh;max-height:none;border:0;border-radius:0}
+  .wb-header{padding:calc(12px + env(safe-area-inset-top)) 15px 9px}
+  .wb-main{padding:14px 15px 20px}
+  .wb-footer{padding:10px 15px calc(10px + env(safe-area-inset-bottom))}
+  .wb-footer button{padding-inline:12px}
+  .wb-progress-nav{gap:2px;margin-top:12px}
+  .wb-progress-nav button{font-size:10px}
+  .wb-calendar{display:none}
+  .wb-days-strip{display:grid}
+  .wb-day-detail{display:block;margin-top:13px}
+  .wb-habit-row{min-width:410px}
+  .wb-event-editor{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .wb-event-editor label:first-child{grid-column:1/-1}
+  .wb-new-priority{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .wb-new-priority label:first-child{grid-column:1/-1}
+  .wb-new-priority button{grid-column:1/-1}
+  .wb-overview-sections{grid-template-columns:minmax(0,1fr)}
+  #week .wb-week-shortcut{font-size:10px;min-width:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .wb-back,.wb-sheet{transition:none!important;animation:none!important}
+}

@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const base = 'http://127.0.0.1:8765/';
-test('Blueprint opens without splash and navigates into Plan with Goals selected', async ({ page }) => {
+test('Blueprint opens without splash and navigates into Plan Overview by default', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
@@ -13,14 +13,16 @@ test('Blueprint opens without splash and navigates into Plan with Goals selected
   await expect(page.locator('#myplanTitle')).toHaveCount(0);
   await expect(page.locator('#myplan')).toHaveAttribute('aria-label','Plan');
   await expect(page.locator('.bottom-nav button[data-tab="myplan"] span')).toHaveText('Plan');
-  await expect(page.locator('#goals')).toBeVisible();
+  await expect(page.locator('#overview')).toBeVisible();
+  await expect(page.locator('#goals')).toBeHidden();
   await expect(page.locator('#tasks')).toBeHidden();
-  await expect(page.locator('#myplan .eyebrow')).toHaveCount(0);
+  await expect(page.locator('#myplan .eyebrow')).toContainText('Weekly Blueprint');
   await page.locator('[data-plan-tab="tasks"]').click();
   await expect(page.locator('#tasks')).toBeVisible();
   await page.locator('.bottom-nav button[data-tab="today"]').click();
   await page.locator('.bottom-nav button[data-tab="myplan"]').click();
-  await expect(page.locator('#goals')).toBeVisible();
+  await expect(page.locator('#overview')).toBeVisible();
+  await expect(page.locator('#goals')).toBeHidden();
   await expect(page.locator('#openingOverlay')).toBeHidden();
   expect(errors).toEqual([]);
 });
