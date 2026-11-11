@@ -31,6 +31,15 @@ test('Today layout follows remaining workspace width, including iPad sidebar and
 test('empty Today cards avoid excessive reserved space, dense data remains scrollable',async({page})=>{
   await page.setViewportSize({width:834,height:1194});
   await page.goto(base);
+  // The app may include sample tasks and events on first load; a test of
+  // *empty* card geometry must explicitly start with empty collections.
+  await page.evaluate(()=>{
+    state.events=[];
+    state.tasks=[];
+    state.habits=[];
+    state.projects=[];
+    render();
+  });
   const dimensions=await page.evaluate(()=>{
     const c=n=>document.querySelector('#today .'+n).getBoundingClientRect().height;
     return [c('v917-schedule'),c('v917-habits'),c('v917-tasks'),c('v917-priorities'),c('v917-projects')];
