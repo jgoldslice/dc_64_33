@@ -42,13 +42,13 @@ public final class BlueprintSharePlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc public func listPending(_ call: CAPPluginCall) {
         do {
-            let entries = try inbox().pending()
-            let data = try JSONEncoder().encode(entries)
+            let report = try inbox().pendingReport()
+            let data = try JSONEncoder().encode(report.entries)
             guard let json = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
                 call.reject("Could not serialize pending shares.")
                 return
             }
-            call.resolve(["entries": json])
+            call.resolve(["entries": json, "errors": report.errors])
         } catch { call.reject(error.localizedDescription) }
     }
 
