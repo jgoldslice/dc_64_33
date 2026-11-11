@@ -46,20 +46,23 @@ test('wide iPad keeps the Today schedule dominant and Week calendar to the right
   const today = await page.evaluate(() => {
     const b = id => document.getElementById(id).closest('section.card').getBoundingClientRect();
     const schedule = b('todayGlance'), habits = b('todayHabits');
-    const priorities = b('v77TodayPriorities'), projects = b('v77TodayProjects');
+    const tasks=b('v917TodayTasks'),priorities = b('v77TodayPriorities'), projects = b('v77TodayProjects');
     return { schedule: { left: schedule.left, right: schedule.right },
       habits: { left: habits.left, right: habits.right },
-      priorities: { left: priorities.left, right: priorities.right },
+      tasks: {left:tasks.left,right:tasks.right,bottom:tasks.bottom},
+       priorities: { left: priorities.left, right: priorities.right, bottom:priorities.bottom },
       projects: { left: projects.left, right: projects.right, top: projects.top },
       scheduleBottom: schedule.bottom };
   });
   expect(today.schedule.right).toBeLessThan(today.habits.left + 4);
   expect(today.schedule.right).toBeLessThan(today.priorities.left + 4);
-  // Projects now follows Today at a Glance in the same independent column.
+  // Projects spans both columns below the paired Tasks and Priorities row.
   expect(Math.abs(today.projects.left-today.schedule.left)).toBeLessThanOrEqual(4);
-  expect(Math.abs(today.projects.right-today.schedule.right)).toBeLessThanOrEqual(4);
-  expect(today.projects.top-today.scheduleBottom).toBeGreaterThanOrEqual(8);
-  expect(today.projects.top-today.scheduleBottom).toBeLessThanOrEqual(16);
+  expect(Math.abs(today.projects.right-today.habits.right)).toBeLessThanOrEqual(4);
+  expect(today.tasks.right).toBeLessThan(today.priorities.left+4);
+  expect(Math.abs(today.tasks.bottom-today.priorities.bottom)).toBeLessThanOrEqual(4);
+  expect(today.projects.top-today.tasks.bottom).toBeGreaterThanOrEqual(8);
+  expect(today.projects.top-today.tasks.bottom).toBeLessThanOrEqual(15);
 
   await page.locator('[data-tab="week"]').click();
   const week = await page.locator('#week .week-v4').evaluate(el => getComputedStyle(el).gridTemplateAreas);

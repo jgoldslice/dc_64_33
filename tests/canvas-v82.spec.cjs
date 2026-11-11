@@ -56,7 +56,7 @@ test('Reopening a project returns to its last Notes, To-Do or Library tab',async
   await expect(page.locator('#v76Editor')).toBeVisible();
 });
 
-test('Overdue tasks stay in Today at a Glance without adding another home card',async({page})=>{
+test('Overdue tasks appear in dedicated Today Tasks card without adding duplicates',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks.push(
@@ -65,11 +65,12 @@ test('Overdue tasks stay in Today at a Glance without adding another home card',
     );
     save();render();
   });
-  await expect(page.locator('#todayGlance .v82-overdue-label')).toHaveText('Overdue');
-  await expect(page.locator('#todayGlance')).toContainText('Missed important task');
-  await expect(page.locator('#todayGlance')).not.toContainText('Already finished');
+  await expect(page.locator('#v917TodayTasks .v82-overdue-label')).toHaveText('Overdue');
+  await expect(page.locator('#v917TodayTasks')).toContainText('Missed important task');
+  await expect(page.locator('#v917TodayTasks')).not.toContainText('Already finished');
+  await expect(page.locator('#todayGlance')).not.toContainText('Missed important task');
   const headings=await page.locator('#today>.stack>section:visible>.card-heading h2').allTextContents();
-  expect(headings.length).toBe(4);
+  expect(headings.length).toBe(5);
 });
 
 test('Deleting one project keeps cross-project media, and removes orphaned files',async({page})=>{
