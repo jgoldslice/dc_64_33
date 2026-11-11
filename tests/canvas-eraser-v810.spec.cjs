@@ -25,6 +25,8 @@ async function loadStrokes(page,strokes){
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Eraser sweep test'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
+
   await expect(page.locator('#v76Editor')).toBeVisible();
   await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(strokes.length);
 }
@@ -99,6 +101,8 @@ test('dragging the eraser across several strokes removes every crossed stroke an
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Eraser sweep test'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
+
   await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.map(s=>s.id))).toEqual(['stroke-untouched']);
   expect(errors).toEqual([]);

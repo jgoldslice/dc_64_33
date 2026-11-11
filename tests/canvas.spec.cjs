@@ -121,6 +121,7 @@ test('Tap selects note text; left and right resize handles work, move control re
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Resize Test'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   const persisted=await metrics();
   expect(persisted.left).toBeCloseTo(moved.left,0);
   expect(persisted.width).toBeCloseTo(moved.width,0);
@@ -247,6 +248,7 @@ test('Text stays transparent over images and size choices persist independently'
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Transparency Test'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Surface .v76-text .v76-rich').first()).toHaveAttribute('data-font-size','large');
   await expect(page.locator('#v76Surface .v76-text .v76-rich').first()).toHaveText(savedText);
   expect(errors).toEqual([]);

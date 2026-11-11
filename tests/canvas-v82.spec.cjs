@@ -78,6 +78,8 @@ test('Deleting one project keeps cross-project media, and removes orphaned files
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);
   await createProject(page,'Delete Me');
+  await page.locator('[data-v919-project-open="notes"]').click();
+
   await page.evaluate(async()=>{
     const original=v6Project();
     const shared='v82-test-shared',orphan='v82-test-orphan';

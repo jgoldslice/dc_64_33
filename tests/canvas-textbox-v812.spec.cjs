@@ -54,6 +54,7 @@ test('Textbox button is a one-shot insertion tool; its new text is editable, nex
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Textbox Tool Test'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('[data-v76-mode="text"]')).toHaveAttribute('aria-pressed','false');
   await expect(page.locator('#v76Surface .v76-rich').filter({hasText:'A deliberate note'})).toBeVisible();
   expect(errors).toEqual([]);

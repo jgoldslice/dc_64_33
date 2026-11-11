@@ -216,6 +216,7 @@ test('changing pages resets zoom to 100% and keeps both pages intact',async({pag
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Zoom Pages'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v815ZoomReset')).toHaveText('100%');
   await expect(page.locator('#v811PageList .v811-page-row')).toHaveCount(2);
   expect(errors).toEqual([]);

@@ -63,7 +63,7 @@ test('Failed localStorage write leaves user edits in memory and Retry clears war
   });
   expect(result).toEqual({saved:false,itemInMemory:true});
   await expect(page.locator('#canvasSaveWarning')).toBeVisible();
-  await page.locator('#canvasSaveWarning button').click();
+  await page.locator('#canvasSaveRetry').click();
   await expect(page.locator('#canvasSaveWarning')).toBeHidden();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('jgold-planner-v1')).tasks.some(t=>t.title==='Unsaved test task'))).toBe(true);
 });

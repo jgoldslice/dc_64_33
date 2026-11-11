@@ -71,6 +71,7 @@ test('page list can create, rename, switch and restore notes across reload',asyn
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Multiple Pages'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(list.locator('.v811-page-row')).toHaveCount(2);
   await expect(list.locator('.v811-page-labels strong').last()).toHaveText('Ideas and Sketches');
   await expect(page.locator('#v76Surface .v76-rich').first()).toHaveText('Diagram goes on this page');
@@ -145,6 +146,7 @@ test('selected object moves immediately without long-press, keeps width, and rem
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Move Test'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   const persisted=await box.evaluate(el=>({x:parseFloat(el.style.left),y:parseFloat(el.style.top)}));
   expect(persisted.x).toBeCloseTo(moved.x,0);
   expect(persisted.y).toBeCloseTo(moved.y,0);

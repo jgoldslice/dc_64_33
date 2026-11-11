@@ -62,16 +62,19 @@ for(const width of [320,390,430,600]){
     await expect(page.locator('#renameProject')).toBeVisible();
     expect(await pageOverflow(page)).toBeLessThanOrEqual(4);
     const toolbar=page.locator('#projectNotes .v76-toolbar');
-    await expect(toolbar).toHaveCSS('flex-wrap','nowrap');
+    await expect(toolbar).toHaveCSS('flex-wrap','wrap');
     const controls=await toolbar.evaluate(el=>({
       scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,
-      scrollable:getComputedStyle(el).overflowX==='auto'
+      overflow:el.scrollWidth-el.clientWidth,
+      heights:[...el.querySelectorAll('button,select')].filter(b=>b.getClientRects().length).map(b=>b.getBoundingClientRect().height)
     }));
-    expect(controls.scrollable).toBe(true);
-    expect(controls.scrollWidth).toBeGreaterThanOrEqual(controls.clientWidth);
-    await page.locator('#projectTabs [data-project-tab="actions"]').click();
+    expect(controls.overflow).toBeLessThanOrEqual(3);
+    expect(controls.heights.every(h=>h>=42)).toBe(true);
+    await page.locator('#v919BackOverview').click();
+    await page.locator('[data-v919-project-open="actions"]').click();
     await expect(page.locator('#projectActions')).toBeVisible();
-    await page.locator('#projectTabs [data-project-tab="library"]').click();
+    await page.locator('#v919BackOverview').click();
+    await page.locator('[data-v919-project-open="library"]').click();
     await expect(page.locator('#projectLibrary')).toBeVisible();
     expect(errors).toEqual([]);
   });

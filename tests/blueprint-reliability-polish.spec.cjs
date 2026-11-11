@@ -75,6 +75,8 @@ test('quota failure rolls back unverified Library row; retry keeps the same PNG 
   await page.locator('[data-tab="brainstorm"]').click();
   const projectId=await page.evaluate(()=>state.projects.find(p=>p.title==='Reliability test').id);
   await page.evaluate(id=>v6OpenProject(id),projectId);
+  await page.locator('[data-v919-project-open="notes"]').click();
+
   expect((await rows(page)).inMemory).toBe(1);
   expect((await rows(page)).strokes).toBe(1);
 });
@@ -158,6 +160,8 @@ test('saved Pencil strokes survive zooming and reopening the notebook',async({pa
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.evaluate(id=>v6OpenProject(id),projectId);
+  await page.locator('[data-v919-project-open="notes"]').click();
+
   await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
   expect(await page.evaluate(()=>JSON.stringify(v6Project().notePages[0].strokes))).toBe(before);
 });

@@ -50,7 +50,7 @@ test('project workspace stays full-width with compact project switching at every
     });
     expect(Math.abs(width.outer-width.inner)).toBeLessThan(3);
     expect(width.overflow).toBeLessThanOrEqual(2);
-    await expect(page.locator('.v81-project-main [data-project-tab="notes"]')).toBeVisible();
+    await expect(page.locator('#v919BackOverview')).toBeVisible();
   }
   await expect(page.locator('#v76Editor')).toBeVisible();
 });
@@ -90,6 +90,8 @@ test('complete backup includes page images and import remaps all referenced imag
   },payload);
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Backup Roundtrip'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
+
   const restored=page.locator('#v76Surface .v76-image .v76-photo').first();
   await expect(restored).toBeVisible();
   await expect.poll(async()=>restored.evaluate(el=>el.complete&&el.naturalWidth>0)).toBe(true);

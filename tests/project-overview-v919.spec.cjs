@@ -58,7 +58,7 @@ test('up to four latest images are previewed and can open the existing image vie
   await expect(page.locator('#v919LibraryPreview .v919-gallery-item')).toHaveCount(4);
   await expect(page.locator('#v919LibraryPreview')).not.toContainText('Figure 0');
   await expect.poll(()=>page.locator('#v919LibraryPreview img[src^="blob:"]').count()).toBe(4);
-  await page.locator('[data-v6-view-image="figure-4"]').click();
+  await page.locator('#v919LibraryPreview [data-v6-view-image="figure-4"]').click();
   await expect(page.locator('#v6ImageViewer')).toBeVisible();
 });
 test('Shortcut URL fragment opens reviewed capture and saves only once',async({page})=>{

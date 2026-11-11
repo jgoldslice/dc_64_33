@@ -78,6 +78,7 @@ for(const viewport of [{width:834,height:1194},{width:1366,height:1024}]){
     await page.reload();
     await page.locator('[data-tab="brainstorm"]').click();
     await page.locator('[data-v6-project]').filter({hasText:'Pencil alignment test'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
     await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
     const saved=await page.evaluate(()=>v6Project().notePages[0].strokes);
     expect(saved.length).toBe(1);
@@ -147,6 +148,7 @@ test('new pen strokes are dark, smooth curves and a six-color palette persists a
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Pencil alignment test'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v818InkColor')).toHaveAttribute('aria-label','Pen color: Blue');
   await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveAttribute('stroke','#2362dd');
   await page.locator('#v818InkColor').click();

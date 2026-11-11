@@ -77,7 +77,7 @@ test('wide iPad keeps the Today schedule dominant and Week calendar to the right
   expect(portrait).toContain('"habits"');
 });
 
-test('phone keeps compact nonwrapping notes toolbar and hidden iPad rail toggle', async ({ page }) => {
+test('phone wraps Notes toolbar controls and hides iPad rail toggle', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(base);
   await expect(page.locator('.canvas-ipad-collapse')).toBeHidden();
@@ -85,5 +85,7 @@ test('phone keeps compact nonwrapping notes toolbar and hidden iPad rail toggle'
   page.once('dialog', dialog => dialog.accept('Blueprint phone QA'));
   await page.locator('#newProject').click();
   await page.locator('[data-v919-project-open="notes"]').click();
-  await expect(page.locator('#projectNotes .v76-toolbar')).toHaveCSS('flex-wrap', 'nowrap');
+  await expect(page.locator('#projectNotes .v76-toolbar')).toHaveCSS('flex-wrap', 'wrap');
+  const overflow=await page.locator('#projectNotes .v76-toolbar').evaluate(el=>el.scrollWidth-el.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(3);
 });
