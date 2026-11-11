@@ -652,10 +652,13 @@ function save(verify=false){
     const serialized=JSON.stringify(state);
     if(typeof serialized!=='string')throw new TypeError('Unable to serialize Blueprint data');
     localStorage.setItem(STORAGE_KEY,serialized);
+    // If the write succeeds but readback fails (e.g. transient private-mode
+    // storage fault), a Retry must not mistake our own commit for a second
+    // window. Record successful writes *before* verifying the readback.
+    canvasLastManifest=serialized;canvasExternalChange=false;
     // Destructive operations verify the manifest before deleting attachments.
     if(verify&&localStorage.getItem(STORAGE_KEY)!==serialized)
       throw new Error('Blueprint save verification failed');
-    canvasLastManifest=serialized;canvasExternalChange=false;
     canvasUnsaved=false;canvasSaveStatus(false);
     return true;
   }catch(error){

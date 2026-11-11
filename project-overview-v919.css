@@ -82,3 +82,9 @@
 @media(prefers-reduced-motion:reduce){
  .v919-capture-back,.v919-capture-sheet{animation:none!important;transition:none!important}
 }
+
+/* Recovery notice must remain usable on phone-sized screens. */
+#canvasSaveWarning{box-sizing:border-box;flex-wrap:wrap;max-width:min(480px,calc(100vw - 24px));gap:9px}
+#canvasSaveWarning span{flex:1 1 180px;line-height:1.35;font-size:12px}
+#canvasSaveWarning button{min-height:42px;padding:7px 10px;white-space:nowrap;font-size:12px;color:var(--secondary-ui);background:var(--surface);border:1px solid var(--line);border-radius:9px}
+#canvasSaveWarning button[hidden]{display:none!important}
