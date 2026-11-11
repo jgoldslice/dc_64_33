@@ -85,13 +85,21 @@ test('failed readback after a real write retries the same sketch ID without dupl
   const {button}=await notebook(page);
   sketchDialogs(page);
   await page.evaluate(()=>{
-    const original=Storage.prototype.getItem;
-    let fail=true;
-    Storage.prototype.getItem=function(key){
-      if(key==='jgold-planner-v1'&&fail){fail=false;throw Error('Readback unavailable');}
-      return original.call(this,key);
+    const originalGet=Storage.prototype.getItem,originalSet=Storage.prototype.setItem;
+    let fail=true,written=false;
+    Storage.prototype.setItem=function(key,value){
+      const result=originalSet.call(this,key,value);
+      if(key==='jgold-planner-v1')written=true;
+      return result;
     };
-    window.__restorePlannerGet=()=>{Storage.prototype.getItem=original;};
+    Storage.prototype.getItem=function(key){
+      if(key==='jgold-planner-v1'&&written&&fail){fail=false;throw Error('Readback unavailable');}
+      return originalGet.call(this,key);
+    };
+    window.__restorePlannerGet=()=>{
+      Storage.prototype.getItem=originalGet;
+      Storage.prototype.setItem=originalSet;
+    };
   });
   await button.click();
   await expect(button).toHaveText('Retry sketch save');
