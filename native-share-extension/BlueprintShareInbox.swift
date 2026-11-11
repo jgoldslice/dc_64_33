@@ -216,12 +216,22 @@ final class BlueprintShareInbox {
         return envelope
     }
 
-    func pending() throws -> [BlueprintShareEnvelope] {
+    // Do not let one damaged manifest block all unrelated queued shares.
+    // Report it to the host as an error, but NEVER delete the damaged folder.
+    func pendingReport() throws -> (entries: [BlueprintShareEnvelope], errors: [String]) {
         let dirs = try fm.contentsOfDirectory(at: pendingDir,
             includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])
-        return try dirs.filter { validUUID($0.lastPathComponent) }.map {
-            try envelope($0.lastPathComponent)
-        }.sorted { $0.createdAt < $1.createdAt }
+        var entries: [BlueprintShareEnvelope] = []
+        var errors: [String] = []
+        for dir in dirs where validUUID(dir.lastPathComponent) {
+            do { entries.append(try envelope(dir.lastPathComponent)) }
+            catch { errors.append(dir.lastPathComponent) }
+        }
+        return (entries.sorted { $0.createdAt < $1.createdAt }, errors)
+    }
+
+    func pending() throws -> [BlueprintShareEnvelope] {
+        try pendingReport().entries
     }
 
     func readFile(id: String, itemID: String) throws -> (Data, BlueprintSharePendingItem) {
