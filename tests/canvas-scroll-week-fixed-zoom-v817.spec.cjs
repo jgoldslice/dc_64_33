@@ -8,7 +8,8 @@ async function openWeek(page){
   await page.goto(base);
   await page.locator('[data-tab="week"]').click();
   await expect(page.locator('#v817WeekViewport')).toBeVisible();
-  await expect.poll(()=>page.locator('#v817WeekViewport').evaluate(el=>Math.round(el.scrollLeft/Math.max(1,el.clientWidth)))).toBe(1);
+  // Calendar itself is now static; its arrows change weeks.
+  await expect(page.locator('#v94WeekForward')).toBeVisible();
   return errors;
 }
 async function nativePageScroll(page,selector,side){
@@ -74,18 +75,17 @@ test('native date scrolling advances a week, keeps the weekday, and recenters in
   await page.locator('#v87EventCancel').click();
   expect(errors).toEqual([]);
 });
-test('Week at a Glance native horizontal scrolling changes the week without leaving the Week tab',async({page})=>{
+test('Week at a Glance arrows change the week without leaving the Week tab',async({page})=>{
   const errors=await openWeek(page);
   const monday=await isoWeek(page),next=await isoNext(page,7);
-  await expect(page.locator('#v817WeekPrev')).toBeVisible();
-  await expect(page.locator('#v817WeekNext')).toBeVisible();
+  await expect(page.locator('#v94WeekBack')).toBeVisible();
+  await expect(page.locator('#v94WeekForward')).toBeVisible();
   await expect(page.locator('#weekGrid [data-week-event-date]')).toHaveCount(7);
   await expect(page.locator('#v816CalendarPrev,#v816CalendarNext')).toHaveCount(0);
-  await nativePageScroll(page,'#v817WeekViewport',1);
+  await page.locator('#v94WeekForward').click();
   await expect.poll(()=>isoWeek(page)).toBe(next);
-  await expect.poll(()=>page.locator('#v817WeekViewport').evaluate(el=>Math.round(el.scrollLeft/Math.max(1,el.clientWidth)))).toBe(1);
   await expect(page.locator('#week')).toHaveClass(/active/);
-  await nativePageScroll(page,'#v817WeekViewport',-1);
+  await page.locator('#v94WeekBack').click();
   await expect.poll(()=>isoWeek(page)).toBe(monday);
   expect(errors).toEqual([]);
 });

@@ -131,23 +131,14 @@ test('aborted PNG transaction never creates a Library record and preserves edita
   expect((await rows(page)).inMemory).toBe(1);
 });
 
-test('rapid consecutive week flicks each advance once, even with late scrollend',async({page})=>{
+test('rapid repeated week-arrow presses each advance once, even with stale scrollend',async({page})=>{
   await page.goto(base);
   await page.locator('[data-tab="week"]').click();
   const strip=page.locator('#v817WeekViewport');
-  await expect(strip).toBeVisible();
+  await expect(strip).toHaveClass(/v94-week-static/);
   const initial=await page.evaluate(()=>iso(selectedWeek));
-  const flick=()=>strip.evaluate(el=>{
-    const b=el.getBoundingClientRect(),x=b.left+b.width*.65,y=b.top+Math.min(90,b.height/2);
-    const a=new Touch({identifier:5,target:el,clientX:x,clientY:y});
-    const z=new Touch({identifier:5,target:el,clientX:x-90,clientY:y});
-    el.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[a],changedTouches:[a],targetTouches:[a]}));
-    el.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,touches:[],changedTouches:[z],targetTouches:[]}));
-  });
   for(let n=1;n<=3;n++){
-    await expect.poll(()=>strip.evaluate(el=>Math.round(el.scrollLeft/Math.max(1,el.clientWidth)))).toBe(1);
-    await expect.poll(()=>strip.evaluate(el=>el.style.scrollSnapType)).toBe('');
-    await flick();
+    await page.locator('#v94WeekForward').click();
     const wanted=await page.evaluate(({initial,n})=>iso(plusDays(new Date(initial+'T12:00:00'),7*n)),{initial,n});
     await expect.poll(()=>page.evaluate(()=>iso(selectedWeek))).toBe(wanted);
     await strip.evaluate(el=>el.dispatchEvent(new Event('scrollend')));

@@ -51,16 +51,20 @@ test('main tabs slide the full width with no opacity or page-turn transforms',as
   await expect(page.locator('#today')).toHaveClass(/active/);
   expect(errors).toEqual([]);
 });
-test('calendar and day picker own touch gestures, never the main tabs',async({page})=>{
+test('calendar swipe navigates tabs while date picker retains its own gestures',async({page})=>{
   const errors=await boot(page);
   await page.locator('[data-tab="week"]').click();
   const before=await page.evaluate(()=>iso(selectedWeek));
   const next=await page.evaluate(()=>iso(plusDays(selectedWeek,7)));
   const preparations=await page.evaluate(()=>window.__blueprintMotionDebug.prepares);
   await syntheticSwipe(page,'#weekGrid',-155,2);
+  // The new Week arrows own the selected week; swiping calendar space changes tabs.
+  await expect.poll(()=>page.locator('#myplan').evaluate(el=>el.classList.contains('active'))).toBe(true);
+  expect(await page.evaluate(()=>iso(selectedWeek))).toBe(before);
+  expect(await page.evaluate(()=>window.__blueprintMotionDebug.prepares)).toBeGreaterThan(preparations);
+  await page.locator('[data-tab="week"]').click();
+  await page.locator('#v94WeekForward').click();
   await expect.poll(()=>page.evaluate(()=>iso(selectedWeek))).toBe(next);
-  expect(await page.evaluate(()=>window.__blueprintMotionDebug.prepares)).toBe(preparations);
-  await expect(page.locator('#week')).toHaveClass(/active/);
   await page.locator('#addWeekEvent').click();
   await syntheticSwipe(page,'#v87EventDates',-155,2);
   await expect(page.locator('#v87EventBack')).toBeVisible();
@@ -109,12 +113,14 @@ test('Notes drawing gestures and project editor are protected from tab swipes',a
   expect(await page.evaluate(()=>window.__blueprintMotionDebug.prepares)).toBe(before);
   expect(await page.locator('#v76Ink').evaluate(el=>getComputedStyle(el).touchAction)).toBe('none');
 });
-test('native week strip supports mid-drag neighboring weeks without remount',async({page})=>{
+test('static week viewport shows explicit previous and next arrows',async({page})=>{
   await boot(page);
   await page.locator('[data-tab="week"]').click();
   const strip=page.locator('#v817WeekViewport');
-  await expect(strip.locator('.v817-week-panel')).toHaveCount(3);
-  await expect.poll(()=>strip.evaluate(el=>getComputedStyle(el).scrollSnapType)).toContain('x mandatory');
-  await expect(strip.locator('#v817WeekPrev')).toBeVisible();
-  await expect(strip.locator('#v817WeekNext')).toBeVisible();
+  await expect(strip).toHaveClass(/v94-week-static/);
+  await expect(strip).toHaveCSS('scroll-snap-type','none');
+  await expect(page.locator('#v94WeekBack')).toBeVisible();
+  await expect(page.locator('#v94WeekForward')).toBeVisible();
+  await expect(strip.locator('#v817WeekPrev')).toBeHidden();
+  await expect(strip.locator('#v817WeekNext')).toBeHidden();
 });

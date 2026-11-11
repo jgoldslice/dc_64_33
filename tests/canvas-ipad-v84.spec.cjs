@@ -96,7 +96,7 @@ test.describe('Canvas iPad landscape and notebook',()=>{
   });
   test('Today uses two content columns on a wide tablet',async({page})=>{
     await page.goto(base);
-    const style=await page.locator('#today > .stack').evaluate(el=>({
+    const style=await page.locator('#today .v915-today-columns').evaluate(el=>({
       columns:getComputedStyle(el).gridTemplateColumns,
       gap:getComputedStyle(el).columnGap
     }));

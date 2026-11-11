@@ -50,12 +50,16 @@ test('wide iPad keeps the Today schedule dominant and Week calendar to the right
     return { schedule: { left: schedule.left, right: schedule.right },
       habits: { left: habits.left, right: habits.right },
       priorities: { left: priorities.left, right: priorities.right },
-      projects: { left: projects.left, right: projects.right } };
+      projects: { left: projects.left, right: projects.right, top: projects.top },
+      scheduleBottom: schedule.bottom };
   });
   expect(today.schedule.right).toBeLessThan(today.habits.left + 4);
   expect(today.schedule.right).toBeLessThan(today.priorities.left + 4);
-  expect(today.projects.left).toBeLessThanOrEqual(today.schedule.left + 4);
-  expect(today.projects.right).toBeGreaterThanOrEqual(today.habits.right - 4);
+  // Projects now follows Today at a Glance in the same independent column.
+  expect(Math.abs(today.projects.left-today.schedule.left)).toBeLessThanOrEqual(4);
+  expect(Math.abs(today.projects.right-today.schedule.right)).toBeLessThanOrEqual(4);
+  expect(today.projects.top-today.scheduleBottom).toBeGreaterThanOrEqual(8);
+  expect(today.projects.top-today.scheduleBottom).toBeLessThanOrEqual(16);
 
   await page.locator('[data-tab="week"]').click();
   const week = await page.locator('#week .week-v4').evaluate(el => getComputedStyle(el).gridTemplateAreas);

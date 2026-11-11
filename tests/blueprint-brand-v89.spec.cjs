@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const base = 'http://127.0.0.1:8765/';
-test('Blueprint opens without splash and navigates directly to Goals', async ({ page }) => {
+test('Blueprint opens without splash and navigates into Plan with Goals selected', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
@@ -10,7 +10,9 @@ test('Blueprint opens without splash and navigates directly to Goals', async ({ 
   await expect(page.locator('#openingCustomization')).toBeHidden();
   await page.locator('.bottom-nav button[data-tab="myplan"]').click();
   await expect(page.locator('#myplan')).toBeVisible();
-  await expect(page.locator('#myplanTitle')).toHaveText('Goals');
+  await expect(page.locator('#myplanTitle')).toHaveCount(0);
+  await expect(page.locator('#myplan')).toHaveAttribute('aria-label','Plan');
+  await expect(page.locator('.bottom-nav button[data-tab="myplan"] span')).toHaveText('Plan');
   await expect(page.locator('#goals')).toBeVisible();
   await expect(page.locator('#tasks')).toBeHidden();
   await expect(page.locator('#myplan .eyebrow')).toHaveCount(0);
@@ -22,11 +24,12 @@ test('Blueprint opens without splash and navigates directly to Goals', async ({ 
   await expect(page.locator('#openingOverlay')).toBeHidden();
   expect(errors).toEqual([]);
 });
-test('iPad sidebar has Blueprint branding without tagline', async ({ page }) => {
+test('iPad sidebar uses palette-only identity and Plan navigation label', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 1024 });
   await page.goto(base);
-  const brand=page.locator('.canvas-ipad-brand-copy');
-  await expect(brand).toHaveText('Blueprint');
-  await expect(brand.locator('small')).toHaveCount(0);
-  await expect(page.locator('.bottom-nav button[data-tab="myplan"] span')).toHaveText('Goals');
+  await expect(page.locator('.canvas-ipad-brand-copy')).toHaveCount(0);
+  await expect(page.locator('#canvasIpadPaletteButton')).toBeVisible();
+  await expect(page.locator('.bottom-nav button[data-tab="myplan"] span')).toHaveText('Plan');
+  await page.locator('#canvasIpadPaletteButton').click();
+  await expect(page.locator('#customize')).toBeVisible();
 });

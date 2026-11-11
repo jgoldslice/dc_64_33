@@ -14,7 +14,7 @@ const onePixelPNG=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAD
 test('tabs remember their own scroll positions without expanding navigation',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(url);
-  await expect(page.locator('.bottom-nav button')).toHaveCount(4);
+  await expect(page.locator('.bottom-nav button[data-tab]')).toHaveCount(4);
   await page.evaluate(()=>{
     document.getElementById('today').style.minHeight='2200px';
     document.getElementById('week').style.minHeight='2200px';
@@ -121,9 +121,9 @@ test('default toolbar and motion settings remain calm and usable',async({page})=
   await page.goto(url);
   await openNewProject(page,'Tap Target Test');
   const result=await page.evaluate(()=>{
-    const buttons=[...document.querySelectorAll('.bottom-nav button')].map(el=>el.getBoundingClientRect().height);
+    const buttons=[...document.querySelectorAll('.bottom-nav button[data-tab]')].map(el=>el.getBoundingClientRect().height);
     const noteButtons=[...document.querySelectorAll('.v79-tool-buttons button')].map(el=>el.getBoundingClientRect().height);
-    return {buttons,noteButtons,nav:document.querySelectorAll('.bottom-nav button').length};
+    return {buttons,noteButtons,nav:document.querySelectorAll('.bottom-nav button[data-tab]').length};
   });
   expect(result.nav).toBe(4);
   expect(result.buttons.every(x=>x>=44)).toBe(true);

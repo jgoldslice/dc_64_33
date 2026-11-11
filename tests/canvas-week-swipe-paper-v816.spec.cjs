@@ -37,15 +37,15 @@ test('the calendar week arrows change the real displayed week and preserve the W
   await expect(page.locator('#week')).toBeVisible();
   expect(errors).toEqual([]);
 });
-test('swiping the calendar left/right moves weeks, but not between main app tabs',async({page})=>{
+test('swiping calendar space changes tabs without changing the selected week',async({page})=>{
   const errors=await openWeek(page);
   const original=await observedWeek(page);
-  const next=await isoAfter(page,7);
   const before=await page.locator('#weekGrid [data-week-event-date]').first().getAttribute('data-week-event-date');
   await swipe(page,'#weekGrid',{x:320,y:550},{x:160,y:560});
-  expect(await observedWeek(page)).toBe(next);
+  await expect(page.locator('#myplan')).toBeVisible();
+  expect(await observedWeek(page)).toBe(original);
+  await swipe(page,'#myplan',{x:160,y:550},{x:320,y:555});
   await expect(page.locator('#week')).toBeVisible();
-  await swipe(page,'#weekGrid',{x:160,y:550},{x:320,y:555});
   expect(await observedWeek(page)).toBe(original);
   const now=await page.locator('#weekGrid [data-week-event-date]').first().getAttribute('data-week-event-date');
   expect(now).toBe(before);
