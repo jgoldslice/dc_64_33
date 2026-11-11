@@ -68,7 +68,7 @@ test('habit marked on Today is reflected in the Week and monthly tracker',async(
   expect(marked.data).toBe(true);
   expect(marked.weekCheckboxes).toBeGreaterThan(0);
   await page.locator('[data-tab="myplan"]').click();
-  await page.locator('[data-plan-tab="habits"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="habits"]').click();
   const selected=page.locator('#v96MonthCalendar [data-v96-date="'+today+'"]');
   await expect(selected).toContainText('1/1');
 });
