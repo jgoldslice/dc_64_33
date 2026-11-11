@@ -76,6 +76,24 @@ final class BlueprintShareInboxTests: XCTestCase {
         XCTAssertEqual(try store.pending().count, 0)
     }
 
+    func testCorruptManifestDoesNotBlockOtherPendingShares() throws {
+        let store = try store()
+        let bad = try store.enqueue(projectID: "research", input: [
+            BlueprintShareInput(link: URL(string: "https://example.org/bad")!, title: "First")
+        ])
+        let good = try store.enqueue(projectID: "house", input: [
+            BlueprintShareInput(link: URL(string: "https://example.org/good")!, title: "Second")
+        ])
+        let manifest = temp.appendingPathComponent("BlueprintShareInbox/pending")
+            .appendingPathComponent(bad).appendingPathComponent("manifest.json")
+        try Data("corrupted manifest".utf8).write(to: manifest)
+        let report = try store.pendingReport()
+        XCTAssertEqual(report.errors, [bad])
+        XCTAssertEqual(report.entries.map(\.id), [good])
+        try store.acknowledge(id: good)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: manifest.path))
+    }
+
     func testLastSelectedProjectRemainsTheDefault() throws {
         let store = try store()
         let id = try store.enqueue(projectID: "house", input: [
