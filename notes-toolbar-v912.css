@@ -1,0 +1,25 @@
+/* Blueprint v9.12 — selected Notes family B: clean, expressive icons.
+   No superfluous underline or auxiliary lines on bullets, pen, eraser, undo.
+   Existing click handlers, tool selection and notes content are preserved. */
+#projectNotes .v76-toolbar .v79-tool-svg {
+ width:21px;height:21px;stroke:var(--primary-ui);stroke-linecap:round;stroke-linejoin:round
+}
+#projectNotes .v76-toolbar button[data-v76-mode],
+#projectNotes .v76-toolbar button[data-v76-format],
+#projectNotes .v76-toolbar #v76UndoInk,
+#projectNotes .v76-toolbar #v76AddImage,
+#projectNotes .v76-toolbar #v93TogglePageRail {
+ color:var(--primary-ui);
+ background:color-mix(in srgb,var(--primary) 7%,var(--surface));
+ border-color:color-mix(in srgb,var(--primary) 17%,var(--line));
+ border-radius:11px;
+}
+#projectNotes .v76-toolbar button.v76-on[data-v76-mode],
+#projectNotes .v76-toolbar button[aria-pressed="true"][data-v76-mode],
+#projectNotes .v76-toolbar button[aria-pressed="true"]#v93TogglePageRail {
+ background:color-mix(in srgb,var(--secondary) 22%,var(--surface));
+ border-color:var(--secondary-ui);
+}
+#projectNotes .v76-toolbar button:is(
+ [data-v76-mode],[data-v76-format],#v76UndoInk,#v76AddImage,#v93TogglePageRail
+):focus-visible {outline:2px solid var(--secondary-ui);outline-offset:2px}

@@ -18,16 +18,16 @@
         '<button type="button" data-v76-mode="text" class="v812-textbox-button" aria-label="Textbox: tap the page to insert a text box" aria-pressed="false" title="Insert textbox">'+
           '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.5"/><path d="M7 9h10M12 9v7"/></svg></button>'+
         '<button type="button" data-v76-format="insertUnorderedList" aria-label="Add or remove bullet list" title="Bullet list">'+
-          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="4.5" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1" fill="currentColor" stroke="none"/><path d="M9 6h11M9 12h11M9 18h11"/></svg>'+
+          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><g fill="var(--secondary)" stroke="none"><circle cx="5" cy="6" r="1.3"/><circle cx="5" cy="12" r="1.3"/><circle cx="5" cy="18" r="1.3"/></g><path d="M9.5 6h9.5M9.5 12h9.5M9.5 18h9.5"/></svg>'+
         '</button><select id="v80TextSize" class="v80-text-size" aria-label="Text size" title="Text size">'+
           '<option value="small">Small</option><option value="medium" selected>Medium</option><option value="large">Large</option>'+
         '</select></div></div>'+
       '<div class="v79-tool-group" role="group" aria-label="Pen"><div class="v79-tool-buttons">'+
-        '<button type="button" data-v76-mode="pen" aria-label="Draw; tap again to stop drawing" aria-pressed="false" title="Draw">✎</button>'+
+        '<button type="button" data-v76-mode="pen" aria-label="Draw; tap again to stop drawing" aria-pressed="false" title="Draw"><svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4.2 19.7 1.5-5.3L16.2 3.9a2.1 2.1 0 0 1 3 3L8.7 17.4l-4.5 2.3Z"/><path d="m14.2 5.9 3.9 3.9"/></svg></button>'+
         '<button type="button" data-v76-mode="erase" aria-label="Erase drawing strokes; tap again to stop erasing" aria-pressed="false" title="Eraser">'+
-          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.3 20.4 3.6 15.7a2.2 2.2 0 0 1 0-3.1l9-9a2.2 2.2 0 0 1 3.1 0l4.7 4.7a2.2 2.2 0 0 1 0 3.1l-9 9a2.2 2.2 0 0 1-3.1 0Z"/><path d="M12 21h9"/></svg></button>'+
+          '<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 13.5 13.3 4.7a2.1 2.1 0 0 1 3 0l3 3a2.1 2.1 0 0 1 0 3l-8.8 8.8a2.1 2.1 0 0 1-3 0l-3-3a2.1 2.1 0 0 1 0-3Z"/><path d="m9 9.1 5.9 5.9"/></svg></button>'+
         '<button type="button" id="v818InkColor" class="v818-color-trigger" aria-label="Pen color: Black" aria-expanded="false" aria-haspopup="true" aria-controls="v818InkPalette" title="Choose drawing color"><span id="v818ColorPreview" class="v818-color-preview" aria-hidden="true"></span><span class="v818-color-chevron" aria-hidden="true">⌄</span></button>'+
-        '<button type="button" id="v76UndoInk" aria-label="Undo last drawing stroke" title="Undo drawing">↶</button>'+
+        '<button type="button" id="v76UndoInk" aria-label="Undo last drawing stroke" title="Undo drawing"><svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5-5 5 5 5"/><path d="M4.5 10h10a6 6 0 1 1-5.7 8"/></svg></button>'+
       '</div></div>'+
       '<div class="v79-tool-group" role="group" aria-label="Misc"><div class="v79-tool-buttons">'+
         '<button type="button" id="v76AddImage" aria-label="Insert picture" title="Insert picture">'+
