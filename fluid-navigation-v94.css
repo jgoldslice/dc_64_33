@@ -1,0 +1,66 @@
+/* Blueprint v9.4 — responsive, full-distance live-tab slide.
+   No page-curl, 3D rotation, opacity fade, snapshots, or cloned views. */
+:root{
+  --blueprint-motion-feedback:110ms;
+  --blueprint-motion-fast:155ms;
+  --blueprint-motion-ease:cubic-bezier(.2,.75,.22,1);
+}
+.v94-live-pane{
+  display:block!important;position:fixed!important;
+  top:var(--v94-top)!important;left:var(--v94-left)!important;
+  width:var(--v94-width)!important;min-height:var(--v94-height)!important;
+  max-height:none!important;margin:0!important;overflow:hidden!important;
+  background:var(--bg);border-radius:0;pointer-events:none!important;
+  will-change:transform;
+}
+.v94-live-source{z-index:49}
+.v94-live-target{z-index:48}
+@media(max-width:739px), (max-height:599px){
+  .v94-live-pane{max-height:calc(100dvh - var(--v94-top) - 64px)!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .v94-live-pane{transition:none!important;will-change:auto!important}
+}
+@keyframes blueprint-v91-arrive{
+  from{opacity:.25;transform:translate3d(0,5px,0)}to{opacity:1;transform:none}
+}
+#projectWorkspace:not([hidden]) .v6-project-title{
+  animation:blueprint-v91-arrive var(--blueprint-motion-fast) var(--blueprint-motion-ease)
+}
+#projectWorkspace .v6-project-tabs button{
+  transition:background-color var(--blueprint-motion-feedback) ease,
+    border-color var(--blueprint-motion-feedback) ease,
+    color var(--blueprint-motion-feedback) ease
+}
+#v87EventBack:not([hidden]) .v87-event-sheet{
+  animation:blueprint-v91-arrive var(--blueprint-motion-fast) var(--blueprint-motion-ease) both
+}
+/* The Today's Habits card stays the same size after four habits.
+   Only the list scrolls; its heading and View all control stay fixed. */
+#todayHabits{
+  min-height:0;
+  max-height:168px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  touch-action:pan-y;
+}
+#todayHabits .habit-today{
+  min-height:42px;
+  padding-block:9px;
+  grid-template-columns:minmax(0,1fr) auto;
+}
+#todayHabits .habit-today span{overflow-wrap:anywhere}
+#v817WeekViewport,#v87EventDates{
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x pan-y;
+}
+@media(prefers-reduced-motion:reduce){
+  #projectWorkspace:not([hidden]) .v6-project-title,
+  #v87EventBack:not([hidden]) .v87-event-sheet{animation:none!important}
+  #projectWorkspace .v6-project-tabs button{transition:none!important}
+}
