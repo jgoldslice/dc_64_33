@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — Native Share Sheet implementation staged (DRAFT PR #41)
+
+- **Requested:** Minimize friction when sharing links, photos and PDFs from iPhone apps into a selected Blueprint project Library. A Share Extension should show Blueprint in compatible system Share Sheets and remember the last destination.
+- **Implemented as isolated source:** Branch `feature/native-share-extension-staging`, [draft PR #41](https://github.com/jgoldslice/dc_64_33/pull/41), based on live `main` commit `80483390389b4b5de58c0fe8c64e301fa6f0be43`. Added `native-share-extension/BlueprintShareInbox.swift`, `BlueprintShareViewController.swift`, `BlueprintSharePlugin.swift`, `web/inbox.js`, `web/host-entry.js`, `Tests/BlueprintShareInboxTests.swift`, `README.md`, and `tests/blueprint-share-inbox.spec.cjs`. No production web entry point, storage schema or backup format was changed.
+- **Architecture:** The extension reads a lightweight project-list snapshot from a shared App Group, shows a project picker with last-used selection, copies transient NSItemProvider files within their completion callbacks, and atomically queues validated envelopes with SHA-256 checksums. It does **not** claim a queued file is already imported. The installed native app's opt-in Capacitor bridge imports the item to the existing IndexedDB + Library manifest, verifies readback and `save(true)`, then acknowledges and removes the queued envelope. Missing projects, storage failures and corrupt files are retained for retries. A corrupted queue manifest is reported without blocking unrelated valid pending items.
+- **Automated-test verified (JavaScript only):** [GitHub Actions run 43090016639](https://github.com/jgoldslice/dc_64_33/actions/runs/43090016639) passed **205 Chromium tests** on source commit `c59f9f627ee143fbcde5d630eb553dc41fd4d24b`, including 7 new importer regression scenarios and the existing Blueprint browser suite. Earlier run 43088818191 failed because a new test fixture omitted its default argument; that issue was corrected. The latest passing CI only verifies the JavaScript importer and existing browser app, **not** Swift compilation.
+- **Native tests:** Swift XCTest source is authored but **not compiled/run** (requires actual Xcode target). iOS Share Extension target, Info.plist activation rules, App Group signing entitlements, plugin registration, native app asset inclusion, real iPhone verification and Capacitor synchronization are **pending**. No native deployment and no Share Sheet integration in the live web app have occurred.
+- **Next action:** On Mac, inspect actual Capacitor/Xcode project before changes; export complete Blueprint backup. Follow `native-share-extension/README.md` to wire target and entitlement; compile/debug, open installed Blueprint once to publish project index, share from Photos/Safari/Files, validate queue-to-Library import and offline/error recovery. Do not merge/deploy draft until native tests and physical iPhone verification pass.
+
 ## 2026-11-11 — Project Library capture layout polish (web v9.21)
 
 - **Requested:** On iPhone, the project Library's "Save to a project" sheet made the Link / Photo / file choice buttons disproportionately tall and visually mismatched with the system Choose Files control. Owner supplied an iPhone screenshot.
@@ -49,6 +58,7 @@
 | Documentation / agent continuity | AGENTS.md available | Follow and maintain these files |
 | iPhone Safari form focus zoom | Implemented and Chromium regression-suite verified | v9.20: 16px touch text-entry minimum; physical Safari check pending |
 | Project capture modal oversized resource buttons | Fixed in v9.21; browser-suite verified and web published | Compact 44px switch, matching file picker, flex sheet; iPhone device confirmation pending |
+| Native iOS Share Sheet into project Library | Draft source implemented; JS tests passed; native unverified | PR #41; real Xcode extension/App Group/plugin registration and device QA pending |
 
 ## Prioritized verification and improvement backlog
 
@@ -68,6 +78,7 @@ These entries are **candidates for investigation**, not assertions that the feat
 | 2026-11-11 | Documentation initialization and limited repository inspection | README/index inspected; no tests or app builds executed; physical devices not accessed |
 | 2026-11-11 | v9.20 Safari form focus styling, weekday modal containment, offline cache refresh | Chromium CI passed (run 43084881494); GitHub Pages publish succeeded (run 43084881563); real-device check pending |
 | 2026-11-11 | v9.21 Project capture segmented choice, file picker and responsive sheet | Chromium CI passed (run 43085899646); GitHub Pages publish succeeded (run 43085899713); real-device check pending |
+| 2026-11-11 | Native Share Extension source staged on feature branch (PR #41) | 205 Chromium tests passed (run 43090016639); native Swift not compiled; Xcode/physical iPhone unverified; no deployment |
 
 ## How to update this status file after future work
 
