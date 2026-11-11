@@ -13,7 +13,7 @@
     '<div class="canvas-ipad-brand">'+
       '<button type="button" class="canvas-ipad-brand-mark canvas-ipad-palette-button" '+
         'id="canvasIpadPaletteButton" aria-label="Customize colors" title="Customize colors"></button>'+
-      '<span class="canvas-ipad-brand-copy" aria-hidden="true"><strong>Blueprint</strong></span>'+
+      // The customization palette is the only sidebar brand mark.
     '</div>';
   const palette=document.getElementById('paletteLauncher');
   const railPalette=header.querySelector('#canvasIpadPaletteButton');

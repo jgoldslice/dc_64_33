@@ -1,0 +1,92 @@
+/* Blueprint v9.15 — tidy iPad sidebar and responsive Today dashboard.
+   Individual cards grow naturally up to a practical limit; only their bodies
+   scroll. Headings and actions stay accessible, even with many items. */
+#today .v915-layout-ready{
+  gap:12px;
+}
+#today .v915-layout-ready :is(#todayGlance,#todayHabits,#v77TodayPriorities,#v77TodayProjects){
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  touch-action:pan-y;
+}
+#today .v915-layout-ready #todayGlance{
+  max-height:clamp(200px,39dvh,420px);
+}
+#today .v915-layout-ready #todayHabits{
+  max-height:168px;
+}
+#today .v915-layout-ready #v77TodayPriorities{
+  max-height:clamp(165px,30dvh,300px);
+}
+#today .v915-layout-ready #v77TodayProjects{
+  max-height:clamp(125px,26dvh,245px);
+}
+#today .v915-layout-ready .card-heading{gap:8px;align-items:center;}
+#today .v915-layout-ready .card-heading h2{min-width:0;}
+#today .v915-layout-ready :is(#todayGlance,#v77TodayPriorities) .entry{
+  padding-block:8px;
+}
+#today .v915-layout-ready .v77-today-project-grid{gap:8px;}
+#today .v915-layout-ready .v77-project-folder{min-height:88px;padding:11px;}
+@media (min-width:740px) and (min-height:600px){
+  /* Override the old row-span layout that pushed Projects downward. */
+  #today > .stack.v915-layout-ready{
+    display:block!important;
+    max-width:none;
+    margin:0;
+  }
+  #today .v915-today-columns{
+    display:grid;
+    grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);
+    align-items:start;
+    gap:12px;
+  }
+  #today .v915-today-column{
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    align-content:start;
+    gap:12px;
+    min-width:0;
+  }
+  #today .v915-today-column > .card{min-width:0;padding:14px 15px;}
+  #today .v99-today-heading{margin-bottom:10px;}
+  /* Align the customization palette with the navigation icons. */
+  .canvas-ipad-nav-head{
+    min-height:59px;
+    padding:5px 49px 9px 12px!important;
+    justify-content:flex-start;
+  }
+  .canvas-ipad-brand{justify-content:flex-start;min-width:0;}
+  .canvas-ipad-palette-button{width:38px;height:38px;}
+  .canvas-ipad-collapse{
+    left:calc(var(--canvas-ipad-rail-width) - 51px)!important;
+    top:calc(env(safe-area-inset-top) + 16px)!important;
+  }
+  body.canvas-ipad-sidebar-collapsed .canvas-ipad-nav-head{
+    padding:62px 0 10px!important;
+    min-height:114px;
+    justify-content:center;
+  }
+  body.canvas-ipad-sidebar-collapsed .canvas-ipad-brand{
+    justify-content:center;
+  }
+  body.canvas-ipad-sidebar-collapsed .canvas-ipad-collapse{
+    left:calc(var(--canvas-ipad-rail-width) / 2 - 22px)!important;
+    top:calc(env(safe-area-inset-top) + 16px)!important;
+  }
+}
+@media (min-width:740px) and (max-width:920px) and (min-height:600px){
+  /* Make portrait iPad cards legible without creating wide gutters. */
+  #today .v915-today-columns{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;}
+  #today .v915-today-column{gap:10px;}
+  #today .v915-today-column > .card{padding:12px;}
+  #today .v915-layout-ready .v77-today-project-grid{grid-template-columns:minmax(0,1fr);}
+}
+@media (max-width:739px), (max-height:599px){
+  /* Original linear reading order on compact screens. */
+  #today > .stack.v915-layout-ready{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;}
+}
