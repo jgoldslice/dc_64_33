@@ -6,7 +6,7 @@ const inbox=require('../native-share-extension/web/inbox.js');
 
 const uuid='123e4567-e89b-42d3-a456-426614174000';
 const sha=buffer=>createHash('sha256').update(buffer).digest('hex');
-function fake({items,projectId='project-1',failSave=false,failRead=false,projectExists=true}){
+function fake({items,projectId='project-1',failSave=false,failRead=false,projectExists=true}={}){
   const buffer=Buffer.from('PNG sample bytes for checksum QA');
   const file={id:'i1',kind:'file',title:'Lab figure.png',name:'Lab figure.png',
     mime:'image/png',size:buffer.length,sha256:sha(buffer)};
