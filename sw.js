@@ -5,7 +5,7 @@ const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon.svg',
   './v74.js','./v74.css','./polish.css','./v76.js','./v76.css',
   './v77.js','./v77.css','./polish-v81.css','./polish-v81.js',
-  './polish-v82.css','./polish-v82.js','./fluid-navigation-v94.js','./fluid-navigation-v94.css','./ipad-v84.css','./ipad-v84.js','./video-v86.css','./video-v86.js','./week-events-v87.js','./week-events-v87.css','./ipad-polish-v88.css','./ipad-polish-v88.js','./device-workspace-v892.css','./device-workspace-v892.js','./pencilkit-entry-v92.js','./blueprint-notes-v93.css'
+  './polish-v82.css','./polish-v82.js','./fluid-navigation-v94.js','./fluid-navigation-v94.css','./ipad-v84.css','./ipad-v84.js','./video-v86.css','./video-v86.js','./week-events-v87.js','./week-events-v87.css','./ipad-polish-v88.css','./ipad-polish-v88.js','./device-workspace-v892.css','./device-workspace-v892.js','./pencilkit-entry-v92.js','./blueprint-notes-v93.css','./workspace-header-v98.css'
 ];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))
