@@ -351,6 +351,7 @@
 <link rel="stylesheet" href="layout-habits-v916.css">
 <link rel="stylesheet" href="today-responsive-v917.css">
 <link rel="stylesheet" href="weekly-blueprint-v918.css">
+<link rel="stylesheet" href="project-overview-v919.css">
 
 </head>
 <body>
@@ -432,7 +433,25 @@
       <div id="projectWorkspace" hidden>
         <div class="v6-project-head"><button type="button" id="backProjects" class="text-button">← Projects</button><div class="v814-project-tools"><label class="v814-project-switch"><span class="v76-sr">Switch project</span><select id="v814ProjectSelect" aria-label="Switch project" title="Switch project"></select></label><button type="button" id="renameProject" class="text-button" aria-label="Project options">•••</button></div></div>
         <h2 id="projectTitle" class="v6-project-title"></h2>
-        <div id="projectTabs" class="v6-project-tabs">
+        <section id="projectOverview" class="v919-project-overview" aria-label="Project overview">
+          <div class="v919-project-grid">
+            <section class="card v919-summary-card" aria-labelledby="v919NotesHeading">
+              <div class="card-heading"><h3 id="v919NotesHeading">Notes</h3><button type="button" class="text-button" data-v919-project-open="notes">Open notes</button></div>
+              <div id="v919NotesPreview" class="v919-note-preview"></div>
+            </section>
+            <section class="card v919-summary-card" aria-labelledby="v919TodoHeading">
+              <div class="card-heading"><h3 id="v919TodoHeading">To-Do</h3><button type="button" class="text-button" data-v919-project-open="actions">View all</button></div>
+              <div id="v919TodoPreview" class="v919-todo-preview"></div>
+              <form id="v919QuickTodo" class="v919-inline-add"><input name="title" maxlength="160" required aria-label="New project to-do" placeholder="Add a to-do…"><button type="submit" aria-label="Add to-do">+</button></form>
+            </section>
+            <section class="card v919-library-card" aria-labelledby="v919LibraryHeading">
+              <div class="card-heading"><h3 id="v919LibraryHeading">Library</h3><div class="v919-library-actions"><button type="button" class="text-button" data-v919-capture-open>+ Add</button><button type="button" class="text-button" data-v919-project-open="library">View all</button></div></div>
+              <div id="v919LibraryPreview" class="v919-gallery"></div>
+            </section>
+          </div>
+        </section>
+        <button type="button" id="v919BackOverview" class="v919-back-overview text-button" hidden>← Project overview</button>
+        <div id="projectTabs" class="v6-project-tabs" hidden aria-hidden="true">
           <button data-project-tab="notes" class="selected">Notes</button>
           <button data-project-tab="sketch">Sketch</button>
           <button data-project-tab="actions">Actions</button>
@@ -583,14 +602,15 @@ function normalize(data){
 
   return result;
 }
-let stored={};try{stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');}catch{}
+let stored={},canvasLastManifest=null;
+try{canvasLastManifest=localStorage.getItem(STORAGE_KEY);stored=JSON.parse(canvasLastManifest||'{}');}catch{}
 let state=normalize(stored);
 let selectedWeek=startOfWeek(new Date());
 let modalMode=null,modalId=null,modalParent=null;
 const expandedGoals=new Set();
 let selectedCategory='All',categoryManagerOpen=false,activeIdeaId=null,pendingOpeningTimer=null;
 // A failed write must never be silently treated as saved. Keep edits in memory.
-let canvasUnsaved=false;
+let canvasUnsaved=false,canvasExternalChange=false;
 function canvasSaveStatus(failed){
   let notice=document.getElementById('canvasSaveWarning');
   if(!notice&&failed){
@@ -598,20 +618,44 @@ function canvasSaveStatus(failed){
     notice.id='canvasSaveWarning';
     notice.setAttribute('role','alert');
     notice.style.cssText='position:fixed;z-index:9999;bottom:calc(80px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:480px;margin:auto;padding:12px 14px;border:1px solid #b65b40;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 4px 16px #0002;display:flex;gap:10px;align-items:center;justify-content:space-between';
-    const message=document.createElement('span');message.textContent='Changes not saved on this device. Keep Blueprint open and retry, or export a backup.';
-    const retry=document.createElement('button');retry.type='button';retry.textContent='Retry';retry.setAttribute('aria-label','Retry saving changes');retry.addEventListener('click',()=>save());
-    notice.append(message,retry);document.body.append(notice);
+    const message=document.createElement('span');message.id='canvasSaveMessage';message.textContent='Changes not saved on this device. Keep Blueprint open and retry, or export a backup.';
+    const retry=document.createElement('button');retry.id='canvasSaveRetry';retry.type='button';retry.textContent='Retry';retry.setAttribute('aria-label','Retry saving changes');retry.addEventListener('click',()=>{if(!canvasExternalChange)save();});
+    const recover=document.createElement('button');recover.id='canvasSaveRecovery';recover.type='button';recover.hidden=true;recover.textContent='Export copy';recover.setAttribute('aria-label','Export a recovery copy of unsaved planner records');recover.addEventListener('click',()=>{
+      const payload=JSON.stringify({format:'blueprint-unsaved-recovery',version:1,exportedAt:new Date().toISOString(),state});
+      const url=URL.createObjectURL(new Blob([payload],{type:'application/json'}));
+      const link=document.createElement('a');link.href=url;link.download='blueprint-unsaved-recovery.json';document.body.append(link);link.click();link.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),30000);
+    });
+    const reload=document.createElement('button');reload.id='canvasSaveReload';reload.type='button';reload.hidden=true;reload.textContent='Reload latest';reload.addEventListener('click',()=>{
+      if(confirm('Reload data saved by the other Blueprint window? Export an unsaved recovery copy first if this window contains edits you need.'))location.reload();
+    });
+    notice.append(message,retry,recover,reload);document.body.append(notice);
   }
-  if(notice){notice.hidden=!failed;notice.style.display=failed?'flex':'none';}
+  if(notice){
+    notice.hidden=!failed;notice.style.display=failed?'flex':'none';
+    $('canvasSaveMessage').textContent=canvasExternalChange
+      ?'Newer Blueprint data was saved in another window. This window cannot overwrite it. Export a recovery copy, then reload.'
+      :'Changes not saved on this device. Keep Blueprint open and retry, or export a backup.';
+    $('canvasSaveRetry').hidden=canvasExternalChange;
+    $('canvasSaveRecovery').hidden=!canvasExternalChange;
+    $('canvasSaveReload').hidden=!canvasExternalChange;
+  }
 }
 function save(verify=false){
   try{
+    // A Safari/Shortcut share can open Blueprint in a second window. Prevent
+    // the older window from silently overwriting a newly captured resource.
+    if(localStorage.getItem(STORAGE_KEY)!==canvasLastManifest){
+      canvasExternalChange=true;
+      throw Error('Newer planner data exists in another window; refusing stale overwrite');
+    }
     const serialized=JSON.stringify(state);
     if(typeof serialized!=='string')throw new TypeError('Unable to serialize Blueprint data');
     localStorage.setItem(STORAGE_KEY,serialized);
     // Destructive operations verify the manifest before deleting attachments.
     if(verify&&localStorage.getItem(STORAGE_KEY)!==serialized)
       throw new Error('Blueprint save verification failed');
+    canvasLastManifest=serialized;canvasExternalChange=false;
     canvasUnsaved=false;canvasSaveStatus(false);
     return true;
   }catch(error){
@@ -1212,7 +1256,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceW
 <script>
 'use strict';
 window.v6ActiveProjectId=null;
-let v6ProjectTab='notes',v6Pen='primary',v6Drawing=false,v6InkHistory=[],v6SketchId=null,v6SketchEditing=false;
+let v6ProjectTab='overview',v6Pen='primary',v6Drawing=false,v6InkHistory=[],v6SketchId=null,v6SketchEditing=false;
 const v6Project=()=>state.projects?.find(p=>String(p.id)===String(window.v6ActiveProjectId));
 const v6Id=()=>String(uid())+'-'+Math.random().toString(36).slice(2,7);
 const v6Now=()=>new Date().toISOString();
@@ -1238,8 +1282,9 @@ function v6OpenProject(id){
   const project=state.projects.find(p=>String(p.id)===String(id));
   if(!project)return;
   window.v6ActiveProjectId=id;
-  // Reopening a project should return to the workspace the user left.
-  v6ProjectTab=['notes','actions','library'].includes(project.lastProjectTab)?project.lastProjectTab:'notes';
+  // Project overview is the stable landing screen. The stored lastProjectTab
+  // is retained for backward compatibility, but it no longer controls entry.
+  v6ProjectTab='overview';
   v6SketchId=null;v6SketchEditing=false;v6Render();
   // Moving the entire document after opening a project can fight iPad Notes
   // and the keyboard. Jump to the workspace; its own small entry transition
@@ -1258,9 +1303,15 @@ function v6Render(){
   if(!p)return;
   $('projectTitle').textContent=p.title;
   document.querySelectorAll('[data-project-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.projectTab===v6ProjectTab));
+  $('projectOverview').hidden=v6ProjectTab!=='overview';
+  $('v919BackOverview').hidden=v6ProjectTab==='overview';
   for(const name of ['notes','sketch','actions','library'])$('project'+name[0].toUpperCase()+name.slice(1)).hidden=v6ProjectTab!==name;
-  v6RenderNotes(p);v6RenderActions(p);v6RenderLibrary(p);v6RenderSketches(p);
+  // Never initialize notebook geometry in a hidden panel. Zero-width layouts
+  // previously corrupted text-box positioning when Notes later became visible.
+  if(v6ProjectTab==='notes')v6RenderNotes(p);
+  v6RenderActions(p);v6RenderLibrary(p);v6RenderSketches(p);
   v6RenderSketchView();
+  window.v919RenderProjectOverview?.(p);
   if(v6ProjectTab==='sketch'&&!v6SketchEditing)v6CheckDraft(p);
 }
 function v6RenderNotes(p){
@@ -1702,4 +1753,5 @@ v6Normalize();v6Render();
 <script src="pencilkit-entry-v92.js"></script>
 <script src="today-responsive-v917.js"></script>
 <script src="weekly-blueprint-v918.js"></script>
+<script src="project-overview-v919.js"></script>
 </body></html>

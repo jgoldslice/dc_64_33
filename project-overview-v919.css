@@ -1,0 +1,84 @@
+
+/* Blueprint v9.19 — project dashboard with media previews and adaptive notes. */
+#projectTabs[hidden],#projectOverview[hidden],#v919BackOverview[hidden],#v919CaptureBack[hidden]{display:none!important}
+#projectWorkspace,#projectNotes,#projectActions,#projectLibrary,#v76Editor{min-width:0}
+.v919-project-overview{width:100%;min-width:0}
+.v919-project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;align-items:stretch}
+.v919-project-grid>.card{margin:0;min-width:0;padding:19px}
+.v919-project-grid .card-heading{align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:12px}
+.v919-project-grid .card-heading h3{font:normal 23px/1.2 Georgia,serif;color:var(--ink);margin:0}
+.v919-project-grid .card-heading .text-button{white-space:nowrap;font-size:12px}
+.v919-project-grid .v919-library-card{grid-column:1/-1}
+.v919-note-preview{display:grid;align-content:start;gap:9px;min-height:100px;max-height:214px;overflow:hidden}
+.v919-note-snippet{border-left:2px solid var(--secondary);padding-left:10px;min-width:0}
+.v919-note-snippet strong{display:block;font-size:13px;margin-bottom:4px;overflow-wrap:anywhere}
+.v919-note-snippet p{margin:0;font-size:13px;line-height:1.5;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.v919-todo-preview{display:grid;min-height:100px;align-content:start}
+.v919-todo-row{display:flex;align-items:center;gap:9px;min-height:39px;padding:7px 0;border-bottom:1px solid var(--line)}
+.v919-todo-row input{width:20px;height:20px;flex:none;accent-color:var(--secondary-ui)}
+.v919-todo-row label{flex:1;font-size:13px;min-width:0;overflow-wrap:anywhere}
+.v919-todo-row.is-done label{text-decoration:line-through;color:var(--muted)}
+.v919-todo-count{font-size:11px;color:var(--muted);margin:9px 0}
+.v919-inline-add{display:flex;align-items:center;gap:9px;margin-top:11px}
+.v919-inline-add input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-height:44px;padding:10px;font-size:13px}
+.v919-inline-add button{width:44px;height:44px;flex:none;border:1px solid var(--line);border-radius:10px;background:var(--wash);color:var(--secondary-ui);font-size:23px}
+.v919-library-actions{display:flex;align-items:center;gap:10px;margin-left:auto}
+.v919-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.v919-gallery-item{min-width:0;display:grid;gap:6px;align-content:start;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:7px;color:var(--ink);text-align:left;overflow:hidden}
+.v919-gallery-item img{display:block;width:100%;height:clamp(100px,17vh,180px);object-fit:contain;background:var(--surface);border-radius:8px}
+.v919-gallery-item span{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v919-gallery-empty{grid-column:1/-1;text-align:center;border:1px dashed var(--line);border-radius:12px;padding:30px 12px;color:var(--muted);font-size:13px}
+.v919-back-overview{display:inline-flex;align-items:center;min-height:44px;margin:2px 0 12px;padding:8px 2px;font-size:13px}
+.v919-capture-back{position:fixed;z-index:20001;inset:0;display:grid;place-items:center;background:rgba(10,16,16,.52);padding:16px;backdrop-filter:blur(6px)}
+.v919-capture-sheet{background:var(--surface);color:var(--ink);border-radius:20px;border:1px solid var(--line);padding:22px;width:min(100%,490px);max-height:calc(100dvh - 24px);overflow:auto;box-shadow:0 15px 55px #0003;display:grid;gap:14px}
+.v919-capture-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.v919-capture-heading h2{font:normal 26px Georgia,serif;margin:0}
+.v919-capture-heading button{width:44px;height:44px;flex:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-size:24px}
+.v919-capture-sheet label{display:grid;gap:6px;font-size:12px;font-weight:650;min-width:0}
+.v919-capture-sheet input:not([type=file]),.v919-capture-sheet select{width:100%;min-width:0;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
+.v919-capture-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:var(--wash);border-radius:11px}
+.v919-capture-switch button{border:0;border-radius:8px;min-height:44px;color:var(--muted);background:transparent;font-weight:650}
+.v919-capture-switch button[aria-pressed=true]{color:var(--ink);background:var(--surface)}
+.v919-capture-choices{display:grid;gap:10px}
+.v919-capture-choices[hidden]{display:none!important}
+.v919-capture-sheet input[type=file]{font-size:13px;max-width:100%}
+.v919-capture-help{font-size:12px;line-height:1.5;color:var(--muted);margin:0}
+.v919-capture-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.v919-capture-actions button{min-height:44px;border-radius:10px;padding:8px 14px;font-weight:650}
+.v919-capture-status{font-size:12px;line-height:1.4;color:var(--muted);min-height:18px;margin:0}
+.v919-capture-status[role=alert]{color:#b25135}
+.v919-capture-open-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+/* The freeform editor must never expand the document width. */
+#projectNotes .v76-notebook-ui,#projectNotes .v76-page-controls,#projectNotes .v76-toolbar{max-width:100%;box-sizing:border-box}
+#projectNotes .v76-toolbar{display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start;overflow:visible!important;gap:8px 9px!important;min-width:0;white-space:normal}
+#projectNotes .v76-toolbar .v79-tool-group{min-width:0;flex:none;max-width:100%;padding:0!important;border:0!important}
+#projectNotes .v76-toolbar .v79-tool-buttons{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0}
+#projectNotes .v76-toolbar button{flex:none;box-sizing:border-box;min-width:44px!important;min-height:44px!important}
+#projectNotes .v76-toolbar select.v80-text-size{min-height:44px!important;min-width:78px;width:88px;flex:none}
+#projectNotes .v76-page-controls{gap:8px;flex-wrap:wrap}
+#projectNotes .v76-page-controls>*{min-width:0;max-width:100%}
+#projectNotes .v76-page-controls select{flex:1 1 135px}
+#projectNotes .v76-page-controls button{min-height:44px}
+#projectNotes #v819SaveSketch{width:auto!important;max-width:100%;min-width:106px!important;padding-inline:12px;white-space:nowrap;font-size:12px;line-height:1.2}
+#projectNotes #v815ZoomReset{width:auto!important;min-width:64px!important;font-size:13px;white-space:nowrap}
+#projectNotes .v815-zoom-tools{margin-left:0;max-width:100%}
+#projectNotes .v93-layout-tools button{min-width:44px;min-height:44px}
+@media(max-width:760px){
+  .v919-project-grid{grid-template-columns:1fr;gap:10px}
+  .v919-project-grid>.card{padding:16px}
+  .v919-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .v919-gallery-item img{height:clamp(105px,18vh,175px)}
+  #projectNotes .v76-toolbar{gap:7px!important}
+  #projectNotes .v76-toolbar .v79-tool-group[aria-label="Save drawing"]{flex:1 0 100%;justify-content:flex-start}
+  #projectNotes #v819SaveSketch{min-width:0!important;width:100%!important;text-align:center}
+  .v919-capture-back{padding:0;backdrop-filter:none}
+  .v919-capture-sheet{width:100%;height:100dvh;max-height:none;border:0;border-radius:0;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
+}
+@media(max-width:370px){
+ #projectNotes .v76-toolbar .v79-tool-buttons{gap:4px}
+ #projectNotes .v76-toolbar select.v80-text-size{min-width:73px;width:76px}
+ .v919-project-grid .card-heading h3{font-size:21px}
+}
+@media(prefers-reduced-motion:reduce){
+ .v919-capture-back,.v919-capture-sheet{animation:none!important;transition:none!important}
+}
