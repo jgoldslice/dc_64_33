@@ -36,12 +36,17 @@
 .v919-capture-heading button{width:44px;height:44px;flex:none;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);font-size:24px}
 .v919-capture-sheet label{display:grid;gap:6px;font-size:12px;font-weight:650;min-width:0}
 .v919-capture-sheet input:not([type=file]),.v919-capture-sheet select{width:100%;min-width:0;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--surface);color:var(--ink);font:inherit;font-size:14px}
-.v919-capture-switch{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:var(--wash);border-radius:11px}
-.v919-capture-switch button{border:0;border-radius:8px;min-height:44px;color:var(--muted);background:transparent;font-weight:650}
-.v919-capture-switch button[aria-pressed=true]{color:var(--ink);background:var(--surface)}
+/* Compact resource-type control: two equal 44px targets, not stretched cards. */
+.v919-capture-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:4px;background:var(--wash);border-radius:12px;flex:none}
+.v919-capture-switch button{border:0;border-radius:9px;height:44px;min-height:44px;padding:8px 10px;color:var(--muted);background:transparent;font-size:14px;line-height:1.2;font-weight:650;white-space:nowrap}
+.v919-capture-switch button[aria-pressed=true]{color:var(--ink);background:var(--surface);box-shadow:0 1px 4px #00000012}
+.v919-capture-switch button:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:-2px}
 .v919-capture-choices{display:grid;gap:10px}
 .v919-capture-choices[hidden]{display:none!important}
-.v919-capture-sheet input[type=file]{font-size:13px;max-width:100%}
+/* Visually align the native file picker with the segmented choices. */
+.v919-capture-sheet input[type=file]{display:block;width:100%;max-width:100%;min-width:0;padding:4px 0;font-size:14px;line-height:1.4;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v919-capture-sheet input[type=file]::file-selector-button{font:inherit;font-weight:650;min-height:42px;padding:9px 13px;margin-right:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);cursor:pointer}
+.v919-capture-sheet input[type=file]:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:3px;border-radius:9px}
 .v919-capture-help{font-size:12px;line-height:1.5;color:var(--muted);margin:0}
 .v919-capture-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .v919-capture-actions button{min-height:44px;border-radius:10px;padding:8px 14px;font-weight:650}
@@ -72,7 +77,11 @@
   #projectNotes .v76-toolbar .v79-tool-group[aria-label="Save drawing"]{flex:1 0 100%;justify-content:flex-start}
   #projectNotes #v819SaveSketch{min-width:0!important;width:100%!important;text-align:center}
   .v919-capture-back{padding:0;backdrop-filter:none}
-  .v919-capture-sheet{width:100%;height:100dvh;max-height:none;border:0;border-radius:0;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
+  /* A full-height grid stretches its auto rows, making the type buttons huge.
+     Use a vertical stack and keep the footer pinned toward the safe-area bottom. */
+  .v919-capture-sheet{display:flex;flex-direction:column;align-items:stretch;gap:16px;min-height:0;width:100%;height:100dvh;max-height:none;border:0;border-radius:0;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px)}
+  .v919-capture-heading,.v919-capture-switch,.v919-capture-choices{flex:0 0 auto}
+  .v919-capture-actions{margin-top:auto;padding-top:8px;flex:0 0 auto}
 }
 @media(max-width:370px){
  #projectNotes .v76-toolbar .v79-tool-buttons{gap:4px}
