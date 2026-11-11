@@ -139,8 +139,8 @@ test('Priority reordering and undo restore the exact previous task priority stat
   await expect(page.locator('#wbMain')).toContainText('Priority two');
   await page.locator('[data-wb-next]').click();
   expect(await page.evaluate(()=>state.tasks.find(t=>t.id==='wb-t2').priorityRank)).toBe(1);
-  await page.locator('[data-wb-undo]').click();
   page.on('dialog',d=>d.accept());
+  await page.locator('[data-wb-undo]').click();
   await expect.poll(()=>page.evaluate(()=>state.tasks.find(t=>t.id==='wb-t1').priorityRank)).toBe(1);
   expect(await page.evaluate(()=>state.tasks.find(t=>t.id==='wb-t2').priorityRank)).toBe(2);
 });
