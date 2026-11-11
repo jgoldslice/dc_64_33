@@ -96,9 +96,9 @@ test('v9.16 uneven Today data balances both column bottoms without blank card pa
       return Math.abs(bottom('v77TodayProjects')-bottom('v77TodayPriorities'));
     })).toBeLessThan(5);
   }
-  await expect(page.locator('#today .v916-minimal-heading h2')).toBeHidden();
+  await expect(page.locator('#today .v916-minimal-heading h2')).toHaveCSS('clip-path','inset(50%)');
   await page.locator('[data-tab="week"]').click();
-  await expect(page.locator('#week .v916-minimal-heading h2')).toBeHidden();
+  await expect(page.locator('#week .v916-minimal-heading h2')).toHaveCSS('clip-path','inset(50%)');
   await expect(page.locator('#v94WeekForward')).toBeVisible();
 });
 
