@@ -36,7 +36,7 @@ test('main tabs slide the full width with no opacity or page-turn transforms',as
     const source=document.getElementById('today'),dest=document.getElementById('week');
     const data={both:source.classList.contains('v94-live-pane')&&
       dest.classList.contains('v94-live-pane'),
-      travel:parseFloat(source.style.transform.match(/translate3d\\((-?[\\d.]+)px/)?.[1]||0),
+      travel:Number(source.style.transform.split('(')[1]?.split('px')[0]||0),
       opacity:source.style.opacity||'',
       destination:dest.style.transform,
       cloned:document.querySelectorAll('.canvas-turn-snapshot').length};

@@ -67,12 +67,12 @@ test('Failed localStorage write leaves user edits in memory and Retry clears war
   await expect(page.locator('#canvasSaveWarning')).toBeHidden();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('jgold-planner-v1')).tasks.some(t=>t.title==='Unsaved test task'))).toBe(true);
 });
-test('Offline cache includes both page-turn files while preserving v8.2 safeguards',async({request})=>{
+test('Offline cache includes the v9.4 fluid navigation files while preserving safeguards',async({request})=>{
   const response=await request.get(base+'sw.js');
   expect(response.ok()).toBe(true);
   const source=await response.text();
-  expect(source).toContain('page-turn.js');
-  expect(source).toContain('page-turn.css');
+  expect(source).toContain('fluid-navigation-v94.js');
+  expect(source).toContain('fluid-navigation-v94.css');
   expect(source).toContain("name.startsWith(PREFIX)");
   expect(source).toContain("request.mode==='navigate'");
 });

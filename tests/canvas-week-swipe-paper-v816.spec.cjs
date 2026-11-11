@@ -139,8 +139,7 @@ test('live tab views remain aligned without cloning content during an interactiv
       measuredPrepares:window.__blueprintMotionDebug.prepares
     };
   });
-  expect(geometry.source).toBe(true);
-  expect(geometry.destination).toBe(true);
+  expect(geometry).toMatchObject({source:true,destination:true});
   expect(Math.abs(geometry.x)).toBeLessThan(1.5);
   expect(Math.abs(geometry.y)).toBeLessThan(1.5);
   expect(Math.abs(geometry.width)).toBeLessThan(1.5);
