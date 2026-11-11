@@ -73,6 +73,10 @@
       try{
         const response=await plugin.listPending();
         if(!Array.isArray(response?.entries))throw Error('Native inbox response is invalid');
+        // Corrupt native manifests remain on disk for recovery, but should
+        // not prevent valid shares from importing on the same app launch.
+        for(const id of (Array.isArray(response.errors)?response.errors:[]))
+          result.errors.push({id:String(id),message:'Queued share manifest is damaged; it was retained for recovery'});
         for(const entry of response.entries){
           try{
             validateEnvelope(entry);
