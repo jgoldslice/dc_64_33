@@ -21,6 +21,7 @@ Supported in this prototype: HTTPS/HTTP links, PNG/JPEG/HEIC/HEIF/GIF/WebP image
 - \`web/inbox.js\` — opt-in, checksum-checked importer using Blueprint's existing project Library, IndexedDB \`v6Blob\`, and guarded \`save(true)\`.
 - \`web/host-entry.js\` — opt-in native wrapper wiring: publishes lightweight project index on startup and app resume, imports pending shares, shows retry notice. **Not loaded in public GitHub Pages**.
 - \`tests/blueprint-share-inbox.spec.cjs\` — automated JS tests for link + image import, project selection, corruption, stale saves and retries.
+- \`Tests/BlueprintShareInboxTests.swift\` — native XCTest source for queue roundtrip, corruption, invalid project IDs and last-used destination. Not yet run against a signed Xcode test target.
 
 ## Mac/Xcode integration (once the real project is accessible)
 
@@ -28,7 +29,7 @@ Supported in this prototype: HTTPS/HTTP links, PNG/JPEG/HEIC/HEIF/GIF/WebP image
 2. **Export a complete Blueprint backup** and preserve a safe copy before any native build tests. Use a disposable test project for initial capture. The Safari/PWA database is **not** automatically the same database as the Capacitor WKWebView database.
 3. In Xcode, select the **main App target → Signing & Capabilities → + Capability → App Groups** and create a unique identifier under your Apple developer team, for example \`group.<actual-bundle-identifier>.shares\`. **Use the actual ID returned by Xcode, not the example text.**
 4. **File → New → Target → Share Extension** (iOS). Name it something such as \`BlueprintShareExtension\`; embed it in the main app and configure its bundle ID/signing/deployment target to match your setup. Add the **same App Groups entitlement** to this new extension target.
-5. Add \`BlueprintShareInbox.swift\` to **both** targets; \`BlueprintShareViewController.swift\` only to the new extension; \`BlueprintSharePlugin.swift\` only to the main app. If the extension template creates its own share controller, remove the template controller's build-target membership to avoid two competing entry points.
+5. Add \`BlueprintShareInbox.swift\` to **both** targets (and separately to the iOS test target for the isolated XCTest bundle); \`BlueprintShareViewController.swift\` only to the new extension; \`BlueprintSharePlugin.swift\` only to the main app. If the extension template creates its own share controller, remove the template controller's build-target membership to avoid two competing entry points.
 6. In **both** target Info.plist files, add string key **\`BlueprintAppGroupID\`** with the exact App Group identifier from step 3. Neither target should have an example placeholder.
 7. Configure the Share Extension's \`Info.plist\` \`NSExtension\` dictionary. It should contain:
    - \`NSExtensionPointIdentifier\`: \`com.apple.share-services\`
