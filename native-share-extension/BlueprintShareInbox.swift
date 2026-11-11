@@ -91,6 +91,13 @@ final class BlueprintShareInbox {
         try fm.createDirectory(at: pendingDir, withIntermediateDirectories: true)
     }
 
+    // XCTest-only injectable storage root. The shipping initializer above
+    // continues to require a valid signed App Group entitlement.
+    init(testDirectory: URL) throws {
+        root = testDirectory.appendingPathComponent("BlueprintShareInbox", isDirectory: true)
+        try fm.createDirectory(at: pendingDir, withIntermediateDirectories: true)
+    }
+
     private var pendingDir: URL { root.appendingPathComponent("pending", isDirectory: true) }
     private var stagingDir: URL { root.appendingPathComponent("staging", isDirectory: true) }
     private var projectIndexURL: URL { root.appendingPathComponent("projects.json") }
