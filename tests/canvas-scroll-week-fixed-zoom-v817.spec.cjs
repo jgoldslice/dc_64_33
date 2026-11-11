@@ -32,6 +32,11 @@ async function openNotebook(page,title='Zoom Window'){
   await page.locator('#newProject').click();
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v815ZoomViewport')).toBeVisible();
+  // Project Overview opens the notebook lazily; its first visible layout
+  // completes in the following animation frame after the resize refresh.
+  // Measure the settled, visible page instead of a transitional 4px shift.
+  await page.evaluate(()=>new Promise(resolve=>
+    requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   return errors;
 }
 const geometry=page=>page.evaluate(()=>{
