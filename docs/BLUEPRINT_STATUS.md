@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — Project Library capture layout polish (web v9.21)
+
+- **Requested:** On iPhone, the project Library's "Save to a project" sheet made the Link / Photo / file choice buttons disproportionately tall and visually mismatched with the system Choose Files control. Owner supplied an iPhone screenshot.
+- **Root cause / implemented:** Mobile `.v919-capture-sheet` used a full-viewport CSS grid whose auto rows expanded to fill available height. A focused styling change in `project-overview-v919.css` switches the phone sheet to a vertical flex stack with compact two-choice 44px segmented controls, a matching native file-picker button, and safe-area-aware footer placement. The existing project selection, link, image/PDF upload, confirmation, keyboard focus, and storage paths are unchanged.
+- **Commits on `main`:** `927676cb42bad6b5546b39c7e0612810ae63a042` (CSS), `d77cfa43e2c10c58b3fd6a1499ff8d9f17371134` (regression tests in `tests/project-overview-v919.spec.cjs`), and `3c87e2007e58be46e7a5d3932a0c30be8a01cd23` (offline cache `canvas-v921-compact-project-capture` in `sw.js`).
+- **Automated-test verified:** Full GitHub Actions browser smoke suite **passed** at commit `3c87e2007e58be46e7a5d3932a0c30be8a01cd23` ([run 43085899646](https://github.com/jgoldslice/dc_64_33/actions/runs/43085899646)). New test checks both capture modes, touch-target geometry, selection indicators, native file chooser visibility, footer and viewport bounds at 320, 375, 390, 430 and 834px widths, and cancel without writing to the library. Browser tests do not prove iOS Safari rendering.
+- **Web deployed:** GitHub Pages publish **succeeded** for `3c87e2007e58be46e7a5d3932a0c30be8a01cd23` ([run 43085899713](https://github.com/jgoldslice/dc_64_33/actions/runs/43085899713)). **Physical-device verified:** pending; ask owner to refresh on iPhone and check the Link / Photo selector and file picker. **Native iOS wrapper deployed:** not verified.
+- **Data safety:** No schema change, migration, backup format change, library state change, or deletion. CSS, a browser regression test, and the service-worker cache name only.
+
 ## 2026-11-11 — iOS Safari form focus zoom (web v9.20)
 
 - **Requested / reproduced in screenshot:** When a text field (such as Add Habit → Title) receives focus on iPhone Safari, the page magnifies and may remain zoomed after dismissal. The field inherited a 12px size from its label, below the approximately 16px Safari focus threshold.
@@ -36,9 +45,10 @@
 | iPhone toolbar/tabs overflow | v9.19 responsive code present; device QA pending | Reproduce and confirm on real iPhone |
 | Apple Pencil coordinates, zoom, text boxes | Previously reported issues; current status unknown | Test on physical iPad with Pencil |
 | Data backup/persistence | Existing behavior mentioned in README | Test export/import and migration safety on copy of data |
-| iOS build/deployment | Web v9.20 published; native build unverified | Test the published GitHub Pages site and inspect local Capacitor/Xcode app separately |
+| iOS build/deployment | Web v9.21 published; native build unverified | Test the published GitHub Pages site and inspect local Capacitor/Xcode app separately |
 | Documentation / agent continuity | AGENTS.md available | Follow and maintain these files |
 | iPhone Safari form focus zoom | Implemented and Chromium regression-suite verified | v9.20: 16px touch text-entry minimum; physical Safari check pending |
+| Project capture modal oversized resource buttons | Fixed in v9.21; browser-suite verified and web published | Compact 44px switch, matching file picker, flex sheet; iPhone device confirmation pending |
 
 ## Prioritized verification and improvement backlog
 
@@ -57,6 +67,7 @@ These entries are **candidates for investigation**, not assertions that the feat
 | --- | --- | --- |
 | 2026-11-11 | Documentation initialization and limited repository inspection | README/index inspected; no tests or app builds executed; physical devices not accessed |
 | 2026-11-11 | v9.20 Safari form focus styling, weekday modal containment, offline cache refresh | Chromium CI passed (run 43084881494); GitHub Pages publish succeeded (run 43084881563); real-device check pending |
+| 2026-11-11 | v9.21 Project capture segmented choice, file picker and responsive sheet | Chromium CI passed (run 43085899646); GitHub Pages publish succeeded (run 43085899713); real-device check pending |
 
 ## How to update this status file after future work
 
