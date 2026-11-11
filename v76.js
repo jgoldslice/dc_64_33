@@ -333,6 +333,9 @@
       suppressPageClickUntil=Date.now()+400;
       return;
     }
+    // Some Safari builds report Pencil contacts without touchType.
+    // A live pen stroke always wins over a pending finger-pan candidate.
+    if(activeStroke||activeErase){fingerPan=null;return;}
     if(!fingerPan||fingers.length!==1||!isInkMode())return;
     const touch=fingers[0];
     if(touch.identifier!==fingerPan.id)return;
