@@ -1,0 +1,16 @@
+/* Blueprint v9.11 chosen icon family: Design C, with theme-aware two-tone strokes. */
+.bottom-nav .v911-nav-icon,
+.bottom-nav button.active .v911-nav-icon {
+  stroke:var(--primary-ui)!important;
+  stroke-width:1.65;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  fill:none;
+}
+.bottom-nav button.active .v911-nav-icon{stroke:var(--primary-ui)!important;}
+/* Gold/secondary accents are filled within each SVG symbol using --secondary.
+   The artist palette stays the real Customize control in the iPad rail. */
+.canvas-ipad-palette-button .palette-base,
+.palette-launch .palette-base{fill:var(--primary);stroke:var(--primary-ui);}
+.canvas-ipad-palette-button .palette-dot,
+.palette-launch .palette-dot{fill:var(--secondary);}
