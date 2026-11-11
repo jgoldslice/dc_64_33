@@ -1,0 +1,21 @@
+/* Blueprint v9.8 — on iPad, move the palette identity to the left rail.
+   Remove the redundant header row to give the project notebook more height.
+   Phones keep their original header and customization control. */
+@media (min-width:740px) and (min-height:600px){
+  .shell > .app-header{display:none!important}
+  .shell{padding-top:calc(env(safe-area-inset-top) + 9px)}
+  body.canvas-v88-notes-fit .shell{padding-top:calc(env(safe-area-inset-top) + 7px)}
+  .canvas-ipad-palette-button{
+    width:35px;height:35px;flex:none;padding:3px;display:grid;place-items:center;
+    border:1px solid var(--line);border-radius:11px;
+    background:var(--surface);color:var(--secondary-ui);cursor:pointer;
+  }
+  .canvas-ipad-palette-button .palette-logo{display:block;width:27px;height:27px}
+  .canvas-ipad-palette-button:focus-visible{
+    outline:2px solid var(--secondary-ui);outline-offset:3px;
+  }
+  /* Keep the rail toggle independent and reachable in both sidebar widths. */
+  body.canvas-ipad-sidebar-collapsed .canvas-ipad-palette-button{
+    margin-inline:auto;
+  }
+}

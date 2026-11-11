@@ -6,11 +6,22 @@
   if(!nav||nav.querySelector('.canvas-ipad-nav-head'))return;
   const header=document.createElement('div');
   header.className='canvas-ipad-nav-head';
+  // Reuse the existing palette artwork; do not duplicate the customize action.
+  // The phone keeps its original header button, while iPad has the palette in
+  // the navigation rail instead of the old half-filled circle emblem.
   header.innerHTML=
-    '<div class="canvas-ipad-brand" aria-hidden="true">'+
-      '<span class="canvas-ipad-brand-mark">◒</span>'+
-      '<span class="canvas-ipad-brand-copy"><strong>Blueprint</strong></span>'+
+    '<div class="canvas-ipad-brand">'+
+      '<button type="button" class="canvas-ipad-brand-mark canvas-ipad-palette-button" '+
+        'id="canvasIpadPaletteButton" aria-label="Customize colors" title="Customize colors"></button>'+
+      '<span class="canvas-ipad-brand-copy" aria-hidden="true"><strong>Blueprint</strong></span>'+
     '</div>';
+  const palette=document.getElementById('paletteLauncher');
+  const railPalette=header.querySelector('#canvasIpadPaletteButton');
+  if(palette){
+    const artwork=palette.querySelector('svg');
+    if(artwork)railPalette.append(artwork.cloneNode(true));
+    railPalette.addEventListener('click',()=>palette.click());
+  }
   nav.prepend(header);
   const footer=document.createElement('p');
   footer.className='canvas-ipad-nav-footer';
