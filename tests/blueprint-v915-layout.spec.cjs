@@ -2,32 +2,35 @@
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 
-test('v9.15 Today stays aligned in portrait, landscape, and phone widths',async({page})=>{
+test('v9.17 Today uses paired rows on expanded screens and a single column on phones',async({page})=>{
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.setViewportSize({width:834,height:1194});
   await page.goto(base);
   for(const vp of [{width:834,height:1194},{width:1194,height:834}]){
     await page.setViewportSize(vp);
-    await expect(page.locator('#today .v915-today-columns')).toBeVisible();
+    await expect(page.locator('#today > .v917-today-grid')).toBeVisible();
     const layout=await page.evaluate(()=>{
       const rect=id=>document.getElementById(id).closest('section.card').getBoundingClientRect();
-      const g=rect('todayGlance'),h=rect('todayHabits'),p=rect('v77TodayPriorities'),r=rect('v77TodayProjects');
-      return {g:{left:g.left,right:g.right,bottom:g.bottom},h:{left:h.left,bottom:h.bottom},p:{left:p.left,top:p.top},r:{left:r.left,right:r.right,top:r.top},overflow:document.documentElement.scrollWidth-innerWidth};
+      const g=rect('todayGlance'),h=rect('todayHabits'),t=rect('v917TodayTasks'),p=rect('v77TodayPriorities'),r=rect('v77TodayProjects');
+      return {g:{left:g.left,right:g.right,top:g.top,bottom:g.bottom},h:{left:h.left,right:h.right,top:h.top,bottom:h.bottom},t:{left:t.left,right:t.right,top:t.top,bottom:t.bottom},p:{left:p.left,right:p.right,top:p.top,bottom:p.bottom},r:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},overflow:document.documentElement.scrollWidth-innerWidth};
     });
     expect(layout.g.right).toBeLessThan(layout.h.left+4);
-    expect(layout.g.right).toBeLessThan(layout.p.left+4);
+    expect(layout.t.right).toBeLessThan(layout.p.left+4);
+    expect(Math.abs(layout.g.top-layout.h.top)).toBeLessThan(4);
+    expect(Math.abs(layout.g.bottom-layout.h.bottom)).toBeLessThan(4);
+    expect(Math.abs(layout.t.top-layout.p.top)).toBeLessThan(4);
+    expect(Math.abs(layout.t.bottom-layout.p.bottom)).toBeLessThan(4);
     expect(Math.abs(layout.g.left-layout.r.left)).toBeLessThan(4);
-    expect(Math.abs(layout.g.right-layout.r.right)).toBeLessThan(4);
-    expect(layout.r.top-layout.g.bottom).toBeGreaterThanOrEqual(7);
-    expect(layout.r.top-layout.g.bottom).toBeLessThanOrEqual(17);
-    expect(layout.p.top-layout.h.bottom).toBeGreaterThanOrEqual(7);
-    expect(layout.p.top-layout.h.bottom).toBeLessThanOrEqual(17);
+    expect(Math.abs(layout.h.right-layout.r.right)).toBeLessThan(4);
+    expect(layout.r.top-layout.t.bottom).toBeGreaterThanOrEqual(8);
+    expect(layout.r.top-layout.t.bottom).toBeLessThanOrEqual(15);
     expect(layout.overflow).toBeLessThanOrEqual(3);
   }
   await page.setViewportSize({width:390,height:844});
   await expect(page.locator('#today .v915-today-columns')).toHaveCount(0);
   const order=await page.locator('#today > .stack > section.card').evaluateAll(cards=>cards.filter(el=>!el.hidden).map(c=>c.querySelector('.card-heading h2')?.textContent.trim()));
-  expect(order).toEqual(['Today at a Glance','Habits','Top Priorities','Projects']);
+  expect(order).toEqual(['Schedule','Habits','Tasks','Top Priorities','Projects']);
+  await expect(page.locator('#today > .stack')).toHaveCSS('grid-template-columns',/\d+.*px/);
   expect(errors).toEqual([]);
 });
 
@@ -74,7 +77,7 @@ test('habit marked on Today is reflected in the Week and monthly tracker',async(
   await expect(page.locator('.v96-month-card')).toHaveCount(0);
 });
 
-test('v9.16 uneven Today data balances both column bottoms without blank card padding',async({page})=>{
+test('v9.17 paired grid rows align without trimming either card body',async({page})=>{
   await page.setViewportSize({width:834,height:1194});
   await page.goto(base);
   await page.evaluate(()=>{
@@ -93,10 +96,15 @@ test('v9.16 uneven Today data balances both column bottoms without blank card pa
     await page.setViewportSize(viewport);
     await expect.poll(()=>page.evaluate(()=>{
       const bottom=id=>document.getElementById(id).closest('.card').getBoundingClientRect().bottom;
-      return Math.abs(bottom('v77TodayProjects')-bottom('v77TodayPriorities'));
+      const top=id=>document.getElementById(id).closest('.card').getBoundingClientRect().top;
+      return Math.max(
+        Math.abs(bottom('todayGlance')-bottom('todayHabits')),
+        Math.abs(bottom('v917TodayTasks')-bottom('v77TodayPriorities')),
+        Math.abs(top('todayGlance')-top('todayHabits'))
+      );
     })).toBeLessThan(5);
   }
-  await expect(page.locator('#today .v916-minimal-heading h2')).toHaveCSS('clip-path','inset(50%)');
+  await expect(page.locator('#today .v917-schedule .card-heading h2')).toHaveText('Schedule');
   await page.locator('[data-tab="week"]').click();
   await expect(page.locator('#week .v916-minimal-heading h2')).toHaveCSS('clip-path','inset(50%)');
   await expect(page.locator('#v94WeekForward')).toBeVisible();

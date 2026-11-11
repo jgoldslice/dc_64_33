@@ -73,7 +73,7 @@ test('calendar swipe navigates tabs while date picker retains its own gestures',
   expect(before).not.toBe(next);
   expect(errors).toEqual([]);
 });
-test('habit card stays fixed after four and only its list scrolls',async({page})=>{
+test('habit card caps its growth and scrolls excess habit rows',async({page})=>{
   await boot(page);
   await page.evaluate(()=>{
     state.habits=Array.from({length:4},(_,i)=>({
@@ -90,7 +90,8 @@ test('habit card stays fixed after four and only its list scrolls',async({page})
     render();
   });
   const after=await card.evaluate(el=>el.getBoundingClientRect().height);
-  expect(Math.abs(after-original)).toBeLessThanOrEqual(2);
+  expect(after).toBeGreaterThanOrEqual(original);
+  expect(after).toBeLessThanOrEqual(395);
   const metrics=await page.locator('#todayHabits').evaluate(el=>({
     client:el.clientHeight,scroll:el.scrollHeight,overflow:getComputedStyle(el).overflowY
   }));
