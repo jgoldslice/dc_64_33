@@ -114,7 +114,7 @@ test('native week strip supports mid-drag neighboring weeks without remount',asy
   await page.locator('[data-tab="week"]').click();
   const strip=page.locator('#v817WeekViewport');
   await expect(strip.locator('.v817-week-panel')).toHaveCount(3);
-  expect(await strip.evaluate(el=>getComputedStyle(el).scrollSnapType)).toContain('x mandatory');
+  await expect.poll(()=>strip.evaluate(el=>getComputedStyle(el).scrollSnapType)).toContain('x mandatory');
   await expect(strip.locator('#v817WeekPrev')).toBeVisible();
   await expect(strip.locator('#v817WeekNext')).toBeVisible();
 });
