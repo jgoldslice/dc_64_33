@@ -352,6 +352,22 @@
 <link rel="stylesheet" href="today-responsive-v917.css">
 <link rel="stylesheet" href="weekly-blueprint-v918.css">
 <link rel="stylesheet" href="project-overview-v919.css">
+<style>
+/* iOS Safari zooms focused inputs below 16px. Preserve pinch zoom and
+   existing label typography while keeping editable controls readable. */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([type="button"]):not([type="submit"]),
+  textarea, select { font-size: max(16px, 1em) !important; }
+}
+@media (max-width: 600px) {
+  .modal-back { padding: 12px; max-width: 100%; }
+  .modal { min-width: 0; max-width: 100%; max-height: min(85dvh, calc(100dvh - 24px)); }
+  .modal .form-fields, .modal .form-fields > label { min-width: 0; }
+  .modal .days-picker { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .modal .days-picker > label { min-width: 0; }
+  .modal .modal-actions { flex-wrap: wrap; }
+}
+</style>
 
 </head>
 <body>
