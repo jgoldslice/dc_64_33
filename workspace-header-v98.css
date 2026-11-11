@@ -19,3 +19,7 @@
     margin-inline:auto;
   }
 }
+
+/* v9.9: match the Week date-header aesthetic while keeping Today compact. */
+#today .v99-today-heading{margin-bottom:14px;align-items:center}
+#todayTitle{font:normal clamp(24px,2.4vw,30px)/1.2 Georgia,serif;letter-spacing:-.45px;margin:0}

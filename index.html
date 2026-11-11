@@ -367,7 +367,7 @@
   <header class="app-header"><button type="button" class="palette-launch" id="paletteLauncher" aria-label="Customize colors" title="Customize colors"><svg class="palette-logo" viewBox="0 0 48 48" aria-hidden="true"><path class="palette-base" d="M24 4C12.9 4 4 12.9 4 24s8.9 20 20 20h3.8c3.7 0 6.3-2.5 6.3-5.6 0-2-1.4-3.2-1.4-5.1 0-2.4 1.8-4.2 4.3-4.2h1.3c3.6 0 5.7-2.2 5.7-5.7C44 12.7 35.1 4 24 4Z"/><circle class="palette-dot" cx="14" cy="21" r="3.2"/><circle class="palette-dot" cx="20" cy="12.6" r="3.2"/><circle class="palette-dot" cx="29.7" cy="14" r="3.2"/><circle class="palette-dot" cx="19.2" cy="31" r="3.2"/><circle class="palette-hole" cx="37.2" cy="35.2" r="3"/></svg></button><button type="button" class="brand brand-home" id="canvasHomeButton" aria-label="Go to Today (Blueprint Home)">Blueprint</button></header>
   <main>
     <section class="view active" id="today" aria-labelledby="todayTitle">
-      <div class="view-header"><div><div class="eyebrow">Your day, simplified</div><h1 id="todayTitle">Today</h1><p class="muted" id="todayDate"></p></div></div>
+      <div class="view-header v99-today-heading"><h1 id="todayTitle">Today</h1></div>
       <div class="stack">
         <section class="card focus-card" hidden aria-hidden="true"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Today's Focus</h2><span class="focus-pencil" aria-hidden="true">✎</span></div><p class="focus-prompt">What small thing deserves my best effort today?</p><textarea class="focus-answer focus-notebook" id="todayFocus" aria-label="Write today's focus" maxlength="180" rows="3"></textarea></section>
         <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-calendar"/></svg> Today at a Glance</h2><div class="add-menu"><button class="text-button add-trigger" id="addToday" type="button" aria-expanded="false" aria-controls="todayAddOptions">+ Add</button><div id="todayAddOptions" class="add-menu-options" hidden><button type="button" data-open="task">Add task</button><button type="button" data-open="event">Add event</button></div></div></div><div id="todayGlance"></div></section>
@@ -664,7 +664,7 @@ function v96RenderMonth(){
 }
 function render(){
   applyTheme();
-  $('todayDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  $('todayTitle').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   // Do not replace text while the user is typing (iOS keyboard/caret preservation).
   for(const [id,value] of [['todayFocus',state.todayFocus],['weeklyFocus',state.weeklyFocus]]){
     if(document.activeElement!==$(id))$(id).value=value||'';
