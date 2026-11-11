@@ -47,3 +47,59 @@ test('at 50 percent, ink covers entire visible canvas; touch cannot create marks
   await page.locator('#v76Ink').dispatchEvent('pointerdown',{pointerId:17,pointerType:'touch',isPrimary:true,clientX:400,clientY:600});
   expect(await page.evaluate(()=>v6Project().notePages[0].strokes.length)).toBe(count);
 });
+
+test('Pencil surface suppresses browser scrolling and fingers can still pan',async({page})=>{
+  await openNotebook(page);
+  await page.locator('#v815ZoomIn').click();
+  await page.locator('#v815ZoomIn').click();
+  await page.locator('[data-v76-mode="pen"]').click();
+  const result=await page.evaluate(()=>{
+    const viewport=document.getElementById('v815ZoomViewport');
+    const ink=document.getElementById('v76Ink');
+    const touchStyle=getComputedStyle(ink).touchAction;
+    const before=viewport.scrollTop;
+    const make=(x,y)=>new Touch({
+      identifier:101,target:ink,clientX:x,clientY:y
+    });
+    const begin=make(350,540),end=make(350,360);
+    ink.dispatchEvent(new TouchEvent('touchstart',{
+      bubbles:true,cancelable:true,touches:[begin],
+      targetTouches:[begin],changedTouches:[begin]
+    }));
+    const moved=ink.dispatchEvent(new TouchEvent('touchmove',{
+      bubbles:true,cancelable:true,touches:[end],
+      targetTouches:[end],changedTouches:[end]
+    }));
+    ink.dispatchEvent(new TouchEvent('touchend',{
+      bubbles:true,cancelable:true,touches:[],
+      targetTouches:[],changedTouches:[end]
+    }));
+    return {touchStyle,before,after:viewport.scrollTop,prevented:!moved,
+      strokes:v6Project().notePages[0].strokes.length};
+  });
+  expect(result.touchStyle).toBe('none');
+  expect(result.after).toBeGreaterThan(result.before+25);
+  expect(result.prevented).toBe(true);
+  expect(result.strokes).toBe(0);
+});
+test('Apple Pencil pen pointer writes without moving the notebook',async({page})=>{
+  await openNotebook(page);
+  await page.locator('[data-v76-mode="pen"]').click();
+  const before=await page.evaluate(()=>({
+    top:document.getElementById('v815ZoomViewport').scrollTop,
+    left:document.getElementById('v815ZoomViewport').scrollLeft
+  }));
+  const target=await page.locator('#v76Ink').boundingBox();
+  const x=target.x+Math.min(70,target.width/3),y=target.y+Math.min(110,target.height/4);
+  const cdp=await page.context().newCDPSession(page);
+  await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x,y,buttons:0,pointerType:'pen'});
+  await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',x,y,buttons:1,button:'left',clickCount:1,pointerType:'pen'});
+  await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:x+35,y:y+35,buttons:1,button:'left',pointerType:'pen'});
+  await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:x+35,y:y+35,buttons:0,button:'left',clickCount:1,pointerType:'pen'});
+  await expect(page.locator('#v76Ink path.v818-ink-stroke')).toHaveCount(1);
+  const after=await page.evaluate(()=>({
+    top:document.getElementById('v815ZoomViewport').scrollTop,
+    left:document.getElementById('v815ZoomViewport').scrollLeft
+  }));
+  expect(after).toEqual(before);
+});

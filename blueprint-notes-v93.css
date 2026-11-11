@@ -1,8 +1,11 @@
 /* Blueprint v9.3 — OneNote-style, pen-first iPad notebook. */
 /* All note storage continues through the existing v76 per-project notePages. */
+/* Critical WebKit rule: the ink layer must NOT permit browser panning.
+   Otherwise Safari cancels Apple Pencil strokes and scrolls the page.
+   Finger-only pan and pinch are handled by v76.js while drawing. */
 #v76Surface.v76-is-drawing,
 #v76Surface.v76-is-drawing #v76Ink{
-  touch-action:pan-x pan-y!important; /* fingers pan and pinch; pen draws */
+  touch-action:none!important;
 }
 #v76Surface.v76-is-drawing #v76Ink{pointer-events:auto}
 .v93-layout-tools{display:flex;align-items:center;flex:none;padding-right:8px;border-right:1px solid var(--line)}

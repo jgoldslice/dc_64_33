@@ -298,26 +298,57 @@
   }
   const touchDistance=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
   const touchMid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
+  // Apple devices identify Pencil contacts as touchType=stylus.
+  // These contacts MUST never be mistaken for finger-pan or pinch input.
+  const fingerTouches=e=>Array.from(e.touches||[]).filter(t=>t.touchType!=='stylus');
+  const isInkMode=()=>mode==='pen'||mode==='erase';
+  let fingerPan=null;
   zoomViewport.addEventListener('touchstart',e=>{
-    if(e.touches.length!==2)return;
-    const d=touchDistance(e.touches[0],e.touches[1]);
-    if(d<10)return;
-    e.preventDefault();
-    cancelDrawingForPinch();
-    activePinch={startDistance:d,startZoom:noteZoom};
-    suppressPageClickUntil=Date.now()+400;
+    const fingers=fingerTouches(e);
+    if(fingers.length===2){
+      const d=touchDistance(fingers[0],fingers[1]);
+      if(d<10)return;
+      if(e.cancelable)e.preventDefault();
+      fingerPan=null;
+      cancelDrawingForPinch();
+      activePinch={startDistance:d,startZoom:noteZoom};
+      suppressPageClickUntil=Date.now()+400;
+      return;
+    }
+    // Native scrolling is intentionally disabled under the ink SVG so that
+    // the Pencil can draw. Only an ordinary FINGER may manually pan the sheet.
+    if(fingers.length===1&&isInkMode()&&!activeStroke&&!activeErase&&!activePinch){
+      const touch=fingers[0];
+      fingerPan={id:touch.identifier,x:touch.clientX,y:touch.clientY,
+        scrollLeft:zoomViewport.scrollLeft,scrollTop:zoomViewport.scrollTop};
+    }
   },{passive:false});
   zoomViewport.addEventListener('touchmove',e=>{
-    if(!activePinch||e.touches.length!==2)return;
-    e.preventDefault();
-    const a=e.touches[0],b=e.touches[1];
-    setNoteZoom(activePinch.startZoom*touchDistance(a,b)/activePinch.startDistance,touchMid(a,b));
+    const fingers=fingerTouches(e);
+    if(activePinch&&fingers.length===2){
+      if(e.cancelable)e.preventDefault();
+      setNoteZoom(activePinch.startZoom*
+        touchDistance(fingers[0],fingers[1])/activePinch.startDistance,
+        touchMid(fingers[0],fingers[1]));
+      suppressPageClickUntil=Date.now()+400;
+      return;
+    }
+    if(!fingerPan||fingers.length!==1||!isInkMode())return;
+    const touch=fingers[0];
+    if(touch.identifier!==fingerPan.id)return;
+    if(e.cancelable)e.preventDefault();
+    zoomViewport.scrollLeft=fingerPan.scrollLeft+fingerPan.x-touch.clientX;
+    zoomViewport.scrollTop=fingerPan.scrollTop+fingerPan.y-touch.clientY;
     suppressPageClickUntil=Date.now()+400;
   },{passive:false});
   function endPinch(e){
-    if(!activePinch||e.touches.length>=2)return;
-    activePinch=null;
-    suppressPageClickUntil=Date.now()+400;
+    const fingers=fingerTouches(e);
+    if(fingers.length<2&&activePinch){
+      activePinch=null;
+      suppressPageClickUntil=Date.now()+400;
+    }
+    if(!fingers.length||fingers.length!==1||fingers[0].identifier!==fingerPan?.id)
+      fingerPan=null;
   }
   zoomViewport.addEventListener('touchend',endPinch,{passive:true});
   zoomViewport.addEventListener('touchcancel',endPinch,{passive:true});
@@ -1124,6 +1155,7 @@
       return;
     }
     if(!activeStroke||e.pointerId!==activeStroke.id)return;
+    if(e.cancelable)e.preventDefault(); // Never allow Safari to steal Pencil motion.
     for(const sample of pointerSamples(e)){
       const point=inkPosition(sample);
       const last=activeStroke.stroke.points.at(-1);
