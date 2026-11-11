@@ -279,7 +279,7 @@
     renderDays();
     form.reset();choose(date);overlay.hidden=false;
     // The strip needs a laid-out width before we scroll to its middle week.
-    requestAnimationFrame(()=>{centerDates();name.focus();});
+    requestAnimationFrame(()=>{centerDates();});
   }
   add.addEventListener('click',()=>open('',false,add));
   grid.addEventListener('click',e=>{

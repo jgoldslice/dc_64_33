@@ -901,7 +901,7 @@ function openModal(type,id=null,parent=null){
   $('modalFields').innerHTML=fields;
   if(type==='goal')renderGoalStepRows((item?.actions||[]).map(a=>({id:a.id,title:a.title})));
   $('modalBack').classList.add('open');
-  requestAnimationFrame(()=>$('modalFields').querySelector('input:not([type=checkbox]),textarea')?.focus());
+  // Keep the keyboard closed on open; text fields focus only after a user taps them.
 }
 function closeModal(){$('modalBack').classList.remove('open');modalMode=null;modalId=null;modalParent=null;}
 function uid(){return Date.now()+Math.floor(Math.random()*100000);}
@@ -1036,7 +1036,7 @@ document.addEventListener('click',(e)=>{
   if(e.target.closest('#closeCustomize')){tab(lastMainTab);return;}
   const inner=e.target.closest('[data-plan-tab]');if(inner){planTab(inner.dataset.planTab);return;}
   const t=e.target.closest('[data-tab]');if(t){if(t.dataset.tab==='myplan')planTab('goals');else tab(t.dataset.tab);return;}
-  const addStep=e.target.closest('[data-step-add]');if(addStep){const rows=readGoalStepRows();rows.push({id:'a-'+uid(),title:''});renderGoalStepRows(rows);$('goalStepsEditor').lastElementChild?.querySelector('input')?.focus();return;}
+  const addStep=e.target.closest('[data-step-add]');if(addStep){const rows=readGoalStepRows();rows.push({id:'a-'+uid(),title:''});renderGoalStepRows(rows);return;}
   const stepBtn=e.target.closest('[data-step-move],[data-step-remove]');
   if(stepBtn){const rows=readGoalStepRows(),row=stepBtn.closest('.goal-step-row'),i=[...$('goalStepsEditor').children].indexOf(row);
     if(stepBtn.hasAttribute('data-step-remove'))rows.splice(i,1);
