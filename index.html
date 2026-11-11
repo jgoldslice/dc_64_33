@@ -344,6 +344,7 @@
 <link rel="stylesheet" href="device-workspace-v892.css">
 <link rel="stylesheet" href="blueprint-notes-v93.css">
 <link rel="stylesheet" href="workspace-header-v98.css">
+<link rel="stylesheet" href="plan-layout-v910.css">
 
 <style id="v96-habit-month-style">
 .v96-month-controls{display:flex;align-items:center;gap:6px}.v96-month-controls button{width:34px;height:36px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--secondary-ui);font-size:23px}.v96-month-controls span{font-size:12px;min-width:78px;text-align:center;color:var(--muted)}.v96-month-summary{font-size:13px;color:var(--secondary-ui);margin:4px 0 12px}.v96-month-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.v96-dow{text-align:center;color:var(--muted);font-size:11px;padding:5px 0}.v96-day{min-width:0;min-height:51px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:13px}.v96-day small{font-size:10px;color:var(--muted)}.v96-day.v96-done{background:color-mix(in srgb,var(--secondary) 30%,var(--surface));border-color:var(--secondary)}.v96-day.v96-partial{background:color-mix(in srgb,var(--secondary) 13%,var(--surface))}.v96-day.v96-missed{border-style:dashed}.v96-day.v96-future{opacity:.55}.v96-day.v96-off{opacity:.5}.v96-day.v96-selected{outline:2px solid var(--secondary-ui);outline-offset:1px}.v96-month-detail{border-top:1px solid var(--line);padding-top:12px;font-size:12px}.v96-detail-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;color:var(--muted)}@media(max-width:390px){.v96-month-calendar{gap:3px}.v96-day{min-height:44px}.v96-month-card .card-heading{flex-wrap:wrap}}
@@ -385,14 +386,13 @@
         <section class="card v4-week-habits"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habit Tracker</h2><button class="text-button" data-plan-tab="habits">Edit</button></div><div id="weekHabits"></div></section>
       </div>
     </section>
-    <section class="view" id="myplan" aria-labelledby="myplanTitle">
-      <div class="view-header"><div><h1 id="myplanTitle">Goals</h1></div></div>
+    <section class="view" id="myplan" aria-label="Plan">
       <div class="segmented plan-tabs" role="tablist" aria-label="Goals, tasks, and habits sections"><button type="button" data-plan-tab="tasks" role="tab" aria-selected="false">Tasks</button><button type="button" data-plan-tab="goals" role="tab" class="selected" aria-selected="true">Goals</button><button type="button" data-plan-tab="habits" role="tab" aria-selected="false">Habits</button></div>
     <section class="plan-panel" id="tasks" aria-label="Tasks"><div class="plan-toolbar"><span class="muted">All tasks and priorities</span><button class="primary-button" data-open="task">+ Task</button></div><div class="stack"><section class="card"><div class="card-heading"><h2>Priority Order</h2></div><div id="tasksPriority"></div></section><section class="card"><div class="card-heading"><h2>All Tasks</h2></div><div id="allTasks"></div></section></div></section>
     <section class="plan-panel active" id="goals" aria-label="Goals">
       <div class="plan-toolbar" style="justify-content:flex-end"><button class="primary-button" data-open="goal">+ Goal</button></div>
-      <section class="card category-card"><div class="card-heading"><h2>Categories</h2><button type="button" class="text-button" id="manageCategories">Manage</button></div><div id="categoryChips" class="category-chips"></div><div id="categoryManager" hidden></div></section>
       <div class="stack" id="goalsList"></div>
+      <section class="card category-card"><div class="card-heading"><h2>Categories</h2><button type="button" class="text-button" id="manageCategories">Manage</button></div><div id="categoryChips" class="category-chips"></div><div id="categoryManager" hidden></div></section>
     </section>
     <section class="plan-panel" id="habits" aria-label="Habits"><div class="plan-toolbar"><span class="muted">Daily consistency</span><button class="primary-button" data-open="habit">+ Habit</button></div><div class="stack"><section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Weekly Tracker</h2></div><div id="habitsWeekTitle" class="muted small"></div><div id="habitsTracker"></div></section><section class="card v96-month-card"><div class="card-heading"><h2>Monthly Consistency</h2><div class="v96-month-controls"><button type="button" id="v96MonthPrev" aria-label="Previous month">‹</button><span id="v96MonthLabel" aria-live="polite"></span><button type="button" id="v96MonthNext" aria-label="Next month">›</button></div></div><div id="v96MonthSummary" class="v96-month-summary"></div><div id="v96MonthCalendar" class="v96-month-calendar"></div><p class="muted small">Each day shows completed habits out of scheduled habits. Select a day to see its details.</p><div id="v96MonthDetail" class="v96-month-detail" aria-live="polite"></div></section><section class="card"><div class="card-heading"><h2>Manage Habits</h2></div><div id="habitManager"></div></section></div></section>
     </section>
@@ -466,7 +466,7 @@
 <nav class="bottom-nav" aria-label="Main navigation">
   <button class="active" data-tab="today"><svg class="icon"><use href="#i-today"/></svg><span>Today</span></button>
   <button data-tab="week"><svg class="icon"><use href="#i-calendar"/></svg><span>Week</span></button>
-  <button data-tab="myplan"><svg class="icon"><use href="#i-plan"/></svg><span>Goals</span></button>
+  <button data-tab="myplan"><svg class="icon"><use href="#i-plan"/></svg><span>Plan</span></button>
   <button data-tab="brainstorm"><svg class="icon"><use href="#i-brainstorm"/></svg><span>Brainstorm</span></button>
 </nav>
 <div id="openingOverlay" class="opening-overlay" hidden role="button" tabindex="0" aria-label="Skip opening">

@@ -1,0 +1,14 @@
+/* Blueprint v9.10: goal-first Plan workspace.
+   Categories remain functional filters, intentionally visually subordinate. */
+#myplan > .plan-tabs{margin-top:0}
+#goals .category-card{margin:14px 0 0;padding:12px 14px;box-shadow:none}
+#goals .category-card .card-heading{margin-bottom:4px}
+#goals .category-card h2{font:normal 16px/1.3 Georgia,serif;color:var(--muted)}
+#goals .category-card #manageCategories{font-size:11px;padding:5px 3px}
+#goals .category-chips{gap:5px;margin:7px 0 0}
+#goals .category-chip{font-size:11px;line-height:1.2;padding:6px 10px}
+#goals .category-manage-row{font-size:12px;padding:7px 0}
+#goals .category-add-row input{font-size:12px}
+@media(max-width:739px){
+  #goals .category-card{padding:11px 12px}
+}
