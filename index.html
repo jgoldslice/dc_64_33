@@ -685,6 +685,16 @@ function showOpening(){
 }
 
 function render(){
+  // Upgrade legacy habits once. A stable start date prevents unknown earlier
+  // days being counted as missed and keeps the same baseline after relaunch.
+  let migratedHabits=false;
+  for(const h of state.habits){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(h.createdOn||'')){
+      h.createdOn=habitStartDate(h);
+      migratedHabits=true;
+    }
+  }
+  if(migratedHabits)save();
   applyTheme();
   $('todayTitle').textContent=new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   // Do not replace text while the user is typing (iOS keyboard/caret preservation).
