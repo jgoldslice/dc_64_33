@@ -10,9 +10,9 @@
   let previewURLs=[],previewToken=0,pendingCapture=null,captureMode='link',restoreFocus=null;
   const tokenSafe=(p,token)=>token===previewToken&&String(currentProject()?.id)===String(p.id);
   function textPreview(html){
-    const temp=document.createElement('div');
+    const temp=document.createElement('template');
     temp.innerHTML=String(html||'');
-    return (temp.textContent||'').replace(/\s+/g,' ').trim();
+    return (temp.content.textContent||'').replace(/\s+/g,' ').trim();
   }
   function releasePreviews(){
     ++previewToken;
@@ -244,6 +244,7 @@
       x.checked=previous;
     }
     v6RenderActions(p);
+    render();
     renderPreview(p);
   });
   byId('v919QuickTodo').addEventListener('submit',e=>{
@@ -253,7 +254,11 @@
     if(!p||!title)return;
     const action={id:v6Id(),title,done:false,taskId:''};
     p.actions.push(action);
-    if(!save(true)){p.actions=p.actions.filter(a=>a!==action);return;}
+    if(!save(true)){
+      // Retain the new action in memory so the save-warning Retry or a
+      // recovery export can rescue it; never discard a user's typed to-do.
+      input.value='';v6RenderActions(p);renderPreview(p);return;
+    }
     input.value='';v6RenderActions(p);renderPreview(p);
   });
   byId('v919CaptureSave').addEventListener('click',saveCapture);
