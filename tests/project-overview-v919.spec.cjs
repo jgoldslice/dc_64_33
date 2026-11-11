@@ -132,3 +132,49 @@ test('Notes toolbar remains inside its layout at nine iPhone and iPad sizes',asy
     expect(m.overlap,label).toBeLessThan(1);
   }
 });
+
+test('project resource capture uses compact 44px modes and an aligned file chooser on narrow phones and iPad',async({page})=>{
+  await create(page,'Capture layout QA');
+  await page.locator('[data-v919-capture-open]').click();
+  await expect(page.locator('#v919CaptureBack')).toBeVisible();
+  for(const [width,height] of [[320,700],[375,812],[390,844],[430,932],[834,1194]]){
+    await page.setViewportSize({width,height});
+    for(const mode of ['link','photo']){
+      await page.locator('[data-v919-mode="'+mode+'"]').click();
+      const m=await page.evaluate(()=>{
+        const box=selector=>document.querySelector(selector).getBoundingClientRect();
+        const sheet=box('.v919-capture-sheet'),switcher=box('.v919-capture-switch');
+        const actions=box('.v919-capture-actions');
+        const buttons=[...document.querySelectorAll('[data-v919-mode]')].map(el=>{
+          const r=el.getBoundingClientRect();return {left:r.left,right:r.right,height:r.height,pressed:el.getAttribute('aria-pressed')};
+        });
+        const file=document.querySelector('#v919CaptureFiles');
+        return {sheet:{left:sheet.left,right:sheet.right,bottom:sheet.bottom},
+          switcher:{left:switcher.left,right:switcher.right,height:switcher.height},
+          actions:{left:actions.left,right:actions.right,bottom:actions.bottom},
+          buttons, fileFont:parseFloat(getComputedStyle(file).fontSize),
+          fileVisible:!!file.getClientRects().length};
+      });
+      const label=width+'x'+height+' '+mode;
+      expect(m.sheet.left,label).toBeGreaterThanOrEqual(-1);
+      expect(m.sheet.right,label).toBeLessThanOrEqual(width+1);
+      expect(m.switcher.height,label).toBeLessThanOrEqual(60);
+      expect(m.switcher.left,label).toBeGreaterThanOrEqual(m.sheet.left-1);
+      expect(m.switcher.right,label).toBeLessThanOrEqual(m.sheet.right+1);
+      for(const button of m.buttons){
+        expect(button.height,label).toBeGreaterThanOrEqual(43);
+        expect(button.height,label).toBeLessThanOrEqual(49);
+        expect(button.left,label).toBeGreaterThanOrEqual(m.switcher.left-1);
+        expect(button.right,label).toBeLessThanOrEqual(m.switcher.right+1);
+      }
+      expect(m.buttons.filter(x=>x.pressed==='true')).toHaveLength(1);
+      expect(m.actions.left,label).toBeGreaterThanOrEqual(m.sheet.left-1);
+      expect(m.actions.right,label).toBeLessThanOrEqual(m.sheet.right+1);
+      if(width<=760)expect(m.sheet.bottom-m.actions.bottom,label).toBeLessThanOrEqual(50);
+      expect(m.fileVisible,label).toBe(mode==='photo');
+      if(mode==='photo')expect(m.fileFont,label).toBeGreaterThanOrEqual(14);
+    }
+  }
+  await page.locator('#v919CaptureCancel').click();
+  expect(await page.evaluate(()=>v6Project().library.length)).toBe(0);
+});
