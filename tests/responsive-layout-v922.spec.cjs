@@ -4,6 +4,7 @@ const base='http://127.0.0.1:8765/';
 
 test('Today layout follows remaining workspace width, including iPad sidebar and compact screens',async({page})=>{
   await page.goto(base);
+  await page.addStyleTag({content:'.shell,.bottom-nav{transition:none!important}'});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   for(const [width,height] of [[320,700],[390,844],[650,850],[740,1024],[768,1024],[834,1194],[900,850],[1024,768],[1194,834]]){
     await page.setViewportSize({width,height});
@@ -48,6 +49,7 @@ test('empty Today cards avoid excessive reserved space, dense data remains scrol
 
 test('Project Overview columns respond to its content width rather than full screen width',async({page})=>{
   await page.goto(base);
+  await page.addStyleTag({content:'.shell,.bottom-nav{transition:none!important}'});
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Layout project'));
   await page.locator('#newProject').click();
