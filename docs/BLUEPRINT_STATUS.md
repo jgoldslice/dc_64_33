@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — iOS Safari form focus zoom (web v9.20)
+
+- **Requested / reproduced in screenshot:** When a text field (such as Add Habit → Title) receives focus on iPhone Safari, the page magnifies and may remain zoomed after dismissal. The field inherited a 12px size from its label, below the approximately 16px Safari focus threshold.
+- **Implemented and pushed to `main`:** Commit `580126e2bdd2135d1648bb31817ae46b938dfe8d` updates `index.html` with a touch-pointer form-control minimum font size (16px), responsive planner modal bounds, and seven-column weekday grid containment. It deliberately retains normal user pinch zoom and does not change saved planner data. Commit `f5510815ee4c66350338cf48a4f6798308490cf5` updates the `sw.js` offline cache version; new test at `f68dcc1ead642a667a65896920f248d3d97188a0` (`tests/ios-form-focus-v920.spec.cjs`).
+- **Automated-test verified:** Full GitHub Actions Chromium browser suite **passed** for `f5510815ee4c66350338cf48a4f6798308490cf5` ([run 43084881494](https://github.com/jgoldslice/dc_64_33/actions/runs/43084881494)). It includes regression checks for minimum 16px Habit/Goal form fonts, narrow 320px/390px dialog bounds, weekday controls, and the accessible viewport setting. This cannot replicate iOS Safari's own keyboard-triggered magnification.
+- **Web publication:** GitHub Pages workflow **succeeded** for `f5510815ee4c66350338cf48a4f6798308490cf5` ([run 43084881563](https://github.com/jgoldslice/dc_64_33/actions/runs/43084881563)). **Physical-device verified:** no. **Native iOS installed build updated:** no evidence; separate local Capacitor/Xcode sync still required.
+- **Data / compatibility:** CSS and service-worker cache name only; no localStorage, IndexedDB, backup format, or migrations touched. Test on a real iPhone by refreshing the web app, entering and dismissing Add Habit, and checking that it stays at the intended scale and dialog fits with keyboard open; test in landscape too.
+- **Other verified source status:** Project Overview / Library previews and in-app link/photo capture are present in `main` since v9.19 (`4f1a4fe792e2fd7df3284ae2aa19db2ae802ef1c`). An optional Apple Shortcuts link-sharing flow is documented in `docs/PROJECT_CAPTURE_IOS_SHARE.md`; a native iOS photo Share Extension is **not** implemented. The v9.19 Chromium suite passed at `05c6e74dbf4a1df2719a4aeba28076a8a113fe88` ([run 43061692206](https://github.com/jgoldslice/dc_64_33/actions/runs/43061692206)). Real iPhone/iPad Pencil and responsive touch QA remain pending.
+
 ## What was confirmed in the repository
 
 - The root README identifies the product as **Blueprint** and describes it as a mobile-first planner for goals, weekly planning, tasks, habits, notes, and ideas.
@@ -22,13 +31,14 @@
 | Blueprint app identity | Source inspected | `index.html` title; README |
 | Today, Week, Goals, Brainstorm | Documented in README/history | Inspect current UI and test responsive layouts |
 | Notebook and swipe features | Described in README | Automated tests and iPhone/iPad touch QA still needed |
-| Project Overview cards | Historical requested change; unverified | Inspect current project navigation and rendering |
-| Share from iOS into project Library | Historical requested change; unverified | Inspect native iOS targets and web sharing flows |
-| iPhone toolbar/tabs overflow | Previously reported; unresolved status unknown | Reproduce on physical iPhone and narrow browser widths |
+| Project Overview cards | Implemented; browser-suite verified on v9.19 | `project-overview-v919.js`, CSS; iPhone/iPad device QA pending |
+| Share from iOS into project Library | Partial | In-app link/photo capture available; Shortcut links documented; native iOS Share Extension still not built |
+| iPhone toolbar/tabs overflow | v9.19 responsive code present; device QA pending | Reproduce and confirm on real iPhone |
 | Apple Pencil coordinates, zoom, text boxes | Previously reported issues; current status unknown | Test on physical iPad with Pencil |
 | Data backup/persistence | Existing behavior mentioned in README | Test export/import and migration safety on copy of data |
-| iOS build/deployment | Not verified | Inspect local Capacitor/Xcode project and actual device build |
-| Documentation / agent continuity | AGENTS.md created 2026-11-11 | Follow and maintain these files |
+| iOS build/deployment | Web v9.20 published; native build unverified | Test the published GitHub Pages site and inspect local Capacitor/Xcode app separately |
+| Documentation / agent continuity | AGENTS.md available | Follow and maintain these files |
+| iPhone Safari form focus zoom | Implemented and Chromium regression-suite verified | v9.20: 16px touch text-entry minimum; physical Safari check pending |
 
 ## Prioritized verification and improvement backlog
 
@@ -46,6 +56,7 @@ These entries are **candidates for investigation**, not assertions that the feat
 | Date | Action | Result |
 | --- | --- | --- |
 | 2026-11-11 | Documentation initialization and limited repository inspection | README/index inspected; no tests or app builds executed; physical devices not accessed |
+| 2026-11-11 | v9.20 Safari form focus styling, weekday modal containment, offline cache refresh | Chromium CI passed (run 43084881494); GitHub Pages publish succeeded (run 43084881563); real-device check pending |
 
 ## How to update this status file after future work
 
