@@ -349,6 +349,7 @@
 <link rel="stylesheet" href="notes-toolbar-v912.css">
 <link rel="stylesheet" href="today-compact-v915.css">
 <link rel="stylesheet" href="layout-habits-v916.css">
+<link rel="stylesheet" href="today-responsive-v917.css">
 
 </head>
 <body>
@@ -393,12 +394,13 @@
   <main>
     <section class="view active" id="today" aria-labelledby="todayTitle">
       <div class="view-header v99-today-heading"><h1 id="todayTitle">Today</h1></div>
-      <div class="stack">
+      <div class="stack v917-today-grid" aria-label="Today dashboard">
         <section class="card focus-card" hidden aria-hidden="true"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Today's Focus</h2><span class="focus-pencil" aria-hidden="true">✎</span></div><p class="focus-prompt">What small thing deserves my best effort today?</p><textarea class="focus-answer focus-notebook" id="todayFocus" aria-label="Write today's focus" maxlength="180" rows="3"></textarea></section>
-        <section class="card"><div class="card-heading v916-minimal-heading"><h2>Today at a Glance</h2><div class="add-menu"><button class="text-button add-trigger" id="addToday" type="button" aria-expanded="false" aria-controls="todayAddOptions">+ Add</button><div id="todayAddOptions" class="add-menu-options" hidden><button type="button" data-open="task">Add task</button><button type="button" data-open="event">Add event</button></div></div></div><div id="todayGlance"></div></section>
-        <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habits</h2><button class="text-button" data-plan-tab="habits">View all</button></div><div id="todayHabits"></div></section>
-        <section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-check"/></svg> Top Priorities</h2><button type="button" class="text-button" id="v77ViewTasks">View all</button></div><div id="v77TodayPriorities"></div></section>
-        <section class="card"><div class="card-heading"><h2>Projects</h2><button type="button" class="text-button" id="v77ViewProjects">View all</button></div><div id="v77TodayProjects" class="v77-today-project-grid"></div></section>
+        <section class="card v917-schedule"><div class="card-heading"><h2><svg class="icon"><use href="#i-calendar"/></svg> Schedule</h2><div class="add-menu"><button class="text-button add-trigger" id="addToday" type="button" aria-expanded="false" aria-controls="todayAddOptions">+ Add</button><div id="todayAddOptions" class="add-menu-options" hidden><button type="button" data-open="task">Add task</button><button type="button" data-open="event">Add event</button></div></div></div><div class="v917-card-body" id="todayGlance" tabindex="0" role="region" aria-label="Today's schedule"></div><span class="v917-overflow-hint" aria-hidden="true">Scroll for more ↓</span></section>
+        <section class="card v917-habits"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habits</h2><button class="text-button" data-plan-tab="habits">View all</button></div><div class="v917-card-body" id="todayHabits" tabindex="0" role="region" aria-label="Today's habits"></div><span class="v917-overflow-hint" aria-hidden="true">Scroll for more ↓</span></section>
+        <section class="card v917-tasks"><div class="card-heading"><h2><svg class="icon"><use href="#i-check"/></svg> Tasks</h2><button class="text-button" data-open="task">+ Add</button></div><div class="v917-card-body" id="v917TodayTasks" tabindex="0" role="region" aria-label="Today's tasks and overdue tasks"></div><span class="v917-overflow-hint" aria-hidden="true">Scroll for more ↓</span></section>
+        <section class="card v917-priorities"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Top Priorities</h2><button type="button" class="text-button" id="v77ViewTasks">View all</button></div><div class="v917-card-body" id="v77TodayPriorities" tabindex="0" role="region" aria-label="Top priorities"></div><span class="v917-overflow-hint" aria-hidden="true">Scroll for more ↓</span></section>
+        <section class="card v917-projects"><div class="card-heading"><h2><svg class="icon"><use href="#i-plan"/></svg> Projects</h2><button type="button" class="text-button" id="v77ViewProjects">View all</button></div><div class="v917-card-body v77-today-project-grid" id="v77TodayProjects" tabindex="0" role="region" aria-label="Recent projects"></div><span class="v917-overflow-hint" aria-hidden="true">Scroll for more ↓</span></section>
       </div>
     </section>
     <section class="view" id="week" aria-labelledby="weekTitle">
@@ -708,13 +710,20 @@ function render(){
   // Keep overdue items inside Today at a Glance, not another home card.
   const overdue=state.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<today)
     .sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
-  $('todayGlance').innerHTML=
-    (todaysEvents.length?'<div class="section-label">Schedule</div>'+todaysEvents.map(eventRow).join(''):'')+
+  const scheduleScroll=$('todayGlance').scrollTop;
+  $('todayGlance').innerHTML=todaysEvents.length
+    ?todaysEvents.map(eventRow).join('')
+    :'<p class="empty">No events scheduled today.</p>';
+  $('todayGlance').scrollTop=scheduleScroll;
+  const taskScroll=$('v917TodayTasks').scrollTop;
+  $('v917TodayTasks').innerHTML=
     (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
       overdue.slice(0,3).map(taskRow).join('')+
       (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
-    (todaysTasks.length?'<div class="section-label">Tasks</div>'+todaysTasks.map(taskRow).join(''):'')+
-    (!todaysEvents.length&&!todaysTasks.length&&!overdue.length?'<p class="empty">Your day is clear. Add an event or task to get started.</p>':'');
+    (todaysTasks.length?(overdue.length?'<div class="section-label">Due today</div>':'')+
+      todaysTasks.map(taskRow).join(''):'')+
+    (!todaysTasks.length&&!overdue.length?'<p class="empty">No tasks due today.</p>':'');
+  $('v917TodayTasks').scrollTop=taskScroll;
   const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
   const habitScroll=$('todayHabits').scrollTop;
   $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today"><span>${esc(h.title)}</span>${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
@@ -1689,6 +1698,5 @@ v6Normalize();v6Render();
 <script src="ipad-polish-v88.js"></script>
 <script src="device-workspace-v892.js"></script>
 <script src="pencilkit-entry-v92.js"></script>
-<script src="today-compact-v915.js"></script>
-<script src="today-balance-v916.js"></script>
+<script src="today-responsive-v917.js"></script>
 </body></html>

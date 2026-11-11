@@ -1,0 +1,106 @@
+/* Blueprint v9.17: content-aware Today grid.
+   One column on phones/closed Duo; two rows of paired cards on unfolded Duo
+   or iPad, with the Projects card spanning both columns. */
+#today > .stack.v917-today-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-areas:"schedule" "habits" "tasks" "priorities" "projects"!important;
+  gap:12px;
+  align-items:stretch!important;
+  align-content:start;
+  width:100%;
+  max-width:none;
+  margin:0;
+}
+#today > .stack.v917-today-grid > .focus-card[hidden]{display:none!important}
+#today > .stack.v917-today-grid > .card{
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-self:stretch;
+  min-width:0;min-height:0;
+  overflow:hidden;
+  margin:0;
+  padding:15px 16px;
+}
+#today > .stack.v917-today-grid > .v917-schedule{grid-area:schedule!important}
+#today > .stack.v917-today-grid > .v917-habits{grid-area:habits!important}
+#today > .stack.v917-today-grid > .v917-tasks{grid-area:tasks!important}
+#today > .stack.v917-today-grid > .v917-priorities{grid-area:priorities!important}
+#today > .stack.v917-today-grid > .v917-projects{grid-area:projects!important}
+#today .v917-card-body{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  touch-action:pan-y;
+}
+#today .v917-projects .v917-card-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));align-content:start;gap:10px}
+#today .v917-card-body .v77-project-folder{min-height:88px}
+#today .v917-card-body:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:-2px;border-radius:8px}
+#today .v917-overflow-hint{
+  display:none;
+  align-self:flex-end;
+  margin-top:5px;
+  font-size:10px;
+  font-weight:600;
+  color:var(--muted);
+  letter-spacing:.1px;
+}
+#today .card.v917-has-overflow .v917-overflow-hint{display:block}
+#today .card-heading{margin-bottom:10px}
+#today .card-heading h2{font:normal 20px/1.25 Georgia,serif}
+#today .v917-card-body .section-label{padding-top:8px}
+#today .v917-card-body .entry{padding-block:9px}
+#today .v917-card-body .empty{margin:6px 0;color:var(--muted)}
+#today .v99-today-heading{margin-bottom:10px}
+@media (min-width:650px) and (min-height:600px){
+  #today > .stack.v917-today-grid{
+    grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)!important;
+    grid-template-areas:"schedule habits" "tasks priorities" "projects projects"!important;
+    grid-auto-rows:max-content;
+    gap:12px;
+  }
+  #today > .stack.v917-today-grid > .v917-schedule,
+  #today > .stack.v917-today-grid > .v917-habits{
+    min-height:215px;
+    max-height:clamp(245px,38dvh,375px);
+  }
+  #today > .stack.v917-today-grid > .v917-tasks,
+  #today > .stack.v917-today-grid > .v917-priorities{
+    min-height:180px;
+    max-height:clamp(200px,29dvh,290px);
+  }
+  #today > .stack.v917-today-grid > .v917-projects{
+    min-height:137px;
+    max-height:clamp(145px,20dvh,240px);
+  }
+  #today.view.active{
+    min-height:calc(100dvh - 92px - env(safe-area-inset-bottom));
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+}
+@media (min-width:650px) and (max-width:950px) and (min-height:600px){
+  #today > .stack.v917-today-grid{grid-template-columns:minmax(0,1.28fr) minmax(0,1fr)!important;gap:10px}
+  #today > .stack.v917-today-grid > .card{padding:12px}
+  #today .v917-card-body .entry{padding-block:7px}
+}
+/* Closed Duo or small iPhone: natural vertical scrolling, no forced centering. */
+@media (max-width:649px),(max-height:599px){
+  #today.view.active{min-height:0;display:block}
+  #today > .stack.v917-today-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-areas:"schedule" "habits" "tasks" "priorities" "projects"!important;
+  }
+  #today > .stack.v917-today-grid > .card{max-height:none;min-height:0}
+  #today .v917-card-body{max-height:none;overflow:visible}
+  #today .v917-overflow-hint{display:none!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #today .v917-card-body{scroll-behavior:auto}
+}
