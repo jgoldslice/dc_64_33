@@ -1,16 +1,20 @@
-/* Blueprint v9.11 chosen icon family: Design C, with theme-aware two-tone strokes. */
+/* Blueprint v9.13: only user-defined primary and secondary colors for tab icons. */
 .bottom-nav .v911-nav-icon,
 .bottom-nav button.active .v911-nav-icon {
-  stroke:var(--primary-ui)!important;
+  stroke:var(--primary)!important;
   stroke-width:1.65;
   stroke-linecap:round;
   stroke-linejoin:round;
   fill:none;
 }
-.bottom-nav button.active .v911-nav-icon{stroke:var(--primary-ui)!important;}
-/* Gold/secondary accents are filled within each SVG symbol using --secondary.
+.bottom-nav button.active .v911-nav-icon{stroke:var(--primary)!important;}
+/* Secondary accents are filled within each SVG symbol using --secondary.
    The artist palette stays the real Customize control in the iPad rail. */
 .canvas-ipad-palette-button .palette-base,
-.palette-launch .palette-base{fill:var(--primary);stroke:var(--primary-ui);}
+.palette-launch .palette-base{fill:var(--primary);stroke:var(--primary);}
 .canvas-ipad-palette-button .palette-dot,
 .palette-launch .palette-dot{fill:var(--secondary);}
+
+/* Explicitly prevent earlier iPad/phone icon color overrides. */
+.bottom-nav button[data-tab] .v911-nav-icon,
+.bottom-nav button[data-tab].active .v911-nav-icon{stroke:var(--primary)!important}
