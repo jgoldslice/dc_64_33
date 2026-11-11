@@ -343,6 +343,10 @@
 <link rel="stylesheet" href="ipad-polish-v88.css">
 <link rel="stylesheet" href="device-workspace-v892.css">
 <link rel="stylesheet" href="blueprint-notes-v93.css">
+
+<style id="v96-habit-month-style">
+.v96-month-controls{display:flex;align-items:center;gap:6px}.v96-month-controls button{width:34px;height:36px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--secondary-ui);font-size:23px}.v96-month-controls span{font-size:12px;min-width:78px;text-align:center;color:var(--muted)}.v96-month-summary{font-size:13px;color:var(--secondary-ui);margin:4px 0 12px}.v96-month-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.v96-dow{text-align:center;color:var(--muted);font-size:11px;padding:5px 0}.v96-day{min-width:0;min-height:51px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:13px}.v96-day small{font-size:10px;color:var(--muted)}.v96-day.v96-done{background:color-mix(in srgb,var(--secondary) 30%,var(--surface));border-color:var(--secondary)}.v96-day.v96-partial{background:color-mix(in srgb,var(--secondary) 13%,var(--surface))}.v96-day.v96-missed{border-style:dashed}.v96-day.v96-future{opacity:.55}.v96-day.v96-off{opacity:.5}.v96-day.v96-selected{outline:2px solid var(--secondary-ui);outline-offset:1px}.v96-month-detail{border-top:1px solid var(--line);padding-top:12px;font-size:12px}.v96-detail-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0;color:var(--muted)}@media(max-width:390px){.v96-month-calendar{gap:3px}.v96-day{min-height:44px}.v96-month-card .card-heading{flex-wrap:wrap}}
+</style>
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -389,7 +393,7 @@
       <section class="card category-card"><div class="card-heading"><h2>Categories</h2><button type="button" class="text-button" id="manageCategories">Manage</button></div><div id="categoryChips" class="category-chips"></div><div id="categoryManager" hidden></div></section>
       <div class="stack" id="goalsList"></div>
     </section>
-    <section class="plan-panel" id="habits" aria-label="Habits"><div class="plan-toolbar"><span class="muted">Daily consistency</span><button class="primary-button" data-open="habit">+ Habit</button></div><div class="stack"><section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Weekly Tracker</h2></div><div id="habitsWeekTitle" class="muted small"></div><div id="habitsTracker"></div></section><section class="card"><div class="card-heading"><h2>Manage Habits</h2></div><div id="habitManager"></div></section></div></section>
+    <section class="plan-panel" id="habits" aria-label="Habits"><div class="plan-toolbar"><span class="muted">Daily consistency</span><button class="primary-button" data-open="habit">+ Habit</button></div><div class="stack"><section class="card"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Weekly Tracker</h2></div><div id="habitsWeekTitle" class="muted small"></div><div id="habitsTracker"></div></section><section class="card v96-month-card"><div class="card-heading"><h2>Monthly Consistency</h2><div class="v96-month-controls"><button type="button" id="v96MonthPrev" aria-label="Previous month">‹</button><span id="v96MonthLabel" aria-live="polite"></span><button type="button" id="v96MonthNext" aria-label="Next month">›</button></div></div><div id="v96MonthSummary" class="v96-month-summary"></div><div id="v96MonthCalendar" class="v96-month-calendar"></div><p class="muted small">Each day shows completed habits out of scheduled habits. Select a day to see its details.</p><div id="v96MonthDetail" class="v96-month-detail" aria-live="polite"></div></section><section class="card"><div class="card-heading"><h2>Manage Habits</h2></div><div id="habitManager"></div></section></div></section>
     </section>
     <section class="view" id="brainstorm" aria-labelledby="brainstormTitle">
       <div class="view-header"><div><h1 id="brainstormTitle">Brainstorm</h1></div></div>
@@ -634,6 +638,29 @@ function showOpening(){
   if(overlay){overlay.hidden=true;overlay.classList.remove('closing');}
 }
 
+let v96Month=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+let v96SelectedDate=localToday();
+function v96RenderMonth(){
+  const year=v96Month.getFullYear(),month=v96Month.getMonth(),today=localToday();
+  $('v96MonthLabel').textContent=v96Month.toLocaleDateString('en-US',{month:'short',year:'numeric'});
+  const first=new Date(year,month,1),offset=(first.getDay()+6)%7;
+  const days=new Date(year,month+1,0).getDate();
+  let completed=0,possible=0;
+  const cells=['M','T','W','T','F','S','S'].map(d=>`<span class="v96-dow">${d}</span>`);
+  for(let i=0;i<offset;i++)cells.push('<span class="v96-blank"></span>');
+  for(let d=1;d<=days;d++){
+    const date=iso(new Date(year,month,d)),scheduled=state.habits.filter(h=>isScheduled(h,date));
+    const done=scheduled.filter(h=>h.days?.[date]).length;
+    if(date<=today){possible+=scheduled.length;completed+=done;}
+    const ratio=scheduled.length?done/scheduled.length:0;
+    const status=!scheduled.length?'off':date>today?'future':ratio===1?'done':ratio>0?'partial':'missed';
+    cells.push(`<button type="button" class="v96-day v96-${status} ${date===v96SelectedDate?'v96-selected':''}" data-v96-date="${date}" aria-label="${date}: ${done} of ${scheduled.length} habits completed" aria-pressed="${date===v96SelectedDate}"><span>${d}</span><small>${scheduled.length?done+'/'+scheduled.length:'·'}</small></button>`);
+  }
+  $('v96MonthCalendar').innerHTML=cells.join('');
+  $('v96MonthSummary').textContent=possible?`${Math.round(completed/possible*100)}% completion · ${completed} of ${possible} scheduled check-ins`:'No scheduled check-ins this month yet';
+  const scheduled=state.habits.filter(h=>isScheduled(h,v96SelectedDate));
+  $('v96MonthDetail').innerHTML=`<strong>${esc(new Date(v96SelectedDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}))}</strong>`+(scheduled.length?scheduled.map(h=>`<div class="v96-detail-row"><span>${h.days?.[v96SelectedDate]?'✓':'○'} ${esc(h.title)}</span><span>${h.days?.[v96SelectedDate]?'Done':'Not done'}</span></div>`).join(''):'<p class="muted small">No habits scheduled.</p>');
+}
 function render(){
   applyTheme();
   $('todayDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
@@ -660,6 +687,8 @@ function render(){
   $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today"><span>${esc(h.title)}</span>${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
   $('todayHabits').scrollTop=habitScroll;
   const start=selectedWeek;
+  const monthDay=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  $('weekTitle').textContent=`${monthDay(start)} – ${monthDay(plusDays(start,6))}`;
   $('weekLabel').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
   $('weekHabits').innerHTML=state.habits.length?habitTable(start):'<p class="empty">Add a habit to track your week.</p>';
   const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
@@ -673,6 +702,7 @@ function render(){
   renderIdeas();
   $('habitsWeekTitle').textContent=`Week of ${format(start)} – ${format(plusDays(start,6))}`;
   $('habitsTracker').innerHTML=state.habits.length?habitTable(start):'<p class="empty">No habits yet. Add your first habit.</p>';
+  v96RenderMonth();
   $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item"><div><strong>${esc(h.title)}</strong><small>${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
   $('openingMode').value=state.openingMode;
   if(document.activeElement!==$('openingMessageInput'))$('openingMessageInput').value=state.openingMessage;
@@ -1096,6 +1126,9 @@ document.addEventListener('change',(e)=>{
   save();render();
 });
 document.addEventListener('toggle',(e)=>{if(!e.target.matches('details[data-goal]'))return;const id=e.target.dataset.goal;if(e.target.open)expandedGoals.add(id);else expandedGoals.delete(id);},true);
+$('v96MonthPrev').onclick=()=>{v96Month=new Date(v96Month.getFullYear(),v96Month.getMonth()-1,1);v96SelectedDate=iso(v96Month);v96RenderMonth();};
+$('v96MonthNext').onclick=()=>{v96Month=new Date(v96Month.getFullYear(),v96Month.getMonth()+1,1);v96SelectedDate=iso(v96Month);v96RenderMonth();};
+document.getElementById('v96MonthCalendar').addEventListener('click',e=>{const day=e.target.closest('[data-v96-date]');if(day){v96SelectedDate=day.dataset.v96Date;v96RenderMonth();}});
 $('prevWeek').onclick=()=>{selectedWeek=plusDays(selectedWeek,-7);render();};
 $('nextWeek').onclick=()=>{selectedWeek=plusDays(selectedWeek,7);render();};
 $('modalForm').addEventListener('submit',handleSave);

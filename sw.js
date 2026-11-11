@@ -1,5 +1,5 @@
 /* Canvas 8.2 — cache only our own app's assets, never another site's caches. */
-const CACHE='canvas-v95-tab-swipe-week-arrows';
+const CACHE='canvas-v96-habit-month';
 const PREFIX='canvas-';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon.svg',
