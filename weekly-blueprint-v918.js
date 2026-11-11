@@ -673,6 +673,8 @@
   document.addEventListener('click',e=>{
     const launch=e.target.closest('[data-wb-launch],[data-wb-launch-week]');
     if(launch){open(launch.hasAttribute('data-wb-launch-week'));return;}
+    if(e.target.closest('[data-wb-view-goals]')){planTab('goals');return;}
+    if(e.target.closest('[data-wb-view-week]')){tab('week');return;}
     const goal=e.target.closest('[data-wb-open-goal]');
     if(goal){expandedGoals.add(goal.dataset.wbOpenGoal);selectedCategory='All';planTab('goals');render();return;}
     if(e.target.closest('[data-wb-undo]'))undo();

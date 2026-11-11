@@ -26,7 +26,7 @@ test('Plan defaults to Overview and Weekly Blueprint opens as an accessible five
 test('Report stages last-week task and habit checkmarks, then applies them together',async({page})=>{
   await page.goto(base);
   const dates=await page.evaluate(()=>{
-    const lastMonday=iso(plusDays(startOfWeek(new Date()),-7));
+    const lastMonday=iso(startOfWeek(new Date()));
     state.tasks=[{id:'wb-report-task',title:'Submit old assignment',dueDate:lastMonday,date:lastMonday,done:false,priority:false,priorityRank:0}];
     state.habits=[{id:'wb-report-habit',title:'Exercise',schedule:[0,1,2,3,4,5,6],days:{},createdOn:lastMonday}];
     state.goals=[];state.events=[];
