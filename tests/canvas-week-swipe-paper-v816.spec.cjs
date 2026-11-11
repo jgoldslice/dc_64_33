@@ -129,11 +129,11 @@ test('live tab views remain aligned without cloning content during an interactiv
     target.dispatchEvent(new TouchEvent('touchstart',{bubbles:true,cancelable:true,touches:[a],changedTouches:[a]}));
     target.dispatchEvent(new TouchEvent('touchmove',{bubbles:true,cancelable:true,touches:[b],changedTouches:[b]}));
     return {
-      source:source.classList.contains('canvas-v91-pane'),
-      destination:document.getElementById('week').classList.contains('canvas-v91-pane'),
-      x:parseFloat(source.style.getPropertyValue('--v91-left'))-original.left,
-      y:parseFloat(source.style.getPropertyValue('--v91-top'))-original.top,
-      width:parseFloat(source.style.getPropertyValue('--v91-width'))-original.width,
+      source:source.classList.contains('v94-live-pane'),
+      destination:document.getElementById('week').classList.contains('v94-live-pane'),
+      x:parseFloat(source.style.getPropertyValue('--v94-left'))-original.left,
+      y:parseFloat(source.style.getPropertyValue('--v94-top'))-original.top,
+      width:parseFloat(source.style.getPropertyValue('--v94-width'))-original.width,
       transform:source.style.transform,
       clones:document.querySelectorAll('.canvas-turn-snapshot').length,
       measuredPrepares:window.__blueprintMotionDebug.prepares

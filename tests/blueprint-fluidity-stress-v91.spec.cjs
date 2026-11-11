@@ -22,7 +22,7 @@ test('interrupted swipe restores the original tab and leaves no visual pane behi
   const errors=await boot(page);
   const before=await page.evaluate(()=>JSON.stringify(state));
   await dragThenCancel(page);
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
   await expect(page.locator('#today')).toHaveClass(/active/);
   expect(await page.evaluate(()=>JSON.stringify(state))).toBe(before);
   expect(errors).toEqual([]);
@@ -72,7 +72,7 @@ test('Pencil surface and its pointer events cannot initiate top-level swipe moti
     target.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,touches:[],changedTouches:[z]}));
   });
   await expect(page.locator('#brainstorm')).toHaveClass(/active/);
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
   expect(await page.evaluate(()=>window.__blueprintMotionDebug.prepares)).toBe(0);
   expect(errors).toEqual([]);
 });
@@ -84,7 +84,7 @@ test('rapid tab taps and viewport changes leave one active tab without animation
       await page.locator('.bottom-nav [data-tab="'+id+'"]').click();
       await expect(page.locator('#'+id)).toHaveClass(/active/);
       await expect(page.locator('.view.active')).toHaveCount(1);
-      await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+      await expect(page.locator('.v94-live-pane')).toHaveCount(0);
     }
   }
   expect(errors).toEqual([]);
@@ -126,5 +126,5 @@ test('dragging an overflowing tab does not collapse its document scroll position
   });
   expect(result.original).toBeGreaterThan(200);
   expect(Math.abs(result.during-result.original)).toBeLessThan(2);
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
 });

@@ -35,7 +35,7 @@ test('repeated main swipes navigate exactly one tab and never create deep clones
   await expect(page.locator('#week')).toHaveClass(/active/);
   await gesture(page,{from:'week',dx:-150,targetSelector:'#weekTitle'});
   await expect(page.locator('#myplan')).toHaveClass(/active/);
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
   expect(await page.evaluate(()=>window.__blueprintMotionDebug.prepares)).toBe(2);
   expect(errors).toEqual([]);
 });
@@ -43,7 +43,7 @@ test('reversing a drag cancels navigation and restores live view layout',async({
   await start(page);
   const old=await page.locator('#today').evaluate(el=>el.getBoundingClientRect().width);
   await gesture(page,{reverse:true});
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
   await expect(page.locator('#today')).toHaveClass(/active/);
   const width=await page.locator('#today').evaluate(el=>el.getBoundingClientRect().width);
   expect(Math.abs(width-old)).toBeLessThan(1);
@@ -60,14 +60,14 @@ test('reduced motion changes tabs without any transformed motion panes',async({p
   await gesture(page,{dx:-140});
   await expect(page.locator('#week')).toHaveClass(/active/);
   expect(await page.evaluate(()=>window.__blueprintMotionDebug.prepares)).toBe(0);
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
 });
 test('a direct tab click interrupts animation and takes priority',async({page})=>{
   await start(page);
   await gesture(page,{dx:-135});
   await page.locator('[data-tab="brainstorm"]').click();
   await expect(page.locator('#brainstorm')).toHaveClass(/active/);
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
 });
 
 test('a short, fast flick advances once; a slow partial drag does not',async({page})=>{
@@ -89,10 +89,10 @@ test('a short, fast flick advances once; a slow partial drag does not',async({pa
   }
   await flick(210);
   await expect(page.locator('#today')).toHaveClass(/active/);
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
   await flick(24);
   await expect(page.locator('#week')).toHaveClass(/active/);
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
 });
 
 test('starting another gesture while settling never double-commits a tab',async({page})=>{
@@ -113,7 +113,7 @@ test('starting another gesture while settling never double-commits a tab',async(
     send('touchstart',[a],[a]);
   });
   await expect(page.locator('#week')).toHaveClass(/active/);
-  await expect(page.locator('.canvas-v91-pane')).toHaveCount(0);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
   expect(await page.evaluate(()=>window.__blueprintMotionDebug.interruptions)).toBe(1);
 });
 
@@ -135,5 +135,5 @@ test('motion preparation is instrumented and never deep-clones either view',asyn
   });
   expect(result.deepClones).toBe(0);
   expect(result.prepareMs).toBeGreaterThanOrEqual(0);
-  console.log('Blueprint v9.1 browser live-pane preparation:',result.prepareMs.toFixed(2),'ms (not an iPad FPS measurement)');
+  console.log('Blueprint v9.4 browser live-pane preparation:',result.prepareMs.toFixed(2),'ms (not an iPad FPS measurement)');
 });
