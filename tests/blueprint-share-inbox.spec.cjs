@@ -117,3 +117,13 @@ test('unavailable native file bytes leave the queued item for a later retry',asy
   expect(result.errors).toHaveLength(1);
   expect(f.stats.acks).toEqual([]);
 });
+
+test('damaged native manifest is reported while valid shares still import',async()=>{
+  const f=fake();
+  f.plugin.listPending=async()=>({entries:[f.entry],errors:['123e4567-e89b-42d3-a456-426614174099']});
+  const result=await f.bridge.importPending();
+  expect(result.acknowledged).toBe(1);
+  expect(result.errors).toHaveLength(1);
+  expect(result.errors[0].message).toContain('retained');
+  expect(f.projects[0].library).toHaveLength(2);
+});
