@@ -73,3 +73,56 @@ test('habit marked on Today is reflected in the Week and monthly tracker',async(
   await expect(page.locator('#habitsTracker input[type="checkbox"]:checked')).toHaveCount(1);
   await expect(page.locator('.v96-month-card')).toHaveCount(0);
 });
+
+test('v9.16 uneven Today data balances both column bottoms without blank card padding',async({page})=>{
+  await page.setViewportSize({width:834,height:1194});
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.events=Array.from({length:5},(_,i)=>({id:'align-event-'+i,title:'Event '+i,time:'09:00',date:localToday()}));
+    state.tasks=Array.from({length:4},(_,i)=>({
+      id:'align-task-'+i,title:'Task '+i,dueDate:localToday(),priority:true,
+      priorityRank:i+1,done:false
+    }));
+    state.habits=Array.from({length:4},(_,i)=>({
+      id:'align-habit-'+i,title:'Habit '+i,schedule:[0,1,2,3,4,5,6],days:{},createdOn:localToday()
+    }));
+    state.projects=[{id:'align-project',title:'Project',lastOpenedAt:0}];
+    render();
+  });
+  for(const viewport of [{width:834,height:1194},{width:1194,height:834}]){
+    await page.setViewportSize(viewport);
+    await expect.poll(()=>page.evaluate(()=>{
+      const bottom=id=>document.getElementById(id).closest('.card').getBoundingClientRect().bottom;
+      return Math.abs(bottom('v77TodayProjects')-bottom('v77TodayPriorities'));
+    })).toBeLessThan(5);
+  }
+  await expect(page.locator('#today .v916-minimal-heading h2')).toBeHidden();
+  await page.locator('[data-tab="week"]').click();
+  await expect(page.locator('#week .v916-minimal-heading h2')).toBeHidden();
+  await expect(page.locator('#v94WeekForward')).toBeVisible();
+});
+
+test('v9.16 new habits do not retroactively count earlier days as missed',async({page})=>{
+  await page.setViewportSize({width:834,height:1194});
+  await page.goto(base);
+  const counts=await page.evaluate(()=>{
+    state.habits=[{id:'new-habit',title:'Just started',schedule:[0,1,2,3,4,5,6],days:{},createdOn:localToday()}];
+    render();
+    const start=selectedWeek;
+    const weekDates=Array.from({length:7},(_,i)=>iso(plusDays(start,i)));
+    return {
+      expected:weekDates.filter(date=>date>=localToday()).length,
+      available:document.querySelectorAll('#habitsTracker input[data-habit-check="new-habit"]').length,
+      beforeStart:weekDates.filter(date=>date<localToday()&&!!document.querySelector('#habitsTracker input[data-date="'+date+'"]')).length,
+      progress:document.getElementById('v916WeeklyProgress').textContent
+    };
+  });
+  expect(counts.available).toBe(counts.expected);
+  expect(counts.beforeStart).toBe(0);
+  expect(counts.progress).toContain('0 of 1');
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="habits"]').click();
+  await expect(page.locator('.v96-month-card')).toHaveCount(0);
+  const display=await page.locator('#habitManager').evaluate(el=>getComputedStyle(el).display);
+  expect(display).toBe('grid');
+});
