@@ -1,7 +1,7 @@
 
 /* Blueprint v9.18 — native-feeling, five-stage planning sheet */
 #myplan > .plan-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
-#myplan > .plan-tabs button{min-width:0;padding-inline:5px}
+#myplan > .plan-tabs button{min-width:0;min-height:44px;padding-inline:4px;font-size:clamp(11px,2.8vw,13px);white-space:nowrap}
 .wb-overview-feature{background:linear-gradient(120deg,color-mix(in srgb,var(--primary) 12%,var(--surface)),var(--surface) 72%)}
 .wb-overview-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .wb-overview-top h2{font:normal clamp(25px,3vw,34px) Georgia,serif;margin:8px 0}
@@ -26,9 +26,9 @@
 .wb-header{padding:21px 24px 12px;flex:none;border-bottom:1px solid var(--line)}
 .wb-titlebar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .wb-titlebar h2{font:normal clamp(25px,3vw,32px)/1.2 Georgia,serif;margin:5px 0 0}
-.wb-titlebar button,.wb-week-pager button{min-width:40px;min-height:40px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:23px}
+.wb-titlebar button,.wb-week-pager button{min-width:44px;min-height:44px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:23px}
 .wb-progress-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-top:19px}
-.wb-progress-nav button{min-width:0;border:0;background:transparent;color:var(--muted);padding:6px 2px 4px;font-size:clamp(10px,1.2vw,12px);text-align:center}
+.wb-progress-nav button{min-width:0;min-height:44px;border:0;background:transparent;color:var(--muted);padding:6px 2px 4px;font-size:clamp(10px,1.2vw,12px);text-align:center}
 .wb-progress-nav button::before{content:'';display:block;height:4px;background:var(--line);border-radius:6px;margin-bottom:8px}
 .wb-progress-nav button[aria-current="step"]{color:var(--ink);font-weight:700}
 .wb-progress-nav button[aria-current="step"]::before{background:var(--secondary)}
