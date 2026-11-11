@@ -2,8 +2,9 @@
 /* Blueprint v9.19 — project dashboard with media previews and adaptive notes. */
 #projectTabs[hidden],#projectOverview[hidden],#v919BackOverview[hidden],#v919CaptureBack[hidden]{display:none!important}
 #projectWorkspace,#projectNotes,#projectActions,#projectLibrary,#v76Editor{min-width:0}
-.v919-project-overview{width:100%;min-width:0}
-.v919-project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;align-items:stretch}
+.v919-project-overview{width:100%;min-width:0;container:blueprint-project / inline-size}
+/* The app's left rail can consume 208px: use usable content width. */
+.v919-project-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:13px;align-items:stretch}
 .v919-project-grid>.card{margin:0;min-width:0;padding:19px}
 .v919-project-grid .card-heading{align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:12px}
 .v919-project-grid .card-heading h3{font:normal 23px/1.2 Georgia,serif;color:var(--ink);margin:0}
@@ -69,7 +70,7 @@
 #projectNotes .v815-zoom-tools{margin-left:0;max-width:100%}
 #projectNotes .v93-layout-tools button{min-width:44px;min-height:44px}
 @media(max-width:760px){
-  .v919-project-grid{grid-template-columns:1fr;gap:10px}
+  .v919-project-grid{gap:10px}
   .v919-project-grid>.card{padding:16px}
   .v919-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
   .v919-gallery-item img{height:clamp(105px,18vh,175px)}
@@ -87,6 +88,15 @@
  #projectNotes .v76-toolbar .v79-tool-buttons{gap:4px}
  #projectNotes .v76-toolbar select.v80-text-size{min-width:73px;width:76px}
  .v919-project-grid .card-heading h3{font-size:21px}
+}
+/* Two overview cards share a row only when EACH has room for its heading/actions. */
+@container blueprint-project (min-width:540px){
+  .v919-project-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .v919-gallery{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@container blueprint-project (max-width:539px){
+  .v919-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .v919-gallery-item img{height:clamp(105px,18vh,175px)}
 }
 @media(prefers-reduced-motion:reduce){
  .v919-capture-back,.v919-capture-sheet{animation:none!important;transition:none!important}

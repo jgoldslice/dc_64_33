@@ -7,6 +7,16 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — Responsive layout optimization v9.22 (feature branch, not yet deployed)
+
+- **Requested:** Optimize Blueprint card, tab and control placement across iPhone, iPad portrait/landscape, sidebar and narrow Split View. Changes are isolated in [PR #42](https://github.com/jgoldslice/dc_64_33/pull/42) on `feature/responsive-layout-v922` pending regression checks.
+- **Implemented (CSS only):** `today-responsive-v917.css` uses the usable Today workspace width through a named CSS container instead of viewport width; paired Schedule/Habits and Tasks/Priorities remain where at least 520px is available. Reduced forced minimum card heights while retaining capped scrolling and aligned rows on wider layouts. `project-overview-v919.css` now pairs Notes and To-Do only when the project container has 540px free (works with iPad sidebar and Split View), with responsive 2/4 image thumbnails. `layout-habits-v916.css` removes the forced 540px horizontal phone tracker, showing each full habit name on its own line followed by seven equal-width check targets with 44px hit areas. `weekly-blueprint-v918.css` standardizes important weekly controls at 44px and keeps four Goals tabs legible. `sw.js` bumps the cache version for eventual web publication.
+- **Data safety:** No persistent data schema, localStorage / IndexedDB readers or writers, backup formats, note/drawing engine, share extension, or app icon touched. No automatic native Xcode update.
+- **Tests authored:** `tests/responsive-layout-v922.spec.cjs` covers available-width transitions at 320, 390, 650, 740, 768, 834, 900, 1024 and 1194px; paired rows; mobile habit seven-day layout, tap target and persistence; Project Overview columns and horizontal overflow. **Automated test result: pending GitHub Actions run 43096955148** (a queued run is not a pass). Existing regression tests for notes, backups, dynamic Today content, and other areas also run in the full Chromium suite.
+- **Physical device verification:** Not yet tested on iPhone/iPad; touch, font scaling, Split View, the iOS software keyboard and real Apple Pencil still require testing. **Web deployed:** no, until after tests pass and this branch is merged into `main`.
+- **Original code commits:** Today `b8affd72b217dcfde82f1a7473ce71edaf30a298`, Project Overview `bb6c998e2787c506f7cc4bbad660f336f4ad42cb`, Habit Tracker `808c8779e33444f3b6e0f3d08c81bb0682b6e5bd`, weekly buttons `3ee18f3ebf5a44eca67405629855d25f4af70e6a`, tests `647f1fc0e0120f73ac5589e63acfd61faa0fd139`, offline cache `0857618fc140dc7c186727b79f144d44fd48e6b6`.
+- **Next:** Wait for CI completion, correct any failures, merge only after automated checks succeed, verify GitHub Pages publication, then test the actual screen on iPhone/iPad. Keep the separate native Share Extension draft PR #41 untouched.
+
 ## 2026-11-11 — Project Library capture layout polish (web v9.21)
 
 - **Requested:** On iPhone, the project Library's "Save to a project" sheet made the Link / Photo / file choice buttons disproportionately tall and visually mismatched with the system Choose Files control. Owner supplied an iPhone screenshot.
@@ -68,6 +78,7 @@ These entries are **candidates for investigation**, not assertions that the feat
 | 2026-11-11 | Documentation initialization and limited repository inspection | README/index inspected; no tests or app builds executed; physical devices not accessed |
 | 2026-11-11 | v9.20 Safari form focus styling, weekday modal containment, offline cache refresh | Chromium CI passed (run 43084881494); GitHub Pages publish succeeded (run 43084881563); real-device check pending |
 | 2026-11-11 | v9.21 Project capture segmented choice, file picker and responsive sheet | Chromium CI passed (run 43085899646); GitHub Pages publish succeeded (run 43085899713); real-device check pending |
+| 2026-11-11 | v9.22 responsive Today/Projects/Habits/touch layout source (PR #42) | Browser regression authored; GitHub Actions run 43096955148 queued; not merged, web or native deployed; device QA pending |
 
 ## How to update this status file after future work
 
