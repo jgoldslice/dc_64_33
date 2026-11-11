@@ -64,3 +64,13 @@
   #v87EventBack:not([hidden]) .v87-event-sheet{animation:none!important}
   #projectWorkspace .v6-project-tabs button{transition:none!important}
 }
+
+/* v9.5: calendar week selection is explicit; horizontal gestures belong to tabs. */
+.v94-week-tools{display:flex;align-items:center;gap:6px;margin-left:auto}
+.v94-week-arrow{display:grid;place-items:center;width:38px;height:38px;min-width:38px;padding:0;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--secondary-ui);font-size:24px;line-height:1;cursor:pointer}
+.v94-week-arrow:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:2px}
+#v817WeekViewport.v94-week-static{overflow:hidden!important;scroll-snap-type:none!important;touch-action:pan-y!important;overscroll-behavior-x:auto!important}
+#v817WeekViewport.v94-week-static #v817WeekTrack{display:block!important;width:100%!important}
+#v817WeekViewport.v94-week-static #v817WeekPrev,#v817WeekViewport.v94-week-static #v817WeekNext{display:none!important}
+#v817WeekViewport.v94-week-static #weekGrid{width:100%!important;max-width:100%!important;touch-action:pan-y!important}
+@media(max-width:420px){.v94-week-tools{gap:4px}.v94-week-arrow{width:34px;min-width:34px;height:36px}}

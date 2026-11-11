@@ -14,10 +14,10 @@
     owner:null,liveTranslation:0
   };
   let gesture=null,motion=null,frame=0;
-  const owners='.v817-week-viewport,.v817-date-scroller,#todayHabits,'+
+  const owners='.v817-date-scroller,#todayHabits,'+
     '#v815ZoomViewport,.v76-notebook-ui,.v81-project-rail,'+
-    '.week-table,.no-swipe,[data-no-swipe],.bottom-nav,'+
-    'input,textarea,select,button,canvas,svg,video,a,summary,details,'+
+    '.week-table,[data-no-swipe],.bottom-nav,'+
+    'input,textarea,select,button,canvas,video,a,summary,details,'+
     '[contenteditable],[role="slider"],[role="tablist"],[role="textbox"]';
   function protectedTarget(target){
     if(!(target instanceof Element)||target.closest(owners))return true;

@@ -202,9 +202,11 @@
   }
   function shiftCalendar(step){
     const button=document.getElementById(step>0?'nextWeek':'prevWeek');
-    button.click();
-    // A MutationObserver on #weekGrid rebuilds adjacent weeks after render().
+    button?.click();
+    // Week selection is controlled by the existing main calendar model.
   }
+  document.getElementById('v94WeekBack')?.addEventListener('click',()=>shiftCalendar(-1));
+  document.getElementById('v94WeekForward')?.addEventListener('click',()=>shiftCalendar(1));
   function settleCalendar(){
     if(calendarScrollLocked||calendarGesture||!weekWindow?.clientWidth)return;
     const page=Math.max(0,Math.min(2,Math.round(weekWindow.scrollLeft/weekWindow.clientWidth)));
@@ -214,7 +216,7 @@
       shiftCalendar(page===2?1:-1);
     }
   }
-  if(weekWindow){
+  if(weekWindow && !weekWindow.classList.contains('v94-week-static')){
     const observer=new MutationObserver(renderAdjacentWeeks);
     observer.observe(grid,{childList:true});
     renderAdjacentWeeks();
