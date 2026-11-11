@@ -1,5 +1,5 @@
 /* Canvas 8.2 — cache only our own app's assets, never another site's caches. */
-const CACHE='canvas-v913-golden-ratio-compass';
+const CACHE='canvas-v914-blueprint-blue-muted-spiral';
 const PREFIX='canvas-';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon.svg',
