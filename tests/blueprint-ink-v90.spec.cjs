@@ -7,6 +7,7 @@ async function openNotebook(page){
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Ink Quality A/B'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Ink')).toBeVisible();
 }
 

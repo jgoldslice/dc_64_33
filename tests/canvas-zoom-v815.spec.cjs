@@ -8,6 +8,7 @@ async function openNotebook(page,name='Zoom Test'){
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept(name));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Editor')).toBeVisible();
   await expect(page.locator('#v815ZoomReset')).toHaveText('100%');
   return errors;

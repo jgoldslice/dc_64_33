@@ -20,6 +20,7 @@ test('iPad sidebar and notebook controls have 44px targets without resizing the 
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog', dialog => dialog.accept('Blueprint iPad QA'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v815ZoomViewport')).toBeVisible();
   await expect(page.locator('#projectNotes .v76-toolbar')).toHaveCSS('flex-wrap', 'wrap');
   const measurements = await page.evaluate(() => {
@@ -83,5 +84,6 @@ test('phone keeps compact nonwrapping notes toolbar and hidden iPad rail toggle'
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog', dialog => dialog.accept('Blueprint phone QA'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectNotes .v76-toolbar')).toHaveCSS('flex-wrap', 'nowrap');
 });

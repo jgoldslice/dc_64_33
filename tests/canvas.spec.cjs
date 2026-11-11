@@ -43,6 +43,7 @@ test('Project shortcuts open the workspace and note pages persist after refresh'
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog', d => d.accept('Smoke Project'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await expect(page.locator('#v76Editor')).toBeVisible();
   await expect(page.locator('[data-project-tab="actions"]')).toHaveText('To-Do');
@@ -59,10 +60,12 @@ test('Project shortcuts open the workspace and note pages persist after refresh'
   await page.locator('[data-tab="today"]').click();
   await expect(page.locator('[data-v77-open-project]').filter({ hasText: 'Smoke Project' })).toBeVisible();
   await page.locator('[data-v77-open-project]').filter({ hasText: 'Smoke Project' }).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({ hasText: 'Smoke Project' }).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76PageSelect option')).toHaveCount(2);
   await expect(page.locator('.v76-rich').filter({ hasText: 'Draft sketch concept' })).toBeVisible();
   expect(errors).toEqual([]);
@@ -75,6 +78,7 @@ test('Tap selects note text; left and right resize handles work, move control re
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept('Resize Test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   const box=page.locator('#v76Surface .v76-text').first();
   await expect(box).toBeVisible();
   await expect(box.locator('.v76-grip')).toHaveCount(0);
@@ -129,6 +133,7 @@ test('Pictures use OneNote-style selection, corner resizing and a move control i
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept('Photo Test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await page.locator('#v76PageMore').click();
   await expect(page.locator('#v76PageMenu')).toBeVisible();
   await expect(page.locator('#v76RenamePage')).toHaveText('Rename page');
@@ -166,6 +171,7 @@ test('Notebook toolbar has a Textbox tool; blank taps create text only when it i
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog', d => d.accept('Minimal Toolbar Test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   const toolbar = page.locator('#v76Editor .v76-toolbar');
   // v8.10 uses a compact icon-only toolbar but preserves the accessible groups.
   await expect(toolbar.locator('.v79-tool-title')).toHaveCount(0);
@@ -215,6 +221,7 @@ test('Text stays transparent over images and size choices persist independently'
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog', d=>d.accept('Transparency Test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   const text=page.locator('#v76Surface .v76-text').first();
   await expect(text).toBeVisible();
   const rich=text.locator('.v76-rich');
@@ -254,6 +261,7 @@ test('Selected notebook controls prevent native long-press selection but text ed
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept('Touch Safety Test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   const box=page.locator('#v76Surface .v76-text').first();
   const rich=box.locator('.v76-rich');
   await rich.click({position:{x:34,y:13}});

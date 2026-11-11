@@ -7,6 +7,7 @@ async function openNewProject(page,title) {
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept(title));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
 }
 const onePixelPNG=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP+ZJRdGAAAAABJRU5ErkJggg==','base64');

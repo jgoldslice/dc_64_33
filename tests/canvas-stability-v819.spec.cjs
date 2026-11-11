@@ -37,6 +37,7 @@ test('failed planner save does not allow an attached file to be deleted',async({
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Recovery test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   const result=await page.evaluate(async()=>{
     const p=v6Project();
     const key='v819-safety-file';
@@ -66,6 +67,7 @@ test('interrupted Pencil stroke retains ink already drawn',async({page})=>{
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Pencil cancel test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await page.locator('[data-v76-mode="pen"]').click();
   const ink=page.locator('#v76Ink');
   await ink.scrollIntoViewIfNeeded();
@@ -93,6 +95,7 @@ test('failed upload index save preserves the file in memory for a later retry',a
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Upload recovery test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   const result=await page.evaluate(async()=>{
     const p=v6Project();
     const originalSet=Storage.prototype.setItem,originalAlert=window.alert;
@@ -119,6 +122,7 @@ test('notebook has no instruction paragraph and can save ink to project library'
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Sketch export'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('.v76-tip')).toHaveCount(0);
   await expect(page.locator('#v819SaveSketch')).toBeVisible();
   await page.locator('[data-v76-mode="pen"]').click();

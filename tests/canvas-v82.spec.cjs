@@ -36,23 +36,24 @@ test('Project settings replaces exposed destructive controls and preserves Devel
   expect(errors).toEqual([]);
 });
 
-test('Reopening a project returns to its last Notes, To-Do or Library tab',async({page})=>{
+test('Reopening a project always starts at Overview and its cards open each editor',async({page})=>{
   await page.goto(base);
   await createProject(page,'Project Continuity');
-  await page.locator('[data-project-tab="library"]').click();
+  await expect(page.locator('#projectOverview')).toBeVisible();
+  await page.locator('[data-v919-project-open="library"]').click();
   await expect(page.locator('#projectLibrary')).toBeVisible();
+  await page.locator('#v919BackOverview').click();
+  await page.locator('[data-v919-project-open="actions"]').click();
+  await expect(page.locator('#projectActions')).toBeVisible();
   await page.locator('#backProjects').click();
   await page.locator('[data-v6-project]').filter({hasText:'Project Continuity'}).click();
-  await expect(page.locator('#projectLibrary')).toBeVisible();
-  await expect(page.locator('[data-project-tab="library"]')).toHaveClass(/selected/);
-  await page.locator('[data-project-tab="actions"]').click();
-  await expect(page.locator('#projectActions')).toBeVisible();
+  await expect(page.locator('#projectOverview')).toBeVisible();
+  await expect(page.locator('#projectActions')).toBeHidden();
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Project Continuity'}).click();
-  await expect(page.locator('#projectActions')).toBeVisible();
-  await expect(page.locator('[data-project-tab="actions"]')).toHaveText('To-Do');
-  await page.locator('[data-project-tab="notes"]').click();
+  await expect(page.locator('#projectOverview')).toBeVisible();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Editor')).toBeVisible();
 });
 

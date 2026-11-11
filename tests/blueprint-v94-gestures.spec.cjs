@@ -107,6 +107,7 @@ test('Notes drawing gestures and project editor are protected from tab swipes',a
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept('Protected project'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await page.locator('[data-v76-mode="pen"]').click();
   const before=await page.evaluate(()=>window.__blueprintMotionDebug.prepares);
   await syntheticSwipe(page,'#v76Ink',-150,1);

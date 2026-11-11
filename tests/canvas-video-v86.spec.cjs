@@ -16,6 +16,7 @@ async function setup(page){
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept('Video Link Test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await page.locator('[data-project-tab="library"]').click();
   await expect(page.locator('#projectLibrary')).toBeVisible();

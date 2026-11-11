@@ -7,6 +7,7 @@ test('Safari and PWAs never display PencilKit because it requires installed nati
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Web-only project'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v92PencilKit')).toHaveCount(0);
   await expect(page.locator('#v815ZoomViewport')).toBeVisible();
 });
@@ -37,6 +38,7 @@ test('native iPad offers opt-in PencilKit and never mutates original SVG/project
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Native bridge QA'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   const button=page.locator('#v92PencilKit');
   await expect(button).toBeVisible();
   const before=await page.evaluate(()=>JSON.stringify(v6Project()));

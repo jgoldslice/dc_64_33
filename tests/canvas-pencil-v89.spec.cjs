@@ -7,6 +7,7 @@ async function openNotebook(page){
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Pencil alignment test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Editor')).toBeVisible();
   await page.locator('#v76Ink').scrollIntoViewIfNeeded();
   return errors;

@@ -32,6 +32,7 @@ test('project opening does not animate the whole page or mutate existing planner
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Fluidity project'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await page.locator('#backProjects').click();
   await expect(page.locator('#projectGrid [data-v6-project]')).toHaveCount(1);
@@ -62,6 +63,7 @@ test('Pencil surface and its pointer events cannot initiate top-level swipe moti
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept('Pencil-safe'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await page.locator('#v76Ink').scrollIntoViewIfNeeded();
   await page.locator('#v76Ink').evaluate(target=>{
     const b=target.getBoundingClientRect(),x=b.left+b.width*.68,y=b.top+Math.min(80,b.height/2);
@@ -95,6 +97,7 @@ test('Reduce Motion removes project/sheet entrances and preserves full controls'
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Reduced motion'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await expect(page.locator('#projectWorkspace .v6-project-title')).toHaveCSS('animation-name','none');
   await page.locator('[data-tab="week"]').click();

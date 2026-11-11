@@ -5,6 +5,7 @@ test.use({browserName:'chromium',viewport:{width:1366,height:1024},isMobile:true
 async function createProject(page,title){
   page.once('dialog',d=>d.accept(title));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectTitle')).toHaveText(title);
   return page.evaluate(()=>String(v6Project().id));
 }
@@ -74,18 +75,21 @@ test('header switcher changes projects directly without returning to project lib
   expect(names).toContain('Research');
   expect(names).toContain('Minecraft');
   await chooser.selectOption(first);
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectTitle')).toHaveText('Research');
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await expect(page.locator('#projectHome')).toBeHidden();
   await expect(page.locator('#v811PageList')).toContainText('Catalysis ideas');
   await expect(page.locator('#v76Surface .v76-rich').first()).toHaveText('First project note');
   await chooser.selectOption(second);
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectTitle')).toHaveText('Minecraft');
   await expect(page.locator('#v811PageList')).toContainText('Village layouts');
   await expect(page.locator('#v76Surface .v76-rich').first()).toHaveText('Second project note');
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('[data-v6-project]').filter({hasText:'Research'}).click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v814ProjectSelect')).toHaveValue(first);
   await expect(page.locator('#v76Surface .v76-rich').first()).toHaveText('First project note');
   expect(errors).toEqual([]);

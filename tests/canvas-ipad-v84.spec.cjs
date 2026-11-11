@@ -48,6 +48,7 @@ test.describe('Canvas adaptive iPad workspace',()=>{
     await page.locator('[data-tab="brainstorm"]').click();
     page.once('dialog',d=>d.accept('iPad Window Test'));
     await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
     await expect(page.locator('#projectTitle')).toHaveText('iPad Window Test');
     await page.setViewportSize({width:600,height:900});
     await expect(page.locator('.canvas-ipad-nav-head')).toBeHidden();
@@ -71,6 +72,7 @@ test.describe('Canvas iPad landscape and notebook',()=>{
     await page.locator('[data-tab="brainstorm"]').click();
     page.once('dialog',d=>d.accept('Notebook on iPad'));
     await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
     await expect(page.locator('#v76Editor')).toBeVisible();
     await expect(page.locator('.v81-project-rail')).toHaveCount(0);
     await expect(page.locator('#v814ProjectSelect')).toBeVisible();

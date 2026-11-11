@@ -9,6 +9,7 @@ async function openNotebook(page,name='Textbox Tool Test'){
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',d=>d.accept(name));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Editor')).toBeVisible();
   return errors;
 }

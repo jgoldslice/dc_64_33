@@ -7,6 +7,7 @@ async function notebook(page){
   await page.locator('[data-tab="brainstorm"]').click();
   page.once('dialog',dialog=>dialog.accept('Reliability test'));
   await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
   await page.locator('[data-v76-mode="pen"]').click();
   const ink=page.locator('#v76Ink');
   await ink.scrollIntoViewIfNeeded();
@@ -170,6 +171,7 @@ test('responsive notebook controls remain usable and Reduce Motion is respected'
     if(!(await page.locator('#v76Editor').isVisible())){
       page.once('dialog',dialog=>dialog.accept('Responsive test'));
       await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
     }
     const metrics=await page.evaluate(()=>{
       const btn=document.getElementById('v819SaveSketch');
