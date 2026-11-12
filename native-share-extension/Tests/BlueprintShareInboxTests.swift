@@ -102,4 +102,33 @@ final class BlueprintShareInboxTests: XCTestCase {
         XCTAssertNotNil(UUID(uuidString: id))
         XCTAssertEqual(store.projectIndex().lastProjectID, "house")
     }
+
+    func testChunkedFileReadReassemblesTheExactQueuedBytesAndChecksBounds() throws {
+        let store = try store()
+        let source = temp.appendingPathComponent("large.png")
+        let original = Data(repeating: 0xab, count: 600_000)
+        try original.write(to: source)
+        let id = try store.enqueue(projectID: "research", input: [
+            BlueprintShareInput(file: source, name: "Large.png", mime: "image/png")
+        ])
+        var received = Data()
+        var offset = 0
+        while offset < original.count {
+            let length = min(256 * 1024, original.count - offset)
+            let (chunk, item) = try store.readChunk(
+                id: id, itemID: "i0", offset: offset, length: length)
+            XCTAssertEqual(chunk.count, length)
+            XCTAssertEqual(item.size, original.count)
+            received.append(chunk)
+            offset += length
+        }
+        XCTAssertEqual(received, original)
+        XCTAssertThrowsError(try store.readChunk(
+            id: id, itemID: "i0", offset: -1, length: 5))
+        XCTAssertThrowsError(try store.readChunk(
+            id: id, itemID: "i0", offset: 0, length: 256 * 1024 + 1))
+        XCTAssertThrowsError(try store.readChunk(
+            id: id, itemID: "i0", offset: original.count - 4, length: 5))
+        XCTAssertEqual(try store.pending().count, 1)
+    }
 }
