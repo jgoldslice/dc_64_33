@@ -1,7 +1,16 @@
-# Blueprint native Share Sheet — staged implementation (NOT SHIPPED)
+# Blueprint native Share Sheet — Xcode implementation and recovery notes
 
 **Branch:** `feature/native-share-extension-staging`  
-**Status:** Source code and browser-side importer tests only. The public repository does **not** contain the user's actual Capacitor/Xcode wrapper. These Swift files are not yet added to an Xcode target, signed, compiled, tested on a device, or registered with iOS. **Do not merge, deploy, or delete the existing native app in order to test this.**
+**Status as of November 11, 2026:** The owner has installed a locally configured native Share Extension through Xcode on their iPhone and iPad. Sharing opens and queues content; the host `SceneDelegate` explicitly creates `BlueprintShareBridgeViewController`, whose console reports a registered `BlueprintShare` plugin. **The separate local Capacitor/Xcode wrapper is not in this repository.** The owner has also reported an iPad banner claiming 4 queued shared items with delayed image appearance; the exact underlying importer errors remain unverified. This draft branch now has a targeted batching/diagnostics improvement, but GitHub edits are not automatically installed on the devices. **Do not merge or overwrite their working Xcode project, uninstall apps, or delete queued App Group items to troubleshoot.**
+
+
+## Import queue performance and error diagnosis — November 11, 2026
+
+- `web/inbox.js` saves and acknowledges each share envelope independently, as before, but refreshes the expensive entire Library UI **once after the import pass** instead of once per envelope. This preserves the same durability gates (IndexedDB read-back, hash check, planner save verification before native acknowledgement).
+- `web/host-entry.js` gives progress immediately when a queue contains entries. The error banner now says **queued batches**, not misleading "shared items", and displays the first specific importer error. If any batches were imported successfully while old ones remain queued, it states both outcomes.
+- A Swift App Group queue still does not make media available in the web Library until Blueprint runs its importer. Base64 over the JS/native bridge and repeated SHA-256 verification can introduce seconds of latency with large photos; optimize with a native-to-IndexedDB transfer strategy only after proving storage integrity and measuring on a device.
+- For the remaining iPad error, attach Safari's Web Inspector to the **installed Blueprint web view** and read `Share inbox import retry required` in Console while tapping Retry. Capture the **message field** of one error (do not share sensitive filenames or URLs). Also check `window.isSecureContext` and `!!window.crypto?.subtle`. Do not assume the queue contains four photos: the old banner counts failed envelopes/manifest errors.
+- To install the JS-only patch, fetch this branch and copy only `native-share-extension/web/inbox.js` and `web/host-entry.js` to the existing native web assets under `www`; back up first, then `npx cap copy ios`, rebuild the main App scheme in Xcode. Preserve `SceneDelegate.swift`, Swift target memberships and signing, the App Group, and all other web assets.
 
 ## Intended friction-minimizing experience
 
