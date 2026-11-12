@@ -7,6 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — Native Share Extension Mac preparation improvements (DRAFT; NOT SHIPPED)
+
+- Prepared an opt-in Capacitor bridge subclass (`native-share-extension/BlueprintShareBridgeViewController.swift`) to register the local `BlueprintShare` plugin; the actual host Xcode storyboard and target membership are **not** changed.
+- Added `native-share-extension/scripts/prepare-ios.sh` to stage Swift and JavaScript files alongside the separate Mac Capacitor project. It backs up `project.pbxproj`, refuses to replace divergent staged files, and **does not edit Xcode targets, sign, build, install, or touch user data**.
+- Added `native-share-extension/scripts/test-prepare-ios.sh` to check staging idempotency, source copies, overwrite protection, and unchanged Xcode project metadata using a temporary mock project; added it to the PR smoke workflow. **The new CI check has not yet been confirmed passing.**
+- Updated the integration README to call out app/extension App Group entitlements, `CFBundleDisplayName=Blueprint`, and mutually exclusive `NSExtensionPrincipalClass` versus `NSExtensionMainStoryboard` keys. The actual Apple signing and Capacitor version still require checking on the Mac.
+- **Release gate:** No native Swift compile, Xcode signing, iOS device installation, or photo sharing test has occurred. Keep this draft isolated until the owner wires and verifies the actual app and exports a complete backup.
+
 ## 2026-11-11 — Native Share Sheet implementation staged (DRAFT PR #41)
 
 - **Requested:** Minimize friction when sharing links, photos and PDFs from iPhone apps into a selected Blueprint project Library. A Share Extension should show Blueprint in compatible system Share Sheets and remember the last destination.
