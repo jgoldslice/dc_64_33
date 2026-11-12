@@ -52,8 +52,7 @@ copy_without_overwrite "$SOURCE_DIR/web/host-entry.js" "$ASSETS_DIR/host-entry.j
 printf '\nStaging complete. Native sharing is NOT activated yet.\n'
 printf 'Next: open the Xcode project, create the Share Extension target, set App Groups\n'
 printf 'for BOTH targets, add the Swift files with correct target membership, register\n'
-printf '%s\n' "Register the Capacitor plugin using the staged bridge subclass." 
-             "Set the bridge custom class in Main.storyboard and load both native JS files after app scripts."
+printf '%s\n' "Register the Capacitor plugin using the staged bridge subclass." "Set the bridge custom class in Main.storyboard and load both native JS files after app scripts."
 printf 'Read: %s/README.md\n' "$SOURCE_DIR"
 printf 'Inspect targets with: xcodebuild -list -project "%s"\n' "$PROJECT"
 printf 'DO NOT uninstall Blueprint to troubleshoot; export a complete backup first.\n'
