@@ -7,6 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — Native sharing reached device; plugin registration under investigation
+
+- **Physical iPhone verified by owner:** Blueprint appears in the system Share Sheet and opens the custom "Save to Blueprint" view. Main Blueprint app shows 3 existing projects, but Share Extension displays "No projects available." The extension UI is installed; queued import into a project is **not yet verified**.
+- **Safari Web Inspector evidence:** `Capacitor.isNativePlatform() === true`; `state.projects.length === 3`; both `blueprint-native-share-inbox.js` and `blueprint-native-share-host.js` are loaded; `BlueprintNativeShareInbox` is an object; native plugin header list does **not** include `BlueprintShare`; `isPluginAvailable("BlueprintShare") === false`; `BlueprintNativeShareSync` is undefined because the host exits before initialization when the native plugin is unavailable.
+- **Next controlled test:** In the installed host's `BlueprintShareBridgeViewController.swift`, run new DEBUG-only logs from `capacitorDidLoad()` to verify that the correct storyboard subclass is invoked, bridge is non-nil, and `registerPluginInstance(BlueprintSharePlugin())` yields `plugin(withName: "BlueprintShare")`. Build/run via Xcode without uninstalling. Investigate app target membership or class linkage if absent. No existing project data changes.
+- **Draft GitHub source:** Updated `native-share-extension/BlueprintShareBridgeViewController.swift` with diagnostic prints. GitHub source updates are not automatically in the user's Xcode project. Do not claim complete end-to-end sharing until project list and Library persistence are tested.
+
 ## 2026-11-11 — Native Share Extension Mac preparation improvements (DRAFT; NOT SHIPPED)
 
 - Prepared an opt-in Capacitor bridge subclass (`native-share-extension/BlueprintShareBridgeViewController.swift`) to register the local `BlueprintShare` plugin; the actual host Xcode storyboard and target membership are **not** changed.
