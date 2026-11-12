@@ -23,6 +23,28 @@ Supported in this prototype: HTTPS/HTTP links, PNG/JPEG/HEIC/HEIF/GIF/WebP image
 - `tests/blueprint-share-inbox.spec.cjs` — automated JS tests for link + image import, project selection, corruption, stale saves and retries.
 - `Tests/BlueprintShareInboxTests.swift` — native XCTest source for queue roundtrip, corruption, invalid project IDs and last-used destination. Not yet run against a signed Xcode test target.
 
+## Safe preparation from a Mac terminal (does not activate the extension)
+
+The GitHub repository contains the staged native source, but **not** the actual Xcode wrapper. On the owner's Mac, these commands copy the prepared Swift and JS sources into isolated staging folders alongside the existing wrapper. They will **not** rewrite the project configuration, register capabilities, change the current app, or install anything.
+
+```bash
+cd "$HOME/Documents/dc_64_33" || exit 1
+git fetch origin feature/native-share-extension-staging
+mkdir -p "$HOME/Documents/ChatGPT/dc6433/canvas-ios/share-staging"
+git archive FETCH_HEAD native-share-extension | tar -x -C "$HOME/Documents/ChatGPT/dc6433/canvas-ios/share-staging"
+bash "$HOME/Documents/ChatGPT/dc6433/canvas-ios/share-staging/native-share-extension/scripts/prepare-ios.sh"
+```
+
+If the Capacitor project is in a different folder, supply that path as the script's first argument. The script refuses to overwrite an existing staged source file with different content, and backs up `project.pbxproj` before any manual Xcode editing. **It does not replace a complete user-data backup.**
+
+After staging, open the working project:
+
+```bash
+open "$HOME/Documents/ChatGPT/dc6433/canvas-ios/ios/App/App.xcodeproj"
+```
+
+**Important:** This is a safe staging operation, **not** a one-click iOS Share Extension installer. The following native integration steps still require Xcode on the actual Mac.
+
 ## Mac/Xcode integration (once the real project is accessible)
 
 1. On the Mac, verify the **actual** Capacitor project location/version, active git branch, bundle identifier, signing team, deployment target and current Xcode project. Use the existing working app; do not generate a replacement Capacitor project over it.
@@ -36,7 +58,9 @@ Supported in this prototype: HTTPS/HTTP links, PNG/JPEG/HEIC/HEIF/GIF/WebP image
    - `NSExtensionPrincipalClass`: `$(PRODUCT_MODULE_NAME).BlueprintShareViewController`
    - `NSExtensionAttributes → NSExtensionActivationRule` dictionary with `NSExtensionActivationSupportsImageWithMaxCount = 8`, `NSExtensionActivationSupportsFileWithMaxCount = 8`, `NSExtensionActivationSupportsWebURLWithMaxCount = 1`, and `NSExtensionActivationSupportsText = true`.
    - Restrict activation to supported types; the extension validates MIME and URL again. Check the generated Xcode template's existing extension dictionary instead of creating duplicate keys.
-8. Register `BlueprintSharePlugin()` in the actual Capacitor bridge controller. For recent Capacitor versions an example is `override func capacitorDidLoad() { bridge?.registerPluginInstance(BlueprintSharePlugin()) }`. The real registration mechanism depends on the Capacitor version; verify the existing installed version and controller before applying.
+   - Set the extension target's **`CFBundleDisplayName` to `Blueprint`** so Photos shows a recognizable destination instead of the internal target name.
+   - If the Xcode extension template supplies **`NSExtensionMainStoryboard`**, remove that key when using `NSExtensionPrincipalClass`; do not configure both entry points. Confirm the extension can launch its Swift view controller.
+8. Register `BlueprintSharePlugin()` in the actual Capacitor bridge controller. For recent Capacitor versions, a custom subclass of `CAPBridgeViewController` can override `capacitorDidLoad()` and invoke `bridge?.registerPluginInstance(BlueprintSharePlugin())`. If the storyboard currently instantiates plain `CAPBridgeViewController`, ensure it is changed to instantiate the registered subclass (with the correct target module); adding a Swift class file by itself is insufficient. The real registration mechanism depends on the Capacitor version; verify the installed version and controller before applying.
 9. In the actual native Capacitor web-asset bundle, include `web/inbox.js` **followed by** `web/host-entry.js` after Blueprint's existing app scripts. The latter is deliberately gated behind `Capacitor.isNativePlatform()` and `isPluginAvailable('BlueprintShare')`. Ensure the bundled JS files are copied as assets according to that wrapper's existing build process. The public web page should not reference the prototype while Xcode setup is unfinished.
 10. Build and run the main app on a physical iPhone; open Blueprint once so the host publishes your list of current projects to the App Group. Then open Photos, choose an image → system Share Sheet → Blueprint, select the project, and Save. Reopen the installed Blueprint app to confirm import. Repeat for Safari URL, PDF, multiple photos, offline use, and app termination between queue and import.
 11. Verify both failure recovery and backup compatibility before enabling broadly: no wrong-project saves, duplicate files, checksum or size bypasses, premature queued-file deletion, empty project list, accidental stale-window overwrite, or changes to older complete-backup formats.
