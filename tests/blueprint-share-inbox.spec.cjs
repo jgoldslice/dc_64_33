@@ -127,3 +127,51 @@ test('damaged native manifest is reported while valid shares still import',async
   expect(result.errors[0].message).toContain('retained');
   expect(f.projects[0].library).toHaveLength(2);
 });
+
+
+test('multiple queued batches commit and acknowledge separately but refresh the Library only once',async()=>{
+  const first='123e4567-e89b-42d3-a456-426614174101';
+  const second='123e4567-e89b-42d3-a456-426614174102';
+  const entries=[first,second].map((id,index)=>({
+    version:1,id,projectId:'project-1',
+    items:[{id:'i0',kind:'link',title:'Link '+index,url:'https://example.org/'+index}]
+  }));
+  const projects=[{id:'project-1',title:'Test',library:[]}];
+  const events=[],progress=[];
+  const plugin={
+    listPending:async()=>({entries,errors:[]}),
+    acknowledge:async({id})=>{events.push('ack:'+id);return {acknowledged:true};},
+    publishProjects:async()=>({count:1}),
+    readFile:async()=>{throw Error('unexpected readFile');}
+  };
+  const bridge=inbox.createImporter({
+    plugin,projects:()=>projects,
+    putBlob:async()=>{throw Error('unexpected putBlob');},
+    getBlob:async()=>null,
+    commit:async()=>{events.push('commit');return true;},
+    refresh:async()=>{events.push('refresh');},
+    onProgress:info=>progress.push(info)
+  });
+  const result=await bridge.importPending();
+  expect(result.errors).toEqual([]);
+  expect(result.acknowledged).toBe(2);
+  expect(result.imported).toBe(2);
+  expect(progress).toEqual([{phase:'importing',batches:2}]);
+  expect(events).toEqual(['commit','ack:'+first,'commit','ack:'+second,'refresh']);
+  expect(projects[0].library.map(x=>x.url)).toEqual(['https://example.org/0','https://example.org/1']);
+});
+
+test('a failed UI redraw does not misrepresent a successfully saved and acknowledged share as queued',async()=>{
+  const f=fake({items:[{id:'i0',kind:'link',title:'Link',url:'https://example.org/page'}]});
+  const bridge=inbox.createImporter({
+    plugin:f.plugin,projects:()=>f.projects,
+    putBlob:async()=>{},getBlob:async()=>null,
+    commit:async()=>true,
+    refresh:async()=>{throw Error('UI redraw failed');}
+  });
+  const result=await bridge.importPending();
+  expect(result.errors).toEqual([]);
+  expect(result.acknowledged).toBe(1);
+  expect(result.refreshError).toBe('UI redraw failed');
+  expect(f.stats.acks).toEqual([uuid]);
+});
