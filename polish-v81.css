@@ -51,7 +51,13 @@ button:focus-visible, a:focus-visible, .v81-project-rail button:focus-visible {
 #brainstorm .view-header h1{margin-bottom:0}
 #projectWorkspace .v6-project-head{gap:10px}
 .v814-project-tools{display:flex;gap:8px;align-items:center;min-width:0;margin-left:auto}
-.v814-project-switch{display:block;min-width:0;max-width:min(45vw,240px)}
+/* Use the available header width; a 240px cap clipped common project names. */
+#projectWorkspace .v6-project-head{min-width:0}
+#projectWorkspace .v814-project-tools{flex:1 1 360px;justify-content:flex-end}
+.v814-project-switch{
+  display:block;flex:1 1 300px;min-width:0;
+  width:min(100%,520px);max-width:520px
+}
 .v814-project-switch select{
   display:block;width:100%;min-width:110px;max-width:100%;
   min-height:44px;padding:10px 30px 10px 13px;
@@ -73,6 +79,24 @@ button:focus-visible, a:focus-visible, .v81-project-rail button:focus-visible {
   #projectWorkspace .v814-project-switch{width:100%;max-width:100%}
   #projectWorkspace .v814-project-switch select{min-width:0}
   #projectWorkspace .v82-project-header-actions{margin-left:auto}
+}
+/* Compact screens only give a long project name its own full-width row.
+   The primary header remains single-row for ordinary short names. */
+@media(max-width:739px), (max-height:599px){
+  #projectWorkspace.v925-long-project .v6-project-head{flex-wrap:wrap}
+  #projectWorkspace.v925-long-project #backProjects{order:0}
+  #projectWorkspace.v925-long-project .v82-project-header-actions{
+    order:1;margin-left:auto
+  }
+  #projectWorkspace.v925-long-project .v814-project-tools{
+    order:2;flex:1 0 100%;width:100%;max-width:100%;margin:0
+  }
+  #projectWorkspace.v925-long-project .v814-project-switch{
+    flex:1 1 auto;width:100%;max-width:none
+  }
+  #projectWorkspace.v925-long-project .v814-project-switch select{
+    width:100%;min-width:0
+  }
 }
 @media(max-width:480px){
   .v814-project-tools{gap:4px}
