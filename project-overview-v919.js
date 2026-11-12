@@ -50,6 +50,11 @@
       const title=xss(r.title|| (isImage(r)?'Image':r.type==='link'?'Link':'Resource'));
       if(isImage(r))return '<button type="button" class="v919-gallery-item" data-v6-view-image="'+xss(r.id)+'" aria-label="Open '+title+'">'+
         '<img alt="" loading="lazy" data-v919-image="'+xss(r.id)+'"><span>'+title+'</span></button>';
+      // YouTube links retain their recognizable preview in Overview,
+      // while still opening the original link with the normal Library action.
+      const video=r.type==='link'?window.canvasVideoLink?.parse?.(r.url):null;
+      if(video)return '<button type="button" class="v919-gallery-item v923-preview-youtube" data-v6-open-resource="'+xss(r.id)+'" aria-label="Open '+title+'">'+
+        '<img alt="" loading="lazy" referrerpolicy="no-referrer" src="'+xss(video.thumbnail)+'"><span>'+title+'</span></button>';
       const kind=r.type==='link'?'Link':r.type==='code'?'Code':'File';
       let detail=kind;
       if(r.type==='link'){
