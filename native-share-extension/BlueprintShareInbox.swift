@@ -249,6 +249,36 @@ final class BlueprintShareInbox {
         return (bytes, item)
     }
 
+    // Limit each bridge reply to 256 KiB to avoid oversized WKWebView
+    // JSON/Base64 messages. The JavaScript importer hashes the reassembled
+    // bytes against the immutable manifest before saving or acknowledging.
+    func readChunk(id: String, itemID: String, offset: Int, length: Int)
+        throws -> (Data, BlueprintSharePendingItem) {
+        let entry = try envelope(id)
+        guard let item = entry.items.first(where: { $0.id == itemID && $0.kind == "file" }),
+              itemID.range(of: #"^i[0-7]$"#, options: .regularExpression) != nil,
+              let expected = item.size, expected > 0, expected <= Self.maxBytes,
+              length > 0, length <= 256 * 1024, length <= expected,
+              offset >= 0, offset <= expected - length else {
+            throw BlueprintShareFailure.invalidInput
+        }
+        let url = pendingDir.appendingPathComponent(id, isDirectory: true)
+            .appendingPathComponent(itemID, isDirectory: false)
+        let attributes = try fm.attributesOfItem(atPath: url.path)
+        guard let size = attributes[.size] as? NSNumber,
+              size.intValue == expected else {
+            throw BlueprintShareFailure.corrupted
+        }
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        try handle.seek(toOffset: UInt64(offset))
+        guard let bytes = try handle.read(upToCount: length),
+              bytes.count == length else {
+            throw BlueprintShareFailure.corrupted
+        }
+        return (bytes, item)
+    }
+
     func acknowledge(id: String) throws {
         _ = try envelope(id)
         try fm.removeItem(at: pendingDir.appendingPathComponent(id, isDirectory: true))
