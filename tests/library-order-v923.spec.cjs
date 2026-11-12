@@ -117,3 +117,73 @@ test('long touch hold reorders a link without triggering Open or deleting record
   expect(await page.evaluate(()=>v6Project().library.length)).toBe(4);
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).projects[0].library[0].id)).toBe('link-b');
 });
+
+test('each image has a menu; rename preserves the attachment and updates the Overview',async({page})=>{
+  await setup(page);
+  await page.locator('[data-v919-project-open="library"]').click();
+  const image=page.locator('[data-v923-item="image-a"]');
+  const menu=image.locator('[data-v923-more]');
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveAttribute('aria-expanded','false');
+  await menu.click();
+  await expect(image.locator('[data-v923-rename]')).toBeVisible();
+  await expect(menu).toHaveAttribute('aria-expanded','true');
+  page.once('dialog',d=>d.accept('A · Renamed figure'));
+  await image.locator('[data-v923-rename]').click();
+  await expect(image).toContainText('A · Renamed figure');
+  const recorded=await page.evaluate(()=>v6Project().library.find(r=>r.id==='image-a'));
+  expect(recorded.title).toBe('A · Renamed figure');
+  expect(recorded.key).toBe('test-v923-a');
+  expect((await page.evaluate(()=>v6Blob('get','test-v923-a'))).size).toBeGreaterThan(0);
+  await page.locator('#v919BackOverview').click();
+  await expect(page.locator('#v919LibraryPreview')).toContainText('A · Renamed figure');
+  await page.reload();
+  await page.locator('[data-tab="brainstorm"]').click();
+  await page.locator('[data-v6-project]').filter({hasText:'Order QA'}).click();
+  await expect(page.locator('#v919LibraryPreview')).toContainText('A · Renamed figure');
+});
+
+test('delete option confirms, removes only chosen image, and leaves other resources',async({page})=>{
+  await setup(page);
+  await page.locator('[data-v919-project-open="library"]').click();
+  await page.locator('[data-v923-item="image-a"] [data-v923-more]').click();
+  page.once('dialog',d=>d.accept());
+  await page.locator('[data-v923-item="image-a"] [data-v923-remove]').click();
+  await expect(page.locator('[data-v923-item="image-a"]')).toHaveCount(0);
+  expect(await order(page)).toEqual(['link-b','image-c','video-d']);
+  await expect.poll(async()=>page.evaluate(()=>v6Blob('get','test-v923-a'))).toBeNull();
+  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).projects[0].library);
+  expect(saved.map(r=>r.id)).toEqual(['link-b','image-c','video-d']);
+  expect((await page.evaluate(()=>v6Blob('get','test-v923-c'))).size).toBeGreaterThan(0);
+});
+
+test('iOS long press never opens text selection; menu buttons stay outside drag handling',async({page})=>{
+  await setup(page);
+  await page.locator('[data-v919-project-open="library"]').click();
+  const image=page.locator('[data-v923-item="image-a"]');
+  const checks=await image.evaluate(el=>{
+    const caption=el.querySelector('.v923-item-caption');
+    const more=el.querySelector('.v923-more-button');
+    const context=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});
+    caption.dispatchEvent(context);
+    const selection=new Event('selectstart',{bubbles:true,cancelable:true});
+    caption.dispatchEvent(selection);
+    return {
+      userSelect:getComputedStyle(caption).userSelect,
+      webkitUserSelect:getComputedStyle(caption).webkitUserSelect,
+      contextPrevented:context.defaultPrevented,
+      selectionPrevented:selection.defaultPrevented,
+      touchTarget:more.getAttribute('aria-haspopup')
+    };
+  });
+  expect(checks.userSelect).toBe('none');
+  expect(checks.webkitUserSelect).toBe('none');
+  expect(checks.contextPrevented).toBe(true);
+  expect(checks.selectionPrevented).toBe(true);
+  expect(checks.touchTarget).toBe('menu');
+  await image.locator('[data-v923-more]').click();
+  await expect(image.locator('[data-v923-remove]')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(image.locator('[data-v923-remove]')).toBeHidden();
+  expect(await order(page)).toEqual(['image-a','link-b','image-c','video-d']);
+});
