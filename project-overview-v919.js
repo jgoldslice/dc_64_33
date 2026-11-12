@@ -58,7 +58,7 @@
       const kind=r.type==='link'?'Link':r.type==='code'?'Code':'File';
       let detail=kind;
       if(r.type==='link'){
-        try{detail=new URL(r.url).hostname.replace(/^www\\./,'');}
+        try{detail=new URL(r.url).hostname.replace(/^www\./,'');}
         catch{detail='Saved link';}
       }else if(r.type==='file')detail=r.mime||'File';
       return '<button type="button" class="v919-gallery-item v923-preview-resource" data-v6-open-resource="'+xss(r.id)+'" aria-label="Open '+title+'">'+
