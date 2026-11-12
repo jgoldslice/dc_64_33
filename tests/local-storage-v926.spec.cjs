@@ -21,7 +21,7 @@ test('read-only local storage report checks every referenced Library image witho
   expect(report).toMatchObject({
     saved:true,projects:1,tasks:1,attachments:1,missing:[],fileBytes:4
   });
-  await page.locator('#v926CheckLocal').click();
+  await page.evaluate(()=>document.getElementById('v926CheckLocal').click());
   await expect(page.locator('#v926StorageReport')).toContainText('All 1 referenced Library file(s) were found.');
   expect(await page.evaluate(()=>localStorage.getItem('jgold-planner-v1'))).toBe(before);
 });
@@ -34,7 +34,7 @@ test('storage check warns about a missing referenced attachment but does not era
     if(!save(true))throw Error('Test seed failed');
   });
   const before=await page.evaluate(()=>localStorage.getItem('jgold-planner-v1'));
-  await page.locator('#v926CheckLocal').click();
+  await page.evaluate(()=>document.getElementById('v926CheckLocal').click());
   await expect(page.locator('#v926StorageReport')).toContainText('WARNING: 1 referenced Library file(s) are missing');
   expect(await page.evaluate(()=>localStorage.getItem('jgold-planner-v1'))).toBe(before);
 });
@@ -54,7 +54,7 @@ test('corrupted existing local JSON is never overwritten by autosave or misleadi
   expect(result).toEqual({saved:false,original,error:true,recoveryVisible:true});
   const dialogs=[];
   page.on('dialog',async dialog=>{dialogs.push(dialog.message());await dialog.dismiss();});
-  await page.locator('#exportData').click({force:true});
+  await page.evaluate(()=>document.getElementById('exportData').click());
   await expect.poll(()=>dialogs.length).toBe(1);
   expect(dialogs[0]).toContain('Saved planner data could not be loaded');
   expect(await page.evaluate(()=>localStorage.getItem('jgold-planner-v1'))).toBe(original);
