@@ -187,9 +187,9 @@ test('native chunk reader imports a multi-chunk image with line-wrapped URL-safe
   f.plugin.readFileChunk=async({offset,length})=>{
     chunkCalls++;
     const piece=data.subarray(offset,offset+length);
-    const body=piece.toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+    const body=piece.toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
     return {offset,length:piece.length,size:data.length,sha256:f.file.sha256,
-      base64:'data:image/png;base64,'+body.slice(0,100)+'\\n'+body.slice(100)};
+      base64:'data:image/png;base64,'+body.slice(0,100)+'\n'+body.slice(100)};
   };
   const result=await f.bridge.importPending();
   expect(result.errors).toEqual([]);
