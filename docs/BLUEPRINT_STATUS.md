@@ -7,6 +7,26 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — Full-app layout and swipe polish v9.25 (web published; physical-device QA outstanding)
+
+**Trigger:** Owner's physical iPad screenshot showed clipped Library images and a too-narrow project switcher. Owner also reported inconsistent swiping across tab windows and requested a broader app polish scan.
+
+**Confirmed root causes and changes on GitHub `main`:**
+- Library card images were displayed with `object-fit:cover` inside a fixed 16:10 tile. Updated to `contain` with the theme wash as letterbox background. The full-image viewer and Overview already use `contain`, so this aligns the Library with those views.
+- A Library with only one or two items reserved three card columns, leaving disproportionate whitespace; sparse grids now use one capped-width column or two equal columns. List mode remains a single column regardless of count.
+- Project switcher had a `240px` max-width in `polish-v81.css` even when an iPad had significantly more room. It now flexes to the available header width (up to 520px); compact layouts wrap a name longer than 25 characters onto its own full-width picker row. `polish-v81.js` sets the native select's `title` to the full selected project name.
+- Main navigation in `fluid-navigation-v94.js` blocked all swipes whenever any project workspace was open, despite Overview being non-editing content. Overview and safe project regions may now swipe to adjacent main tabs; Notes, Sketch, Library drag surfaces, project action lists, nested horizontal scrollers, and interactive controls remain protected.
+- A very quick touchend could cancel a pending animation frame and calculate settle timing from stale position. Pending positions are flushed before settling and the actual release x-coordinate is painted immediately, reducing abrupt swipe jumps without changing tab transition semantics or introducing view clones.
+- Swept the current code for responsive concerns across Today, Week, Plan, Brainstorm, Notes, Library, modal sizing, long labels and swipe ownership. Existing layout code already addressed many prior phone/iPad issues; no unverified broad rewrites were made.
+
+**Data/compatibility:** Pure web JS/CSS and existing service-worker cache version. No state schema, keys, IndexedDB attachments, native share Swift/plugin/host scripts, Xcode configuration, or backup format changed. No image binary modification.
+
+**Tests authored:** Existing `tests/responsive-layout-v922.spec.cjs`, `tests/blueprint-v94-gestures.spec.cjs` and `tests/blueprint-fluidity-v91.spec.cjs` now cover long titles, uncropped image cards, safe project swipe/navigation exclusions, and release-before-frame responsiveness. New `tests/blueprint-polish-audit-v925.spec.cjs` checks all main views across eight phone/iPad/landscape breakpoints and a sparse Library gallery/list. Browser CI outcomes must be checked separately; native iOS touch, VoiceOver, Pencil, split-view dynamics and real FPS are **not** established by Chromium tests.
+
+**Install on local Capacitor wrapper:** Copy only changed web assets `library-order-v923.css`, `polish-v81.css`, `polish-v81.js`, `fluid-navigation-v94.js`, and optionally `sw.js` from `main` into the owner's existing `canvas-ios/www`. Run `npx cap copy ios` and rebuild the main App scheme in Xcode. Do not overwrite the working native Share Extension Swift files or `blueprint-native-share-*.js`, and do not uninstall/clear application data.
+
+**Follow-up QA backlog (not claims of new bugs):** Real-finger drag and swipe on iPad including fast successive swipes and cancel/reverse; Apple Pencil plus iPad Notes geometry; low-memory share import with large photo batches; long project names in narrow iPad Split View; iOS system keyboard and Dynamic Type; backup/export roundtrip before relying on daily use.
+
 ## 2026-11-11 — Library touch reorder and image actions v9.24 (iPad verification pending)
 
 - **Observed on the physical iPad:** Holding a Library image selected/highlighted its content and displayed selection handles rather than dragging to reorder. Native share-import previously repaired on that device; the displayed Library contained several imported images.
