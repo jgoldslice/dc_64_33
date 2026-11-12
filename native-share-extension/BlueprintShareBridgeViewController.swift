@@ -1,4 +1,5 @@
 import UIKit
+import WebKit
 import Capacitor
 
 // HOST APP TARGET ONLY.
@@ -8,6 +9,15 @@ import Capacitor
 class BlueprintShareBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
+
+        // Debug builds only: allow Safari Web Inspector to see Blueprint's
+        // WKWebView on a connected iPhone. Does not enable release inspection.
+        #if DEBUG
+        if #available(iOS 16.4, *) {
+            webView?.isInspectable = true
+        }
+        #endif
+
         bridge?.registerPluginInstance(BlueprintSharePlugin())
     }
 }
