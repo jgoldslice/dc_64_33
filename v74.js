@@ -211,6 +211,10 @@
    return {complete:true,data:source.state,media};
  }
  async function exportCompleteBackup(){
+   // If startup detected corrupt or unreadable on-device data, exporting the
+   // default in-memory state would produce a misleading 'complete' backup.
+   if(canvasLoadError)throw Error('Saved planner data could not be loaded; export the untouched original using the recovery warning instead');
+   if(canvasUnsaved)throw Error('Some edits have not been saved; resolve the save warning before exporting a complete backup');
    const snapshot=structuredClone(state);
    const {required,drafts}=attachmentKeys(snapshot),attachments=[];
    for(const key of new Set([...required,...drafts])){
