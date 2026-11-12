@@ -28,6 +28,12 @@
     }
     if(projects.some(project=>String(project.id)===current))picker.value=current;
     picker.disabled=!projects.length;
+    // The native select always exposes the full name when opened. Its tooltip
+    // and compact-layout class keep the selected name discoverable when closed.
+    const selected=projects.find(p=>String(p.id)===current);
+    const selectedName=String(selected?.title||'');
+    picker.title=selectedName||'Switch project';
+    workspace.classList.toggle('v925-long-project',selectedName.length>25);
   }
 
   const oldProjectRender=v6Render;
