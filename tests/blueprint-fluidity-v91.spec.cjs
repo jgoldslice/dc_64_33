@@ -137,3 +137,31 @@ test('motion preparation is instrumented and never deep-clones either view',asyn
   expect(result.prepareMs).toBeGreaterThanOrEqual(0);
   console.log('Blueprint v9.4 browser live-pane preparation:',result.prepareMs.toFixed(2),'ms (not an iPad FPS measurement)');
 });
+
+
+test('very fast release settles from latest finger position instead of a stale frame',async({page})=>{
+  await start(page);
+  const result=await page.evaluate(()=>{
+    const target=document.querySelector('#today .view-header h1');
+    const rect=target.getBoundingClientRect();
+    const x=rect.left+Math.min(85,rect.width/2),y=rect.top+rect.height/2;
+    const t=dx=>new Touch({identifier:552,target,clientX:x+dx,clientY:y});
+    const dispatch=(type,touches,changed)=>target.dispatchEvent(new TouchEvent(type,{
+      bubbles:true,cancelable:true,touches,changedTouches:changed,targetTouches:touches
+    }));
+    const start=t(0),moved=t(-112);
+    dispatch('touchstart',[start],[start]);
+    dispatch('touchmove',[moved],[moved]);
+    // No await or requestAnimationFrame: the finger was lifted within one frame.
+    dispatch('touchend',[],[moved]);
+    return {
+      duration:window.__blueprintMotionDebug.lastSettleMs,
+      prepares:window.__blueprintMotionDebug.prepares
+    };
+  });
+  expect(result.prepares).toBe(1);
+  expect(result.duration).toBeGreaterThan(70);
+  expect(result.duration).toBeLessThan(215);
+  await expect(page.locator('#week')).toHaveClass(/active/);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
+});
