@@ -27,7 +27,7 @@
     // Base64. Normalize these transports, but never relax size/hash checks.
     let normalized=encoded.trim()
       .replace(/^data:[^,]{0,160};base64,/i,'')
-      .replace(/\\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
+      .replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
     if(normalized.length>Math.ceil(MAX_FILE_BYTES/3)*4+8)
       throw Error('Shared file exceeds 20 MB');
     if(normalized.length%4===1)throw Error('Share payload is not valid Base64');
