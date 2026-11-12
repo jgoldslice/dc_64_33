@@ -3,21 +3,31 @@ import WebKit
 import Capacitor
 
 // HOST APP TARGET ONLY.
-// In Main.storyboard select the existing Bridge View Controller, then set
-// Custom Class to BlueprintShareBridgeViewController and Module to the app
-// module. Do not replace the existing storyboard or install a second bridge.
+// In Main.storyboard set the existing bridge scene's Custom Class to
+// BlueprintShareBridgeViewController, with the app's module.
+// Diagnostic logs are compiled only into DEBUG builds.
 class BlueprintShareBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
 
-        // Debug builds only: allow Safari Web Inspector to see Blueprint's
-        // WKWebView on a connected iPhone. Does not enable release inspection.
         #if DEBUG
         if #available(iOS 16.4, *) {
             webView?.isInspectable = true
         }
+        print("BLUEPRINT SHARE: capacitorDidLoad; bridge available = \(bridge != nil)")
         #endif
 
-        bridge?.registerPluginInstance(BlueprintSharePlugin())
+        guard let nativeBridge = bridge else {
+            #if DEBUG
+            print("BLUEPRINT SHARE ERROR: Capacitor bridge is nil")
+            #endif
+            return
+        }
+
+        nativeBridge.registerPluginInstance(BlueprintSharePlugin())
+
+        #if DEBUG
+        print("BLUEPRINT SHARE: registered plugin lookup = \(nativeBridge.plugin(withName: "BlueprintShare") != nil)")
+        #endif
     }
 }
