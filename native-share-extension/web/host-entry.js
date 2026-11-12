@@ -5,9 +5,13 @@
    actual Xcode plugin has been registered and tested with real iOS storage. */
 (function(){
   const capacitor=window.Capacitor;
-  const plugin=capacitor?.Plugins?.BlueprintShare;
+  // A local Swift CAPBridgedPlugin needs a JavaScript proxy registered
+  // with its jsName; checking native availability alone is not sufficient.
   if(!capacitor?.isNativePlatform?.()||!capacitor?.isPluginAvailable?.('BlueprintShare')||
-     !plugin||!window.BlueprintNativeShareInbox)return;
+     !window.BlueprintNativeShareInbox)return;
+  const plugin=capacitor.registerPlugin?.('BlueprintShare')||
+    capacitor.Plugins?.BlueprintShare;
+  if(!plugin)return;
 
   const importer=window.BlueprintNativeShareInbox.createImporter({
     plugin,
