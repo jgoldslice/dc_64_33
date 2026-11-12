@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — Library ordering and three-item mixed Overview v9.23
+
+- **Requested:** Project Overview previously showed only recent images, so saved links—including a YouTube Shorts item seen in the owner's iPhone screenshots—did not appear. Owner requested the first three items in the Library regardless of type, and press-and-hold ordering of pictures and links.
+- **Implemented on GitHub `main`:** `project-overview-v919.js` now uses `project.library.slice(0,3)` in persisted order, with image thumbnails, clickable link/file tiles and YouTube thumbnails. `library-order-v923.js` organizes the full Library (pictures, links, YouTube preview cards, files and code) into a single consistent order, supports long-hold drag on touch/mouse, click suppression after dragging, Alt+arrow keyboard reordering, and saves only a reordering of existing record references with `save(true)`. No attachment bytes or schema keys are changed. `library-order-v923.css` adds responsive layout and feedback; `index.html` loads both assets, and `sw.js` precaches them in a new cache version.
+- **Automated tests:** Updated `tests/project-overview-v919.spec.cjs` and added `tests/library-order-v923.spec.cjs`, including mixed ordering, 3-item cap, mouse/touch reorder, keyboard reorder, save/readback, and reload persistence. GitHub Actions [browser smoke run 43144496770](https://github.com/jgoldslice/dc_64_33/actions/runs/43144496770) **passed** on commit `d5bef37c265802dec16d099b59643136c0cd86d7`. This verifies Chromium behavior but **not native iPhone gesture performance**.
+- **Web deployment:** [GitHub Pages run 43144496715](https://github.com/jgoldslice/dc_64_33/actions/runs/43144496715) succeeded for the same commit. Note that an existing installed Capacitor app does **not** automatically update with GitHub web deployments.
+- **iOS status:** Native Share Extension previously succeeded on the physical iPhone; new Library reordering and three-item preview require bringing the updated web JS/CSS into the owner's local `canvas-ios/www`, running `npx cap copy ios`, rebuilding in Xcode, and verifying on iPhone. Do not overwrite local native `SceneDelegate.swift`, Swift plugin, or native share scripts.
+- **Next device QA:** Press/hold and drag a photo over a YouTube link; check that Library/Overview order matches and survives app restart. Validate that a normally tapped link still opens, dragging does not accidentally open it, touch scrolling is preserved, and newly shared native resources import to the correct project.
+
 ## 2026-11-11 — Responsive layout optimization v9.22 (web deployed; 202 browser tests passed)
 
 - **Requested / merged:** Optimize Blueprint card, tab and control placement across iPhone, iPad portrait/landscape, sidebar and narrow Split View. [PR #42](https://github.com/jgoldslice/dc_64_33/pull/42) was merged into `main` at `b074906c13a3640ef08a1a507f5e707732790e59` on 2026-11-11.
