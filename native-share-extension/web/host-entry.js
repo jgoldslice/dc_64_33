@@ -19,7 +19,8 @@
     putBlob:(key,blob)=>v6Blob('put',key,blob),
     getBlob:key=>v6Blob('get',key),
     commit:()=>save(true),
-    refresh:()=>v6Render()
+    refresh:()=>v6Render(),
+    onProgress:({batches})=>showNotice('Importing '+batches+' queued share batch'+(batches===1?'':'es')+'…')
   });
 
   let syncing=false;
@@ -57,9 +58,16 @@
       await importer.publishProjects();
       const result=await importer.importPending();
       if(result.errors.length){
-        showNotice('Blueprint kept '+result.errors.length+' shared item(s) queued. Open this view again or tap Retry to finish.',true);
+        const count=result.errors.length;
+        const first=String(result.errors[0]?.message||'Import failed').slice(0,180);
+        const prefix=result.acknowledged?'Imported '+result.acknowledged+' batch(es), but ':'';
+        showNotice(prefix+count+' queued share batch(es) still need attention: '+first+'. Tap Retry after resolving the problem.',true);
+        // Keep precise reasons visible for local Safari Web Inspector debugging.
         console.warn('Share inbox import retry required',result.errors);
-      } else if(result.acknowledged){
+      }else if(result.refreshError){
+        showNotice('Shared files were saved, but the Library did not refresh. Reopen this project.');
+        console.warn('Share inbox Library refresh failed',result.refreshError);
+      }else if(result.acknowledged){
         showNotice('Added '+result.acknowledged+' shared batch(es) to your project Library.');
       }
     }catch(error){
