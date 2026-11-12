@@ -118,3 +118,71 @@ test('phone Habit Tracker gives seven full-width day cells per habit without hor
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).habits[0].days);
   expect(stored[date]).toBe(true);
 });
+
+
+test('long project titles receive a roomy switcher across iPad, phone, and Split View',async({page})=>{
+  await page.goto(base);
+  await page.addStyleTag({content:'.shell,.bottom-nav{transition:none!important}'});
+  await page.locator('[data-tab="brainstorm"]').click();
+  const name='Minecraft Crafting Hub and Storage Design With a Very Long Project Title';
+  page.once('dialog',d=>d.accept(name));
+  await page.locator('#newProject').click();
+  await expect(page.locator('#projectOverview')).toBeVisible();
+  for(const [width,height] of [[320,700],[390,844],[650,850],[740,1024],[834,1194],[1024,768],[1194,834]]){
+    await page.setViewportSize({width,height});
+    const m=await page.locator('#projectWorkspace').evaluate(workspace=>{
+      const select=workspace.querySelector('#v814ProjectSelect');
+      const header=workspace.querySelector('.v6-project-head');
+      const back=workspace.querySelector('#backProjects');
+      const selected=select.getBoundingClientRect();
+      const parent=header.getBoundingClientRect();
+      return {
+        width:selected.width,parentWidth:parent.width,
+        title:select.title,value:select.selectedOptions[0]?.textContent,
+        long:workspace.classList.contains('v925-long-project'),
+        backBottom:back.getBoundingClientRect().bottom,
+        selectTop:selected.top,
+        pageOverflow:document.documentElement.scrollWidth-innerWidth
+      };
+    });
+    expect(m.long,width+' long-name switcher').toBe(true);
+    expect(m.value).toBe(name);
+    expect(m.title).toBe(name);
+    expect(m.pageOverflow,width+' overflow').toBeLessThanOrEqual(4);
+    expect(m.width,width+' switcher').toBeGreaterThan(width<=390?190:width<740?300:230);
+    if(width<740)expect(m.selectTop,width+' wrapped on phone').toBeGreaterThanOrEqual(m.backBottom-2);
+  }
+});
+
+test('library image thumbnails show whole images, while lists and project cards stay accessible',async({page})=>{
+  await page.goto(base);
+  await page.locator('[data-tab="brainstorm"]').click();
+  page.once('dialog',d=>d.accept('Library QA'));
+  await page.locator('#newProject').click();
+  await page.evaluate(async()=>{
+    const p=v6Project();
+    const png=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP+ZJRdGAAAAABJRU5ErkJggg=='),c=>c.charCodeAt(0));
+    const key='qa-visible-image';
+    await v6Blob('put',key,new Blob([png],{type:'image/png'}));
+    p.library.push({id:'image-preview-qa',type:'file',mime:'image/png',title:'Wide Screenshot',key,size:png.length});
+    if(!save(true))throw Error('Failed to save QA image');
+    v6Render();
+  });
+  await page.locator('[data-v919-project-open="library"]').click();
+  for(const width of [320,390,650,834,1024]){
+    await page.setViewportSize({width,height:850});
+    const measure=await page.locator('[data-v923-item="image-preview-qa"]').evaluate(item=>{
+      const image=item.querySelector('img');
+      const tile=item.querySelector('.v6-gallery-tile');
+      return {fit:getComputedStyle(image).objectFit,
+        bg:getComputedStyle(image).backgroundColor,
+        overflow:document.documentElement.scrollWidth-innerWidth,
+        buttonWidth:tile.getBoundingClientRect().width};
+    });
+    expect(measure.fit).toBe('contain');
+    expect(measure.buttonWidth).toBeGreaterThan(85);
+    expect(measure.overflow).toBeLessThanOrEqual(4);
+  }
+  await page.locator('[data-library-view="list"]').click();
+  await expect(page.locator('[data-v923-item="image-preview-qa"] img')).toHaveCSS('object-fit','contain');
+});
