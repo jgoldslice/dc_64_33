@@ -4,6 +4,15 @@
 **Status as of November 11, 2026:** The owner has installed a locally configured native Share Extension through Xcode on their iPhone and iPad. Sharing opens and queues content; the host `SceneDelegate` explicitly creates `BlueprintShareBridgeViewController`, whose console reports a registered `BlueprintShare` plugin. **The separate local Capacitor/Xcode wrapper is not in this repository.** The owner has also reported an iPad banner claiming 4 queued shared items with delayed image appearance; the exact underlying importer errors remain unverified. This draft branch now has a targeted batching/diagnostics improvement, but GitHub edits are not automatically installed on the devices. **Do not merge or overwrite their working Xcode project, uninstall apps, or delete queued App Group items to troubleshoot.**
 
 
+## Base64 import recovery — November 11, 2026 (staging only)
+
+- The owner provided iPad screenshots of five queued share **batches** and the exact error `Share payload is not valid Base64`. This is the JavaScript importer validation error, not proof that the native files themselves are corrupt.
+- Added `BlueprintSharePlugin.readFileChunk` / `BlueprintShareInbox.readChunk`: 256 KiB bounded binary reads. The importer reassembles all chunks, checks the manifest's size and SHA-256 checksum, saves to IndexedDB, verifies readback, confirms the planner save, then and only then acknowledges the native batch. The previous `readFile` path is retained for older local native builds that report the chunk method as unimplemented.
+- The JavaScript Base64 decoder tolerates line breaks, URL-safe alphabets, omitted padding, and `data:...;base64,` prefixes; remaining invalid input still fails closed and leaves the queue intact.
+- Regression source added for multi-chunk roundtrip, invalid chunks, older native fallback, and Swift chunk-boundary checks. **The Swift additions have not been compiled or tested on the owner's iOS hardware.** JavaScript syntax and a small mocked success/failure import were checked in the editing session; full browser CI is still pending.
+- **Install requirement:** Update the two Swift files and both web importer scripts in the existing local Capacitor/Xcode wrapper, preserve the customized `SceneDelegate.swift` and existing app group/extension target/signing, run `npx cap copy ios`, rebuild and run the app on iPad/iPhone. A push to this branch alone does not change an installed app.
+- **Data protection:** Never clear the native App Group queue, IndexedDB, or project Library as a fix. A successful retry will acknowledge verified batches; failed batches remain.
+
 ## Import queue performance and error diagnosis — November 11, 2026
 
 - `web/inbox.js` saves and acknowledges each share envelope independently, as before, but refreshes the expensive entire Library UI **once after the import pass** instead of once per envelope. This preserves the same durability gates (IndexedDB read-back, hash check, planner save verification before native acknowledgement).
