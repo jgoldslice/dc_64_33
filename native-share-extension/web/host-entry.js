@@ -33,6 +33,8 @@
       notice.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 80px);z-index:20002;max-width:480px;margin:auto;background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:0 8px 24px #0003;border-radius:12px;padding:12px 14px;font-size:14px;display:flex;align-items:center;gap:12px';
       const text=document.createElement('span');
       text.style.flex='1';
+      text.style.minWidth='0';
+      text.style.overflowWrap='anywhere';
       const retry=document.createElement('button');
       retry.type='button';
       retry.textContent='Retry';
