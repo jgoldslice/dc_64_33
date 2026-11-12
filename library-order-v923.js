@@ -50,10 +50,11 @@
       [...root.querySelectorAll('.v6-library-gallery [data-v6-view-image]')]
         .map(node=>[String(node.dataset.v6ViewImage),node]));
     const otherNodes=new Map(
-      [...root.querySelectorAll('.v6-library-other > .v6-resource')]
+      [...root.querySelectorAll('.v6-library-other > .v6-resource, .v6-library-other > .v86-video-card')]
         .map(node=>{
           const control=node.querySelector('[data-v6-open-resource],[data-v6-delete-resource]');
-          return [String(control?.dataset.v6OpenResource||control?.dataset.v6DeleteResource),node];
+          return [String(node.dataset.v86VideoId||
+            control?.dataset.v6OpenResource||control?.dataset.v6DeleteResource),node];
         }));
     // If a prior version introduces an unknown item type, keep the existing
     // Library rendering intact rather than hiding any records.
