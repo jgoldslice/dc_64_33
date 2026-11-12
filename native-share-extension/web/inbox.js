@@ -54,9 +54,14 @@
     return entry;
   }
   const itemRecordId=(envelope,item)=>'bp-share-'+envelope.id+'-'+item.id;
-  function createImporter({plugin,projects,putBlob,getBlob,commit,refresh=()=>{}}){
+  function createImporter({plugin,projects,putBlob,getBlob,commit,refresh=()=>{},onProgress=()=>{}}){
     if(!plugin||!projects||!putBlob||!getBlob||!commit)throw Error('Missing Share Extension integration');
     let running=false;
+    function reportProgress(info){
+      // Cosmetic progress must not interfere with persistence or recovery.
+      try{onProgress(info);}
+      catch(error){console.warn('Share import progress callback failed',error);}
+    }
     async function publishProjects(){
       if(typeof plugin.publishProjects!=='function')throw Error('Native Share Extension is unavailable');
       const list=projects();
@@ -70,6 +75,7 @@
       if(running)return {busy:true,imported:0,acknowledged:0,errors:[]};
       running=true;
       const result={busy:false,imported:0,acknowledged:0,errors:[]};
+      let needsRefresh=false;
       try{
         const response=await plugin.listPending();
         if(!Array.isArray(response?.entries))throw Error('Native inbox response is invalid');
@@ -77,6 +83,7 @@
         // not prevent valid shares from importing on the same app launch.
         for(const id of (Array.isArray(response.errors)?response.errors:[]))
           result.errors.push({id:String(id),message:'Queued share manifest is damaged; it was retained for recovery'});
+        if(response.entries.length)reportProgress({phase:'importing',batches:response.entries.length});
         for(const entry of response.entries){
           try{
             validateEnvelope(entry);
@@ -128,7 +135,7 @@
             // save could have failed while the in-memory state looked complete.
             if(changed||entry.items.length){
               if(!(await commit()))throw Error('Planner write not confirmed; shared item retained');
-              await refresh();
+              needsRefresh=true;
             }
             await plugin.acknowledge({id:entry.id});
             result.acknowledged++;
@@ -137,7 +144,20 @@
             result.errors.push({id:String(entry?.id||''),message:String(error?.message||error)});
           }
         }
-      }finally{running=false;}
+      }finally{
+        // Re-render once per import pass, not after each batch. This avoids
+        // repeatedly decoding Library thumbnails while importing many images.
+        // A confirmed planner save + IndexedDB readback are the durability
+        // gates; UI rendering must not prevent native acknowledgement.
+        if(needsRefresh){
+          try{await refresh();}
+          catch(error){
+            result.refreshError=String(error?.message||error);
+            console.warn('Shared items persisted; Library view refresh failed',error);
+          }
+        }
+        running=false;
+      }
       return result;
     }
     return Object.freeze({publishProjects,importPending});
