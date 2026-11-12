@@ -151,7 +151,7 @@ test('delete option confirms, removes only chosen image, and leaves other resour
   await page.locator('[data-v923-item="image-a"] [data-v923-remove]').click();
   await expect(page.locator('[data-v923-item="image-a"]')).toHaveCount(0);
   expect(await order(page)).toEqual(['link-b','image-c','video-d']);
-  await expect.poll(async()=>page.evaluate(()=>v6Blob('get','test-v923-a'))).toBeNull();
+  await expect.poll(async()=>page.evaluate(()=>v6Blob('get','test-v923-a'))).toBeUndefined();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).projects[0].library);
   expect(saved.map(r=>r.id)).toEqual(['link-b','image-c','video-d']);
   expect(await page.evaluate(async()=> (await v6Blob('get','test-v923-c'))?.size)).toBeGreaterThan(0);
