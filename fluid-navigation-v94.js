@@ -16,11 +16,14 @@
   let gesture=null,motion=null,frame=0;
   const owners='.v817-date-scroller,#todayHabits,'+
     '#v815ZoomViewport,.v76-notebook-ui,.v81-project-rail,'+
-    '.week-table,[data-no-swipe],.bottom-nav,'+
+    // Reorderable Library entries and editable project lists own their gestures.
+    '#projectLibraryList,#projectActionsList,.week-table,[data-no-swipe],.bottom-nav,'+
     'input,textarea,select,button,canvas,video,a,summary,details,'+
     '[contenteditable],[role="slider"],[role="tablist"],[role="textbox"]';
   function protectedTarget(target){
     if(!(target instanceof Element)||target.closest(owners))return true;
+    // Only nested horizontal scrollers own a swipe. The main view itself can
+    // report incidental scrollWidth from long titles; do not block all tabs.
     for(let n=target;n&&n!==main;n=n.parentElement){
       if(!(n instanceof HTMLElement))continue;
       const style=getComputedStyle(n);
@@ -141,8 +144,13 @@
       window.getSelection()?.toString().trim())return;
     const active=document.querySelector('.view.active');
     if(!active||!tabs.includes(active.id)||!active.contains(e.target))return;
-    // Project Notes are never allowed to initiate main tab navigation.
-    if(active.id==='brainstorm'&&!document.getElementById('projectWorkspace')?.hidden)return;
+    // A workspace Overview is still navigable. Only drawing/editing modes
+    // are protected wholesale; the Library/list/controls are guarded by owners.
+    if(active.id==='brainstorm'&&!document.getElementById('projectWorkspace')?.hidden){
+      const notes=document.getElementById('projectNotes');
+      const sketch=document.getElementById('projectSketch');
+      if((notes&&!notes.hidden)||(sketch&&!sketch.hidden))return;
+    }
     const touch=e.touches[0];
     if(touch.touchType==='stylus'||touch.clientX<28||
       touch.clientX>innerWidth-28)return;
