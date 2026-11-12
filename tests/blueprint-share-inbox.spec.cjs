@@ -175,3 +175,53 @@ test('a failed UI redraw does not misrepresent a successfully saved and acknowle
   expect(result.refreshError).toBe('UI redraw failed');
   expect(f.stats.acks).toEqual([uuid]);
 });
+
+
+test('native chunk reader imports a multi-chunk image with line-wrapped URL-safe data URI Base64',async()=>{
+  const f=fake();
+  const data=Buffer.alloc(600000,251);
+  f.file.size=data.length;
+  f.file.sha256=sha(data);
+  let chunkCalls=0;
+  f.plugin.readFile=async()=>{throw Error('legacy oversized readFile must not run');};
+  f.plugin.readFileChunk=async({offset,length})=>{
+    chunkCalls++;
+    const piece=data.subarray(offset,offset+length);
+    const body=piece.toString('base64').replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+    return {offset,length:piece.length,size:data.length,sha256:f.file.sha256,
+      base64:'data:image/png;base64,'+body.slice(0,100)+'\\n'+body.slice(100)};
+  };
+  const result=await f.bridge.importPending();
+  expect(result.errors).toEqual([]);
+  expect(result.acknowledged).toBe(1);
+  expect(f.stats.acks).toEqual([uuid]);
+  expect(chunkCalls).toBe(3);
+  expect(f.stats.writes).toBe(1);
+  expect((await f.blobs.values().next().value.arrayBuffer()).byteLength).toBe(data.length);
+});
+
+test('bad or truncated Base64 chunk retains the native queue and never acknowledges',async()=>{
+  const f=fake({items:[{id:'i1',kind:'file',title:'Figure.png',name:'Figure.png',
+    mime:'image/png',size:32,sha256:'a'.repeat(64)}]});
+  f.plugin.readFileChunk=async({offset,length})=>({
+    offset,length,size:32,sha256:'a'.repeat(64),base64:'invalid!payload'
+  });
+  const result=await f.bridge.importPending();
+  expect(result.acknowledged).toBe(0);
+  expect(result.errors[0].message).toContain('not valid Base64');
+  expect(f.stats.acks).toEqual([]);
+  expect(f.stats.writes).toBe(0);
+});
+
+test('older native build without chunk support falls back to verified readFile',async()=>{
+  const f=fake();
+  let chunkAttempts=0;
+  f.plugin.readFileChunk=async()=>{chunkAttempts++;throw Object.assign(
+    Error('Method not implemented'),{code:'UNIMPLEMENTED'});
+  };
+  const result=await f.bridge.importPending();
+  expect(result.errors).toEqual([]);
+  expect(result.acknowledged).toBe(1);
+  expect(chunkAttempts).toBe(1);
+  expect(f.stats.reads).toBe(1);
+});
