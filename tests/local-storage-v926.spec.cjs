@@ -1,5 +1,6 @@
 'use strict';
 const {test,expect}=require('@playwright/test');
+const fs=require('node:fs/promises');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:390,height:844}});
 
@@ -72,4 +73,27 @@ test('older partial planner snapshots remain writable when their present collect
     hasHabits:Array.isArray(JSON.parse(localStorage.getItem('jgold-planner-v1')).habits)
   }));
   expect(data).toEqual({locked:false,saveWorked:true,hasHabits:true});
+});
+
+test('an unsaved in-memory edit remains exportable for emergency recovery after a quota failure',async({page})=>{
+  await page.goto(base);
+  const unsuccessful=await page.evaluate(()=>{
+    state.todayFocus='Uncommitted but recoverable work';
+    const setter=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(k,value){
+      if(k==='jgold-planner-v1')throw new DOMException('Storage full','QuotaExceededError');
+      return setter.call(this,k,value);
+    };
+    try{return !save(true)&&canvasUnsaved;}
+    finally{Storage.prototype.setItem=setter;}
+  });
+  expect(unsuccessful).toBe(true);
+  const [download]=await Promise.all([
+    page.waitForEvent('download'),
+    page.evaluate(()=>document.getElementById('exportData').click())
+  ]);
+  const archive=JSON.parse(await fs.readFile(await download.path(),'utf8'));
+  expect(archive.format).toBe('canvas-complete-backup');
+  expect(archive.version).toBe(2);
+  expect(archive.state.todayFocus).toBe('Uncommitted but recoverable work');
 });
