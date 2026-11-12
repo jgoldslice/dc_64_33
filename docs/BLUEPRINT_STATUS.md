@@ -7,6 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — Share-import Base64 failure reproduced in owner's iPad screenshot; recovery patch staged
+
+- **Observed on iPad:** Native import banner reports five queued share batches, then `Share payload is not valid Base64`. Existing project images remain visible. The banner's count reflects queued envelopes; it does not identify which files were damaged.
+- **Source identified:** `native-share-extension/web/inbox.js` throws that exact error when Base64 text fails validation. The draft Swift plugin returns a single Base64 string per file in `readFile`. The actual malformed bytes or source of the encoding failure are not yet observed from the installed device.
+- **Staged mitigation:** Native `readFileChunk` capped at 256 KiB; JS chunk assembly plus strict full-file SHA-256 verification; common Base64 transport normalization; old native method fallback; retention of failed queue items. Updated staged browser tests and native XCTest source. The main branch and installed iPad/iPhone apps were **not** modified by these GitHub commits.
+- **Verification:** JavaScript source parsing and mock tests for valid/invalid import paths passed in the tool environment; full browser CI and signed iOS build/device verification remain outstanding. Do not report as installed or proven on device.
+- **Next:** Safely back up local Swift and JS source, install the staged files into the already working native wrapper without disturbing `SceneDelegate.swift` or app groups, run Xcode on both devices, then observe whether all queued shares import and disappear. If not, inspect console errors/encoding lengths without exposing photos or raw Base64.
+
 ## 2026-11-11 — Native sharing reached device; plugin registration under investigation
 
 - **Physical iPhone verified by owner:** Blueprint appears in the system Share Sheet and opens the custom "Save to Blueprint" view. Main Blueprint app shows 3 existing projects, but Share Extension displays "No projects available." The extension UI is installed; queued import into a project is **not yet verified**.
