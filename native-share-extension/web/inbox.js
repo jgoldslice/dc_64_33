@@ -19,14 +19,61 @@
     try{const u=new URL(s);return u.protocol==='https:'||u.protocol==='http:';}
     catch{return false;}
   };
+  const CHUNK_BYTES=256*1024;
   function decode64(encoded){
-    if(typeof encoded!=='string'||!encoded||!BASE64.test(encoded))
+    if(typeof encoded!=='string'||!encoded||encoded.length>MAX_FILE_BYTES*2)
       throw Error('Share payload is not valid Base64');
-    if(encoded.length>Math.ceil(MAX_FILE_BYTES/3)*4+8)
+    // Some native/provider bridges produce line-wrapped, URL-safe or data-URL
+    // Base64. Normalize these transports, but never relax size/hash checks.
+    let normalized=encoded.trim()
+      .replace(/^data:[^,]{0,160};base64,/i,'')
+      .replace(/\\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
+    if(normalized.length>Math.ceil(MAX_FILE_BYTES/3)*4+8)
       throw Error('Shared file exceeds 20 MB');
-    return typeof Buffer!=='undefined'
-      ?new Uint8Array(Buffer.from(encoded,'base64'))
-      :Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+    if(normalized.length%4===1)throw Error('Share payload is not valid Base64');
+    normalized+='='.repeat((4-normalized.length%4)%4);
+    if(!normalized||!BASE64.test(normalized))
+      throw Error('Share payload is not valid Base64');
+    try{
+      return typeof Buffer!=='undefined'
+        ?new Uint8Array(Buffer.from(normalized,'base64'))
+        :Uint8Array.from(atob(normalized),c=>c.charCodeAt(0));
+    }catch{
+      throw Error('Share payload is not valid Base64');
+    }
+  }
+  async function readNativeBytes(plugin,entry,item){
+    // Avoid returning a multi-megabyte JSON/Base64 value through WKWebView.
+    // Unsupported older native builds may still use the legacy readFile call.
+    if(typeof plugin.readFileChunk==='function'){
+      try{
+        const all=new Uint8Array(item.size);
+        for(let offset=0;offset<item.size;){
+          const length=Math.min(CHUNK_BYTES,item.size-offset);
+          const reply=await plugin.readFileChunk({id:entry.id,itemId:item.id,offset,length});
+          if(reply?.sha256?.toLowerCase()!==item.sha256.toLowerCase()||
+             reply?.size!==item.size||reply?.offset!==offset||
+             reply?.length!==length||typeof reply.base64!=='string')
+            throw Error('Native shared file chunk metadata mismatch');
+          const piece=decode64(reply.base64);
+          if(piece.length!==length)throw Error('Native shared file chunk length mismatch');
+          all.set(piece,offset);
+          offset+=length;
+        }
+        return all;
+      }catch(error){
+        // Capacitor proxies can expose a method name even when an older Swift
+        // plugin has not registered it. Only then use the legacy readFile.
+        const message=String(error?.message||error);
+        if(error?.code!=='UNIMPLEMENTED'&&!/not implemented|unimplemented/i.test(message))
+          throw error;
+      }
+    }
+    const file=await plugin.readFile({id:entry.id,itemId:item.id});
+    if(file?.sha256?.toLowerCase()!==item.sha256.toLowerCase()||
+       file?.size!==item.size||typeof file.base64!=='string')
+      throw Error('Native shared file metadata mismatch');
+    return decode64(file.base64);
   }
   async function sha256(bytes){
     if(!globalThis.crypto?.subtle)throw Error('SHA-256 requires a secure context');
@@ -111,11 +158,7 @@
                 healthy=(await sha256(await stored.arrayBuffer()))===item.sha256.toLowerCase();
               }
               if(!healthy){
-                const file=await plugin.readFile({id:entry.id,itemId:item.id});
-                if(file?.sha256?.toLowerCase()!==item.sha256.toLowerCase()||
-                   file?.size!==item.size||typeof file.base64!=='string')
-                  throw Error('Native shared file metadata mismatch');
-                const bytes=decode64(file.base64);
+                const bytes=await readNativeBytes(plugin,entry,item);
                 if(bytes.length!==item.size||(await sha256(bytes))!==item.sha256.toLowerCase())
                   throw Error('Shared file checksum mismatch');
                 const blob=new Blob([bytes],{type:item.mime});
