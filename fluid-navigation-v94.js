@@ -113,7 +113,13 @@
   }
   function settle(commit,velocity){
     if(!motion)return;
-    cancelFrame();
+    // A fast flick may end before the pending animation frame paints.
+    // Flush its last sampled position before computing the remaining travel.
+    if(frame&&Number.isFinite(motion.nextPixels)){
+      const next=motion.nextPixels;
+      cancelFrame();
+      paint(next);
+    }else cancelFrame();
     const m=motion,position=m.progress;
     const remaining=commit?1-position:position;
     const duration=reduced()?0:Math.round(clamp(
@@ -198,6 +204,8 @@
     const commit=(distance>=threshold||(distance>=36&&velocity>=.5))&&
       Math.abs(dx)>Math.abs(dy)*1.3;
     if(reduced()){if(commit)tab(g.to);return;}
+    // Use the actual release coordinate, not an older 60/120Hz frame.
+    if(motion)paint(dx);
     if(motion)settle(commit,velocity);
   },{passive:true});
   main.addEventListener('touchcancel',()=>{
