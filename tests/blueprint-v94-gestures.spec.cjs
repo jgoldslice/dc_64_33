@@ -126,3 +126,39 @@ test('static week viewport shows explicit previous and next arrows',async({page}
   await expect(strip.locator('#v817WeekPrev')).toBeHidden();
   await expect(strip.locator('#v817WeekNext')).toBeHidden();
 });
+
+
+test('open project Overview can swipe to Plan without stealing Library reordering gestures',async({page})=>{
+  const errors=await boot(page);
+  await page.locator('[data-tab="brainstorm"]').click();
+  page.once('dialog',d=>d.accept('Swipe QA'));
+  await page.locator('#newProject').click();
+  await expect(page.locator('#projectOverview')).toBeVisible();
+
+  await syntheticSwipe(page,'#projectTitle',155,2);
+  await expect(page.locator('#myplan')).toHaveClass(/active/);
+  await expect(page.locator('.v94-live-pane')).toHaveCount(0);
+
+  await page.locator('[data-tab="brainstorm"]').click();
+  await page.locator('[data-v919-project-open="library"]').click();
+  const before=await page.evaluate(()=>window.__blueprintMotionDebug.prepares);
+  await syntheticSwipe(page,'#projectLibraryList',155,0);
+  await expect(page.locator('#brainstorm')).toHaveClass(/active/);
+  expect(await page.evaluate(()=>window.__blueprintMotionDebug.prepares)).toBe(before);
+  expect(errors).toEqual([]);
+});
+
+test('open Notes and Sketch prevent whole-app swipe, but leaving the workspace restores it',async({page})=>{
+  await boot(page);
+  await page.locator('[data-tab="brainstorm"]').click();
+  page.once('dialog',d=>d.accept('Gestures QA'));
+  await page.locator('#newProject').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
+  const before=await page.evaluate(()=>window.__blueprintMotionDebug.prepares);
+  await syntheticSwipe(page,'#projectTitle',155,0);
+  await expect(page.locator('#brainstorm')).toHaveClass(/active/);
+  expect(await page.evaluate(()=>window.__blueprintMotionDebug.prepares)).toBe(before);
+  await page.locator('#v919BackOverview').click();
+  await syntheticSwipe(page,'#projectTitle',155,0);
+  await expect(page.locator('#myplan')).toHaveClass(/active/);
+});
