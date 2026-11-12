@@ -44,7 +44,7 @@ test('note preview and linked to-do completion use the original project data',as
   await page.locator('#v919BackOverview').click();
   await expect(page.locator('#v919NotesPreview')).toContainText('Research Notes');
 });
-test('up to four latest images are previewed and can open the existing image viewer',async({page})=>{
+test('first three Library resources are previewed in saved order, and images open the existing viewer',async({page})=>{
   await create(page);
   await page.evaluate(async()=>{
     const p=v6Project();
@@ -55,10 +55,11 @@ test('up to four latest images are previewed and can open the existing image vie
     }
     save();v6Render();
   });
-  await expect(page.locator('#v919LibraryPreview .v919-gallery-item')).toHaveCount(4);
-  await expect(page.locator('#v919LibraryPreview')).not.toContainText('Figure 0');
-  await expect.poll(()=>page.locator('#v919LibraryPreview img[src^="blob:"]').count()).toBe(4);
-  await page.locator('#v919LibraryPreview [data-v6-view-image="figure-4"]').click();
+  await expect(page.locator('#v919LibraryPreview .v919-gallery-item')).toHaveCount(3);
+  await expect(page.locator('#v919LibraryPreview')).toContainText('Figure 0');
+  await expect(page.locator('#v919LibraryPreview')).not.toContainText('Figure 3');
+  await expect.poll(()=>page.locator('#v919LibraryPreview img[src^="blob:"]').count()).toBe(3);
+  await page.locator('#v919LibraryPreview [data-v6-view-image="figure-0"]').click();
   await expect(page.locator('#v6ImageViewer')).toBeVisible();
 });
 test('Shortcut URL fragment opens reviewed capture and saves only once',async({page})=>{
