@@ -12,6 +12,7 @@ public final class BlueprintSharePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "publishProjects", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "listPending", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "readFile", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "readFileChunk", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "acknowledge", returnType: CAPPluginReturnPromise)
     ]
 
@@ -66,6 +67,27 @@ public final class BlueprintSharePlugin: CAPPlugin, CAPBridgedPlugin {
                 "sha256": item.sha256 ?? "",
                 "size": data.count,
                 "mime": item.mime ?? "application/octet-stream"
+            ])
+        } catch { call.reject(error.localizedDescription) }
+    }
+
+    @objc public func readFileChunk(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"),
+              let itemID = call.getString("itemId"),
+              let offset = call.getInt("offset"),
+              let length = call.getInt("length") else {
+            call.reject("A share ID, item ID, offset and length are required.")
+            return
+        }
+        do {
+            let (data, item) = try inbox().readChunk(
+                id: id, itemID: itemID, offset: offset, length: length)
+            call.resolve([
+                "base64": data.base64EncodedString(),
+                "offset": offset,
+                "length": data.count,
+                "size": item.size ?? 0,
+                "sha256": item.sha256 ?? ""
             ])
         } catch { call.reject(error.localizedDescription) }
     }
