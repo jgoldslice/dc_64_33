@@ -523,7 +523,7 @@
         <label class="setting-label">Opening Message<textarea id="openingMessageInput" rows="3" maxlength="280" placeholder="Write your message..."></textarea></label>
         <button type="button" class="secondary-button" id="previewOpening">Preview Opening</button>
       </section>
-      <section class="card"><h2>Your Data</h2><p class="muted small">Saved on this device. Export a backup before clearing Safari data or switching phones.</p><div class="row-buttons"><button class="secondary-button" id="exportData">Export backup</button><button class="secondary-button" id="importData">Import backup</button></div><input hidden type="file" id="importFile" accept=".json,application/json"><p class="muted small">No cloud sync yet. The app will not automatically back up your planner.</p></section>
+      <section class="card"><h2>Your Data</h2><p class="muted small">Saved on this device. Export a backup before clearing Safari data or switching phones.</p><div class="row-buttons"><button class="secondary-button" id="exportData">Export backup</button><button class="secondary-button" id="importData">Import backup</button><button class="secondary-button" id="v926CheckLocal">Check local storage</button></div><div id="v926StorageReport" class="muted small" role="status" aria-live="polite" hidden></div><input hidden type="file" id="importFile" accept=".json,application/json"><p class="muted small">No cloud sync yet. The app will not automatically back up your planner.</p></section>
     </div></section>
   </main>
 </div>
@@ -619,15 +619,32 @@ function normalize(data){
 
   return result;
 }
-let stored={},canvasLastManifest=null;
-try{canvasLastManifest=localStorage.getItem(STORAGE_KEY);stored=JSON.parse(canvasLastManifest||'{}');}catch{}
+// An unreadable existing planner must never silently turn into an empty
+// planner that can overwrite the user's original saved work.
+let stored={},canvasLastManifest=null,canvasLoadError=null;
+try{
+  canvasLastManifest=localStorage.getItem(STORAGE_KEY);
+  if(canvasLastManifest!==null){
+    const decoded=JSON.parse(canvasLastManifest);
+    if(!decoded||typeof decoded!=='object'||Array.isArray(decoded))
+      throw Error('Stored planner has an invalid root');
+    for(const key of ['tasks','goals','habits','events','ideas','projects']){
+      if(Object.hasOwn(decoded,key)&&!Array.isArray(decoded[key]))
+        throw Error('Stored planner has an invalid '+key+' collection');
+    }
+    stored=decoded;
+  }
+}catch(error){
+  canvasLoadError=error;
+  console.error('Blueprint cannot read saved planner data; writes disabled to protect original',error);
+}
 let state=normalize(stored);
 let selectedWeek=startOfWeek(new Date());
 let modalMode=null,modalId=null,modalParent=null;
 const expandedGoals=new Set();
 let selectedCategory='All',categoryManagerOpen=false,activeIdeaId=null,pendingOpeningTimer=null;
 // A failed write must never be silently treated as saved. Keep edits in memory.
-let canvasUnsaved=false,canvasExternalChange=false;
+let canvasUnsaved=!!canvasLoadError,canvasExternalChange=false;
 function canvasSaveStatus(failed){
   let notice=document.getElementById('canvasSaveWarning');
   if(!notice&&failed){
@@ -637,10 +654,18 @@ function canvasSaveStatus(failed){
     notice.style.cssText='position:fixed;z-index:9999;bottom:calc(80px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:480px;margin:auto;padding:12px 14px;border:1px solid #b65b40;border-radius:12px;background:var(--surface);color:var(--ink);box-shadow:0 4px 16px #0002;display:flex;gap:10px;align-items:center;justify-content:space-between';
     const message=document.createElement('span');message.id='canvasSaveMessage';message.textContent='Changes not saved on this device. Keep Blueprint open and retry, or export a backup.';
     const retry=document.createElement('button');retry.id='canvasSaveRetry';retry.type='button';retry.textContent='Retry';retry.setAttribute('aria-label','Retry saving changes');retry.addEventListener('click',()=>{if(!canvasExternalChange)save();});
-    const recover=document.createElement('button');recover.id='canvasSaveRecovery';recover.type='button';recover.hidden=true;recover.textContent='Export copy';recover.setAttribute('aria-label','Export a recovery copy of unsaved planner records');recover.addEventListener('click',()=>{
-      const payload=JSON.stringify({format:'blueprint-unsaved-recovery',version:1,exportedAt:new Date().toISOString(),state});
-      const url=URL.createObjectURL(new Blob([payload],{type:'application/json'}));
-      const link=document.createElement('a');link.href=url;link.download='blueprint-unsaved-recovery.json';document.body.append(link);link.click();link.remove();
+    const recover=document.createElement('button');recover.id='canvasSaveRecovery';recover.type='button';recover.hidden=true;recover.textContent='Export copy';recover.setAttribute('aria-label','Export data for recovery');recover.addEventListener('click',()=>{
+      // In a failed load, preserve the *exact original bytes*, not the
+      // default in-memory planner. This is NOT an importable full backup.
+      const raw=!!canvasLoadError;
+      const payload=raw?canvasLastManifest:JSON.stringify({
+        format:'blueprint-unsaved-recovery',version:1,exportedAt:new Date().toISOString(),state
+      });
+      if(payload===null)return;
+      const url=URL.createObjectURL(new Blob([payload],{type:raw?'text/plain':'application/json'}));
+      const link=document.createElement('a');link.href=url;
+      link.download=raw?'blueprint-original-local-data.txt':'blueprint-unsaved-recovery.json';
+      document.body.append(link);link.click();link.remove();
       setTimeout(()=>URL.revokeObjectURL(url),30000);
     });
     const reload=document.createElement('button');reload.id='canvasSaveReload';reload.type='button';reload.hidden=true;reload.textContent='Reload latest';reload.addEventListener('click',()=>{
@@ -650,16 +675,19 @@ function canvasSaveStatus(failed){
   }
   if(notice){
     notice.hidden=!failed;notice.style.display=failed?'flex':'none';
-    $('canvasSaveMessage').textContent=canvasExternalChange
-      ?'Newer Blueprint data was saved in another window. This window cannot overwrite it. Export a recovery copy, then reload.'
-      :'Changes not saved on this device. Keep Blueprint open and retry, or export a backup.';
-    $('canvasSaveRetry').hidden=canvasExternalChange;
-    $('canvasSaveRecovery').hidden=!canvasExternalChange;
-    $('canvasSaveReload').hidden=!canvasExternalChange;
+    $('canvasSaveMessage').textContent=canvasLoadError
+      ?'Blueprint could not read saved local data. To protect it, writing is blocked. Export the original data and do not clear app storage.'
+      :canvasExternalChange
+        ?'Newer Blueprint data was saved in another window. This window cannot overwrite it. Export a recovery copy, then reload.'
+        :'Changes not saved on this device. Keep Blueprint open and retry, or export a backup.';
+    $('canvasSaveRetry').hidden=!!canvasLoadError||canvasExternalChange;
+    $('canvasSaveRecovery').hidden=!!canvasLoadError?canvasLastManifest===null:!canvasExternalChange;
+    $('canvasSaveReload').hidden=!!canvasLoadError||!canvasExternalChange;
   }
 }
 function save(verify=false){
   try{
+    if(canvasLoadError)throw Error('Refusing to overwrite unreadable original planner data');
     // A Safari/Shortcut share can open Blueprint in a second window. Prevent
     // the older window from silently overwriting a newly captured resource.
     if(localStorage.getItem(STORAGE_KEY)!==canvasLastManifest){
@@ -692,6 +720,7 @@ function save(verify=false){
     return false;
   }
 }
+if(canvasLoadError)canvasSaveStatus(true);
 window.addEventListener('beforeunload',event=>{
   if(canvasUnsaved){event.preventDefault();event.returnValue='';}
 });
@@ -1783,4 +1812,5 @@ v6Normalize();v6Render();
 <script src="weekly-blueprint-v918.js"></script>
 <script src="project-overview-v919.js"></script>
 <script src="library-order-v923.js"></script>
+<script src="local-storage-health-v926.js"></script>
 </body></html>
