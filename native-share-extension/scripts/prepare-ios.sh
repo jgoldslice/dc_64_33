@@ -24,7 +24,7 @@ copy_without_overwrite() {
   fi
 }
 require_file "$PROJECT/project.pbxproj"
-for file in BlueprintShareInbox.swift BlueprintShareViewController.swift BlueprintSharePlugin.swift; do
+for file in BlueprintShareInbox.swift BlueprintShareViewController.swift BlueprintSharePlugin.swift BlueprintShareBridgeViewController.swift; do
   require_file "$SOURCE_DIR/$file"
 done
 require_file "$SOURCE_DIR/web/inbox.js"
@@ -52,7 +52,7 @@ copy_without_overwrite "$SOURCE_DIR/web/host-entry.js" "$ASSETS_DIR/host-entry.j
 printf '\nStaging complete. Native sharing is NOT activated yet.\n'
 printf 'Next: open the Xcode project, create the Share Extension target, set App Groups\n'
 printf 'for BOTH targets, add the Swift files with correct target membership, register\n'
-printf 'the Capacitor plugin, and load the two native host JS files after app scripts.\n'
+printf 'the Capacitor plugin via the staged bridge subclass, set the bridge's custom\nclass in Main.storyboard, and load the two native JS files after app scripts.\n'
 printf 'Read: %s/README.md\n' "$SOURCE_DIR"
 printf 'Inspect targets with: xcodebuild -list -project "%s"\n' "$PROJECT"
 printf 'DO NOT uninstall Blueprint to troubleshoot; export a complete backup first.\n'
