@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-11 — Library touch reorder and image actions v9.24 (iPad verification pending)
+
+- **Observed on the physical iPad:** Holding a Library image selected/highlighted its content and displayed selection handles rather than dragging to reorder. Native share-import previously repaired on that device; the displayed Library contained several imported images.
+- **Implemented on GitHub `main`:** `library-order-v923.js` explicitly cancels long-press text selection and native context menus on ordered cards, clears any pending selection on drag activation, and adds an ellipsis menu at the top-right of each Library image card. The menu offers Rename and Delete; a quick tap still opens the image. Keyboard Alt+arrow reordering remains in place, menus are excluded from drag initiation, and Escape dismisses menus.
+- **Persistence:** Rename changes only the existing record's `title`, verifies `save(true)`, rolls back on failure, and updates the Overview. Delete invokes the already existing `v6DeleteResource` confirmation + guarded manifest write + shared-blob-reference protection. No data schema or App Group transfer files were modified.
+- **Styling:** `library-order-v923.css` prevents iOS text selection/callouts in the Library cards; adds 44px menu controls, light/dark theme support, and responsive popover. `sw.js` cache bumped to `canvas-v924-library-image-actions`.
+- **Regression tests:** `tests/library-order-v923.spec.cjs` covers rename persistence and blob retention, confirmation-based deletion and other-item retention, and cancelled context/selection events. Full browser GitHub Actions suite and real iPad long-hold still need verification before calling device behavior fixed.
+- **Native install:** Existing Capacitor app is not automatically updated by the web push. Sync **only the changed web JS/CSS** from GitHub to the user's local `canvas-ios/www` and run `npx cap copy ios` plus Xcode App build; preserve the recently repaired native Share Extension Swift and native host/inbox scripts. Do not uninstall or clear user data.
+
 ## 2026-11-11 — Library ordering and three-item mixed Overview v9.23
 
 - **Requested:** Project Overview previously showed only recent images, so saved links—including a YouTube Shorts item seen in the owner's iPhone screenshots—did not appear. Owner requested the first three items in the Library regardless of type, and press-and-hold ordering of pictures and links.
