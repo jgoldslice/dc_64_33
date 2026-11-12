@@ -13,6 +13,59 @@
   const list=()=>root.querySelector('.v923-library-items');
   const itemFrom=target=>target instanceof Element?target.closest('[data-v923-item]'):null;
   const current=(p)=>p&&String(project()?.id)===String(p.id);
+  const interactive=target=>target instanceof Element&&
+    !!target.closest('.v923-image-options,[data-v6-delete-resource]');
+
+  function closeMenus(){
+    for(const menu of root.querySelectorAll('.v923-image-menu'))menu.hidden=true;
+    for(const toggle of root.querySelectorAll('[data-v923-more]'))
+      toggle.setAttribute('aria-expanded','false');
+  }
+  function createImageMenu(record){
+    const controls=document.createElement('div');
+    controls.className='v923-image-options';
+    const toggle=document.createElement('button');
+    toggle.type='button';toggle.className='v923-more-button';
+    toggle.dataset.v923More=String(record.id);
+    toggle.textContent='…';
+    toggle.setAttribute('aria-label','Options for '+String(record.title||'image'));
+    toggle.setAttribute('aria-haspopup','menu');
+    toggle.setAttribute('aria-expanded','false');
+    const menu=document.createElement('div');
+    menu.className='v923-image-menu';menu.hidden=true;
+    menu.setAttribute('role','menu');
+    for(const [action,title] of [['rename','Rename'],['remove','Delete']]){
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='v923-menu-action'+(action==='remove'?' v923-menu-danger':'');
+      button.dataset[action==='rename'?'v923Rename':'v923Remove']=String(record.id);
+      button.setAttribute('role','menuitem');
+      button.textContent=title;
+      menu.append(button);
+    }
+    controls.append(toggle,menu);
+    return controls;
+  }
+
+  function renameImage(id){
+    const p=project(),record=p?.library.find(r=>String(r.id)===String(id));
+    if(!record||!current(p))return;
+    const next=prompt('Rename image',String(record.title||'Image'));
+    if(next===null)return;
+    const title=next.trim().slice(0,180);
+    if(!title){announce('An image name cannot be empty.');return;}
+    if(title===record.title)return;
+    const previous=record.title;
+    record.title=title;
+    if(!save(true)){
+      record.title=previous;
+      announce('Rename was not saved. Check the Blueprint save notice.');
+      return;
+    }
+    v6Render();
+    window.v919RenderProjectOverview?.(p);
+    announce('Image renamed to '+title+'.');
+  }
 
   function clearGesture(){
     if(gesture){
@@ -79,7 +132,7 @@
       if(isImage){
         const image=source.querySelector('img');
         if(image)image.draggable=false;
-        wrapper.append(source);
+        wrapper.append(source,createImageMenu(r));
         const caption=document.createElement('span');
         caption.className='v923-item-caption';
         caption.textContent=String(r.title||'Image');
@@ -111,6 +164,8 @@
     gesture={node,p,kind,x,y,active:false,moved:false,timer:setTimeout(()=>{
       if(!gesture||gesture.node!==node||!root.contains(node))return;
       gesture.active=true;
+      // Clear any selection already begun by iOS before the hold timer fired.
+      window.getSelection()?.removeAllRanges();
       node.classList.add('v923-dragging');
       announce('Reordering '+(p.library.find(r=>String(r.id)===node.dataset.v923Item)?.title||'item')+'. Drag to the desired position.');
     },HOLD_MS)};
@@ -148,12 +203,8 @@
       else announce('Release an item over another position to rearrange it.');
     }
   }
-  function isInteractiveDelete(event){
-    return event.target instanceof Element&&
-      !!event.target.closest('[data-v6-delete-resource]');
-  }
   root.addEventListener('touchstart',event=>{
-    if(event.touches.length!==1||isInteractiveDelete(event))return;
+    if(event.touches.length!==1||interactive(event.target))return;
     const t=event.touches[0];
     begin(itemFrom(event.target),'touch',t.clientX,t.clientY);
   },{passive:true});
@@ -167,7 +218,7 @@
   root.addEventListener('touchcancel',clearGesture);
 
   root.addEventListener('pointerdown',event=>{
-    if(event.pointerType==='touch'||event.button!==0||isInteractiveDelete(event))return;
+    if(event.pointerType==='touch'||event.button!==0||interactive(event.target))return;
     begin(itemFrom(event.target),'pointer',event.clientX,event.clientY);
   });
   document.addEventListener('pointermove',event=>{
@@ -179,6 +230,40 @@
   });
   root.addEventListener('dragstart',event=>{
     if(itemFrom(event.target))event.preventDefault();
+  });
+  root.addEventListener('contextmenu',event=>{
+    if(itemFrom(event.target)&&!interactive(event.target))event.preventDefault();
+  });
+  root.addEventListener('selectstart',event=>{
+    if(itemFrom(event.target)&&!interactive(event.target))event.preventDefault();
+  });
+  root.addEventListener('click',event=>{
+    const control=event.target instanceof Element?
+      event.target.closest('[data-v923-more],[data-v923-rename],[data-v923-remove]'):null;
+    if(!control)return;
+    event.preventDefault();event.stopPropagation();
+    const wrapper=itemFrom(control);
+    if(!wrapper||!list()?.contains(wrapper))return;
+    const id=wrapper.dataset.v923Item;
+    if(control.hasAttribute('data-v923-more')){
+      const menu=wrapper.querySelector('.v923-image-menu');
+      const opening=!!menu?.hidden;
+      closeMenus();
+      if(menu){menu.hidden=!opening;control.setAttribute('aria-expanded',String(opening));}
+      return;
+    }
+    closeMenus();
+    if(control.hasAttribute('data-v923-rename'))renameImage(id);
+    else if(control.hasAttribute('data-v923-remove'))void v6DeleteResource(id);
+  });
+  document.addEventListener('click',event=>{
+    if(!root.contains(event.target))closeMenus();
+    else if(!event.target.closest('.v923-image-options'))closeMenus();
+  });
+  root.addEventListener('keydown',event=>{
+    if(event.key!=='Escape')return;
+    const toggle=root.querySelector('[data-v923-more][aria-expanded="true"]');
+    if(toggle){event.preventDefault();closeMenus();toggle.focus({preventScroll:true});}
   });
   // The synthetic click following a completed touch hold must not open an
   // image or external URL. Ordinary short taps still work unmodified.
