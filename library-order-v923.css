@@ -27,8 +27,50 @@
   display:flex;flex-direction:column;gap:8px;
   border:1px solid var(--line);border-radius:13px;padding:8px;
   background:var(--surface);transition:box-shadow .14s ease,border-color .14s ease;
+  -webkit-touch-callout:none;
+  -webkit-user-select:none;user-select:none;
+  touch-action:pan-y
+}
+#projectLibraryList .v923-library-item,
+#projectLibraryList .v923-library-item *{
+  -webkit-user-select:none!important;user-select:none!important;
   -webkit-touch-callout:none
 }
+#projectLibraryList .v923-library-item::selection,
+#projectLibraryList .v923-library-item *::selection{background:transparent}
+#projectLibraryList .v923-image-options{
+  position:absolute;z-index:7;top:12px;right:12px
+}
+#projectLibraryList .v923-more-button{
+  display:grid;place-items:center;width:44px;height:44px;
+  border:1px solid var(--line);border-radius:12px;
+  background:var(--surface);color:var(--ink);
+  font-size:24px;font-weight:700;line-height:1;
+  box-shadow:0 2px 8px #0002;touch-action:manipulation
+}
+#projectLibraryList .v923-more-button:focus-visible,
+#projectLibraryList .v923-menu-action:focus-visible{
+  outline:2px solid var(--secondary-ui);outline-offset:2px
+}
+#projectLibraryList .v923-image-menu{
+  position:absolute;top:calc(100% + 5px);right:0;
+  min-width:150px;max-width:min(240px,80vw);
+  display:flex;flex-direction:column;gap:2px;
+  padding:5px;border:1px solid var(--line);
+  border-radius:12px;background:var(--surface);
+  box-shadow:0 8px 22px #0003
+}
+#projectLibraryList .v923-image-menu[hidden]{display:none}
+#projectLibraryList .v923-menu-action{
+  display:block;width:100%;min-height:44px;
+  border:0;border-radius:8px;padding:9px 13px;
+  background:transparent;color:var(--ink);text-align:left;
+  font-size:14px;font-weight:600;touch-action:manipulation
+}
+#projectLibraryList .v923-menu-action:hover,
+#projectLibraryList .v923-menu-action:focus-visible{background:var(--wash)}
+#projectLibraryList .v923-menu-danger{color:#b0524d}
+
 #projectLibraryList .v923-library-item:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:2px}
 #projectLibraryList .v923-library-item.v923-dragging{
   z-index:5;border:2px solid var(--secondary-ui);box-shadow:0 8px 20px #0002;
