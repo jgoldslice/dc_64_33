@@ -42,14 +42,26 @@
       ?shown.map(a=>'<div class="v919-todo-row '+(a.done?'is-done':'')+'"><input type="checkbox" data-v919-check="'+xss(a.id)+'" id="v919Task-'+xss(a.id)+'" aria-label="Complete '+xss(a.title)+'" '+(a.done?'checked':'')+'><label for="v919Task-'+xss(a.id)+'">'+xss(a.title)+'</label></div>').join('')
         +'<p class="v919-todo-count">'+actions.filter(a=>!a.done).length+' remaining · '+actions.filter(a=>a.done).length+' completed</p>'
       :'<p class="muted small">No to-dos yet. Add one below.</p>';
-    const images=(project.library||[]).filter(isImage).slice().sort((a,b)=>
-      String(b.created||'').localeCompare(String(a.created||''))).slice(0,4);
-    library.innerHTML=images.length?images.map(r=>
-      '<button type="button" class="v919-gallery-item" data-v6-view-image="'+xss(r.id)+'" aria-label="Open '+xss(r.title||'image')+'">'+
-      '<img alt="" loading="lazy" data-v919-image="'+xss(r.id)+'"><span>'+xss(r.title||'Image')+'</span></button>'
-    ).join(''):'<div class="v919-gallery-empty">No images yet. Add a photo, figure, or sketch to this project.</div>';
+    // The preview is a window onto the actual Library order, not an
+    // independently sorted image collection. Links count toward the same cap.
+    const items=(Array.isArray(project.library)?project.library:[]).slice(0,3);
+    const imageItems=items.filter(isImage);
+    library.innerHTML=items.length?items.map(r=>{
+      const title=xss(r.title|| (isImage(r)?'Image':r.type==='link'?'Link':'Resource'));
+      if(isImage(r))return '<button type="button" class="v919-gallery-item" data-v6-view-image="'+xss(r.id)+'" aria-label="Open '+title+'">'+
+        '<img alt="" loading="lazy" data-v919-image="'+xss(r.id)+'"><span>'+title+'</span></button>';
+      const kind=r.type==='link'?'Link':r.type==='code'?'Code':'File';
+      let detail=kind;
+      if(r.type==='link'){
+        try{detail=new URL(r.url).hostname.replace(/^www\\./,'');}
+        catch{detail='Saved link';}
+      }else if(r.type==='file')detail=r.mime||'File';
+      return '<button type="button" class="v919-gallery-item v923-preview-resource" data-v6-open-resource="'+xss(r.id)+'" aria-label="Open '+title+'">'+
+        '<span class="v923-preview-icon" aria-hidden="true">'+(r.type==='link'?'↗':r.type==='code'?'⌘':'▤')+'</span>'+
+        '<strong>'+title+'</strong><small>'+xss(detail)+'</small></button>';
+    }).join(''):'<div class="v919-gallery-empty">No Library items yet. Add a photo or link to this project.</div>';
     const token=previewToken,projectId=String(project.id);
-    for(const r of images){
+    for(const r of imageItems){
       if(!r.key)continue;
       v6Blob('get',r.key).then(blob=>{
         if(!blob||!tokenSafe(project,token))return;
