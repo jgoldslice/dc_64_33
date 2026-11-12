@@ -1,3 +1,12 @@
+## 2026-11-12 — Local-only data reliability foundation v9.26 (feature branch; not deployed)
+
+- **Goal:** Prioritize dependable on-device Blueprint storage without requiring CloudKit or an Apple Developer membership. A single future Duo device still needs independent off-device backups against device loss.
+- **Code:** Protect a corrupt/unreadable `jgold-planner-v1` snapshot from being overwritten by default data on startup, display a prominent recovery warning, and offer a raw original-data download. Refuse complete backup exports when the planner could not be loaded.
+- **Diagnostics:** Add a read-only `Check local storage` action under Customize → Your Data. Reports existing saved planner counts, checks required Library/image references for missing IndexedDB entries, and shows approximate storage usage. Does **not** write, delete, or migrate anything.
+- **Tests:** `tests/local-storage-v926.spec.cjs` adds regression coverage for valid and corrupt state, media integrity presence, preservation of local data, and legacy partial snapshots.
+- **Cache:** New script added to the v9.26 service-worker cache for offline access.
+- **Caveats:** No native SQLite/Core Data database, no automatic device backup, no CloudKit, and no native Xcode deploy. Source and migration strategy: `docs/BLUEPRINT_LOCAL_STORAGE.md`. Browser CI and physical device verification must be recorded separately.
+
 # Blueprint — Development Status
 
 **Last documentation update:** 2026-11-11  
