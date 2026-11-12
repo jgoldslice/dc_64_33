@@ -134,7 +134,7 @@ test('each image has a menu; rename preserves the attachment and updates the Ove
   const recorded=await page.evaluate(()=>v6Project().library.find(r=>r.id==='image-a'));
   expect(recorded.title).toBe('A · Renamed figure');
   expect(recorded.key).toBe('test-v923-a');
-  expect((await page.evaluate(()=>v6Blob('get','test-v923-a'))).size).toBeGreaterThan(0);
+  expect(await page.evaluate(async()=> (await v6Blob('get','test-v923-a'))?.size)).toBeGreaterThan(0);
   await page.locator('#v919BackOverview').click();
   await expect(page.locator('#v919LibraryPreview')).toContainText('A · Renamed figure');
   await page.reload();
@@ -154,7 +154,7 @@ test('delete option confirms, removes only chosen image, and leaves other resour
   await expect.poll(async()=>page.evaluate(()=>v6Blob('get','test-v923-a'))).toBeNull();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).projects[0].library);
   expect(saved.map(r=>r.id)).toEqual(['link-b','image-c','video-d']);
-  expect((await page.evaluate(()=>v6Blob('get','test-v923-c'))).size).toBeGreaterThan(0);
+  expect(await page.evaluate(async()=> (await v6Blob('get','test-v923-c'))?.size)).toBeGreaterThan(0);
 });
 
 test('iOS long press never opens text selection; menu buttons stay outside drag handling',async({page})=>{
