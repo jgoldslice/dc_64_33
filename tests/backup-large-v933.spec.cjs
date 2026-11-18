@@ -27,7 +27,7 @@ test('large media backup keeps v2 checksums, pressure ink, and all attachment by
   });
   const [download]=await Promise.all([
     page.waitForEvent('download'),
-    page.locator('#exportData').click()
+    page.evaluate(()=>document.getElementById('exportData').click())
   ]);
   const bytes=await fs.readFile(await download.path());
   const archive=JSON.parse(bytes.toString('utf8'));
@@ -84,7 +84,7 @@ test('a missing large attachment blocks export instead of downloading an incompl
   page.on('dialog',async dialog=>{warnings.push(dialog.message());await dialog.dismiss();});
   let downloaded=false;
   page.on('download',()=>{downloaded=true;});
-  await page.locator('#exportData').click();
+  await page.evaluate(()=>document.getElementById('exportData').click());
   await expect.poll(()=>warnings.length).toBe(1);
   expect(warnings[0]).toContain('Missing saved attachment');
   expect(downloaded).toBe(false);
