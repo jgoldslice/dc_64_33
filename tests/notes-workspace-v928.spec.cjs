@@ -48,9 +48,17 @@ test('vector lasso selects only intersecting strokes, copies, pastes and survive
   await page.locator('#v928Lasso').click();
   await penGesture(page,ring);
   await expect(page.locator('#v76Ink .v928-selected-stroke')).toHaveCount(1);
-  await expect(page.locator('#v928Copy')).toBeEnabled();
-  await page.locator('#v928Copy').click();
-  await page.locator('#v928Paste').click();
+  await penGesture(page,[[110,108],[110,108]]);
+  await expect(page.locator('#v930InkContext')).toBeVisible();
+  await expect(page.locator('[data-v930-action="copy"]')).toBeVisible();
+  await expect(page.locator('[data-v930-action="delete"]')).toBeVisible();
+  await expect(page.locator('[data-v930-action="paste"]')).toBeHidden();
+  await page.locator('[data-v930-action="copy"]').click();
+  await expect(page.locator('#v930InkContext')).toBeHidden();
+  await penGesture(page,[[500,440],[500,440]]);
+  await expect(page.locator('[data-v930-action="paste"]')).toBeVisible();
+  await expect(page.locator('[data-v930-action="copy"]')).toBeHidden();
+  await page.locator('[data-v930-action="paste"]').click();
   let state=await page.evaluate(()=>{
     const strokes=window.BlueprintNotesBridge.current().page.strokes;
     return {count:strokes.length,ids:strokes.map(s=>String(s.id)),
@@ -58,7 +66,8 @@ test('vector lasso selects only intersecting strokes, copies, pastes and survive
   });
   expect(state.count).toBe(3);
   expect(new Set(state.ids).size).toBe(3);
-  expect(state.newPoints[0].x).toBe(state.original[0].x+24);
+  expect(state.newPoints[0].x).toBe(500);
+  expect(state.newPoints[0].y).toBe(440);
   await page.reload();
   expect(await page.evaluate(()=>state.projects[0].notePages[0].strokes.length)).toBe(3);
   expect(errors).toEqual([]);
@@ -80,7 +89,9 @@ test('delete selected ink can be undone without changing unrelated strokes',asyn
   await openNotes(page);await inkFixture(page);
   await page.locator('#v928Lasso').click();
   await penGesture(page,ring);
-  await page.locator('#v928Delete').click();
+  await penGesture(page,[[110,108],[110,108]]);
+  await expect(page.locator('[data-v930-action="delete"]')).toBeVisible();
+  await page.locator('[data-v930-action="delete"]').click();
   expect(await page.evaluate(()=>window.BlueprintNotesBridge.current().page.strokes.map(s=>s.id))).toEqual(['ink-b']);
   await page.locator('#v76UndoInk').click();
   expect(await page.evaluate(()=>window.BlueprintNotesBridge.current().page.strokes.map(s=>s.id))).toEqual(['ink-a','ink-b']);
@@ -125,4 +136,68 @@ test('focus mode hides navigation, expands paper and restores the same notebook 
   expect(await page.evaluate(()=>document.getElementById('v76Editor').parentElement.id)).toBe('projectNotes');
   expect(await page.evaluate(()=>window.BlueprintNotesBridge.current().page.paperStyle)).toBe('graph');
   expect(errors).toEqual([]);
+});
+
+test('lasso actions are contextual and the toolbar stays compact on narrow screens',async({page})=>{
+  const errors=await openNotes(page);await inkFixture(page);
+  await expect(page.locator('#v928Copy,#v928Paste,#v928Delete')).toHaveCount(0);
+  await expect(page.locator('#v928Lasso')).toBeVisible();
+  await page.locator('#v928Lasso').click();
+  await penGesture(page,[[480,420],[480,420]]);
+  await expect(page.locator('#v930InkContext')).toBeHidden(); // Nothing copied yet.
+  await penGesture(page,ring);
+  await penGesture(page,[[110,108],[110,108]]);
+  const position=await page.locator('#v930InkContext').boundingBox();
+  expect(position.x).toBeGreaterThanOrEqual(0);
+  expect(position.y).toBeGreaterThanOrEqual(0);
+  await page.locator('[data-v930-action="copy"]').click();
+  await page.setViewportSize({width:375,height:812});
+  await page.locator('#v928Lasso').click(); // Select: blank paper is the paste target.
+  await page.locator('#v76Surface').dispatchEvent('click',{bubbles:true,
+    clientX:369,clientY:220});
+  await expect(page.locator('[data-v930-action="paste"]')).toBeVisible();
+  const box=await page.locator('#v930InkContext').boundingBox();
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x+box.width).toBeLessThanOrEqual(375);
+  expect(box.y+box.height).toBeLessThanOrEqual(812);
+  expect(errors).toEqual([]);
+});
+test('finger tap on selected writing opens Copy/Delete without selecting or moving strokes',async({page})=>{
+  await openNotes(page);await inkFixture(page);
+  await page.locator('#v928Lasso').click();
+  await penGesture(page,ring);
+  const before=await page.evaluate(()=>structuredClone(window.BlueprintNotesBridge.current().page.strokes));
+  await page.evaluate(()=>{
+    const ink=document.getElementById('v76Ink'),m=ink.getScreenCTM(),
+      p=new DOMPoint(110,108).matrixTransform(m);
+    for(const type of ['pointerdown','pointerup']){
+      ink.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,
+        pointerType:'touch',pointerId:77,isPrimary:true,clientX:p.x,clientY:p.y}));
+    }
+  });
+  await expect(page.locator('[data-v930-action="copy"]')).toBeVisible();
+  expect(await page.evaluate(()=>window.BlueprintNotesBridge.current().page.strokes)).toEqual(before);
+});
+test('blank paper in Select mode offers Paste and moving/swiping does not accidentally paste',async({page})=>{
+  await openNotes(page);await inkFixture(page);
+  await page.locator('#v928Lasso').click();
+  await penGesture(page,ring);
+  await penGesture(page,[[110,108],[110,108]]);
+  await page.locator('[data-v930-action="copy"]').click();
+  await page.locator('#v928Lasso').click(); // Return to ordinary Select.
+  await page.locator('#v76Surface').click({position:{x:410,y:410}});
+  await expect(page.locator('[data-v930-action="paste"]')).toBeVisible();
+  await page.locator('[data-v930-action="paste"]').click();
+  expect(await page.evaluate(()=>window.BlueprintNotesBridge.current().page.strokes.length)).toBe(3);
+  await page.locator('#v928Lasso').click();
+  await page.evaluate(()=>{
+    const ink=document.getElementById('v76Ink'),m=ink.getScreenCTM();
+    for(const [i,type] of ['pointerdown','pointermove','pointerup'].entries()){
+      const p=new DOMPoint(470,420+i*50).matrixTransform(m);
+      ink.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,
+        pointerType:'touch',pointerId:78,isPrimary:true,clientX:p.x,clientY:p.y}));
+    }
+  });
+  await expect(page.locator('#v930InkContext')).toBeHidden();
+  expect(await page.evaluate(()=>window.BlueprintNotesBridge.current().page.strokes.length)).toBe(3);
 });

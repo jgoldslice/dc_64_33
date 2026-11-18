@@ -34,6 +34,10 @@
   padding:5px 8px;border:1px solid var(--line);border-radius:9px;
   background:var(--surface);color:var(--ink);touch-action:manipulation;
 }
+#v76Editor .v928-tool-group #v928Lasso{
+  min-width:70px;
+  white-space:nowrap;
+}
 #v76Editor .v928-tool-group #v928Lasso[aria-pressed="true"]{
   background:var(--wash);border-color:var(--secondary-ui);color:var(--secondary-ui);
 }
@@ -130,4 +134,47 @@ body.v928-notes-focus{overflow:hidden!important}
 }
 @media(prefers-reduced-motion:reduce){
   #v76Editor #v928FocusBar{transition:none!important}
+}
+
+/* v9.30 contextual ink actions: present only when the user taps selected
+   handwriting or blank paper with an in-app ink copy available. */
+#v930InkContext{
+  position:fixed;
+  z-index:2147483500;
+  display:flex;
+  align-items:stretch;
+  gap:0;
+  max-width:calc(100vw - 16px);
+  padding:4px;
+  background:var(--surface);
+  color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:13px;
+  box-shadow:0 6px 24px rgba(0,0,0,.18);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+}
+#v930InkContext[hidden],#v930InkContext button[hidden]{display:none!important}
+#v930InkContext button{
+  appearance:none;
+  min-width:70px;
+  min-height:44px;
+  padding:7px 13px;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:var(--ink);
+  font:inherit;
+  font-size:14px;
+  font-weight:650;
+  white-space:nowrap;
+  touch-action:manipulation;
+}
+#v930InkContext button[data-v930-action="delete"]{color:#c74b42}
+#v930InkContext button:focus-visible{
+  outline:2px solid var(--secondary-ui);
+  outline-offset:-2px;
+}
+@media(hover:hover){
+  #v930InkContext button:hover{background:var(--wash)}
 }

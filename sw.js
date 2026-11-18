@@ -1,5 +1,5 @@
 /* Canvas 8.2 — cache only our own app's assets, never another site's caches. */
-const CACHE='canvas-v929-pressure-undo-notes';
+const CACHE='canvas-v930-ink-context-menu';
 const PREFIX='canvas-';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon.svg',

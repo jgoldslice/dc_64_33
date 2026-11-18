@@ -7,6 +7,19 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — Notes contextual lasso actions v9.30 (feature branch; validation pending)
+
+**Requested:** The iPad Safari screenshot showed Copy, Paste and Delete making the Notes toolbar crowded, with labels wrapping. Move these actions to the page like a native selection popover.
+
+**Implemented on `feature/notes-contextual-lasso-v930`:**
+- The regular Notes toolbar keeps the Lasso tool, but no longer shows permanent Copy/Paste/Delete controls. Focus-mode Tools likewise keeps Pen/Lasso/Eraser/Undo and Paper without redundant clipboard controls.
+- After lasso-selecting ink, tapping the selected strokes' bounding region with Pencil, mouse or finger brings up a small floating **Copy | Delete** menu. Dragging the selection still moves it; gestures that draw a new lasso do not automatically open the menu.
+- Once a selection is copied to Blueprint's existing in-app ink clipboard, tapping otherwise blank paper in Lasso mode offers a floating **Paste** action. Blank-paper tap in ordinary Select mode also offers Paste, without affecting the Textbox tool. Paste places editable SVG strokes starting at the tapped page coordinates, rather than shifting copies by a fixed offset; Undo still removes the pasted strokes.
+- Dismissing the menu is supported by tapping outside, changing tools/pages, starting ink drawing, scrolling, resizing and Escape. A finger pan/multitouch pinch cannot paste because it does not qualify as a tap. Popup placement is clamped to the visible viewport with 44px minimum buttons and accessible labels.
+- Files changed: `notes-workspace-v928.js`, `notes-workspace-v928.css`, `tests/notes-workspace-v928.spec.cjs`, `tests/canvas.spec.cjs` and `sw.js` cache version. No new database table, planner state field, backup change, native Swift code or alteration to Pencil input serialization.
+
+**Verification:** JavaScript syntax and CSS structural checks passed. Added browser coverage for selected-ink Copy/Delete, tapped-position Paste, selection touch, non-tap finger gesture safety, 375px popup placement, compact toolbar, and old drawing/Undo compatibility. GitHub browser CI outcome must be verified separately before merging. Physical iPad Apple Pencil and Safari QA, Xcode/Capacitor installation and native Share Extension testing remain outstanding. Do not claim a web push updated the installed iPad app.
+
 ## 2026-11-18 — Notes ink Undo and Pencil pressure v9.29 (merged; physical-device QA outstanding)
 
 **Request:** Undo must restore strokes removed by the eraser; new Apple Pencil handwriting should respond to stylus pressure rather than always use a fixed width.
