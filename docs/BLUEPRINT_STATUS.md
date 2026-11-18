@@ -7,6 +7,18 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — Notes icon-only toolbar v9.31 (feature branch; verification in progress)
+
+**Requested from actual iPad Safari screenshot:** Move Lasso into the Pen tool group directly after Eraser; render Lasso as an icon rather than a word; replace the labeled Blank/Graph select with a graph-paper icon that toggles each page's background. Reduce unnecessary horizontal toolbar width while keeping 44px minimum targets.
+
+**Implemented in `feature/notes-toolbar-icon-toggles-v931`:**
+- `notes-workspace-v928.js` now inserts a looped-rope SVG Lasso button directly after the existing Eraser, followed by an icon-only graph-paper toggle, both before color/Undo in the original Pen group. They reuse the existing SVG sizes/primary palette and accessible names/titles, with visible pressed states.
+- Tapping Graph switches between Blank and Graph on the current page, preserving the original optional `paperStyle` state and existing backup behavior. The button's aria-label and aria-pressed change accordingly. When changing pages the icon restores the selected page's style. The Focus-mode Tools menu uses the same toggle and synchronizes with the main toolbar.
+- Removed the separate Lasso group and the Paper label/select, removing an entire toolbar group and freeing space. No changes to ink strokes, pressure, lasso selection, touch gesture ownership, drawing data, copy/paste, or persistence keys.
+- Updated `notes-workspace-v928.css` styles in place, `tests/notes-workspace-v928.spec.cjs` and `tests/canvas.spec.cjs` regression cases, and `sw.js` offline cache identifier. JavaScript syntax and stylesheet brace structure passed static checks.
+
+**Verification status:** Requested and coded on feature branch. Full automated browser suite and iPad physical Apple Pencil/Safari behavior must be checked independently. GitHub branch/PR is not an installed Capacitor/Xcode update. Do not reset local data or replace native Share Extension files.
+
 ## 2026-11-18 — Notes contextual lasso actions v9.30 (merged; on-device QA outstanding)
 
 **Requested:** The iPad Safari screenshot showed Copy, Paste and Delete making the Notes toolbar crowded, with labels wrapping. Move these actions to the page like a native selection popover.
