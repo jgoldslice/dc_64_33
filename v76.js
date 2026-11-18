@@ -422,12 +422,74 @@
     }
     return path+' Q'+last.x+' '+last.y+' '+last.x+' '+last.y;
   }
+  // Older strokes with {x,y} remain unmodified. Pencil contact points may
+  // carry p in [0,1], rendered as a filled SVG ribbon with rounded endpoints.
+  function variableInkPath(stroke){
+    const points=stroke.points||[];
+    if(!points.length)return '';
+    const width=(Number(stroke.width)||2.5);
+    const radius=p=>width*(.5+Math.max(0,Math.min(1,Number(p?.p??.5))))/2;
+    const first=points[0],last=points.at(-1);
+    if(points.length===1||points.every(p=>Math.hypot(p.x-first.x,p.y-first.y)<.01)){
+      const r=radius(first);
+      return 'M'+(first.x-r)+' '+first.y+' a'+r+' '+r+' 0 1 0 '+2*r+' 0 a'+r+' '+r+' 0 1 0 '+(-2*r)+' 0 Z';
+    }
+    const left=[],right=[],tangents=[];
+    for(let i=0;i<points.length;i++){
+      let lo=i-1,hi=i+1;
+      while(lo>=0&&Math.hypot(points[i].x-points[lo].x,points[i].y-points[lo].y)<.01)lo--;
+      while(hi<points.length&&Math.hypot(points[hi].x-points[i].x,points[hi].y-points[i].y)<.01)hi++;
+      const a=points[Math.max(0,lo)],b=points[Math.min(points.length-1,hi)];
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+      const tx=dx/len,ty=dy/len,nx=-ty,ny=tx;
+      const before=points[Math.max(0,i-1)],after=points[Math.min(points.length-1,i+1)];
+      const p=(Number(before.p??.5)+2*Number(points[i].p??.5)+Number(after.p??.5))/4;
+      const r=width*(.5+Math.max(0,Math.min(1,p)))/2;
+      left.push({x:points[i].x+nx*r,y:points[i].y+ny*r});
+      right.push({x:points[i].x-nx*r,y:points[i].y-ny*r});
+      tangents.push({x:tx,y:ty});
+    }
+    function trace(pts){
+      let d='M'+pts[0].x+' '+pts[0].y;
+      for(let i=1;i<pts.length-1;i++){
+        const p=pts[i],n=pts[i+1];
+        d+=' Q'+p.x+' '+p.y+' '+((p.x+n.x)/2)+' '+((p.y+n.y)/2);
+      }
+      const p=pts.at(-1);
+      return d+' Q'+p.x+' '+p.y+' '+p.x+' '+p.y;
+    }
+    const endRadius=radius(last),startRadius=radius(first);
+    let d=trace(left);
+    d+=' Q'+(last.x+tangents.at(-1).x*endRadius)+' '+(last.y+tangents.at(-1).y*endRadius)+
+       ' '+right.at(-1).x+' '+right.at(-1).y;
+    const back=right.slice().reverse();
+    for(let i=1;i<back.length-1;i++){
+      const p=back[i],n=back[i+1];
+      d+=' Q'+p.x+' '+p.y+' '+((p.x+n.x)/2)+' '+((p.y+n.y)/2);
+    }
+    d+=' Q'+back.at(-1).x+' '+back.at(-1).y+' '+back.at(-1).x+' '+back.at(-1).y;
+    d+=' Q'+(first.x-tangents[0].x*startRadius)+' '+(first.y-tangents[0].y*startRadius)+
+       ' '+left[0].x+' '+left[0].y+' Z';
+    return d;
+  }
+  const pressureStroke=stroke=>(stroke.points||[]).some(p=>typeof p.p==='number');
+  const strokePath=stroke=>pressureStroke(stroke)?variableInkPath(stroke):smoothInkPath(stroke.points||[]);
+  function inkSample(e,last){
+    const point=inkPosition(e);
+    if(e.pointerType==='pen'){
+      const pressure=Number(e.pressure);
+      // At lift-off iOS reports 0: retain the final contact pressure.
+      point.p=Math.round((Number.isFinite(pressure)&&pressure>.01?
+        Math.min(1,pressure):(last?.p??.5))*1000)/1000;
+    }
+    return point;
+  }
   function makeInkElement(stroke){
     const el=document.createElementNS('http://www.w3.org/2000/svg','path');
     el.classList.add('v818-ink-stroke');
-    el.setAttribute('d',smoothInkPath(stroke.points||[]));
-    el.setAttribute('fill','none');
-    el.setAttribute('stroke',stroke.color||'#111111');
+    el.setAttribute('d',strokePath(stroke));
+    el.setAttribute('fill',pressureStroke(stroke)?(stroke.color||'#111111'):'none');
+    el.setAttribute('stroke',pressureStroke(stroke)?'none':(stroke.color||'#111111'));
     el.setAttribute('stroke-width',String(stroke.width||2.5));
     el.setAttribute('stroke-linecap','round');
     el.setAttribute('stroke-linejoin','round');
@@ -1128,12 +1190,12 @@
     // SVG path once per display frame, while retaining all sampled points.
     inkFrame=requestAnimationFrame(()=>{
       inkFrame=0;
-      if(activeStroke)activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+      if(activeStroke)activeStroke.element.setAttribute('d',strokePath(activeStroke.stroke));
     });
   }
   function flushInkRender(){
     if(inkFrame){cancelAnimationFrame(inkFrame);inkFrame=0;}
-    if(activeStroke)activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+    if(activeStroke)activeStroke.element.setAttribute('d',strokePath(activeStroke.stroke));
   }
   ink.addEventListener('pointerdown',e=>{
     const ctx=current();if(!ctx||(mode!=='pen'&&mode!=='erase'))return;
@@ -1144,14 +1206,14 @@
     if(activePinch||activeStroke||activeErase)return;
     window.BlueprintNotesWorkspace?.onDirectInkEdit?.();
     e.preventDefault();ink.setPointerCapture(e.pointerId);
-    const pt=inkPosition(e);
+    const pt=inkSample(e);
     if(mode==='erase'){
       activeErase={id:e.pointerId,page:ctx.page,last:pt,
         originalStrokes:(ctx.page.strokes||[]).slice()};
       eraseSweep(ctx.page,pt,[e]); // A tap is also an eraser gesture.
       return;
     }
-    const stroke={id:newId(),points:[pt,pt],width:2.5,color:selectedInkColor};
+    const stroke={id:newId(),points:[pt,{...pt}],width:2.5,color:selectedInkColor};
     ctx.page.strokes.push(stroke);
     const element=makeInkElement(stroke);
     ink.append(element);
@@ -1166,8 +1228,8 @@
     if(!activeStroke||e.pointerId!==activeStroke.id)return;
     if(e.cancelable)e.preventDefault(); // Never allow Safari to steal Pencil motion.
     for(const sample of pointerSamples(e)){
-      const point=inkPosition(sample);
       const last=activeStroke.stroke.points.at(-1);
+      const point=inkSample(sample,last);
       if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
     }
     // Update only the active path instead of rebuilding every previous stroke.
@@ -1188,7 +1250,7 @@
         flushInkRender();activeStroke=null;persist();return;
       }
       if(e.type==='pointerup'){
-        const point=inkPosition(e),last=activeStroke.stroke.points.at(-1);
+        const last=activeStroke.stroke.points.at(-1),point=inkSample(e,last);
         if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
       }
       const completed=activeStroke;
