@@ -78,7 +78,7 @@
     draftSaveTimer=setTimeout(storeDraft,220);
   }
   function flushDraftSave(){
-    return draftSavePending?storeDraft():!draftLoadError&&!draftUnsaved;
+    return (draftSavePending||draftUnsaved)?storeDraft():!draftLoadError;
   }
   overlay.addEventListener('focusout',e=>{
     if(e.target?.matches?.('input,textarea'))flushDraftSave();
