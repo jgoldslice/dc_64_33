@@ -7,6 +7,18 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.33 implementation checkpoints (Phases 1–4)
+
+**Phase 1 — completed/merged:** [PR #50](https://github.com/jgoldslice/dc_64_33/pull/50), merge `960e8d9b644b5b2fe2fad8cadaba7a9719950386`; automated [run 44401108946](https://github.com/jgoldslice/dc_64_33/actions/runs/44401108946) **250/250**. Corrupt planner snapshots are write-locked; original bytes and failed-write edits recoverable; task schedule and unrelated links preserved; read-only local-storage diagnostics available.
+
+**Phase 2 — completed/merged:** [PR #51](https://github.com/jgoldslice/dc_64_33/pull/51), merge `cf8a6690046f9c784b4cc08de56f4fb3eb88945f`; automated [run 44403919516](https://github.com/jgoldslice/dc_64_33/actions/runs/44403919516) **262/262**. 250 ms batched input saving with lifecycle flush, focused Task/Habit DOM render paths, one priority rank map, lazy Library thumbnails/hidden-panel rendering. CI measurements at 600 tasks: ranking old 22.9 ms vs indexed 0.2 ms; at 220 tasks/36 habits, 108 ms full vs 21.3 ms Habit vs 56.7 ms Task render (single CI samples, no device FPS claim).
+
+**Phase 3 — completed/merged:** [PR #52](https://github.com/jgoldslice/dc_64_33/pull/52), merge `23c2a488c6cd8237ca95ca5f6d63c1e2202425f7`; automated [run 44405118166](https://github.com/jgoldslice/dc_64_33/actions/runs/44405118166) **264/264**. Existing checksum-verified v2 complete backup assembled as successive Blob parts instead of second giant JSON string. Multi-megabyte attachments, graph-paper and pressure-vector ink roundtripped with exact bytes. Not true streaming to disk or low-memory iPad verified. Native safety contract documented in `docs/BLUEPRINT_NATIVE_READINESS.md`.
+
+**Phase 4 — implemented on `feature/v933-weekly-draft` (pending CI/merge):** Weekly Blueprint now protects corrupt saved draft bytes, shows a recovery/export panel and requires explicit confirmation before resetting the unreadable draft. Text input into draft event/task/goal editors is debounced at 220 ms with blur/background/pagehide/beforeunload flush; structural draft actions still save immediately. Failed writes retain in-memory content and warn before exit. Adds `tests/weekly-draft-v933.spec.cjs` to test persistence, reload, corrupt recovery and quota failures. No storage key or complete-backup format changed.
+
+**Still unverified:** Physical iPhone/iPad performance, Apple Pencil, iPad Split View, Dynamic Type, local notifications, native PencilKit, Share Extension and native Capacitor/Xcode builds. Unmerged native staging PR #40/#41 remains untouched; no CloudKit introduced.
+
 ## 2026-11-18 — v9.33 Phase 2: autosave, targeted rendering and Library loading (feature branch; QA pending)
 
 **Implemented on `feature/v933-performance`:**
