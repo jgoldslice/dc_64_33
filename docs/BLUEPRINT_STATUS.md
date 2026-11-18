@@ -18,6 +18,14 @@
 
 **Verification status:** Browser CI and device QA pending. Responsive browser widths are simulated—not physical Split View/Dynamic Type measurements. No Xcode/Capacitor synchronization performed.
 
+## 2026-11-18 — v9.33 Media-save safety (reapplied to latest main; CI pending)
+
+**Confirmed risk:** The legacy Notes image-block Delete path previously deleted its attachment even if the updated planner manifest failed to save. Sketch Save could overwrite a prior image and clear its drawing/draft before verifying that the Library metadata was durable.
+
+**Implemented in `feature/v933-media-save-final`:** Notes image-block deletion now verifies the manifest before deleting unreferenced bytes; failures restore the block. Saving a sketch writes a new image key and commits its Library metadata with `save(true)` before clearing the drawing/draft or reclaiming an older image. Failed and ambiguous saves keep both versions recoverable. IndexedDB/blob and backup formats are unchanged.
+
+**Verification:** Same code passed [267/267 tests](https://github.com/jgoldslice/dc_64_33/actions/runs/44406014179) on the earlier branch, before reapplication against the updated Goal/Habit branch. Re-run full CI on this merged-ready head; device QA remains outstanding.
+
 ## 2026-11-18 — v9.33 Phase 2: autosave, targeted rendering and Library loading (feature branch; QA pending)
 
 **Implemented on `feature/v933-performance`:**
