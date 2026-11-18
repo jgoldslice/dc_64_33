@@ -1249,7 +1249,11 @@
       drawing.previewPath+=' L'+p.x+' '+p.y;
     }
     drawing.previewCount=points.length;
-    drawing.element.setAttribute('d',drawing.previewPath);
+    // Prediction is DISPLAY-ONLY: WebKit can estimate the tip's near-future
+    // positions, but they must never enter the saved points or undo history.
+    let visiblePath=drawing.previewPath;
+    for(const p of drawing.predictedPoints||[])visiblePath+=' L'+p.x+' '+p.y;
+    drawing.element.setAttribute('d',visiblePath);
   }
   function queueInkRender(){
     if(!activeStroke)return;
@@ -1298,7 +1302,7 @@
     element.setAttribute('stroke',selectedInkColor);
     ink.append(element);
     activeStroke={id:e.pointerId,stroke,page:ctx.page,element,isPen:e.pointerType==='pen',
-      previewPath,previewCount:stroke.points.length,firstMoveRendered:false};
+      previewPath,previewCount:stroke.points.length,firstMoveRendered:false,predictedPoints:[]};
   });
   ink.addEventListener('pointermove',e=>{
     if(activeErase&&e.pointerId===activeErase.id){
@@ -1319,7 +1323,26 @@
         activeStroke.stroke.points.push(point);changed=true;
       }
     }
-    if(changed)queueInkRender();
+    // Safari 18.2+ optionally exposes a small set of future Pencil positions.
+    // Limit extrapolation to ~16 logical pixels to avoid visible overshoot,
+    // and completely replace it on every new confirmed event.
+    const previousPredicted=activeStroke.predictedPoints.length;
+    activeStroke.predictedPoints=[];
+    if(activeStroke.isPen&&typeof e.getPredictedEvents==='function'){
+      const predictions=e.getPredictedEvents()||[];
+      const tip=activeStroke.stroke.points.at(-1);
+      let accepted=0;
+      for(const future of predictions){
+        if(accepted>=3)break;
+        const point=inkPosition(future,inverse);
+        const distance=Math.hypot(point.x-tip.x,point.y-tip.y);
+        if(!Number.isFinite(distance)||distance>16)break;
+        if(distance<=.12)continue;
+        activeStroke.predictedPoints.push(point);
+        accepted++;
+      }
+    }
+    if(changed||previousPredicted||activeStroke.predictedPoints.length)queueInkRender();
   });
   const finishStroke=e=>{
     if(activeErase&&e.pointerId===activeErase.id){
