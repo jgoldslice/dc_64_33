@@ -29,7 +29,7 @@
   });
   // Unreadable weekly drafts are user data too: never silently replace their
   // original bytes with a fresh draft. Offer an explicit recovery path.
-  let draft=null,rawDraft=null,draftLoadError=null,draftSaveTimer=null,draftSavePending=false;
+  let draft=null,rawDraft=null,draftLoadError=null,draftSaveTimer=null,draftSavePending=false,draftUnsaved=false;
   try{
     rawDraft=localStorage.getItem(DRAFT_KEY);
     if(rawDraft!==null)draft=JSON.parse(rawDraft);
@@ -65,18 +65,20 @@
       E('wbStatus').textContent='Unrecognized weekly draft. Export the original before starting fresh.';
       return false;
     }
-    if(!draft)return true;
-    try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));return true;}
-    catch(e){E('wbStatus').textContent='Draft could not be saved on this device. Check storage before leaving.';console.error('Weekly Blueprint draft save failed',e);return false;}
+    if(!draft){draftUnsaved=false;return true;}
+    try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));draftUnsaved=false;
+      if(E('wbStatus').textContent.startsWith('Draft could not be saved'))E('wbStatus').textContent='';
+      return true;}
+    catch(e){draftUnsaved=true;E('wbStatus').textContent='Draft could not be saved on this device. Check storage before leaving.';console.error('Weekly Blueprint draft save failed',e);return false;}
   }
   function queueDraftSave(){
     if(!draft||draftLoadError)return;
-    draftSavePending=true;
+    draftSavePending=true;draftUnsaved=true;
     clearTimeout(draftSaveTimer);
     draftSaveTimer=setTimeout(storeDraft,220);
   }
   function flushDraftSave(){
-    return draftSavePending?storeDraft():!draftLoadError;
+    return draftSavePending?storeDraft():!draftLoadError&&!draftUnsaved;
   }
   overlay.addEventListener('focusout',e=>{
     if(e.target?.matches?.('input,textarea'))flushDraftSave();
