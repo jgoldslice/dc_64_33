@@ -7,6 +7,21 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.33 Phase 1: guard local data and preserve task fields (PR under review)
+
+**Requested:** Full app-wide reliability and performance overhaul; begin with preventing irreversible overwrites and preserving backwards-compatible backup/record formats.
+
+**Implemented on `feature/v933-storage-safety` (awaiting CI):**
+- Startup rejects malformed or non-object planner JSON and invalid known collection shapes before enabling writes; original unreadable bytes are never overwritten by a normalized demo state. A persistent warning offers an exact raw-data export and blocks misleading complete-backup exports. Existing data and the storage key remain intact.
+- Failed writes (including quota issues and cross-window changes) retain in-memory edits and expose a recovery export. Existing stale-manifest protection remains active.
+- Edit Task preserves hidden `scheduledDate`, `scheduledTime`, project/idea links, completion status and other uninvolved properties. Changing parent Goal explicitly clears an obsolete Goal Step link without erasing independent project links.
+- Read-only Customize → Your Data → Check local storage audits persisted record counts and referenced IndexedDB blobs without modifying records; reports potential missing files and storage usage.
+- Ported only the applicable parts of historical draft PR #43 onto current main; did **not** merge the stale draft or native PR #40/#41.
+- Added `tests/local-storage-v926.spec.cjs` for malformed data, safe recovery, missing attachments, quota failure and task-field preservation. Cache includes diagnostic file.
+- Changed `index.html`, `v74.js`, `sw.js`; added `local-storage-health-v926.js` and tests. No schema key reset, migration, native Swift or PencilKit changes.
+
+**Verification:** Implementation and tests are committed to a review branch; automated browser results and device checks must be established from actual runs before merging. No performance metrics claimed. Physical iOS and native wrapper unchanged.
+
 ## 2026-11-18 — Notes low-latency ink v9.32 (merged; physical-device QA outstanding)
 
 **Requested:** Make handwriting visible sooner after Pencil contact and reduce the delay/sag between drawing and visible ink, without disturbing other Notes work.
