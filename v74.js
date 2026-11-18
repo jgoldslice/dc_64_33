@@ -212,19 +212,30 @@
  }
  async function exportCompleteBackup(){
    if(canvasLoadError)throw Error('Saved planner data could not be loaded; export the untouched original using the recovery warning instead');
-   // Preserve the in-memory emergency export path on ordinary save failures.
+   // Snapshot first, so an export consistently refers to one planner version.
+   // Keep the v2 format unchanged while avoiding a second giant JSON string
+   // (and an all-attachments array) in addition to the base64 media.
    const snapshot=structuredClone(state);
-   const {required,drafts}=attachmentKeys(snapshot),attachments=[];
+   const {required,drafts}=attachmentKeys(snapshot);
+   const header={format:'canvas-complete-backup',version:2,
+     exportedAt:new Date().toISOString(),state:snapshot,
+     stateSha256:await hashState(snapshot)};
+   const pieces=[JSON.stringify(header).slice(0,-1)+',"attachments":['];
+   let count=0;
    for(const key of new Set([...required,...drafts])){
      const blob=await v6Blob('get',key);
      if(!blob){if(required.has(key))throw Error('Missing saved attachment: '+key);continue;}
-     attachments.push({key,mime:blob.type||'application/octet-stream',
-       size:blob.size,sha256:await hashBlob(blob),base64:await blobToBase64(blob)});
+     const entry={key,mime:blob.type||'application/octet-stream',
+       size:blob.size,sha256:await hashBlob(blob),base64:await blobToBase64(blob)};
+     if(count++)pieces.push(',');
+     pieces.push(JSON.stringify(entry));
    }
-   // Finish the integrity manifest before offering a download.
-   const packageData={format:'canvas-complete-backup',version:2,
-     exportedAt:new Date().toISOString(),state:snapshot,stateSha256:await hashState(snapshot),attachments};
-   const u=URL.createObjectURL(new Blob([JSON.stringify(packageData)],{type:'application/json'}));
+   pieces.push(']}');
+   // Browser Blob parts can be assembled without concatenating the entire
+   // archive and every encoded attachment into a second JS string.
+   const archive=new Blob(pieces,{type:'application/json'});
+   pieces.length=0;
+   const u=URL.createObjectURL(archive);
    const a=document.createElement('a');
    a.href=u;a.download='canvas-complete-'+new Date().toISOString().slice(0,10)+'.json';
    document.body.appendChild(a);a.click();a.remove();
