@@ -147,7 +147,12 @@ test('Pictures use OneNote-style selection, corner resizing and a move control i
   await expect(box.locator('.v76-grip')).toHaveCount(0);
   await box.locator('.v76-photo').click();
   await expect(box).toHaveClass(/v811-selected/);
-  const rect=await box.locator('.v811-handle-se').boundingBox();
+  // Added Notes controls can push the lower resize handle below the clipped
+  // notebook viewport. A real user scrolls the page before grabbing it.
+  const resizeHandle=box.locator('.v811-handle-se');
+  await resizeHandle.scrollIntoViewIfNeeded();
+  await resizeHandle.hover();
+  const rect=await resizeHandle.boundingBox();
   const initial=await box.evaluate(el=>({w:el.offsetWidth,h:el.offsetHeight}));
   await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);
   await page.mouse.down();await page.mouse.move(rect.x+rect.width/2+55,rect.y+rect.height/2+48,{steps:6});
