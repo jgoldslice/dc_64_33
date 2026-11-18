@@ -7,47 +7,25 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — v9.33 Phase 4/5: relationship integrity and small-screen readability (feature PR; QA pending)
+## 2026-11-18 — v9.33 verified web implementation: Phases 1–5 and media integrity
 
-**Implemented on `feature/v933-linked-record-polish`:**
-- Removing a Goal Step now removes a recurring Habit's obsolete `actionId` but preserves its `goalId`, weekly target, schedule, check-in history and metadata. A habitual behavior still supports the parent Goal after its individual Step is deleted. Goal-linked Tasks keep the existing explicit Step unlinking behavior.
-- Editing existing Goal Steps preserves their additional/unknown metadata rather than reconstructing the object with just ID/title/done. Event, Task and Habit extra fields remain intact during their editors' normal `Object.assign` updates.
-- Two-line titles with anywhere wrapping in Project Overview and Library image cards avoid truncating long descriptions into illegible one-line snippets. Card visuals, touch targets, drag reordering and resource IDs are unchanged.
-- Regression tests: `tests/goal-relationship-v933.spec.cjs` covers deleting a Goal Step and retained Habit/Task relationships, extra Goal Step fields, Event/Habit data, and persistence. `tests/responsive-polish-v933.spec.cjs` covers 320px–1180px viewport widths and preservation of in-progress Event form entries when the selected week changes.
-- Changed `index.html`, `library-order-v923.css`, `project-overview-v919.css`, `sw.js`, and two test files. No migrations, native project edits, new persisted fields, or modification to existing note ink.
+**Verified merges on main:**
+- **PR #50**, `960e8d9b644b5b2fe2fad8cadaba7a9719950386`: unreadable-data write guard, recovery export, task-field preservation and storage diagnostics. [CI run 44401108946](https://github.com/jgoldslice/dc_64_33/actions/runs/44401108946) **250/250**.
+- **PR #51**, `cf8a6690046f9c784b4cc08de56f4fb3eb88945f`: batched text autosave, selective Task/Habit rendering, indexed priority ranks, lazy Project/Library loads. [CI run 44403919516](https://github.com/jgoldslice/dc_64_33/actions/runs/44403919516) **262/262**. On a 600-task CI browser dataset, naive priority ranking measured 22.9 ms vs indexed 0.2 ms. Another CI dataset (220 tasks/36 habits/35 goals) measured full render 108 ms, focused Habit 21.3 ms and Task 56.7 ms. These are browser results, not iPhone/iPad timings.
+- **PR #52**, `23c2a488c6cd8237ca95ca5f6d63c1e2202425f7`: incremental Blob-part v2 backup export, multi-megabyte media/pressure SVG restore and native integration readiness document. [CI run 44405118166](https://github.com/jgoldslice/dc_64_33/actions/runs/44405118166) **264/264**. Backup is not fully streamed to disk; full JSON import still needs significant memory.
+- **PR #54**, `d6425024eb3ffd5ff740c47b5879cbd913449896`: retain Goal link when a Step-attached Habit loses its Step, preserve extra Goal Step metadata, and wrap long Overview/Library image captions. [CI run 44405708984](https://github.com/jgoldslice/dc_64_33/actions/runs/44405708984) **269/269** including 320–1180px layouts and Event edits.
+- **PR #57**, `9fc4eac75f14db856a5af4e6e9b74a7eab4cc8e7`: copy-on-write Sketch saving; never delete a Notes image before its manifest saves; retain old bytes and unsaved work on failed writes. [CI run 44406533899](https://github.com/jgoldslice/dc_64_33/actions/runs/44406533899) **272/272**.
 
-**Verification status:** Browser CI and device QA pending. Responsive browser widths are simulated—not physical Split View/Dynamic Type measurements. No Xcode/Capacitor synchronization performed.
+**Unverified:** physical iPhone/iPad, Pencil motion/pressure latency, memory pressure with very large backups, native Share Extension/PencilKit, notifications, cross-device sync, native Capacitor/Xcode installation and accessibility Dynamic Type. GitHub pushes do not update the installed app.
 
-## 2026-11-18 — v9.33 Media-save safety (reapplied to latest main; CI pending)
+## 2026-11-18 — v9.33 Weekly Blueprint recovery integration (feature branch, CI pending)
 
-**Confirmed risk:** The legacy Notes image-block Delete path previously deleted its attachment even if the updated planner manifest failed to save. Sketch Save could overwrite a prior image and clear its drawing/draft before verifying that the Library metadata was durable.
+**Implemented in `feature/v933-weekly-integrated`:**
+- Carry forward the guarded draft editor from earlier exploratory PRs (#55/#58/#59): existing malformed or unreadable weekly drafts cannot be silently replaced; an explicit raw recovery download and confirmation-gated reset are available. Rapid text drafts batch at 220 ms, flush on blur/background/pagehide/beforeunload, and failed writes keep an unsaved warning. Structural and apply actions still save immediately.
+- Correct Goal–Habit consistency in the separate Weekly Blueprint Apply path: removing a Step clears an obsolete Habit `actionId` but retains its `goalId`; keep metadata on unchanged Goal Steps instead of discarding fields. Added full Apply/reload regression, alongside recovery, interrupted-save, and quota tests.
+- No storage key, backup schema, PencilKit/SVG, CloudKit or iOS app change.
 
-**Implemented in `feature/v933-media-save-final`:** Notes image-block deletion now verifies the manifest before deleting unreferenced bytes; failures restore the block. Saving a sketch writes a new image key and commits its Library metadata with `save(true)` before clearing the drawing/draft or reclaiming an older image. Failed and ambiguous saves keep both versions recoverable. IndexedDB/blob and backup formats are unchanged.
-
-**Verification:** Same code passed [267/267 tests](https://github.com/jgoldslice/dc_64_33/actions/runs/44406014179) on the earlier branch, before reapplication against the updated Goal/Habit branch. Re-run full CI on this merged-ready head; device QA remains outstanding.
-
-## 2026-11-18 — v9.33 Phase 2: autosave, targeted rendering and Library loading (feature branch; QA pending)
-
-**Implemented on `feature/v933-performance`:**
-- Ordinary text input for Today/Week focus, opening message, Brainstorm draft and project notebook is batched (250 ms) and flushed on blur, pagehide, visibility hidden, beforeunload, or any immediate planner save. Existing cross-window stale-write guard remains the single writer; no new cache or data store. The draft indicator says Saving… until actually persisted.
-- `render('habits')` updates Habit tracking and associated Goal progress without recreating tasks/calendar; `render('tasks')` updates Today/Plan tasks, priorities, affected weekly calendar and related Goals/Ideas without rebuilding Habit checkboxes. Structural edits still call full `render()`. The Weekly Blueprint wrapper forwards partial-render scopes.
-- Task ordering is sorted once per render and looked up from an ID→rank map, instead of sorting priorities for every row.
-- Hidden project Notes/Actions/Library/Sketches no longer redraw whenever the project overview refreshes; panels render on open. The Library only reads blobs for images approaching the visible viewport using IntersectionObserver, releases image URLs/observers when leaving and guards stale asynchronous results.
-- Changed `index.html`, `weekly-blueprint-v918.js`, `sw.js`; added `tests/blueprint-performance-v933.spec.cjs` with real browser tests and a 600-task timing comparison.
-
-**Verification:** Static inline-script parsing passed. Full browser CI and timing results not yet confirmed. Actual iPhone/iPad touch, low-memory, Split View and Pencil behavior remain physical-device QA gates. No native Swift/Capacitor files touched, no migration and no schema/backup format change.
-
-## 2026-11-18 — v9.33 Phase 2/3: focused renders and efficient project loading (review branch)
-
-**Implemented in `feature/v933-performance`:**
-- Added a 250 ms batched text-save pathway for ordinary Focus, brainstorm draft, opening message and project notebook typing; immediately flushes outstanding text on blur, visibility-hidden, pagehide, and beforeunload. Task/event/habit/check actions still call immediate save, which also flushes pending text state. Existing saved-data guards and retry/recovery warnings remain in effect.
-- Task priority ranks are computed once per full or task-focused render instead of sorting every time a task row is displayed.
-- Extracted focused Task and Habit render functions. Task checkbox changes redraw task lists, weekly calendar and dependent goals/ideas; Habit checkbox changes redraw habit sections and dependent goals. Structural changes still call full render, preserving the legacy fallback. The Weekly Blueprint overview wrapper now forwards render scopes.
-- Project renderer no longer rebuilds unrelated hidden Library, action, sketch, or notebook panels on every project visit. Its Overview previews refresh when that panel is visible. Library thumbnails are read lazily using IntersectionObserver, with a no-observer fallback and per-project stale-response guards. Original media keys/bytes remain untouched.
-- `tests/performance-v933.spec.cjs` covers typing/blur/background saving, targeted DOM stability, hidden Library behavior and a reproducible browser planner stress dataset (220 tasks, 36 habits and 35 goals). It logs browser timings but does not claim device speedups without measurement.
-- No framework migration, storage schema change, native Swift change or alteration to Notes ink data/backup formats.
-
-**Verification:** Browser CI and responsive regression checks are pending on this feature branch. Physical iPad/iPhone performance and native Capacitor/Xcode validation remain outstanding. Review any timer failure or cross-window conflict before shipping; never infer device FPS from Playwright.
+**Release gate:** Require GitHub CI on this rebased head; then device QA remains outstanding.
 
 ## 2026-11-18 — v9.33 Phase 1: guard local data and preserve task fields (merged)
 
