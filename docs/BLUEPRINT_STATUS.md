@@ -18,6 +18,14 @@
 
 **Verification status:** Browser CI and device QA pending. Responsive browser widths are simulated—not physical Split View/Dynamic Type measurements. No Xcode/Capacitor synchronization performed.
 
+## 2026-11-18 — v9.33 Weekly Blueprint recovery and safe saves (latest-main release branch)
+
+**Implemented in `feature/v933-weekly-release`:** Corrupted/unreadable Weekly Blueprint draft JSON is write-protected with a raw export/confirmation-gated reset UI. Rapid free-text edits are batched and flushed on blur, visibility changes, pagehide and unload; immediate actions and Apply/Undo remain immediately saved. Failure to save leaves the draft in memory and provides an exit warning. When planning removes a Goal Step, the related Habit retains its parent Goal, with only the obsolete Step link cleared, and preserved step metadata survives editing.
+
+**Critical fix:** The first weekly draft branch passed 267/268 browser tests but had a null-draft dereference in its recovery path. This release branch explicitly guards `draft` before accessing `selectedDay`, and includes the dependent Goal–Habit improvements from the later branch.
+
+**Tests:** `tests/weekly-draft-v933.spec.cjs` exercises rapid draft editing, background flush, corrupt-draft export/reset, quota warnings and linked Goal/Habit behavior. Full browser CI and physical-device QA are pending. No schema migration, native Swift code or PencilKit integration.
+
 ## 2026-11-18 — v9.33 Media-save safety (reapplied to latest main; CI pending)
 
 **Confirmed risk:** The legacy Notes image-block Delete path previously deleted its attachment even if the updated planner manifest failed to save. Sketch Save could overwrite a prior image and clear its drawing/draft before verifying that the Library metadata was durable.
