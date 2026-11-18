@@ -7,6 +7,20 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.33 verified merged release and outstanding QA
+
+**Merged and browser verified on `main`:** PR #50 (local recovery; `960e8d9b`; 250/250 tests); PR #51 (batched saving, selective renders, lazy media; `cf8a6690`; 262/262); PR #52 (reduced backup export duplication, multi-megabyte media restore; `23c2a488`; 264/264); PR #54 (Goal–Habit relationship integrity, long Library captions; `d6425024`; 269/269); PR #57 (loss-safe Sketch/Notes media operations; `9fc4eac7`; 272/272); PR #63 (nested record and backup import validation; `e534f360`; [285/285 tests](https://github.com/jgoldslice/dc_64_33/actions/runs/44408177504)). These changes retain existing storage keys, media IDs, note/ink formats and native-wrapper boundaries.
+
+**Measured CI browser examples:** With 600 tasks, repeated priority sorting 22.9 ms vs indexed lookup 0.2 ms in the same test; with 220 tasks/36 habits/35 goals, a full render measured 108 ms, Habit-only 21.3 ms and Task-only 56.7 ms. These are synthetic Chromium measurements and not evidence of iPad FPS.
+
+**Device QA required:** iPhone portrait/landscape, iPad Split View and Dynamic Type, Apple Pencil/finger gestures, low-memory media import/export, real iOS Share Extension behavior, and native Capacitor/Xcode sync. GitHub web deployment never automatically updates the installed iOS app.
+
+## 2026-11-18 — v9.33 Weekly Blueprint guarded drafts (integrated review branch)
+
+**Implemented on `feature/v933-weekly-after-nested-guard`:** Preserve unreadable saved weekly drafts with exact raw export and confirmation-gated reset; batch rapid draft input (220 ms) and flush on blur, visibility hidden/pagehide/beforeunload; warn on quota failures. Fix null draft access in recovery and distinguish progress navigation from Goal Step Move/Delete controls. On Apply, clear only a deleted Step link from a Habit (retain the parent Goal) and preserve additional metadata on retained Steps. New tests cover recovery, lifecycle, quota, Step Move/Delete and Apply. This rebases the previously passing Weekly Blueprint implementation onto the latest nested-data-safe main without overwriting it.
+
+**Verification:** Full browser CI on the rebased branch pending; no physical-device verification or native migration.
+
 ## 2026-11-18 — v9.33 nested saved-data protection (review branch)
 
 **Issue confirmed in latest main:** Startup guarded malformed JSON and top-level arrays, but nested malformed task/goal/habit/project records could be silently dropped or normalized to empty content on the next save. That could erase damaged user data before recovery.
