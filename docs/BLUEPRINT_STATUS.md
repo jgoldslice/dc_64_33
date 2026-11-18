@@ -7,6 +7,21 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — Xcode device-testing candidate
+
+Integrated the Weekly Blueprint recovery and Goal Step navigation fix, nested planner and backup validation, and the simplified web compass icon. Weekly Step move/delete buttons now update the draft, while the planning stage controls navigate between stages. The browser suite passed on weekly fix `c39212ab`. Full combined verification is recorded below once complete.
+
+On the Mac, run `python3 scripts/stage-ios-web.py ~/Documents/ChatGPT/dc6433/canvas-ios/www` from an updated web checkout after fetching origin/main. The helper copies the service-worker asset list from that revision and preserves recognized local native-share script tags. It stops before copying if a managed file has unfamiliar edits. In the wrapper run `npx cap copy ios`, open the existing Xcode project and run the App scheme on each device. A fixture exercised the asset update, preservation of a native share hook, a repeated run, and rejection of a customized asset. Physical Pencil input, Share Extension import, and suspend/relaunch still need device QA. The native home-screen AppIcon is managed in the separate Xcode asset catalog.
+
+## 2026-11-18 — v9.33 nested saved-data protection (review branch)
+
+**Issue confirmed in latest main:** Startup guarded malformed JSON and top-level arrays, but nested malformed task/goal/habit/project records could be silently dropped or normalized to empty content on the next save. That could erase damaged user data before recovery.
+
+**Implemented on `feature/v933-nested-data-guard`:** Before normalizing stored planner JSON, validate that known collections contain object records (not null, primitives or arrays), that Goal/Idea Step collections and Project Library/Notes/page collections are arrays when present, and that habit completion maps, schedules and editable ink point arrays are structurally valid. If any known field is malformed, preserve the exact raw original data, disable saving, and offer raw recovery export. Do **not** impose a new schema on unknown future fields or absent optional legacy fields. No user content, IDs, backup formats, or native code migrated.
+
+**Tests:** Adds `tests/nested-storage-guard-v933.spec.cjs` with eight malformed nested-data startup scenarios, exact-byte write protection and partial legacy snapshots. Also extends the `v74.js` complete-backup validator to reject malformed nested structures *before* importing any files, including a checksum-valid v2 archive. New `tests/nested-backup-guard-v933.spec.cjs` covers four damaged archive types and confirms existing storage is unchanged. Missing optional legacy fields and historic plain-text project Notes remain accepted. CI and physical iOS testing pending. No data reset or CloudKit.
+
+
 ## 2026-11-18 — v9.33 Phase 4/5: relationship integrity and small-screen readability (feature PR; QA pending)
 
 **Implemented on `feature/v933-linked-record-polish`:**
