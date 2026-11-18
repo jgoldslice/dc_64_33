@@ -5,6 +5,7 @@ test.use({browserName:'chromium',viewport:{width:1024,height:900}});
 
 test('rapid ordinary typing is batched, then flushed on blur and pagehide',async({page})=>{
   await page.goto(base);
+  await page.locator('[data-tab="brainstorm"]').click();
   const before=await page.evaluate(()=>{
     if(!save(true))throw Error('Unable to persist baseline');
     const orig=Storage.prototype.setItem;
@@ -13,46 +14,47 @@ test('rapid ordinary typing is batched, then flushed on blur and pagehide',async
       if(key===STORAGE_KEY)window.__v933Writes++;
       return orig.call(this,key,value);
     };
-    const input=document.getElementById('todayFocus');
+    const input=document.getElementById('brainstormDraft');
     input.focus();
     for(let i=0;i<90;i++){
       input.value='Typing '+i;
       input.dispatchEvent(new Event('input',{bubbles:true}));
     }
     return {writes:window.__v933Writes,pending:canvasTextSavePending,
-      stored:JSON.parse(localStorage.getItem(STORAGE_KEY)).todayFocus};
+      stored:JSON.parse(localStorage.getItem(STORAGE_KEY)).brainstormDraft};
   });
   expect(before.writes).toBe(0);
   expect(before.pending).toBe(true);
-  await page.evaluate(()=>document.getElementById('todayFocus').blur());
+  await page.evaluate(()=>document.getElementById('brainstormDraft').blur());
   const saved=await page.evaluate(()=>({
     writes:window.__v933Writes,
     pending:canvasTextSavePending,
-    stored:JSON.parse(localStorage.getItem(STORAGE_KEY)).todayFocus
+    stored:JSON.parse(localStorage.getItem(STORAGE_KEY)).brainstormDraft
   }));
   expect(saved).toEqual({writes:1,pending:false,stored:'Typing 89'});
   await page.evaluate(()=>{
-    const input=document.getElementById('todayFocus');
+    const input=document.getElementById('brainstormDraft');
     input.focus();input.value='Final background edit';
     input.dispatchEvent(new Event('input',{bubbles:true}));
     window.dispatchEvent(new Event('pagehide'));
   });
-  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).todayFocus)).toBe('Final background edit');
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).brainstormDraft)).toBe('Final background edit');
 });
 
 test('a pending text edit refuses to overwrite data saved in another window',async({page})=>{
   await page.goto(base);
+  await page.locator('[data-tab="brainstorm"]').click();
   const result=await page.evaluate(()=>{
     if(!save(true))throw Error('baseline save failed');
-    const field=document.getElementById('todayFocus');
+    const field=document.getElementById('brainstormDraft');
     field.focus();field.value='My unsaved work';field.dispatchEvent(new Event('input',{bubbles:true}));
     const persisted=JSON.parse(localStorage.getItem(STORAGE_KEY));
-    persisted.todayFocus='Newer second-window edit';
+    persisted.brainstormDraft='Newer second-window edit';
     localStorage.setItem(STORAGE_KEY,JSON.stringify(persisted));
     field.blur();
     return {
-      disk:JSON.parse(localStorage.getItem(STORAGE_KEY)).todayFocus,
-      inMemory:state.todayFocus,
+      disk:JSON.parse(localStorage.getItem(STORAGE_KEY)).brainstormDraft,
+      inMemory:state.brainstormDraft,
       conflict:canvasExternalChange,
       warning:!document.getElementById('canvasSaveWarning').hidden,
       recovery:!document.getElementById('canvasSaveRecovery').hidden
