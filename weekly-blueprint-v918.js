@@ -166,7 +166,7 @@
   function open(fromWeek){
     returnFocus=document.activeElement;
     if(!draft&&!draftLoadError)draft=newDraft(fromWeek?iso(startOfWeek(selectedWeek)):draftStart());
-    if(!draft.selectedDay)draft.selectedDay=draft.weekStart;
+    if(draft&&!draft.selectedDay)draft.selectedDay=draft.weekStart;
     originalOverflow=document.body.style.overflow;
     document.body.style.overflow='hidden';
     if(background)background.inert=true;
@@ -645,7 +645,9 @@
     const button=e.target.closest('button');
     if(!button)return;
     if(button.hasAttribute('data-wb-close')){close();return;}
-    if(button.dataset.wbStep!==undefined){setStep(Number(button.dataset.wbStep));return;}
+    // Step action buttons also carry data-wb-step as the *step ID*. Only
+    // progress-nav buttons may switch planning stages.
+    if(button.matches('#wbProgress button[data-wb-step]')){setStep(Number(button.dataset.wbStep));return;}
     if(button.hasAttribute('data-wb-back')){setStep(draft.step-1);return;}
     if(button.hasAttribute('data-wb-next')){if(draft.step===4)apply();else setStep(draft.step+1);return;}
     if(button.dataset.wbWeek){weekChange(Number(button.dataset.wbWeek));return;}
