@@ -1432,7 +1432,7 @@ function v6Render(){
     v6RenderSketches(p);
     v6RenderSketchView();
   }
-  window.v919RenderProjectOverview?.(p);
+  if(v6ProjectTab==='overview')window.v919RenderProjectOverview?.(p);
   if(v6ProjectTab==='sketch'&&!v6SketchEditing)v6CheckDraft(p);
 }
 function v6RenderNotes(p){
