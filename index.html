@@ -683,7 +683,7 @@ function canvasSaveStatus(failed){
         ?'Newer Blueprint data was saved in another window. This window cannot overwrite it. Export a recovery copy, then reload.'
         :'Changes not saved on this device. Keep Blueprint open and retry, or export a backup.';
     $('canvasSaveRetry').hidden=!!canvasLoadError||canvasExternalChange;
-    $('canvasSaveRecovery').hidden=!!canvasLoadError?canvasLastManifest===null:!canvasExternalChange;
+    $('canvasSaveRecovery').hidden=!!canvasLoadError&&canvasLastManifest===null;
     $('canvasSaveReload').hidden=!!canvasLoadError||!canvasExternalChange;
   }
 }
