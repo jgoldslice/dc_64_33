@@ -229,7 +229,11 @@
     surface.style.transform=Math.abs(noteZoom-1)<.0005?'none':'scale('+noteZoom+')';
     // Keep SVG pointer coordinates 1:1 with the logical notebook sheet.
     if(priorWidth!==surface.clientWidth||priorHeight!==surface.clientHeight){
-      if(ctx)strokesView(ctx.page);
+      if(ctx&&activeStroke?.page===ctx.page){
+        // Preserve the live path during a rotation/viewport resize rather
+        // than rebuilding every saved stroke before the Pencil lifts.
+        ink.setAttribute('viewBox','0 0 '+Math.max(1,surface.clientWidth)+' '+Math.max(1,surface.clientHeight));
+      }else if(ctx)strokesView(ctx.page);
     }
   }
   function zoomAnchor(){
@@ -481,8 +485,8 @@
   }
   const pressureStroke=stroke=>(stroke.points||[]).some(p=>typeof p.p==='number');
   const strokePath=stroke=>pressureStroke(stroke)?variableInkPath(stroke):smoothInkPath(stroke.points||[]);
-  function inkSample(e,last,penContact=false){
-    const point=inkPosition(e);
+  function inkSample(e,last,penContact=false,inverseMatrix=null){
+    const point=inkPosition(e,inverseMatrix);
     if(e.pointerType==='pen'||penContact){
       const pressure=Number(e.pressure);
       // At lift-off iOS reports 0: retain the final contact pressure.
@@ -1123,10 +1127,10 @@
   // Convert the Pencil's screen contact into actual SVG user coordinates.
   // getScreenCTM covers scrolling, Safari zoom, responsive sizing and CSS
   // transforms; unlike simple rect subtraction it also handles SVG scaling.
-  function inkPosition(e){
-    const matrix=ink.getScreenCTM?.();
-    if(matrix&&typeof DOMPoint==='function'){
-      const local=new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse());
+  function inkPosition(e,inverseMatrix=null){
+    const inverse=inverseMatrix || ink.getScreenCTM?.()?.inverse();
+    if(inverse&&typeof DOMPoint==='function'){
+      const local=new DOMPoint(e.clientX,e.clientY).matrixTransform(inverse);
       return {x:Math.round(local.x*100)/100,y:Math.round(local.y*100)/100};
     }
     // Fallback for browser versions lacking DOMPoint.
@@ -1170,7 +1174,10 @@
   function eraseSweep(page,from,positions){
     let previous=from;
     if(!positions.length)return previous;
-    const path=positions.map(inkPosition);
+    // Convert a coalesced packet using ONE inverse transform, avoiding
+    // repeated SVG geometry queries for every Pencil sample.
+    const inverse=ink.getScreenCTM?.()?.inverse();
+    const path=positions.map(sample=>inkPosition(sample,inverse));
     const passes=[previous,...path];
     const oldCount=(page.strokes||[]).length;
     page.strokes=page.strokes.filter(stroke=>{
@@ -1230,18 +1237,43 @@
     return coalesced?.length?coalesced:[e];
   };
   let activeStroke=null,activeErase=null,inkFrame=0;
+  // Rendering full pressure ribbons on every move unnecessarily rebuilt all
+  // previous points and their joins. During contact, append *only new points*
+  // to a light SVG centerline; refine to the original pressure-aware vector
+  // ribbon exactly once when the Pencil is lifted.
+  function renderLiveInk(){
+    const drawing=activeStroke;if(!drawing)return;
+    const points=drawing.stroke.points;
+    for(let i=drawing.previewCount;i<points.length;i++){
+      const p=points[i];
+      drawing.previewPath+=' L'+p.x+' '+p.y;
+    }
+    drawing.previewCount=points.length;
+    // Prediction is DISPLAY-ONLY: WebKit can estimate the tip's near-future
+    // positions, but they must never enter the saved points or undo history.
+    let visiblePath=drawing.previewPath;
+    for(const p of drawing.predictedPoints||[])visiblePath+=' L'+p.x+' '+p.y;
+    drawing.element.setAttribute('d',visiblePath);
+  }
   function queueInkRender(){
+    if(!activeStroke)return;
+    // Make the FIRST actual movement visible in the same input turn rather
+    // than waiting an extra requestAnimationFrame callback to schedule it.
+    if(!activeStroke.firstMoveRendered){
+      activeStroke.firstMoveRendered=true;
+      renderLiveInk();return;
+    }
     if(inkFrame)return;
-    // Pencil can send several coalesced events per frame. Update the live
-    // SVG path once per display frame, while retaining all sampled points.
-    inkFrame=requestAnimationFrame(()=>{
-      inkFrame=0;
-      if(activeStroke)activeStroke.element.setAttribute('d',strokePath(activeStroke.stroke));
-    });
+    inkFrame=requestAnimationFrame(()=>{inkFrame=0;renderLiveInk();});
   }
   function flushInkRender(){
     if(inkFrame){cancelAnimationFrame(inkFrame);inkFrame=0;}
-    if(activeStroke)activeStroke.element.setAttribute('d',strokePath(activeStroke.stroke));
+    if(!activeStroke)return;
+    const drawing=activeStroke;
+    drawing.element.setAttribute('d',strokePath(drawing.stroke));
+    const pressure=pressureStroke(drawing.stroke);
+    drawing.element.setAttribute('fill',pressure?(drawing.stroke.color||'#111111'):'none');
+    drawing.element.setAttribute('stroke',pressure?'none':(drawing.stroke.color||'#111111'));
   }
   ink.addEventListener('pointerdown',e=>{
     const ctx=current();if(!ctx||(mode!=='pen'&&mode!=='erase'))return;
@@ -1262,8 +1294,15 @@
     const stroke={id:newId(),points:[pt,{...pt}],width:2.5,color:selectedInkColor};
     ctx.page.strokes.push(stroke);
     const element=makeInkElement(stroke);
+    // A round-capped contact dot appears on pointerdown itself; the fast
+    // preview stays one editable path (no canvas snapshot or extra ink model).
+    const previewPath='M'+pt.x+' '+pt.y+' l0.01 0';
+    element.setAttribute('d',previewPath);
+    element.setAttribute('fill','none');
+    element.setAttribute('stroke',selectedInkColor);
     ink.append(element);
-    activeStroke={id:e.pointerId,stroke,page:ctx.page,element,isPen:e.pointerType==='pen'};
+    activeStroke={id:e.pointerId,stroke,page:ctx.page,element,isPen:e.pointerType==='pen',
+      previewPath,previewCount:stroke.points.length,firstMoveRendered:false,predictedPoints:[]};
   });
   ink.addEventListener('pointermove',e=>{
     if(activeErase&&e.pointerId===activeErase.id){
@@ -1273,13 +1312,37 @@
     }
     if(!activeStroke||e.pointerId!==activeStroke.id)return;
     if(e.cancelable)e.preventDefault(); // Never allow Safari to steal Pencil motion.
+    // One transform per packet. On iPad a single pointermove can contain
+    // several coalesced samples; every pressure and coordinate is retained.
+    const inverse=ink.getScreenCTM?.()?.inverse();
+    let changed=false;
     for(const sample of pointerSamples(e)){
       const last=activeStroke.stroke.points.at(-1);
-      const point=inkSample(sample,last,activeStroke.isPen);
-      if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
+      const point=inkSample(sample,last,activeStroke.isPen,inverse);
+      if(Math.hypot(point.x-last.x,point.y-last.y)>.12){
+        activeStroke.stroke.points.push(point);changed=true;
+      }
     }
-    // Update only the active path instead of rebuilding every previous stroke.
-    queueInkRender();
+    // Safari 18.2+ optionally exposes a small set of future Pencil positions.
+    // Limit extrapolation to ~16 logical pixels to avoid visible overshoot,
+    // and completely replace it on every new confirmed event.
+    const previousPredicted=activeStroke.predictedPoints.length;
+    activeStroke.predictedPoints=[];
+    if(activeStroke.isPen&&typeof e.getPredictedEvents==='function'){
+      const predictions=e.getPredictedEvents()||[];
+      const tip=activeStroke.stroke.points.at(-1);
+      let accepted=0;
+      for(const future of predictions){
+        if(accepted>=3)break;
+        const point=inkPosition(future,inverse);
+        const distance=Math.hypot(point.x-tip.x,point.y-tip.y);
+        if(!Number.isFinite(distance)||distance>16)break;
+        if(distance<=.12)continue;
+        activeStroke.predictedPoints.push(point);
+        accepted++;
+      }
+    }
+    if(changed||previousPredicted||activeStroke.predictedPoints.length)queueInkRender();
   });
   const finishStroke=e=>{
     if(activeErase&&e.pointerId===activeErase.id){
@@ -1309,10 +1372,15 @@
       flushInkRender();
       activeStroke=null;
       pushInkUndo(completed.page,{type:'draw',id:completed.stroke.id});
-      // Writing on the expanded zoom-out sheet must survive page switches.
-      const pts=completed.stroke.points;
-      growPage(completed.page,Math.max(...pts.map(point=>point.y))+70);
-      growPageWidth(completed.page,Math.max(...pts.map(point=>point.x))+60);
+      // Avoid allocating two arrays/spreading potentially thousands of
+      // points into function arguments on long handwritten strokes.
+      let maxX=0,maxY=0;
+      for(const point of completed.stroke.points){
+        if(point.y>maxY)maxY=point.y;
+        if(point.x>maxX)maxX=point.x;
+      }
+      growPage(completed.page,maxY+70);
+      growPageWidth(completed.page,maxX+60);
       persist();
     }
   };
@@ -1321,7 +1389,10 @@
   document.getElementById('v76UndoInk').addEventListener('click',undoInk);
   window.addEventListener('resize',()=>{
     syncZoomLayout();
-    const ctx=current();if(ctx)strokesView(ctx.page);
+    const ctx=current();
+    if(ctx&&activeStroke?.page!==ctx.page)strokesView(ctx.page);
+    // The ResizeObserver / syncZoomLayout path already updates ink's viewBox
+    // if dimensions change during an active Pencil gesture.
   });
   // Narrow bridge for optional workspace enhancements; all edits still use
   // the original page records, SVG rendering, undo control and verified save.
