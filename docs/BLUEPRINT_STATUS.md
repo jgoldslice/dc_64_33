@@ -7,17 +7,17 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — Notes icon-only toolbar v9.31 (feature branch; verification in progress)
+## 2026-11-18 — Notes icon-only toolbar v9.31 (merged; on-device QA outstanding)
 
 **Requested from actual iPad Safari screenshot:** Move Lasso into the Pen tool group directly after Eraser; render Lasso as an icon rather than a word; replace the labeled Blank/Graph select with a graph-paper icon that toggles each page's background. Reduce unnecessary horizontal toolbar width while keeping 44px minimum targets.
 
-**Implemented in `feature/notes-toolbar-icon-toggles-v931`:**
+**Implemented and merged:** [PR #48](https://github.com/jgoldslice/dc_64_33/pull/48) squash-merged into `main` as `d0cfb97a6f0de3c67d22198307654f81962ba2ba` (feature head `12838fc4e3f85118adab26593ae0e82cd43c52ed`).
 - `notes-workspace-v928.js` now inserts a looped-rope SVG Lasso button directly after the existing Eraser, while an icon-only graph-paper toggle sits alongside Picture in the nearby Misc group, so the wider Pen group does not overflow on 320px devices. They reuse the existing SVG sizes/primary palette and accessible names/titles, with visible pressed states.
 - Tapping Graph switches between Blank and Graph on the current page, preserving the original optional `paperStyle` state and existing backup behavior. The button's aria-label and aria-pressed change accordingly. When changing pages the icon restores the selected page's style. The Focus-mode Tools menu uses the same toggle and synchronizes with the main toolbar.
 - Removed the separate Lasso group and the Paper label/select, removing an entire toolbar group and freeing space. No changes to ink strokes, pressure, lasso selection, touch gesture ownership, drawing data, copy/paste, or persistence keys.
 - Updated `notes-workspace-v928.css` styles in place, `tests/notes-workspace-v928.spec.cjs` and `tests/canvas.spec.cjs` regression cases, and `sw.js` offline cache identifier. JavaScript syntax and stylesheet brace structure passed static checks.
 
-**Verification status:** Requested and coded on feature branch. Full automated browser suite and iPad physical Apple Pencil/Safari behavior must be checked independently. GitHub branch/PR is not an installed Capacitor/Xcode update. Do not reset local data or replace native Share Extension files.
+**Verification:** GitHub Actions [PR run 44393270401](https://github.com/jgoldslice/dc_64_33/actions/runs/44393270401) passed **237/237 Playwright browser tests**, including six phone/iPad viewport sizes, 320px toolbar fit, icon placement beside Eraser/Picture, per-page Blank/Graph toggling, Focus synchronization and legacy Notes interactions. Earlier CI run 44392804747 failed 320px toolbar overflow with both buttons in the Pen group; moving Graph beside Picture fixed the layout and the full suite passed. Real-device iPad Apple Pencil/Safari verification and the separate Capacitor/Xcode update are still outstanding. Keep user data and native Share Extension files intact.
 
 ## 2026-11-18 — Notes contextual lasso actions v9.30 (merged; on-device QA outstanding)
 
