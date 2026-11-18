@@ -14,36 +14,6 @@ async function openNotes(page){
   await page.locator('[data-v76-mode="pen"]').click();
   return errors;
 }
-const fastInk=String.raw`
-  const api=window.BlueprintNotesBridge,ink=api.ink;
-  const initial=ink.getScreenCTM();
-  const makeEvent=(type,{x,y,p=.5,pointerType='pen',id=932,coalesced=null})=>{
-    const screen=new DOMPoint(x,y).matrixTransform(initial);
-    const evt=new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:id,
-      pointerType,isPrimary:true,button:0,buttons:1,pressure:p,
-      clientX:screen.x,clientY:screen.y});
-    if(coalesced)Object.defineProperty(evt,'getCoalescedEvents',{value:()=>coalesced.map(pt=>
-      makeEvent('pointermove',{...pt,id,pointerType}))});
-    return evt;
-  };
-  const originalCapture=ink.setPointerCapture;
-  ink.setPointerCapture=()=>{};
-  try{
-    const down=makeEvent('pointerdown',{x:95,y:90,p:.12});
-    ink.dispatchEvent(down);
-    const element=ink.querySelector('.v818-ink-stroke');
-    const immediateDot={d:element.getAttribute('d'),fill:element.getAttribute('fill'),
-      stroke:element.getAttribute('stroke'),points:api.current().page.strokes[0].points.length};
-    const move=makeEvent('pointermove',{x:132,y:120,p:.88});
-    ink.dispatchEvent(move);
-    const live={d:element.getAttribute('d'),fill:element.getAttribute('fill'),
-      stroke:element.getAttribute('stroke'),pathAttached:element.isConnected};
-    ink.dispatchEvent(makeEvent('pointerup',{x:154,y:135,p:.45}));
-    const finished={d:element.getAttribute('d'),fill:element.getAttribute('fill'),
-      stroke:element.getAttribute('stroke'),points:api.current().page.strokes[0].points};
-    return {immediateDot,live,finished};
-  }finally{ink.setPointerCapture=originalCapture;}
-`;
 
 test('first Pencil dot and first movement are visible before any animation-frame callback',async({page})=>{
   const errors=await openNotes(page);
