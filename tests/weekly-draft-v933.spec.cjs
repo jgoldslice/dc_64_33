@@ -143,3 +143,26 @@ test('applying a Weekly Blueprint Step deletion preserves the parent Goal link o
   await page.reload();
   expect(await page.evaluate(()=>state.habits[0].goalId)).toBe('wbg1');
 });
+
+test('Goal Step move control does not navigate to another Weekly Blueprint stage',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.goals=[{id:'goal-move',title:'Build proficiency',category:'Personal',
+      actions:[{id:'first',title:'First Step',done:false},
+        {id:'second',title:'Second Step',done:false}]}];
+    save(true);render();
+  });
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  await page.locator('[data-wb-step="1"]').click();
+  await page.locator('[data-wb-goal-details="goal-move"] summary').click();
+  await page.locator('[data-wb-step-move="goal-move"][data-wb-step="second"][data-wb-dir="-1"]').click();
+  await expect(page.locator('#wbTitle')).toHaveText('Goals');
+  const draft=await page.evaluate(()=>BlueprintWeekly.getDraft());
+  expect(draft.step).toBe(1);
+  expect(draft.goals['goal-move'].actions.map(a=>a.id)).toEqual(['second','first']);
+  expect(await page.evaluate(()=>state.goals[0].actions.map(a=>a.id))).toEqual(['first','second']);
+  await page.locator('[data-wb-step="4"]').click();
+  await page.locator('[data-wb-next]').click();
+  expect(await page.evaluate(()=>state.goals[0].actions.map(a=>a.id))).toEqual(['second','first']);
+});
