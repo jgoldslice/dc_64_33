@@ -179,7 +179,9 @@ test('Notebook toolbar has a Textbox tool; blank taps create text only when it i
   await expect(toolbar.locator('.v79-tool-group[aria-label="Text"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Pen"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Misc"]')).toHaveCount(1);
-  await expect(toolbar.locator('button')).toHaveCount(12); // Includes page focus, Save sketch and pen chooser.
+  await expect(toolbar.locator('button')).toHaveCount(17); // Includes lasso, in-app ink actions, Focus and legacy tools.
+  await expect(toolbar.locator('#v928Lasso')).toBeVisible();
+  await expect(toolbar.locator('#v928Focus')).toBeVisible();
   await expect(toolbar.locator('#v818InkColor')).toBeVisible();
   await expect(toolbar.locator('.v815-zoom-tools[aria-label="Notebook zoom"]')).toBeVisible();
   await expect(toolbar.locator('#v815ZoomReset')).toHaveText('100%');
