@@ -164,3 +164,37 @@ test('desktop mouse still creates fixed-width editable strokes and undo works',a
   await page.locator('#v76UndoInk').click();
   expect(await page.evaluate(()=>window.BlueprintNotesBridge.current().page.strokes.length)).toBe(0);
 });
+
+test('predicted tip preview stays temporary and never pollutes saved Pencil geometry',async({page})=>{
+  const errors=await openNotes(page);
+  const result=await page.evaluate(()=>{
+    const api=window.BlueprintNotesBridge,ink=api.ink,matrix=ink.getScreenCTM(),
+      orig=ink.setPointerCapture;
+    ink.setPointerCapture=()=>{};
+    const ev=(type,x,y,p=.5)=>{
+      const pt=new DOMPoint(x,y).matrixTransform(matrix);
+      return new PointerEvent(type,{bubbles:true,cancelable:true,
+        pointerType:'pen',pointerId:936,isPrimary:true,button:0,
+        pressure:p,clientX:pt.x,clientY:pt.y});
+    };
+    try{
+      ink.dispatchEvent(ev('pointerdown',90,70,.2));
+      const move=ev('pointermove',120,100,.7);
+      Object.defineProperty(move,'getPredictedEvents',{value:()=>[
+        ev('pointermove',129,109,.7),
+        ev('pointermove',138,118,.7)]});
+      ink.dispatchEvent(move);
+      const preview=ink.querySelector('.v818-ink-stroke').getAttribute('d');
+      ink.dispatchEvent(ev('pointerup',120,100,.7));
+      const stroke=api.current().page.strokes.at(-1);
+      return {preview,final:ink.querySelector('.v818-ink-stroke').getAttribute('d'),
+        points:stroke.points,stored:JSON.parse(localStorage.getItem('jgold-planner-v1')).projects[0].notePages[0].strokes.at(-1).points};
+    }finally{ink.setPointerCapture=orig;}
+  });
+  expect(result.preview).toContain(' L129 109');
+  expect(result.preview).not.toContain(' L138 118'); // Bounded prediction.
+  expect(result.points).toEqual(result.stored);
+  expect(result.points.every(p=>p.x!==129&&p.x!==138)).toBe(true);
+  expect(result.final).toContain('Z');
+  expect(errors).toEqual([]);
+});
