@@ -68,10 +68,15 @@
   const selectable=event=>event.pointerType==='pen'||(event.pointerType==='mouse'&&event.button===0);
   const byId=(page)=>new Map((page.strokes||[]).map(stroke=>[String(stroke.id),stroke]));
   function bounds(page){
-    const points=(page.strokes||[]).filter(s=>selected.has(String(s.id))).flatMap(s=>s.points||[]);
-    if(!points.length)return null;
-    return {minX:Math.min(...points.map(p=>p.x)),minY:Math.min(...points.map(p=>p.y)),
-      maxX:Math.max(...points.map(p=>p.x)),maxY:Math.max(...points.map(p=>p.y))};
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    for(const stroke of page.strokes||[]){
+      if(!selected.has(String(stroke.id)))continue;
+      for(const point of stroke.points||[]){
+        minX=Math.min(minX,point.x);minY=Math.min(minY,point.y);
+        maxX=Math.max(maxX,point.x);maxY=Math.max(maxY,point.y);
+      }
+    }
+    return minX===Infinity?null:{minX,minY,maxX,maxY};
   }
   function contains(p,poly){
     let inside=false;
@@ -216,8 +221,10 @@
   function finishLasso(points,page){
     if(points.length<3)return;
     const poly=points;
-    const bb={minX:Math.min(...poly.map(p=>p.x)),maxX:Math.max(...poly.map(p=>p.x)),
-      minY:Math.min(...poly.map(p=>p.y)),maxY:Math.max(...poly.map(p=>p.y))};
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    for(const p of poly){minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);
+      minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);}
+    const bb={minX,maxX,minY,maxY};
     if((bb.maxX-bb.minX)*(bb.maxY-bb.minY)<120)return;
     selected=new Set((page.strokes||[]).filter(stroke=>touched(stroke,poly)).map(s=>String(s.id)));
   }
