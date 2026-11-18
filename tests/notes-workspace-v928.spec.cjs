@@ -211,7 +211,11 @@ test('icon-only Lasso and Graph controls sit directly after Eraser with one-tap 
   const buttons=await page.locator('.v79-tool-group[aria-label="Pen"] .v79-tool-buttons').evaluate(el=>
     [...el.querySelectorAll(':scope > button')].map(btn=>btn.id||btn.dataset.v76Mode)
   );
-  expect(buttons).toEqual(['pen','erase','v928Lasso','v928Paper','v818InkColor','v76UndoInk']);
+  expect(buttons).toEqual(['pen','erase','v928Lasso','v818InkColor','v76UndoInk']);
+  const pageButtons=await page.locator('.v79-tool-group[aria-label="Misc"] .v79-tool-buttons').evaluate(el=>
+    [...el.querySelectorAll(':scope > button')].map(btn=>btn.id)
+  );
+  expect(pageButtons).toEqual(['v76AddImage','v928Paper']);
   await expect(page.locator('#v928Lasso .v79-tool-svg')).toHaveCount(1);
   await expect(page.locator('#v928Paper .v79-tool-svg')).toHaveCount(1);
   await expect(toolbar.locator('.v928-paper-group')).toHaveCount(0);
