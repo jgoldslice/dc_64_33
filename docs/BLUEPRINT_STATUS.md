@@ -7,6 +7,17 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.33 Phase 4/5: relationship integrity and small-screen readability (feature PR; QA pending)
+
+**Implemented on `feature/v933-linked-record-polish`:**
+- Removing a Goal Step now removes a recurring Habit's obsolete `actionId` but preserves its `goalId`, weekly target, schedule, check-in history and metadata. A habitual behavior still supports the parent Goal after its individual Step is deleted. Goal-linked Tasks keep the existing explicit Step unlinking behavior.
+- Editing existing Goal Steps preserves their additional/unknown metadata rather than reconstructing the object with just ID/title/done. Event, Task and Habit extra fields remain intact during their editors' normal `Object.assign` updates.
+- Two-line titles with anywhere wrapping in Project Overview and Library image cards avoid truncating long descriptions into illegible one-line snippets. Card visuals, touch targets, drag reordering and resource IDs are unchanged.
+- Regression tests: `tests/goal-relationship-v933.spec.cjs` covers deleting a Goal Step and retained Habit/Task relationships, extra Goal Step fields, Event/Habit data, and persistence. `tests/responsive-polish-v933.spec.cjs` covers 320px–1180px viewport widths and preservation of in-progress Event form entries when the selected week changes.
+- Changed `index.html`, `library-order-v923.css`, `project-overview-v919.css`, `sw.js`, and two test files. No migrations, native project edits, new persisted fields, or modification to existing note ink.
+
+**Verification status:** Browser CI and device QA pending. Responsive browser widths are simulated—not physical Split View/Dynamic Type measurements. No Xcode/Capacitor synchronization performed.
+
 ## 2026-11-18 — v9.33 Phase 2: autosave, targeted rendering and Library loading (feature branch; QA pending)
 
 **Implemented on `feature/v933-performance`:**
