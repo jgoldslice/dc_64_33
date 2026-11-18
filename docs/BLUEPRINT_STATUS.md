@@ -23,6 +23,7 @@
 **Implemented in `feature/v933-weekly-integrated`:**
 - Carry forward the guarded draft editor from earlier exploratory PRs (#55/#58/#59): existing malformed or unreadable weekly drafts cannot be silently replaced; an explicit raw recovery download and confirmation-gated reset are available. Rapid text drafts batch at 220 ms, flush on blur/background/pagehide/beforeunload, and failed writes keep an unsaved warning. Structural and apply actions still save immediately.
 - Correct Goal–Habit consistency in the separate Weekly Blueprint Apply path: removing a Step clears an obsolete Habit `actionId` but retains its `goalId`; keep metadata on unchanged Goal Steps instead of discarding fields. Added full Apply/reload regression, alongside recovery, interrupted-save, and quota tests.
+- Initial integrated CI exposed two previously hidden issues: opening an unreadable draft accessed `selectedDay` on null; Step action buttons carried `data-wb-step` and were accidentally interpreted as planning-stage navigation. Both were corrected by guarding nullable drafts and restricting navigation to `#wbProgress button[data-wb-step]`. Existing Step Move/Delete now reaches its intended handler.
 - No storage key, backup schema, PencilKit/SVG, CloudKit or iOS app change.
 
 **Release gate:** Require GitHub CI on this rebased head; then device QA remains outstanding.
