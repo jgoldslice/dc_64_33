@@ -45,6 +45,7 @@
     '<button type="button" data-v928-mode="pen">Pen</button>'+
     '<button type="button" data-v928-mode="lasso">Lasso</button>'+
     '<button type="button" data-v928-mode="erase">Eraser</button>'+
+    '<button type="button" data-v928-action="undo">Undo</button>'+
     '<button type="button" data-v928-action="copy">Copy</button>'+
     '<button type="button" data-v928-action="paste">Paste</button>'+
     '<button type="button" data-v928-action="delete">Delete ink</button>'+
@@ -135,7 +136,8 @@
     copyButton.disabled=!hasSelection;deleteButton.disabled=!hasSelection;pasteButton.disabled=!hasPaste;
     lassoButton.setAttribute('aria-pressed',String(api.getMode()==='lasso'));
     focusBar.querySelectorAll('[data-v928-action]').forEach(btn=>{
-      btn.disabled=btn.dataset.v928Action==='paste'?!hasPaste:!hasSelection;
+      btn.disabled=btn.dataset.v928Action==='undo'?false:
+        btn.dataset.v928Action==='paste'?!hasPaste:!hasSelection;
     });
     focusBar.querySelectorAll('[data-v928-mode]').forEach(btn=>{
       btn.setAttribute('aria-pressed',String(btn.dataset.v928Mode===api.getMode()));
@@ -321,7 +323,8 @@
     const mode=e.target.closest('[data-v928-mode]');
     if(mode){api.setMode(mode.dataset.v928Mode);toggleFocusTools(false);return;}
     const action=e.target.closest('[data-v928-action]');
-    if(action){({copy:copySelection,paste:pasteInk,delete:deleteSelection}[action.dataset.v928Action])?.();return;}
+    if(action){({undo:()=>document.getElementById('v76UndoInk').click(),
+      copy:copySelection,paste:pasteInk,delete:deleteSelection}[action.dataset.v928Action])?.();return;}
   });
   focusPaper.addEventListener('change',()=>setPaper(focusPaper.value));
   document.addEventListener('keydown',e=>{
@@ -332,6 +335,9 @@
       if(focus){e.preventDefault();exitFocus();}
       else if(api.getMode()==='lasso'){e.preventDefault();resetSelection();api.setMode('select');}
       return;
+    }
+    if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'){
+      e.preventDefault();document.getElementById('v76UndoInk').click();return;
     }
     if(api.getMode()!=='lasso'||!(e.metaKey||e.ctrlKey))return;
     if(e.key.toLowerCase()==='c'&&selected.size){e.preventDefault();copySelection();}
