@@ -55,7 +55,7 @@
   const focusPaper=focusBar.querySelector('#v928FocusPaper');
   let clipboard=null,pasteCount=0,selected=new Set(),gesture=null;
   let focus=false,placeholder=null,previousOverflow='';
-  let undoHistory=[],activePageRef=null;
+  let activePageRef=null;
   const clone=value=>structuredClone(value);
   const present=()=>api.current();
   const samePage=()=>present()?.page===activePageRef;
@@ -153,30 +153,28 @@
     surface.dataset.paper=mode;paperSelect.value=mode;focusPaper.value=mode;
   }
   function onPageChange(project,page){
-    activePageRef=page;selected.clear();gesture=null;undoHistory=[];
+    activePageRef=page;selected.clear();gesture=null;
     surface.dataset.paper=paperFor(page);paperSelect.value=paperFor(page);focusPaper.value=paperFor(page);
     renderSelection();
   }
   function onInkRedraw(page){
-    if(page===present()?.page)renderSelection();
+    if(page!==present()?.page)return;
+    const available=new Set((page.strokes||[]).map(s=>String(s.id)));
+    selected=new Set([...selected].filter(id=>available.has(id)));
+    renderSelection();
   }
   function onModeChange(next){
     if(next!=='lasso'&&selected.size)resetSelection();
     else updateActions();
   }
-  function onDirectInkEdit(){
-    undoHistory=[];if(selected.size)resetSelection();
-  }
+  function onDirectInkEdit(){if(selected.size)resetSelection();}
   function cancelGesture(){
     if(!gesture)return;
     gesture=null;renderSelection();
   }
   window.BlueprintNotesWorkspace={onPageChange,onInkRedraw,onModeChange,onDirectInkEdit,cancelGesture};
 
-  function rememberUndo(action){
-    undoHistory.push({...action,page:present()?.page});
-    if(undoHistory.length>12)undoHistory.shift();
-  }
+  function rememberUndo(action){const ctx=present();if(ctx)api.pushInkUndo(ctx.page,action);}
   function copySelection(){
     const ctx=present();if(!ctx||!selected.size)return;
     clipboard=ctx.page.strokes.filter(s=>selected.has(String(s.id))).map(clone);
@@ -205,23 +203,6 @@
     ctx.page.strokes=ctx.page.strokes.filter(s=>!selected.has(String(s.id)));
     selected.clear();api.persist();api.strokesView(ctx.page);
   }
-  function undoLasso(event){
-    const ctx=present(),op=undoHistory[undoHistory.length-1];
-    if(!ctx||!op||op.page!==ctx.page)return;
-    event.preventDefault();event.stopImmediatePropagation();
-    undoHistory.pop();
-    if(op.type==='paste'){
-      const ids=new Set(op.ids);
-      ctx.page.strokes=ctx.page.strokes.filter(s=>!ids.has(String(s.id)));
-    }else if(op.type==='move'){
-      const originals=new Map(op.before.map(x=>[String(x.id),x.points]));
-      for(const s of ctx.page.strokes)if(originals.has(String(s.id)))s.points=clone(originals.get(String(s.id)));
-    }else if(op.type==='delete'){
-      for(const x of op.removed)ctx.page.strokes.splice(x.index,0,clone(x.stroke));
-    }
-    selected.clear();api.persist();api.strokesView(ctx.page);
-  }
-  document.getElementById('v76UndoInk').addEventListener('click',undoLasso,true);
 
   function finishLasso(points,page){
     if(points.length<3)return;
