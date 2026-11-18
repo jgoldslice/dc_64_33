@@ -122,6 +122,7 @@ test('Pencil pressure is stored for new ink and drawn as variable-width filled S
   expect(result.backupPressure).toEqual(result.pressure);
   await page.reload();
   await page.locator('[data-tab="brainstorm"]').click();
+  await page.evaluate(()=>v6OpenProject(state.projects[0].id));
   await page.locator('[data-v919-project-open="notes"]').click();
   expect(await page.evaluate(()=>window.BlueprintNotesBridge.current().page.strokes.at(-1).points.map(p=>p.p))).toEqual(result.pressure);
   expect(errors).toEqual([]);
