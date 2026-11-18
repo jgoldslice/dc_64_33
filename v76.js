@@ -229,7 +229,11 @@
     surface.style.transform=Math.abs(noteZoom-1)<.0005?'none':'scale('+noteZoom+')';
     // Keep SVG pointer coordinates 1:1 with the logical notebook sheet.
     if(priorWidth!==surface.clientWidth||priorHeight!==surface.clientHeight){
-      if(ctx)strokesView(ctx.page);
+      if(ctx&&activeStroke?.page===ctx.page){
+        // Preserve the live path during a rotation/viewport resize rather
+        // than rebuilding every saved stroke before the Pencil lifts.
+        ink.setAttribute('viewBox','0 0 '+Math.max(1,surface.clientWidth)+' '+Math.max(1,surface.clientHeight));
+      }else if(ctx)strokesView(ctx.page);
     }
   }
   function zoomAnchor(){
@@ -1362,7 +1366,10 @@
   document.getElementById('v76UndoInk').addEventListener('click',undoInk);
   window.addEventListener('resize',()=>{
     syncZoomLayout();
-    const ctx=current();if(ctx)strokesView(ctx.page);
+    const ctx=current();
+    if(ctx&&activeStroke?.page!==ctx.page)strokesView(ctx.page);
+    // The ResizeObserver / syncZoomLayout path already updates ink's viewBox
+    // if dimensions change during an active Pencil gesture.
   });
   // Narrow bridge for optional workspace enhancements; all edits still use
   // the original page records, SVG rendering, undo control and verified save.
