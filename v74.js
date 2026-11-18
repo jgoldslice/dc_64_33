@@ -167,6 +167,35 @@
    if(!data||typeof data!=='object'||Array.isArray(data)||
      !Array.isArray(data.tasks)||!Array.isArray(data.goals)||!Array.isArray(data.habits)||
      (data.projects!==undefined&&!Array.isArray(data.projects)))throw Error('Unrecognized Blueprint backup data');
+   // A checksum-valid archive may still contain structurally damaged
+   // records. Reject it before staging IndexedDB bytes or replacing planner.
+   const records=(value,label)=>{
+     if(value===undefined)return [];
+     if(!Array.isArray(value))throw Error('Invalid '+label+' in backup');
+     for(const item of value)if(!item||typeof item!=='object'||Array.isArray(item))
+       throw Error('Damaged '+label+' record in backup');
+     return value;
+   };
+   for(const field of ['tasks','goals','habits','events','ideas','projects','weeklyGoals'])
+     records(data[field],field);
+   for(const goal of data.goals||[])records(goal.actions,'goal actions');
+   for(const idea of data.ideas||[])records(idea.actions,'idea actions');
+   for(const habit of data.habits||[]){
+     if(habit.days!==undefined&&(!habit.days||typeof habit.days!=='object'||Array.isArray(habit.days)))
+       throw Error('Invalid habit history in backup');
+     if(habit.schedule!==undefined&&!Array.isArray(habit.schedule))
+       throw Error('Invalid habit schedule in backup');
+   }
+   for(const p of data.projects||[]){
+     if(p.notes!==undefined&&!Array.isArray(p.notes))throw Error('Invalid project notes in backup');
+     for(const field of ['actions','library','notePages','contentBlocks'])
+       records(p[field],'project '+field);
+     for(const page of p.notePages||[]){
+       records(page.objects,'note page objects');
+       for(const stroke of records(page.strokes,'note page strokes'))
+         records(stroke.points,'stroke points');
+     }
+   }
    const ids=new Set();
    for(const p of data.projects||[]){
      if(!p||typeof p!=='object'||Array.isArray(p)||p.id==null)throw Error('Invalid project in backup');
