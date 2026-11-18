@@ -7,18 +7,18 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — Goal-linked habits v9.27 (feature branch; web and iOS release unverified)
+## 2026-11-18 — Goal-linked habits v9.27 (merged into main; iOS device QA outstanding)
 
 **Requested:** From Goal cards, add a recurring Habit directly, retain one shared habit record, and display the parent Goal in smaller italic type throughout Habits. The piano example also needs an optional flexible target (e.g., 4 practice days per week instead of mandatory fixed weekdays).
 
-**Implemented on `feature/goal-linked-habits-v927`:**
+**Implemented and merged:** [PR #45](https://github.com/jgoldslice/dc_64_33/pull/45) was squash-merged to `main` as `67cc749192f59fc4fd3a7f0a784230ccf40668dd` (feature head `efe747d48f64403a04d7b36448e0683e2c244bcb`).
 - A direct `+ Habit` control appears beside `+ Step` on each Goal card, opens the existing Habit modal with its Connected Goal preselected, and creates a normal entry in `state.habits`. Users can also link, relink or unlink a Habit from its regular editor.
 - Existing Goal cards list linked Habits separately from one-time Steps, with a current-week completion count. The Today, Week and Plan → Habits trackers and manager show the parent goal in small italic text. All checkboxes still operate on the same habit record; no second data store or duplicate schedule exists.
 - Added an optional integer `weeklyTarget` (1 through 7 and no larger than the number of selected repeat days). Example: leave all seven weekdays available and target four completions per week. Legacy Habits keep their prior schedule-based progress. A changed link preserves existing completion history.
 - Editing or removing Goal Steps preserves independent, goal-only Habits. Existing step-linked Habits still unlink when their step is removed. Deleting a Goal unlinks its Habits without deleting them.
 - Touched `index.html`, `weekly-blueprint-v918.js`, new `goal-habits-v927.css`, `sw.js` offline cache, and browser regression tests. Old planner state and `jgold-planner-v1` backups remain readable; no storage key or IndexedDB migration is introduced.
 
-**Evidence status:** Code changes written to a reviewable branch. New `tests/goal-linked-habits-v927.spec.cjs` covers creation, 4-day target, Today/Week synchronization, relink/unlink, Step changes, persistence, and Goal deletion; updated goal-button regression expectation. Automated browser test results, GitHub Pages deployment, physical iPhone/iPad verification, and native Xcode installation are **pending until explicitly verified**.
+**Evidence status:** New `tests/goal-linked-habits-v927.spec.cjs` covers creation, 4-day target, Today/Week synchronization, relink/unlink, Step changes, persistence, and Goal deletion; updated goal-button regression expectation. **Browser automated tests passed** in GitHub Actions [PR run 44379161706](https://github.com/jgoldslice/dc_64_33/actions/runs/44379161706) (221/221). The initial run 44378702335 yielded 217 passes and four new-test selector failures; those tests were corrected and fully rerun. Push-triggered `main` workflows ([browser run 44379585737](https://github.com/jgoldslice/dc_64_33/actions/runs/44379585737), [web publish run 44379585744](https://github.com/jgoldslice/dc_64_33/actions/runs/44379585744)) were queued at this documentation check and require separate success confirmation. Physical iPhone/iPad verification and native Xcode installation are **not verified**.
 
 **Notes fidelity investigation (not a drawing-engine change):** `v76.js` saves ink as vector SVG paths, using mid-point quadratic smoothing and a fixed width; however, it zooms the entire note surface by a CSS `scale()` up to 500%. WebKit's transformed SVG compositing and stroke processing can look softer than native, device-resolution PencilKit ink, especially at extreme magnification. The separate native PencilKit prototype remains experimental and its drawing data is not in the complete-backup pathway; no untested replacement or note migration was made. Further iPad Pencil QA and a safe zoom/rendering experiment are required.
 
