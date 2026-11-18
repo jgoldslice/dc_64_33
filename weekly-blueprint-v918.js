@@ -390,7 +390,7 @@
     if(!draft)return;
     E('wbTitle').textContent=STEPS[draft.step];
     E('wbProgress').innerHTML=STEPS.map((name,i)=>
-      '<button type="button" data-wb-step="'+i+'" '+(i===draft.step?'aria-current="step"':'')+
+      '<button type="button" data-wb-stage="'+i+'" data-wb-step="'+i+'" '+(i===draft.step?'aria-current="step"':'')+
       ' class="'+(i<draft.step?'wb-done':'')+'">'+name+'</button>').join('');
     const main=E('wbMain'),top=resetScroll?0:main.scrollTop;
     main.innerHTML=renderers[draft.step]();
@@ -645,7 +645,7 @@
     const button=e.target.closest('button');
     if(!button)return;
     if(button.hasAttribute('data-wb-close')){close();return;}
-    if(button.dataset.wbStep!==undefined){setStep(Number(button.dataset.wbStep));return;}
+    if(button.dataset.wbStage!==undefined){setStep(Number(button.dataset.wbStage));return;}
     if(button.hasAttribute('data-wb-back')){setStep(draft.step-1);return;}
     if(button.hasAttribute('data-wb-next')){if(draft.step===4)apply();else setStep(draft.step+1);return;}
     if(button.dataset.wbWeek){weekChange(Number(button.dataset.wbWeek));return;}
