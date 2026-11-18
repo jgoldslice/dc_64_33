@@ -1179,6 +1179,45 @@
     }
     return previous;
   }
+  // One chronological Undo stack per note page, shared by pen/eraser/lasso.
+  // Each command stores only affected ink; legacy notes remain readable.
+  const inkUndoHistory=new WeakMap();
+  function pushInkUndo(page,command){
+    if(!page||!command)return;
+    let stack=inkUndoHistory.get(page);
+    if(!stack){stack=[];inkUndoHistory.set(page,stack);}
+    stack.push(command);
+    if(stack.length>40)stack.shift();
+  }
+  function undoInk(){
+    const ctx=current(),page=ctx?.page,stack=page&&inkUndoHistory.get(page);
+    if(!stack?.length)return;
+    const op=stack.pop();
+    if(op.type==='draw'){
+      page.strokes=page.strokes.filter(s=>String(s.id)!==String(op.id));
+    }else if(op.type==='erase'||op.type==='delete'){
+      const existing=new Set(page.strokes.map(s=>String(s.id)));
+      for(const item of op.removed.slice().sort((a,b)=>a.index-b.index)){
+        if(existing.has(String(item.stroke.id)))continue;
+        page.strokes.splice(item.index,0,item.stroke);
+        existing.add(String(item.stroke.id));
+      }
+    }else if(op.type==='paste'){
+      const ids=new Set(op.ids.map(String));
+      page.strokes=page.strokes.filter(s=>!ids.has(String(s.id)));
+    }else if(op.type==='move'){
+      const originals=new Map(op.before.map(x=>[String(x.id),x.points]));
+      for(const stroke of page.strokes)if(originals.has(String(stroke.id)))
+        stroke.points=structuredClone(originals.get(String(stroke.id)));
+    }
+    persist();strokesView(page);
+  }
+  function finishEraseHistory(pending){
+    const remaining=new Set(pending.page.strokes.map(s=>String(s.id)));
+    const removed=pending.originalStrokes.map((stroke,index)=>({index,stroke}))
+      .filter(x=>!remaining.has(String(x.stroke.id)));
+    if(removed.length)pushInkUndo(pending.page,{type:'erase',removed});
+  }
   const pointerSamples=e=>{
     const coalesced=e.getCoalescedEvents?.();
     return coalesced?.length?coalesced:[e];
@@ -1242,12 +1281,18 @@
         // A cancelled pinch/gesture must not commit a partial eraser sweep.
         pending.page.strokes=pending.originalStrokes;
         strokesView(pending.page);persist();
-      }else if(e.type==='pointerup')eraseSweep(pending.page,pending.last,[e]);
+      }else if(e.type==='pointerup'){
+        eraseSweep(pending.page,pending.last,[e]);
+        finishEraseHistory(pending);
+      }
     }
     if(activeStroke&&activeStroke.id===e.pointerId){
       if(e.type==='pointercancel'){
         // Safari cancels a pen pointer during a pinch; keep the existing mark.
-        flushInkRender();activeStroke=null;persist();return;
+        const pending=activeStroke;
+        flushInkRender();activeStroke=null;
+        pushInkUndo(pending.page,{type:'draw',id:pending.stroke.id});
+        persist();return;
       }
       if(e.type==='pointerup'){
         const last=activeStroke.stroke.points.at(-1),point=inkSample(e,last);
@@ -1256,6 +1301,7 @@
       const completed=activeStroke;
       flushInkRender();
       activeStroke=null;
+      pushInkUndo(completed.page,{type:'draw',id:completed.stroke.id});
       // Writing on the expanded zoom-out sheet must survive page switches.
       const pts=completed.stroke.points;
       growPage(completed.page,Math.max(...pts.map(point=>point.y))+70);
@@ -1265,9 +1311,7 @@
   };
   ink.addEventListener('pointerup',finishStroke);
   ink.addEventListener('pointercancel',finishStroke);
-  document.getElementById('v76UndoInk').addEventListener('click',()=>{
-    const ctx=current();if(!ctx||!ctx.page.strokes.length)return;ctx.page.strokes.pop();persist();strokesView(ctx.page);
-  });
+  document.getElementById('v76UndoInk').addEventListener('click',undoInk);
   window.addEventListener('resize',()=>{
     syncZoomLayout();
     const ctx=current();if(ctx)strokesView(ctx.page);
@@ -1275,7 +1319,7 @@
   // Narrow bridge for optional workspace enhancements; all edits still use
   // the original page records, SVG rendering, undo control and verified save.
   window.BlueprintNotesBridge={current,persist,strokesView,growPage,growPageWidth,
-    setMode:applyMode,getMode:()=>mode,inkPosition,getZoom:()=>noteZoom,
+    setMode:applyMode,getMode:()=>mode,inkPosition,getZoom:()=>noteZoom,pushInkUndo,
     root,surface,ink,zoomViewport};
   applyMode('select');
   if(v6Project())renderPage(v6Project(),true);
