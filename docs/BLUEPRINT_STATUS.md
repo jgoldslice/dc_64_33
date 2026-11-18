@@ -7,6 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.33 Additional media-write safeguards (feature branch)
+
+**Newly confirmed data-loss risks:** The legacy Notes image-block delete flow could remove image bytes even when saving the updated manifest failed. The sketch Save flow could replace the previous image and clear the drawing/draft before the Library record had been safely committed.
+
+**Implemented in `feature/v933-media-save-safety`:** Notes block deletion now uses `save(true)` and restores its record on failure; after successful save, image data is deleted only when no remaining Library, block or note-page reference uses the key. Sketch saving now stages a *new* image key instead of overwriting the existing image, verifies the Library update before clearing the draft or canvas, and keeps both the previous image and new draft recoverable on storage errors. Old superseded blobs are reclaimed only when unreferenced. No storage migration or native code changes.
+
+**Testing:** `tests/media-integrity-v933.spec.cjs` checks failed-save Note image preservation, failed-update sketch/draft safety and V2 backup checksum compatibility. The larger backup/export/restore test and native integration readiness document were already merged separately with PR #52; this branch adds no duplicate exporter changes. Automated CI and physical iPad checks remain release gates.
+
 ## 2026-11-18 — v9.33 Phase 2: autosave, targeted rendering and Library loading (feature branch; QA pending)
 
 **Implemented on `feature/v933-performance`:**
