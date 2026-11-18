@@ -18,6 +18,18 @@
 
 **Verification:** Static inline-script parsing passed. Full browser CI and timing results not yet confirmed. Actual iPhone/iPad touch, low-memory, Split View and Pencil behavior remain physical-device QA gates. No native Swift/Capacitor files touched, no migration and no schema/backup format change.
 
+## 2026-11-18 — v9.33 Media integrity and backup memory hardening (review branch)
+
+**Risk detected:** Original v6 sketch-save path overwrote an existing image key and cleared the drawing/draft before the Library record was confirmed saved; the v74 note-block Delete handler removed IndexedDB bytes even if its manifest save failed. Both could strand or destroy media when browser storage fails.
+
+**Implemented on `feature/v933-media-backup-hardening`:**
+- Saving a sketch now writes to a new image key (copy-on-write), updates the existing sketch record ID/title only in memory first, requires a verified `save(true)`, and only then clears the editing canvas/draft and garbage-collects the previous image if no other records reference it. On failed or ambiguous save, both previous image and new image remain stored, and the drawing/draft stays available for Retry or recovery export.
+- Deleting an image block from project Notes now verifies its manifest save; on failure it restores the block and leaves its image bytes intact. A successful deletion removes image bytes only if no remaining Library, page or content-block record references them.
+- Complete backup export remains the existing `canvas-complete-backup` V2 JSON schema with exactly the same SHA256 integrity fields. Instead of retaining all base64 strings in a single attachment array and serializing them again, it assembles the JSON into incremental Blob parts, reducing retained JavaScript string memory for many images. This is not yet a true streaming-to-disk exporter, and peak RAM on iPad still requires testing.
+- Added tests in `tests/media-integrity-v933.spec.cjs` for failed save and byte preservation, sketch copy-on-write failure, and multi-attachment backup SHA256 compatibility; existing backup import tests remain active.
+
+**Verification:** Changes committed for browser CI and not yet merged. No backup schema changes or data migration. Physical iPad memory measurements and native Capacitor installation remain outstanding.
+
 ## 2026-11-18 — v9.33 Phase 2/3: focused renders and efficient project loading (review branch)
 
 **Implemented in `feature/v933-performance`:**
