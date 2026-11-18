@@ -7,13 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — Notes low-latency ink v9.32 (feature branch; device QA pending)
+## 2026-11-18 — Notes low-latency ink v9.32 (merged; physical-device QA outstanding)
 
 **Requested:** Make handwriting visible sooner after Pencil contact and reduce the delay/sag between drawing and visible ink, without disturbing other Notes work.
 
 **Root-cause analysis in current `v76.js`:** The existing drawing path recomputed a full pressure-sensitive SVG ribbon for every animation-frame update (including all preceding points) and called `getScreenCTM().inverse()` separately for every coalesced Pencil sample. This can become expensive on long pen strokes; first movement was also deferred to `requestAnimationFrame`.
 
-**Implemented on `feature/notes-low-latency-ink-v932`:**
+**Implemented and merged:** [PR #49](https://github.com/jgoldslice/dc_64_33/pull/49) squash-merged into `main` as `779c6836bb8725b67cdabd05f3f4174e22578502` (feature head `4c7adacac2a4206e31f2d1a41d84d149f0de2e41`).
 - On pointerdown immediately show the pen-contact dot. The first pointermove now writes its incremental SVG centerline immediately in the input handler, without waiting for the next `requestAnimationFrame`; subsequent moves batch into one animation-frame update. The preview appends only new sampled points; it does **not** recompute previous pressure-geometry on each movement.
 - On pointerup (or Pencil pointercancel) refine the single live SVG path into the existing smooth, fully pressure-sensitive filled outline. The original complete x/y/pressure point arrays, ink IDs, color, width, undo, pen-versus-finger ownership, lasso, export, storage and backup formats are unchanged. The preview is deliberately a fast centerline; complete pressure shaping becomes visible on stroke completion.
 - If WebKit supplies predicted Pencil events (supported in modern Safari), render up to three bounded future tip positions (within 16 logical px of the last real point) on the temporary preview only. Discard/replace them as confirmed input arrives; never include predictions in saved strokes, undo entries or JSON backups.
@@ -21,7 +21,7 @@
 - A screen resize/rotation during an active Pencil stroke updates the ink viewBox but avoids rebuilding all existing SVG strokes, so live handwriting is not discarded or delayed by an unnecessary full redraw.
 - Files: `v76.js`, new `tests/notes-ink-latency-v932.spec.cjs`, offline `sw.js`, and this status update. No schema migration, new storage keys, native PencilKit or other Swift changes.
 
-**Verification:** Static JS syntax passed. Automated browser tests were authored to check dot/first movement before any animation-frame callback, full saved coalesced pressure history with one geometry transform, bounded and unsaved predicted preview positions, completed SVG pressure outlines, undo, mouse compatibility, and live-stroke survival during resize. The first feature CI run [44396418255](https://github.com/jgoldslice/dc_64_33/actions/runs/44396418255) passed **241/241** tests before the optional prediction enhancement was added; the revised run remains pending; physical Pencil latency and frame timing cannot be truthfully measured in simulated Playwright input. The owner should compare the iPad Safari experience (blank and graph pages, 100–500% zoom, ordinary/faster writing, finger pan/pinch and erase/Undo) after web deployment. Installed Capacitor/Xcode app is not updated by GitHub alone.
+**Verification:** Static JS syntax passed. GitHub Actions [feature-branch browser run 44397077674](https://github.com/jgoldslice/dc_64_33/actions/runs/44397077674) passed **242/242 Playwright tests** on `4c7adacac2a4206e31f2d1a41d84d149f0de2e41`. Tests include instant first-ink DOM mutation before animation-frame scheduling, 180 real coalesced pressure samples via one transform, a bounded temporary predicted tip excluded from saved ink, pressure-vector finalization, undo, mouse and resize compatibility, plus existing Notes/Blueprint regressions. Actual Apple Pencil-to-photon latency and display frame rate have **not** been measured on physical iPad; synthetic input proves code execution order, not latency milliseconds. The owner should compare Safari after web deployment using blank/graph pages, 100–500% zoom, writing at different speeds, finger pan/pinch and erase/Undo. Native Capacitor/Xcode app is still separate and not updated by GitHub alone.
 
 ## 2026-11-18 — Notes icon-only toolbar v9.31 (merged; on-device QA outstanding)
 
