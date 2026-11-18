@@ -105,3 +105,41 @@ test('a Weekly Blueprint quota failure retains its unsaved draft and warns on ex
     inMemory:'Uncommitted scheduled meeting',warned:true,blockedExit:true
   });
 });
+
+test('applying a Weekly Blueprint Step deletion preserves the parent Goal link of its Habit',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.goals=[{id:'wbg1',title:'Learn piano',category:'Personal',motivation:'',
+      actions:[{id:'step1',title:'Practice scales',done:false},
+        {id:'step2',title:'Learn a song',done:false,plannedDate:'2026-12-01',
+         metadata:{source:'old-note'}}]}];
+    state.habits=[{id:'habit1',title:'Practice daily',goalId:'wbg1',actionId:'step1',
+      days:{'2026-11-16':true},schedule:[0,1,2,3,4,5,6],weeklyTarget:4,
+      createdOn:'2026-11-16'}];
+    state.tasks=[];state.events=[];state.ideas=[];
+    if(!save(true))throw Error('Fixture failed to save');
+    render();
+  });
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  await page.locator('[data-wb-step="1"]').click();
+  await page.locator('[data-wb-goal-details="wbg1"] summary').click();
+  await page.locator('[data-wb-step-delete="wbg1"][data-wb-step="step1"]').click();
+  expect(await page.evaluate(()=>state.goals[0].actions)).toHaveLength(2);
+  await page.locator('[data-wb-step="4"]').click();
+  await page.locator('[data-wb-next]').click();
+  const result=await page.evaluate(()=>({
+    habit:structuredClone(state.habits[0]),
+    steps:structuredClone(state.goals[0].actions)
+  }));
+  expect(result.habit.goalId).toBe('wbg1');
+  expect(result.habit.actionId).toBe('');
+  expect(result.habit.weeklyTarget).toBe(4);
+  expect(result.habit.days['2026-11-16']).toBe(true);
+  expect(result.steps).toHaveLength(1);
+  expect(result.steps[0]).toMatchObject({
+    id:'step2',plannedDate:'2026-12-01',metadata:{source:'old-note'}
+  });
+  await page.reload();
+  expect(await page.evaluate(()=>state.habits[0].goalId)).toBe('wbg1');
+});
