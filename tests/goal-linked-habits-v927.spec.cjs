@@ -24,6 +24,7 @@ async function createFromGoal(page){
   await expect(page.locator('#modalTitle')).toHaveText('Add Habit');
   await expect(page.locator('#modalForm [name="goalId"]')).toHaveValue('piano');
   await page.locator('#modalForm input[name="title"]').fill('Practice piano');
+  await page.locator('#modalForm input[name="weeklyTarget"]').fill('4');
   await page.locator('#modalForm button[type="submit"]').click();
   return goal;
 }
@@ -31,9 +32,10 @@ test('create a habit from a goal and show it in the goal and Habits without dupl
   const goal=await createFromGoal(page);
   await expect(goal.locator('.bp-goal-habit-row')).toHaveCount(1);
   await expect(goal.locator('.bp-goal-habit-row')).toContainText('Practice piano');
+  await expect(goal.locator('.bp-goal-habit-row')).toContainText('0 / 4 this week');
   const record=await page.evaluate(()=>state.habits);
   expect(record).toHaveLength(1);
-  expect(record[0]).toMatchObject({title:'Practice piano',goalId:'piano',actionId:'',days:{}});
+  expect(record[0]).toMatchObject({title:'Practice piano',goalId:'piano',actionId:'',weeklyTarget:4,days:{}});
   await page.locator('[data-plan-tab="habits"]').click();
   await expect(page.locator('#habitsTracker .bp-habit-goal')).toContainText('Learn My Song on Piano');
   await expect(page.locator('#habitManager .bp-habit-goal')).toContainText('Learn My Song on Piano');
