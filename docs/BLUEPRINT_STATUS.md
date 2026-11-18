@@ -7,32 +7,32 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — Notes ink Undo and Pencil pressure v9.29 (feature branch, browser/device QA pending)
+## 2026-11-18 — Notes ink Undo and Pencil pressure v9.29 (merged; physical-device QA outstanding)
 
 **Request:** Undo must restore strokes removed by the eraser; new Apple Pencil handwriting should respond to stylus pressure rather than always use a fixed width.
 
-**Implemented in feature/notes-lasso-focus-graph-v928 (PR #46, pending review):**
+**Implemented and merged into `main`:** [PR #46](https://github.com/jgoldslice/dc_64_33/pull/46) squash-merged as `ddeb80fa46449b196c334bf55ce89e6011c3999d` from feature head `10d9f2c10d2540bf3942f3baf7bf4f2778adafa5`.
 - Replaced the old Undo = remove final stroke rule in `v76.js` with a per-page, capped 40-command inverse-action history. Drawing commits a `draw` undo; an entire eraser gesture stores the removed strokes and original positions and restores them in order on Undo; canceled erases revert without creating a history entry. Lasso move, paste, and delete now use the *same* chronological history through `BlueprintNotesBridge.pushInkUndo`, avoiding a separate Undo stack taking priority over later pen/eraser edits.
 - Apple Pencil PointerEvent pressure is saved on newly sampled points as optional `p` (0..1); quadratic SVG centerlines remain unchanged for all pre-existing strokes. New Pencil strokes render as variable-width filled SVG ribbon paths, smoothing local pressure and preserving rounded caps. Mouse strokes remain fixed-width. Low/zero pressure on pointerup reuses the last live pressure to avoid unintended release taper.
 - Changes retain all x/y raw points, IDs, stroke colors and existing backup JSON layout; `p` is a backward-compatible optional point field, copied by existing lasso/backup logic. The existing source SVG stays editable and sketch export reads the same SVG DOM; no native PencilKit files or storage keys changed.
 - Extended `tests/notes-undo-pressure-v929.spec.cjs` to exercise multi-stroke erasure and exact restoration/order, draw-before-erase Undo ordering, pointer cancellation, pressure sampling and SVG path shape, legacy drawing, JSON persistence and reload. Updated the old toolbar-button-count test and fixed accessible 44px controls and narrow paper picker CSS discovered in earlier v9.28 browser CI.
 
-**Verification:** Static JavaScript syntax and isolated SVG pressure-path geometry checks passed. Earlier PR CI run 44385406048 passed 222/231 browser tests; it identified v9.28 toolbar target sizes/overflow and a new test's project-reopen selector, which were subsequently corrected. **Do not mark full suite green until new PR CI is confirmed.** Real Apple Pencil pressure, variable width feel, lasso/eraser gestures and scroll/pinch behavior are not verified on physical iPad. Web publish and Xcode/Capacitor installation are not implied by the PR commits.
+**Verification:** Isolated JavaScript syntax and SVG pressure-path geometry checks passed. GitHub Actions [PR browser run 44387293751](https://github.com/jgoldslice/dc_64_33/actions/runs/44387293751) **passed all 232 Playwright tests** on `10d9f2c10d2540bf3942f3baf7bf4f2778adafa5`. Earlier red runs identified toolbar target-size/overflow, resized-image test viewport handling, and test fixture mode/navigation errors, all subsequently corrected. The final browser run checks lasso, Undo, responsive layout and pressure SVG serialization, but does **not** establish physical Pencil force/tilt quality or iOS gesture fidelity. Main-branch publish checks and native Capacitor/Xcode installation must be confirmed separately.
 
-**Next QA:** Confirm full Playwright CI; on iPad draw light/strong pressure on a new page, erase across several strokes, Undo while switching tools, lasso move/copy/paste and Undo in sequence, 200–500% zoom, finger pan/pinch, app relaunch and complete backup/export roundtrip. Verify failure handling without clearing user data.
+**Next QA:** On the real iPad draw light/strong Pencil pressure on a new page; erase across strokes, Undo while switching tools, lasso move/copy/paste and Undo in sequence, 200–500% zoom, finger pan/pinch, app relaunch and complete backup/export roundtrip. Record any failure without clearing local device data.
 
-## 2026-11-18 — Notes workspace v9.28 (feature branch; iPad verification pending)
+## 2026-11-18 — Notes workspace v9.28 (merged together with v9.29; iPad QA pending)
 
 **Requested:** OneNote-like lasso move/copy/paste, full-screen page focus, graph-paper background, and sharper/smoother Apple Pencil ink.
 
-**Implemented in feature/notes-lasso-focus-graph-v928:**
+**Implemented in PR #46 / main merge `ddeb80fa46449b196c334bf55ce89e6011c3999d`:**
 - An SVG stroke lasso can select intersecting ink strokes, drag them together, Copy/Paste inside Blueprint and across pages, delete selection, and undo lasso edits. These are still vector strokes with unique IDs, not flattened images. This is an in-app clipboard, not the iOS general clipboard.
 - Per-page Blank/Graph selector: graph-paper grid is a repeating CSS background anchored to the page and scales with notebook zoom. Optional paperStyle property goes into existing notePage records and backups; old pages stay blank. Graph backgrounds are not baked into exported sketch PNGs.
 - Full-screen Focus temporarily moves the *same live editor* above the navigation and page sidebar, showing only the page and a compact Tools/Done control. Exiting restores the original editor position without copying pages.
 - A narrow integration bridge in v76.js uses its original stroke store, render pathway, coordinates, and save functions. It honors Pencil/mouse contacts and keeps fingers for panning/pinching. This feature does not change native Swift or enable the experimental PencilKit sidecar.
 - Source files: v76.js, notes-workspace-v928.js, notes-workspace-v928.css, index.html, sw.js, tests/notes-workspace-v928.spec.cjs.
 
-**Verification status:** Implemented on a feature branch. Playwright browser tests for lasso selection/move/clipboard, undo, per-page graph, focus-mode entry/exit were authored; CI outcomes and separate native-device test are to be recorded after actual runs. PencilKit-like pressure/tilt strokes, system clipboard support, true native low-latency rendering, lassoing text/image objects, and high-zoom WebKit quality remain unimplemented.
+**Verification status:** Browser-tested in the 232/232 passing PR CI run above. Physical Apple Pencil, iPadOS touch and native app installation remain unverified. Web pressure-sensitive vector strokes are implemented in v9.29; native PencilKit pressure/tilt dynamics, system clipboard support, device-specific low-latency rendering, lassoing text/images, and high-zoom WebKit sharpening remain further work.
 
 **Data/rollout:** No schema reset, new storage key, or destructive migration. Existing project attachment blobs, note pages and backup formats are retained; graph paper adds only an optional property. Do backup/export restore checks and physical Pencil/finger/zoom tests on iPad before relying on this release. The Mac Capacitor/Xcode wrapper is separate and not updated by a web push; preserve native App Group/Share Extension and never clear device data.
 
