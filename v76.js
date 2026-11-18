@@ -195,8 +195,10 @@
     mode=next;if(next!=='select')selectBox(null);root.querySelectorAll('[data-v76-mode]').forEach(btn=>{
       const on=btn.dataset.v76Mode===next;btn.classList.toggle('v76-on',on);btn.setAttribute('aria-pressed',String(on));
     });
-    surface.classList.toggle('v76-is-drawing',next==='pen'||next==='erase');
-    ink.style.pointerEvents=(next==='pen'||next==='erase')?'auto':'none';
+    surface.classList.toggle('v76-is-drawing',next==='pen'||next==='erase'||next==='lasso');
+    surface.classList.toggle('v928-lasso-mode',next==='lasso');
+    ink.style.pointerEvents=(next==='pen'||next==='erase'||next==='lasso')?'auto':'none';
+    window.BlueprintNotesWorkspace?.onModeChange?.(next);
   }
   // v8.15: a bounded, whole-page visual zoom (50%–500%). The note's x/y,
   // dimensions, strokes and attachment keys always stay in unscaled units.
@@ -277,8 +279,11 @@
     // iPad fingers should navigate the page without leaving stray Pencil marks
     // or moving a selected image while a second finger joins the gesture.
     if(activeStroke){
-      // A second finger begins navigation, not Undo: retain sampled ink.
-      flushInkRender();activeStroke=null;persist();
+      // A second finger ends this Pencil mark; keep it undoable.
+      const pending=activeStroke;
+      flushInkRender();activeStroke=null;
+      pushInkUndo(pending.page,{type:'draw',id:pending.stroke.id});
+      persist();
     }
     if(activeErase){
       const pending=activeErase;activeErase=null;
@@ -286,6 +291,7 @@
       strokesView(pending.page);
       persist();
     }
+    window.BlueprintNotesWorkspace?.cancelGesture?.();
     if(interaction){
       const d=interaction;interaction=null;
       for(const key of ['x','y','width','height']){
@@ -301,7 +307,7 @@
   // Apple devices identify Pencil contacts as touchType=stylus.
   // These contacts MUST never be mistaken for finger-pan or pinch input.
   const fingerTouches=e=>Array.from(e.touches||[]).filter(t=>t.touchType!=='stylus');
-  const isInkMode=()=>mode==='pen'||mode==='erase';
+  const isInkMode=()=>mode==='pen'||mode==='erase'||mode==='lasso';
   let fingerPan=null;
   zoomViewport.addEventListener('touchstart',e=>{
     const fingers=fingerTouches(e);
@@ -419,12 +425,78 @@
     }
     return path+' Q'+last.x+' '+last.y+' '+last.x+' '+last.y;
   }
+  // Older strokes with {x,y} remain unmodified. Pencil contact points may
+  // carry p in [0,1], rendered as a filled SVG ribbon with rounded endpoints.
+  function variableInkPath(stroke){
+    const points=stroke.points||[];
+    if(!points.length)return '';
+    const width=(Number(stroke.width)||2.5);
+    const readPressure=p=>{
+      const n=Number(p?.p);
+      return Number.isFinite(n)?Math.max(0,Math.min(1,n)):.5;
+    };
+    const radius=p=>width*(.5+readPressure(p))/2;
+    const first=points[0],last=points.at(-1);
+    if(points.length===1||points.every(p=>Math.hypot(p.x-first.x,p.y-first.y)<.01)){
+      const r=radius(first);
+      return 'M'+(first.x-r)+' '+first.y+' a'+r+' '+r+' 0 1 0 '+2*r+' 0 a'+r+' '+r+' 0 1 0 '+(-2*r)+' 0 Z';
+    }
+    const left=[],right=[],tangents=[];
+    for(let i=0;i<points.length;i++){
+      let lo=i-1,hi=i+1;
+      while(lo>=0&&Math.hypot(points[i].x-points[lo].x,points[i].y-points[lo].y)<.01)lo--;
+      while(hi<points.length&&Math.hypot(points[hi].x-points[i].x,points[hi].y-points[i].y)<.01)hi++;
+      const a=points[Math.max(0,lo)],b=points[Math.min(points.length-1,hi)];
+      const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+      const tx=dx/len,ty=dy/len,nx=-ty,ny=tx;
+      const before=points[Math.max(0,i-1)],after=points[Math.min(points.length-1,i+1)];
+      const p=(readPressure(before)+2*readPressure(points[i])+readPressure(after))/4;
+      const r=width*(.5+Math.max(0,Math.min(1,p)))/2;
+      left.push({x:points[i].x+nx*r,y:points[i].y+ny*r});
+      right.push({x:points[i].x-nx*r,y:points[i].y-ny*r});
+      tangents.push({x:tx,y:ty});
+    }
+    function trace(pts){
+      let d='M'+pts[0].x+' '+pts[0].y;
+      for(let i=1;i<pts.length-1;i++){
+        const p=pts[i],n=pts[i+1];
+        d+=' Q'+p.x+' '+p.y+' '+((p.x+n.x)/2)+' '+((p.y+n.y)/2);
+      }
+      const p=pts.at(-1);
+      return d+' Q'+p.x+' '+p.y+' '+p.x+' '+p.y;
+    }
+    const endRadius=radius(last),startRadius=radius(first);
+    let d=trace(left);
+    d+=' Q'+(last.x+tangents.at(-1).x*endRadius)+' '+(last.y+tangents.at(-1).y*endRadius)+
+       ' '+right.at(-1).x+' '+right.at(-1).y;
+    const back=right.slice().reverse();
+    for(let i=1;i<back.length-1;i++){
+      const p=back[i],n=back[i+1];
+      d+=' Q'+p.x+' '+p.y+' '+((p.x+n.x)/2)+' '+((p.y+n.y)/2);
+    }
+    d+=' Q'+back.at(-1).x+' '+back.at(-1).y+' '+back.at(-1).x+' '+back.at(-1).y;
+    d+=' Q'+(first.x-tangents[0].x*startRadius)+' '+(first.y-tangents[0].y*startRadius)+
+       ' '+left[0].x+' '+left[0].y+' Z';
+    return d;
+  }
+  const pressureStroke=stroke=>(stroke.points||[]).some(p=>typeof p.p==='number');
+  const strokePath=stroke=>pressureStroke(stroke)?variableInkPath(stroke):smoothInkPath(stroke.points||[]);
+  function inkSample(e,last,penContact=false){
+    const point=inkPosition(e);
+    if(e.pointerType==='pen'||penContact){
+      const pressure=Number(e.pressure);
+      // At lift-off iOS reports 0: retain the final contact pressure.
+      point.p=Math.round((Number.isFinite(pressure)&&pressure>.01?
+        Math.min(1,pressure):(last?.p??.5))*1000)/1000;
+    }
+    return point;
+  }
   function makeInkElement(stroke){
     const el=document.createElementNS('http://www.w3.org/2000/svg','path');
     el.classList.add('v818-ink-stroke');
-    el.setAttribute('d',smoothInkPath(stroke.points||[]));
-    el.setAttribute('fill','none');
-    el.setAttribute('stroke',stroke.color||'#111111');
+    el.setAttribute('d',strokePath(stroke));
+    el.setAttribute('fill',pressureStroke(stroke)?(stroke.color||'#111111'):'none');
+    el.setAttribute('stroke',pressureStroke(stroke)?'none':(stroke.color||'#111111'));
     el.setAttribute('stroke-width',String(stroke.width||2.5));
     el.setAttribute('stroke-linecap','round');
     el.setAttribute('stroke-linejoin','round');
@@ -436,6 +508,7 @@
     ink.setAttribute('preserveAspectRatio','none');
     ink.setAttribute('viewBox','0 0 '+Math.max(1,surface.clientWidth)+' '+Math.max(1,surface.clientHeight));
     for(const stroke of page.strokes||[])ink.append(makeInkElement(stroke));
+    window.BlueprintNotesWorkspace?.onInkRedraw?.(page);
   }
   function visibleWidth(item){
     // Responsive fallback is temporary: moving an object never alters its saved width.
@@ -626,6 +699,7 @@
     renderPageList(p);
     textSizeSelect.value=sizeName(page.defaultTextSize);
     drawPage(p,page);applyMode('select');
+    window.BlueprintNotesWorkspace?.onPageChange?.(p,page);
   }
   // v74 already wraps this function. Retain its existing save/import/backup behavior.
   const oldRenderNotes=v6RenderNotes;
@@ -927,7 +1001,7 @@
     try{capture.setPointerCapture(e.pointerId);}catch(_){}
   }
   root.addEventListener('pointerdown',e=>{
-    if(mode==='pen'||mode==='erase'||interaction||
+    if(mode==='pen'||mode==='erase'||mode==='lasso'||interaction||
       (e.pointerType==='mouse'&&e.button!==0))return;
     const el=e.target instanceof Element?e.target:e.target?.parentElement;
     if(!el)return;
@@ -1112,6 +1186,45 @@
     }
     return previous;
   }
+  // One chronological Undo stack per note page, shared by pen/eraser/lasso.
+  // Each command stores only affected ink; legacy notes remain readable.
+  const inkUndoHistory=new WeakMap();
+  function pushInkUndo(page,command){
+    if(!page||!command)return;
+    let stack=inkUndoHistory.get(page);
+    if(!stack){stack=[];inkUndoHistory.set(page,stack);}
+    stack.push(command);
+    if(stack.length>40)stack.shift();
+  }
+  function undoInk(){
+    const ctx=current(),page=ctx?.page,stack=page&&inkUndoHistory.get(page);
+    if(!stack?.length)return;
+    const op=stack.pop();
+    if(op.type==='draw'){
+      page.strokes=page.strokes.filter(s=>String(s.id)!==String(op.id));
+    }else if(op.type==='erase'||op.type==='delete'){
+      const existing=new Set(page.strokes.map(s=>String(s.id)));
+      for(const item of op.removed.slice().sort((a,b)=>a.index-b.index)){
+        if(existing.has(String(item.stroke.id)))continue;
+        page.strokes.splice(item.index,0,item.stroke);
+        existing.add(String(item.stroke.id));
+      }
+    }else if(op.type==='paste'){
+      const ids=new Set(op.ids.map(String));
+      page.strokes=page.strokes.filter(s=>!ids.has(String(s.id)));
+    }else if(op.type==='move'){
+      const originals=new Map(op.before.map(x=>[String(x.id),x.points]));
+      for(const stroke of page.strokes)if(originals.has(String(stroke.id)))
+        stroke.points=structuredClone(originals.get(String(stroke.id)));
+    }
+    persist();strokesView(page);
+  }
+  function finishEraseHistory(pending){
+    const remaining=new Set(pending.page.strokes.map(s=>String(s.id)));
+    const removed=pending.originalStrokes.map((stroke,index)=>({index,stroke}))
+      .filter(x=>!remaining.has(String(x.stroke.id)));
+    if(removed.length)pushInkUndo(pending.page,{type:'erase',removed});
+  }
   const pointerSamples=e=>{
     const coalesced=e.getCoalescedEvents?.();
     return coalesced?.length?coalesced:[e];
@@ -1123,12 +1236,12 @@
     // SVG path once per display frame, while retaining all sampled points.
     inkFrame=requestAnimationFrame(()=>{
       inkFrame=0;
-      if(activeStroke)activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+      if(activeStroke)activeStroke.element.setAttribute('d',strokePath(activeStroke.stroke));
     });
   }
   function flushInkRender(){
     if(inkFrame){cancelAnimationFrame(inkFrame);inkFrame=0;}
-    if(activeStroke)activeStroke.element.setAttribute('d',smoothInkPath(activeStroke.stroke.points));
+    if(activeStroke)activeStroke.element.setAttribute('d',strokePath(activeStroke.stroke));
   }
   ink.addEventListener('pointerdown',e=>{
     const ctx=current();if(!ctx||(mode!=='pen'&&mode!=='erase'))return;
@@ -1137,19 +1250,20 @@
     // Keep a primary mouse path for desktop testing and accessibility.
     if(e.pointerType!=='pen'&&!(e.pointerType==='mouse'&&e.button===0))return;
     if(activePinch||activeStroke||activeErase)return;
+    window.BlueprintNotesWorkspace?.onDirectInkEdit?.();
     e.preventDefault();ink.setPointerCapture(e.pointerId);
-    const pt=inkPosition(e);
+    const pt=inkSample(e);
     if(mode==='erase'){
       activeErase={id:e.pointerId,page:ctx.page,last:pt,
         originalStrokes:(ctx.page.strokes||[]).slice()};
       eraseSweep(ctx.page,pt,[e]); // A tap is also an eraser gesture.
       return;
     }
-    const stroke={id:newId(),points:[pt,pt],width:2.5,color:selectedInkColor};
+    const stroke={id:newId(),points:[pt,{...pt}],width:2.5,color:selectedInkColor};
     ctx.page.strokes.push(stroke);
     const element=makeInkElement(stroke);
     ink.append(element);
-    activeStroke={id:e.pointerId,stroke,page:ctx.page,element};
+    activeStroke={id:e.pointerId,stroke,page:ctx.page,element,isPen:e.pointerType==='pen'};
   });
   ink.addEventListener('pointermove',e=>{
     if(activeErase&&e.pointerId===activeErase.id){
@@ -1160,8 +1274,8 @@
     if(!activeStroke||e.pointerId!==activeStroke.id)return;
     if(e.cancelable)e.preventDefault(); // Never allow Safari to steal Pencil motion.
     for(const sample of pointerSamples(e)){
-      const point=inkPosition(sample);
       const last=activeStroke.stroke.points.at(-1);
+      const point=inkSample(sample,last,activeStroke.isPen);
       if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
     }
     // Update only the active path instead of rebuilding every previous stroke.
@@ -1174,20 +1288,27 @@
         // A cancelled pinch/gesture must not commit a partial eraser sweep.
         pending.page.strokes=pending.originalStrokes;
         strokesView(pending.page);persist();
-      }else if(e.type==='pointerup')eraseSweep(pending.page,pending.last,[e]);
+      }else if(e.type==='pointerup'){
+        eraseSweep(pending.page,pending.last,[e]);
+        finishEraseHistory(pending);
+      }
     }
     if(activeStroke&&activeStroke.id===e.pointerId){
       if(e.type==='pointercancel'){
         // Safari cancels a pen pointer during a pinch; keep the existing mark.
-        flushInkRender();activeStroke=null;persist();return;
+        const pending=activeStroke;
+        flushInkRender();activeStroke=null;
+        pushInkUndo(pending.page,{type:'draw',id:pending.stroke.id});
+        persist();return;
       }
       if(e.type==='pointerup'){
-        const point=inkPosition(e),last=activeStroke.stroke.points.at(-1);
+        const last=activeStroke.stroke.points.at(-1),point=inkSample(e,last,activeStroke.isPen);
         if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
       }
       const completed=activeStroke;
       flushInkRender();
       activeStroke=null;
+      pushInkUndo(completed.page,{type:'draw',id:completed.stroke.id});
       // Writing on the expanded zoom-out sheet must survive page switches.
       const pts=completed.stroke.points;
       growPage(completed.page,Math.max(...pts.map(point=>point.y))+70);
@@ -1197,13 +1318,16 @@
   };
   ink.addEventListener('pointerup',finishStroke);
   ink.addEventListener('pointercancel',finishStroke);
-  document.getElementById('v76UndoInk').addEventListener('click',()=>{
-    const ctx=current();if(!ctx||!ctx.page.strokes.length)return;ctx.page.strokes.pop();persist();strokesView(ctx.page);
-  });
+  document.getElementById('v76UndoInk').addEventListener('click',undoInk);
   window.addEventListener('resize',()=>{
     syncZoomLayout();
     const ctx=current();if(ctx)strokesView(ctx.page);
   });
+  // Narrow bridge for optional workspace enhancements; all edits still use
+  // the original page records, SVG rendering, undo control and verified save.
+  window.BlueprintNotesBridge={current,persist,strokesView,growPage,growPageWidth,
+    setMode:applyMode,getMode:()=>mode,inkPosition,getZoom:()=>noteZoom,pushInkUndo,
+    root,surface,ink,zoomViewport};
   applyMode('select');
   if(v6Project())renderPage(v6Project(),true);
 })();

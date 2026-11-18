@@ -1,0 +1,133 @@
+/* Blueprint v9.28 — unobtrusive notebook workspace controls. */
+#v928InkOverlay{
+  position:absolute;inset:0;width:100%;height:100%;
+  z-index:11;pointer-events:none;overflow:visible;
+}
+#v928InkOverlay .v928-lasso-outline{
+  fill:rgba(54,129,198,.06);stroke:#327bb2;stroke-width:1.5;
+  stroke-dasharray:6 4;stroke-linejoin:round;
+}
+#v928InkOverlay .v928-selection-bounds{
+  fill:rgba(50,123,190,.035);stroke:#327bb2;stroke-width:1.6;
+  stroke-dasharray:5 4;
+}
+#v76Ink .v928-selected-stroke{
+  filter:drop-shadow(0 0 1px rgba(20,119,204,.6));
+}
+#v76Surface.v928-lasso-mode .v76-item{pointer-events:none!important}
+#v76Surface.v928-lasso-mode #v76Ink{cursor:crosshair}
+#v76Surface[data-paper="graph"]{
+  background-color:#fff!important;
+  background-image:
+    linear-gradient(to right,rgba(50,104,175,.17) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(50,104,175,.17) 1px,transparent 1px),
+    linear-gradient(to right,rgba(50,104,175,.075) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(50,104,175,.075) 1px,transparent 1px)!important;
+  background-size:120px 120px,120px 120px,24px 24px,24px 24px!important;
+  background-position:0 0!important;
+}
+#v76Editor .v928-tool-group .v79-tool-buttons{
+  display:flex;align-items:center;gap:4px;
+}
+#v76Editor .v928-tool-group button{
+  font-size:12px;font-weight:650;min-height:44px;min-width:44px;
+  padding:5px 8px;border:1px solid var(--line);border-radius:9px;
+  background:var(--surface);color:var(--ink);touch-action:manipulation;
+}
+#v76Editor .v928-tool-group #v928Lasso[aria-pressed="true"]{
+  background:var(--wash);border-color:var(--secondary-ui);color:var(--secondary-ui);
+}
+#v76Editor .v928-tool-group button:disabled{opacity:.38}
+#v76Editor .v928-paper-group{
+  display:flex;align-items:center;gap:7px;white-space:nowrap;
+  min-width:0;max-width:100%;
+  font-size:12px;font-weight:650;color:var(--muted);
+}
+#v76Editor .v928-paper-group select{
+  box-sizing:border-box;min-height:44px;min-width:0;width:108px;max-width:100%;
+  padding:5px 7px;border:1px solid var(--line);
+  border-radius:9px;background:var(--surface);color:var(--ink);font-size:14px;
+}
+#v76Editor #v928Focus{
+  flex:none;min-height:44px;min-width:55px;
+  padding:5px 10px;border:1px solid var(--line);border-radius:9px;
+  background:var(--surface);color:var(--secondary-ui);
+  font-weight:700;font-size:12px;
+}
+body.v928-notes-focus{overflow:hidden!important}
+#v76Editor.v928-focus-mode{
+  position:fixed!important;inset:0!important;
+  z-index:2147483000!important;
+  box-sizing:border-box!important;margin:0!important;
+  width:100%!important;height:100dvh!important;
+  padding:0!important;border:0!important;border-radius:0!important;
+  background:var(--bg)!important;
+  display:flex!important;flex-direction:column!important;
+  overflow:hidden!important;max-width:none!important;max-height:none!important;
+  box-shadow:none!important;
+}
+#v76Editor.v928-focus-mode .v76-page-controls,
+#v76Editor.v928-focus-mode .v76-toolbar,
+#v76Editor.v928-focus-mode .v811-page-rail{
+  display:none!important;
+}
+#v76Editor.v928-focus-mode .v811-note-body{
+  display:block!important;flex:1 1 auto!important;
+  min-height:0!important;min-width:0!important;
+  height:100%!important;max-height:none!important;
+  padding:0!important;margin:0!important;
+  border:0!important;overflow:hidden!important;
+}
+#v76Editor.v928-focus-mode #v815ZoomViewport{
+  display:block!important;box-sizing:border-box!important;
+  width:100%!important;height:100%!important;max-height:none!important;
+  min-height:0!important;margin:0!important;padding:0!important;
+  overflow:auto!important;border:0!important;border-radius:0!important;
+  background:#fff!important;
+}
+#v76Editor #v928FocusBar[hidden],#v928FocusMenu[hidden]{display:none!important}
+#v76Editor #v928FocusBar{
+  position:absolute;top:calc(env(safe-area-inset-top) + 9px);
+  right:calc(env(safe-area-inset-right) + 12px);
+  z-index:100;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  max-width:min(92vw,380px);
+}
+#v76Editor #v928FocusBar>button{
+  min-height:44px;min-width:56px;padding:8px 12px;
+  border:1px solid rgba(106,110,114,.25);border-radius:12px;
+  background:color-mix(in srgb,var(--surface) 88%,transparent);
+  backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);
+  color:var(--ink);box-shadow:0 3px 10px rgba(0,0,0,.08);
+  font-weight:700;font-size:12px;
+}
+#v76Editor #v928FocusMenu{
+  width:min(310px,90vw);position:absolute;right:0;
+  top:calc(100% + 7px);padding:10px;
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;background:var(--surface);border:1px solid var(--line);
+  border-radius:15px;box-shadow:0 9px 30px rgba(0,0,0,.17);
+}
+#v76Editor #v928FocusMenu button{
+  min-height:44px;padding:6px 4px;background:var(--bg);
+  border:1px solid var(--line);border-radius:9px;
+  font-size:12px;color:var(--ink);
+}
+#v76Editor #v928FocusMenu button[aria-pressed="true"]{
+  color:var(--secondary-ui);border-color:var(--secondary-ui);background:var(--wash);
+}
+#v76Editor #v928FocusMenu button:disabled{opacity:.35}
+#v76Editor #v928FocusMenu label{
+  grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;font-size:12px;font-weight:650;color:var(--muted);
+}
+#v76Editor #v928FocusMenu select{
+  min-height:44px;min-width:130px;border:1px solid var(--line);
+  border-radius:9px;background:var(--bg);color:var(--ink);
+  padding:6px;font-size:16px;
+}
+@media(hover:none) and (pointer:coarse){
+  #v76Editor .v928-paper-group select{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  #v76Editor #v928FocusBar{transition:none!important}
+}

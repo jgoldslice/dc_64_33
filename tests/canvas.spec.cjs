@@ -147,7 +147,12 @@ test('Pictures use OneNote-style selection, corner resizing and a move control i
   await expect(box.locator('.v76-grip')).toHaveCount(0);
   await box.locator('.v76-photo').click();
   await expect(box).toHaveClass(/v811-selected/);
-  const rect=await box.locator('.v811-handle-se').boundingBox();
+  // Added Notes controls can push the lower resize handle below the clipped
+  // notebook viewport. A real user scrolls the page before grabbing it.
+  const resizeHandle=box.locator('.v811-handle-se');
+  await resizeHandle.scrollIntoViewIfNeeded();
+  await resizeHandle.hover();
+  const rect=await resizeHandle.boundingBox();
   const initial=await box.evaluate(el=>({w:el.offsetWidth,h:el.offsetHeight}));
   await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);
   await page.mouse.down();await page.mouse.move(rect.x+rect.width/2+55,rect.y+rect.height/2+48,{steps:6});
@@ -179,7 +184,9 @@ test('Notebook toolbar has a Textbox tool; blank taps create text only when it i
   await expect(toolbar.locator('.v79-tool-group[aria-label="Text"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Pen"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Misc"]')).toHaveCount(1);
-  await expect(toolbar.locator('button')).toHaveCount(12); // Includes page focus, Save sketch and pen chooser.
+  await expect(toolbar.locator('button')).toHaveCount(17); // Includes lasso, in-app ink actions, Focus and legacy tools.
+  await expect(toolbar.locator('#v928Lasso')).toBeVisible();
+  await expect(toolbar.locator('#v928Focus')).toBeVisible();
   await expect(toolbar.locator('#v818InkColor')).toBeVisible();
   await expect(toolbar.locator('.v815-zoom-tools[aria-label="Notebook zoom"]')).toBeVisible();
   await expect(toolbar.locator('#v815ZoomReset')).toHaveText('100%');
