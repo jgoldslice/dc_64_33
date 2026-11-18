@@ -102,6 +102,11 @@
       if(crosses(pts[i-1],pts[i],poly[j],poly[(j+1)%poly.length]))return true;
     return false;
   }
+  let pendingOverlayFrame=0;
+  function scheduleOverlay(){
+    if(pendingOverlayFrame)return;
+    pendingOverlayFrame=requestAnimationFrame(()=>{pendingOverlayFrame=0;renderSelection();});
+  }
   function renderSelection(){
     const ctx=present();
     overlay.setAttribute('viewBox','0 0 '+Math.max(1,surface.clientWidth)+' '+Math.max(1,surface.clientHeight));
@@ -260,7 +265,7 @@
         const p=api.inkPosition(sample),last=gesture.points.at(-1);
         if(Math.hypot(p.x-last.x,p.y-last.y)>.6)gesture.points.push(p);
       }
-      renderSelection();
+      scheduleOverlay();
     }else{
       const p=api.inkPosition(e),box=bounds(gesture.page);
       gesture.dx=Math.max(-(box?.minX||0),p.x-gesture.start.x);
@@ -273,8 +278,9 @@
     if(!g||e.pointerId!==g.id)return;
     gesture=null;
     if(e.type==='pointercancel'||!samePage()||g.page!==present()?.page){
-      api.strokesView(g.page);
-      renderSelection();return;
+      if(samePage()&&g.page===present()?.page)api.strokesView(g.page);
+      else{selected.clear();renderSelection();}
+      return;
     }
     if(g.type==='lasso'){
       const final=api.inkPosition(e);
