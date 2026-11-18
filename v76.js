@@ -195,8 +195,10 @@
     mode=next;if(next!=='select')selectBox(null);root.querySelectorAll('[data-v76-mode]').forEach(btn=>{
       const on=btn.dataset.v76Mode===next;btn.classList.toggle('v76-on',on);btn.setAttribute('aria-pressed',String(on));
     });
-    surface.classList.toggle('v76-is-drawing',next==='pen'||next==='erase');
-    ink.style.pointerEvents=(next==='pen'||next==='erase')?'auto':'none';
+    surface.classList.toggle('v76-is-drawing',next==='pen'||next==='erase'||next==='lasso');
+    surface.classList.toggle('v928-lasso-mode',next==='lasso');
+    ink.style.pointerEvents=(next==='pen'||next==='erase'||next==='lasso')?'auto':'none';
+    window.BlueprintNotesWorkspace?.onModeChange?.(next);
   }
   // v8.15: a bounded, whole-page visual zoom (50%–500%). The note's x/y,
   // dimensions, strokes and attachment keys always stay in unscaled units.
@@ -286,6 +288,7 @@
       strokesView(pending.page);
       persist();
     }
+    window.BlueprintNotesWorkspace?.cancelGesture?.();
     if(interaction){
       const d=interaction;interaction=null;
       for(const key of ['x','y','width','height']){
@@ -301,7 +304,7 @@
   // Apple devices identify Pencil contacts as touchType=stylus.
   // These contacts MUST never be mistaken for finger-pan or pinch input.
   const fingerTouches=e=>Array.from(e.touches||[]).filter(t=>t.touchType!=='stylus');
-  const isInkMode=()=>mode==='pen'||mode==='erase';
+  const isInkMode=()=>mode==='pen'||mode==='erase'||mode==='lasso';
   let fingerPan=null;
   zoomViewport.addEventListener('touchstart',e=>{
     const fingers=fingerTouches(e);
@@ -436,6 +439,7 @@
     ink.setAttribute('preserveAspectRatio','none');
     ink.setAttribute('viewBox','0 0 '+Math.max(1,surface.clientWidth)+' '+Math.max(1,surface.clientHeight));
     for(const stroke of page.strokes||[])ink.append(makeInkElement(stroke));
+    window.BlueprintNotesWorkspace?.onInkRedraw?.(page);
   }
   function visibleWidth(item){
     // Responsive fallback is temporary: moving an object never alters its saved width.
@@ -626,6 +630,7 @@
     renderPageList(p);
     textSizeSelect.value=sizeName(page.defaultTextSize);
     drawPage(p,page);applyMode('select');
+    window.BlueprintNotesWorkspace?.onPageChange?.(p,page);
   }
   // v74 already wraps this function. Retain its existing save/import/backup behavior.
   const oldRenderNotes=v6RenderNotes;
@@ -927,7 +932,7 @@
     try{capture.setPointerCapture(e.pointerId);}catch(_){}
   }
   root.addEventListener('pointerdown',e=>{
-    if(mode==='pen'||mode==='erase'||interaction||
+    if(mode==='pen'||mode==='erase'||mode==='lasso'||interaction||
       (e.pointerType==='mouse'&&e.button!==0))return;
     const el=e.target instanceof Element?e.target:e.target?.parentElement;
     if(!el)return;
@@ -1137,6 +1142,7 @@
     // Keep a primary mouse path for desktop testing and accessibility.
     if(e.pointerType!=='pen'&&!(e.pointerType==='mouse'&&e.button===0))return;
     if(activePinch||activeStroke||activeErase)return;
+    window.BlueprintNotesWorkspace?.onDirectInkEdit?.();
     e.preventDefault();ink.setPointerCapture(e.pointerId);
     const pt=inkPosition(e);
     if(mode==='erase'){
@@ -1204,6 +1210,11 @@
     syncZoomLayout();
     const ctx=current();if(ctx)strokesView(ctx.page);
   });
+  // Narrow bridge for optional workspace enhancements; all edits still use
+  // the original page records, SVG rendering, undo control and verified save.
+  window.BlueprintNotesBridge={current,persist,strokesView,growPage,growPageWidth,
+    setMode:applyMode,getMode:()=>mode,inkPosition,getZoom:()=>noteZoom,
+    root,surface,ink,zoomViewport};
   applyMode('select');
   if(v6Project())renderPage(v6Project(),true);
 })();
