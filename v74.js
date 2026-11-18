@@ -211,6 +211,8 @@
    return {complete:true,data:source.state,media};
  }
  async function exportCompleteBackup(){
+   if(canvasLoadError)throw Error('Saved planner data could not be loaded; export the untouched original using the recovery warning instead');
+   // Preserve the in-memory emergency export path on ordinary save failures.
    const snapshot=structuredClone(state);
    const {required,drafts}=attachmentKeys(snapshot),attachments=[];
    for(const key of new Set([...required,...drafts])){
