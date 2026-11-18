@@ -1,0 +1,13 @@
+/* Goal-linked habits: one existing habit record, displayed in two contexts. */
+.bp-habit-label{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere;line-height:1.35}
+.bp-habit-goal{display:block;color:var(--muted);font-size:11px;font-weight:400;font-style:italic;line-height:1.35;overflow-wrap:anywhere}
+.habit-today .bp-habit-label{min-width:0}
+.week-table .habit-name:has(.bp-habit-goal){white-space:normal;overflow:visible;text-overflow:clip}
+.week-table .bp-habit-label{min-width:0}
+#habitManager .habit-manage-item .bp-habit-goal{margin-top:0;font-style:italic}
+.bp-goal-habit-section{border-top:1px solid var(--line);margin:10px 0 0;padding:10px 0 3px}
+.bp-goal-habits-label{font-size:11px;font-weight:750;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.bp-goal-habit-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;min-width:0}
+.bp-goal-habit-title{display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:600;min-width:0;overflow-wrap:anywhere}
+.bp-goal-habit-title small{color:var(--muted);font-size:11px;font-weight:400}
+.bp-goal-habit-row .text-button{min-height:44px;flex:none}

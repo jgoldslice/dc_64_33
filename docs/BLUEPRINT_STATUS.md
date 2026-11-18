@@ -1,11 +1,28 @@
 # Blueprint — Development Status
 
-**Last documentation update:** 2026-11-11  
+**Last documentation update:** 2026-11-18  
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
 **Verification scope:** Fetched root README and index.html; checked that AGENTS.md and this status file were absent; inspected recent commit identifiers. This is **not** a full source-code audit, automated test run, or iOS device test.
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
+
+## 2026-11-18 — Goal-linked habits v9.27 (feature branch; web and iOS release unverified)
+
+**Requested:** From Goal cards, add a recurring Habit directly, retain one shared habit record, and display the parent Goal in smaller italic type throughout Habits. The piano example also needs an optional flexible target (e.g., 4 practice days per week instead of mandatory fixed weekdays).
+
+**Implemented on `feature/goal-linked-habits-v927`:**
+- A direct `+ Habit` control appears beside `+ Step` on each Goal card, opens the existing Habit modal with its Connected Goal preselected, and creates a normal entry in `state.habits`. Users can also link, relink or unlink a Habit from its regular editor.
+- Existing Goal cards list linked Habits separately from one-time Steps, with a current-week completion count. The Today, Week and Plan → Habits trackers and manager show the parent goal in small italic text. All checkboxes still operate on the same habit record; no second data store or duplicate schedule exists.
+- Added an optional integer `weeklyTarget` (1 through 7 and no larger than the number of selected repeat days). Example: leave all seven weekdays available and target four completions per week. Legacy Habits keep their prior schedule-based progress. A changed link preserves existing completion history.
+- Editing or removing Goal Steps preserves independent, goal-only Habits. Existing step-linked Habits still unlink when their step is removed. Deleting a Goal unlinks its Habits without deleting them.
+- Touched `index.html`, `weekly-blueprint-v918.js`, new `goal-habits-v927.css`, `sw.js` offline cache, and browser regression tests. Old planner state and `jgold-planner-v1` backups remain readable; no storage key or IndexedDB migration is introduced.
+
+**Evidence status:** Code changes written to a reviewable branch. New `tests/goal-linked-habits-v927.spec.cjs` covers creation, 4-day target, Today/Week synchronization, relink/unlink, Step changes, persistence, and Goal deletion; updated goal-button regression expectation. Automated browser test results, GitHub Pages deployment, physical iPhone/iPad verification, and native Xcode installation are **pending until explicitly verified**.
+
+**Notes fidelity investigation (not a drawing-engine change):** `v76.js` saves ink as vector SVG paths, using mid-point quadratic smoothing and a fixed width; however, it zooms the entire note surface by a CSS `scale()` up to 500%. WebKit's transformed SVG compositing and stroke processing can look softer than native, device-resolution PencilKit ink, especially at extreme magnification. The separate native PencilKit prototype remains experimental and its drawing data is not in the complete-backup pathway; no untested replacement or note migration was made. Further iPad Pencil QA and a safe zoom/rendering experiment are required.
+
+**iOS rollout:** Native Capacitor project on the owner's Mac was not accessible in this session. Do not uninstall the app, erase local planner data, replace App Group/Share Extension files, or claim that the GitHub branch installed itself on either device. After verified web release, copy changed web files into the actual local `www` directory, run its confirmed Capacitor copy/sync command, rebuild via Xcode, and check on iPhone/iPad.
 
 ## 2026-11-11 — Full-app layout and swipe polish v9.25 (web published; physical-device QA outstanding)
 

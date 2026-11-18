@@ -396,7 +396,7 @@
           else if(old){t.actionId=old.id;t.actionIndex=g.actions.findIndex(a=>idString(a.id)===idString(old.id));}
         }
         for(const h of next.habits){
-          if(idString(h.goalId||'')===id&&!retained.has(idString(h.actionId||''))){h.goalId='';h.actionId='';}
+          if(idString(h.goalId||'')===id&&h.actionId&&!retained.has(idString(h.actionId))){h.goalId='';h.actionId='';}
         }
         for(const t of next.tasks){
           if(idString(t.goalId||'')!==id)continue;

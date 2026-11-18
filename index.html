@@ -353,6 +353,7 @@
 <link rel="stylesheet" href="weekly-blueprint-v918.css">
 <link rel="stylesheet" href="project-overview-v919.css">
 <link rel="stylesheet" href="library-order-v923.css">
+<link rel="stylesheet" href="goal-habits-v927.css">
 <style>
 /* iOS Safari zooms focused inputs below 16px. Preserve pinch zoom and
    existing label typography while keeping editable controls readable. */
@@ -741,8 +742,11 @@ const roman=n=>{const symbols=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'
 const ranked=()=>state.tasks.filter(t=>t.priority&&!t.done).sort((a,b)=>(a.priorityRank||9999)-(b.priorityRank||9999)||String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
 function taskRow(t){const rank=ranked().findIndex(x=>String(x.id)===String(t.id))+1;const detail=t.dueDate?'Deadline '+new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}>${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}<span class="entry-text">${esc(t.title)}${detail?'<small class="task-due">'+esc(detail)+'</small>':''}</span><span class="task-row-actions"><button type="button" class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button>${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+esc(t.id)+'" aria-label="Delete completed task '+esc(t.title)+'">Delete</button>':''}</span></div>`;}
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}
+function habitGoal(h){return state.goals.find(g=>String(g.id)===String(h.goalId||''));}
+function habitCaption(h){const goal=habitGoal(h);return `<span class="bp-habit-label"><span>${esc(h.title)}</span>${goal?`<small class="bp-habit-goal">${esc(goal.title)}</small>`:''}</span>`;}
+function habitWeekSummary(h){const monday=iso(startOfWeek(new Date()));let done=0,scheduled=0;for(let i=0;i<7;i++){const date=iso(plusDays(new Date(monday+'T12:00:00'),i));if(isScheduled(h,date)){scheduled++;if(h.days?.[date])done++;}}const requested=Number(h.weeklyTarget),target=h.weeklyTarget!=null&&Number.isInteger(requested)&&requested>=1&&requested<=scheduled?requested:scheduled;return target?done+' / '+target+' this week':'No days scheduled';}
 function habitToggle(h,date){return `<input type="checkbox" data-habit-check="${h.id}" data-date="${date}" aria-label="${esc(h.title)} ${date}" ${h.days[date]?'checked':''}>`;}
-function habitTable(week){const dates=Array.from({length:7},(_,i)=>iso(plusDays(week,i)));return `<div class="week-table"><span></span>${['M','T','W','T','F','S','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${state.habits.map(h=>`<span class="habit-name" title="${esc(h.title)}">${esc(h.title)}</span>${dates.map(date=>isScheduled(h,date)?`<label>${habitToggle(h,date)}</label>`:'<span class="off">·</span>').join('')}`).join('')}</div>`;}
+function habitTable(week){const dates=Array.from({length:7},(_,i)=>iso(plusDays(week,i)));return `<div class="week-table"><span></span>${['M','T','W','T','F','S','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${state.habits.map(h=>`<span class="habit-name" title="${esc(h.title)}">${habitCaption(h)}</span>${dates.map(date=>isScheduled(h,date)?`<label>${habitToggle(h,date)}</label>`:'<span class="off">·</span>').join('')}`).join('')}</div>`;}
 function dayLines(date){ const events=state.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const tasks=state.tasks.filter(t=>t.dueDate===date&&!t.done);return [...events.map(e=>`<p class="day-line"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),...tasks.slice(0,3).map(t=>`<p class="day-line">□ ${esc(t.title)} <span class="due-mark">DUE</span></p>`)].join('')||'<p class="day-empty">—</p>';}
 function dayCard(date){const d=new Date(date+'T12:00:00');return `<div class="day-card ${date===localToday()?'today':''}" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}
 
@@ -800,7 +804,7 @@ function render(){
   $('v917TodayTasks').scrollTop=taskScroll;
   const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
   const habitScroll=$('todayHabits').scrollTop;
-  $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today"><span>${esc(h.title)}</span>${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
+  $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today">${habitCaption(h)}${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
   $('todayHabits').scrollTop=habitScroll;
   const start=selectedWeek;
   const monthDay=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
@@ -819,7 +823,7 @@ function render(){
   $('habitsWeekTitle').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
   v916WeekProgress(start);
   $('habitsTracker').innerHTML=state.habits.length?habitTable(start):'<p class="empty">No habits yet. Add your first habit.</p>';
-  $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item"><div><strong>${esc(h.title)}</strong><small>${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
+  $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item"><div><strong>${esc(h.title)}</strong>${habitGoal(h)?'<small class="bp-habit-goal">'+esc(habitGoal(h).title)+'</small>':''}<small>${h.weeklyTarget?'Goal: '+h.weeklyTarget+' days/week · ':''}${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
   $('openingMode').value=state.openingMode;
   if(document.activeElement!==$('openingMessageInput'))$('openingMessageInput').value=state.openingMessage;
   for(const prop of ['primary','secondary']){
@@ -854,6 +858,7 @@ function renderGoals(){
     .slice()
     .sort((a,b)=>state.categories.indexOf(a.category)-state.categories.indexOf(b.category));
   $('goalsList').innerHTML=goals.map(g=>{
+    const linkedHabits=state.habits.filter(h=>String(h.goalId||'')===String(g.id));
     const count=(g.actions||[]).filter(a=>a.done).length;
     const total=(g.actions||[]).length;
     const percentage=total?Math.round(count/total*100):0;
@@ -868,11 +873,13 @@ function renderGoals(){
           '<button type="button" data-action-to-habit="'+esc(g.id)+'" data-action-id="'+esc(a.id)+'">'+(habitLinked?'Edit linked Habit':'Create Habit')+'</button>'+
         '</div></div></div>';
     }).join('');
+    const habitItems=linkedHabits.map(h=>'<div class="bp-goal-habit-row"><span class="bp-goal-habit-title">'+esc(h.title)+'<small>'+habitWeekSummary(h)+'</small></span><button type="button" class="text-button" data-edit-habit="'+esc(h.id)+'" aria-label="Edit habit '+esc(h.title)+'">Edit</button></div>').join('');
+    const habitsSection=linkedHabits.length?'<section class="bp-goal-habit-section" aria-label="Habits for '+esc(g.title)+'"><div class="bp-goal-habits-label">Habits</div>'+habitItems+'</section>':'';
     return '<section class="card v77-goal-card"><details class="goal" data-goal="'+esc(g.id)+'" '+(expandedGoals.has(String(g.id))?'open':'')+'>'+
       '<summary><div class="v77-goal-heading"><span class="v77-goal-category">'+esc(g.category)+'</span><h3>'+esc(g.title)+'</h3><p class="muted">'+count+' of '+total+' steps complete</p></div><span class="muted" aria-hidden="true">⌄</span></summary>'+
       '<div class="progress" role="progressbar" aria-valuenow="'+percentage+'" aria-valuemin="0" aria-valuemax="100" aria-label="Goal progress"><div style="width:'+percentage+'%"></div></div>'+
       '<div class="goal-details">'+(g.motivation?.trim()?'<div class="goal-motivation"><span class="goal-motivation-label">Motivation</span><p>'+esc(g.motivation)+'</p></div>':'')+
-      items+'<div class="row-buttons"><button class="text-button" data-add-action="'+esc(g.id)+'">+ Step</button><button class="text-button" data-edit-goal="'+esc(g.id)+'">Edit goal</button><button type="button" class="text-button goal-delete-button" data-delete-goal="'+esc(g.id)+'" aria-label="Delete goal: '+esc(g.title)+'">Delete goal</button></div></div></details></section>';
+      items+habitsSection+'<div class="row-buttons"><button class="text-button" data-add-action="'+esc(g.id)+'">+ Step</button><button type="button" class="text-button" data-add-goal-habit="'+esc(g.id)+'">+ Habit</button><button class="text-button" data-edit-goal="'+esc(g.id)+'">Edit goal</button><button type="button" class="text-button goal-delete-button" data-delete-goal="'+esc(g.id)+'" aria-label="Delete goal: '+esc(g.title)+'">Delete goal</button></div></div></details></section>';
   }).join('')||'<p class="empty">'+(selectedCategory==='All'?'Add a goal to begin.':'No goals in this category.')+'</p>';
 }
 function renderIdeas(){
@@ -986,7 +993,7 @@ function saveGoalSteps(g,nextActions){
   }
   for(const habit of state.habits){
     if(String(habit.goalId)!==String(g.id))continue;
-    if(!nextActions.some(a=>String(a.id)===String(habit.actionId))){
+    if(habit.actionId&&!nextActions.some(a=>String(a.id)===String(habit.actionId))){
       habit.goalId='';habit.actionId='';
     }
   }
@@ -1002,12 +1009,13 @@ function openModal(type,id=null,parent=null){
   $('deleteModal').hidden=!item||!['task','event','habit','goal'].includes(type);
   let fields='';
   const name=(value='')=>formLine('Title',`<input name="title" required maxlength="160" value="${esc(value)}" placeholder="Enter a title">`);
+  const selectedGoalId=String(item?.goalId??parent??'');
   if(type==='task')fields=name(item?.title)
     +formLine('Deadline',`<input type="date" name="dueDate" value="${esc(item?.dueDate??($('today').classList.contains('active')?localToday():''))}">`)
     +`<label class="inline-check"><input type="checkbox" name="priority" ${item?.priority?'checked':''}>Priority</label>`
     +formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${g.id}" ${String(item?.goalId)===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`);
   else if(type==='event')fields=name(item?.title)+formLine('Date',`<input type="date" name="date" value="${esc(item?.date||localToday())}" required>`)+formLine('Start time',`<input type="time" name="time" value="${esc(item?.time||'09:00')}" required>`);
-  else if(type==='habit')fields=name(item?.title)+formLine('Repeat on',`<div class="days-picker">${['S','M','T','W','T','F','S'].map((day,i)=>`<label><span>${day}</span><input type="checkbox" name="schedule" value="${i}" ${(item?.schedule||[0,1,2,3,4,5,6]).includes(i)?'checked':''}></label>`).join('')}</div>`);
+  else if(type==='habit')fields=name(item?.title)+formLine('Repeat on',`<div class="days-picker">${['S','M','T','W','T','F','S'].map((day,i)=>`<label><span>${day}</span><input type="checkbox" name="schedule" value="${i}" ${(item?.schedule||[0,1,2,3,4,5,6]).includes(i)?'checked':''}></label>`).join('')}</div>`)+formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${esc(g.id)}" ${selectedGoalId===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`)+formLine('Weekly target (optional)',`<input name="weeklyTarget" type="number" min="1" max="7" inputmode="numeric" placeholder="All selected days" value="${esc(item?.weeklyTarget??'')}"><small>For a flexible goal such as four days per week, leave all seven days selected above.</small>`);
   else if(type==='goal')fields=name(item?.title)
     +formLine('Category',`<select name="category" required>${state.categories.map(cat=>`<option value="${esc(cat)}" ${(item?.category||state.categories[0])===cat?'selected':''}>${esc(cat)}</option>`).join('')}</select>`)
     +formLine('Motivation',`<textarea name="motivation" rows="3" maxlength="3000" placeholder="Why does this goal matter to you?">${esc(item?.motivation||'')}</textarea>`)
@@ -1130,7 +1138,7 @@ function handleSave(event){
     if(t)Object.assign(t,fields);else state.tasks.push({id:uid(),...fields,done:false});
   }
   else if(modalMode==='event'){const e=existing('events');const fields={title,date,time:String(fd.get('time')||'09:00')};if(e)Object.assign(e,fields);else state.events.push({id:uid(),...fields});}
-  else if(modalMode==='habit'){const h=existing('habits');const schedule=fd.getAll('schedule').map(Number);if(h)Object.assign(h,{title,schedule});else state.habits.push({id:uid(),title,schedule,days:{},createdOn:localToday()});}
+  else if(modalMode==='habit'){const h=existing('habits'),schedule=fd.getAll('schedule').map(Number),target=state.goals.find(g=>String(g.id)===String(fd.get('goalId')||'')),goalId=target?String(target.id):'',rawTarget=String(fd.get('weeklyTarget')||'').trim(),weeklyTarget=rawTarget?Number(rawTarget):null;if(weeklyTarget!==null&&(!Number.isInteger(weeklyTarget)||weeklyTarget<1||weeklyTarget>schedule.length)){alert('The weekly target must be between 1 and the number of selected days.');return;}if(h){const previousGoalId=String(h.goalId||'');Object.assign(h,{title,schedule,goalId,weeklyTarget,actionId:previousGoalId===goalId?(h.actionId||''):''});}else state.habits.push({id:uid(),title,schedule,days:{},createdOn:localToday(),goalId,actionId:'',weeklyTarget});}
   else if(modalMode==='goal'){
     const g=existing('goals'),category=state.categories.find(c=>c===String(fd.get('category')||''))||state.categories[0],motivation=String(fd.get('motivation')||'').trim().slice(0,3000);
     const raw=readGoalStepRows().filter(a=>a.title.trim());
@@ -1206,6 +1214,7 @@ document.addEventListener('click',(e)=>{
     }
     render();planTab('habits');openModal('habit',h.id);return;
   }
+  const addGoalHabit=e.target.closest('[data-add-goal-habit]');if(addGoalHabit){expandedGoals.add(String(addGoalHabit.dataset.addGoalHabit));openModal('habit',null,addGoalHabit.dataset.addGoalHabit);return;}
   const action=e.target.closest('[data-add-action]');if(action){openModal('action',null,action.dataset.addAction);return;}
   if(e.target.closest('#keepIdea')){createIdeaFromDraft();return;}
   const editIdea=e.target.closest('[data-edit-idea]');if(editIdea){openIdea(editIdea.dataset.editIdea);return;}
