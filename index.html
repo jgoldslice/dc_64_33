@@ -630,9 +630,36 @@ try{
     const decoded=JSON.parse(canvasLastManifest);
     if(!decoded||typeof decoded!=='object'||Array.isArray(decoded))
       throw Error('Stored planner has an invalid root');
-    for(const key of ['tasks','goals','habits','events','ideas','projects']){
-      if(Object.hasOwn(decoded,key)&&!Array.isArray(decoded[key]))
-        throw Error('Stored planner has an invalid '+key+' collection');
+    // Only normalize records after checking that known collections are
+    // structurally intact. Older normalizers drop invalid items/fields, which
+    // could silently replace damaged user records during the next save.
+    const records=(list,label)=>{
+      if(list===undefined)return [];
+      if(!Array.isArray(list))throw Error('Stored planner has an invalid '+label+' collection');
+      for(const item of list)if(!item||typeof item!=='object'||Array.isArray(item))
+        throw Error('Stored planner has a damaged '+label+' record');
+      return list;
+    };
+    const nested=(item,field,label)=>records(item[field],label+' '+field);
+    for(const key of ['tasks','goals','habits','events','ideas','projects','weeklyGoals'])
+      records(decoded[key],key);
+    for(const goal of decoded.goals||[])nested(goal,'actions','goal');
+    for(const idea of decoded.ideas||[])nested(idea,'actions','idea');
+    for(const habit of decoded.habits||[]){
+      if(habit.days!==undefined&&(!habit.days||typeof habit.days!=='object'||Array.isArray(habit.days)))
+        throw Error('Stored planner has invalid habit completion history');
+      if(habit.schedule!==undefined&&!Array.isArray(habit.schedule))
+        throw Error('Stored planner has invalid habit schedule');
+    }
+    for(const project of decoded.projects||[]){
+      for(const field of ['notes','actions','library','notePages','contentBlocks'])
+        nested(project,field,'project');
+      for(const page of project.notePages||[]){
+        nested(page,'objects','note page');
+        const strokes=nested(page,'strokes','note page');
+        for(const stroke of strokes)if(stroke.points!==undefined&&!Array.isArray(stroke.points))
+          throw Error('Stored planner has invalid handwritten stroke points');
+      }
     }
     stored=decoded;
   }
