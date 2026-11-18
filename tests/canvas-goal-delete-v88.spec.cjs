@@ -27,7 +27,7 @@ test('Delete goal appears beside Edit goal in the expanded Blueprint card',async
   const errors=await setup(page);
   const actions=page.locator('#goalsList details[data-goal="target-goal"] .row-buttons');
   const names=await actions.locator('button').allTextContents();
-  expect(names.map(x=>x.trim())).toEqual(['+ Step','Edit goal','Delete goal']);
+  expect(names.map(x=>x.trim())).toEqual(['+ Step','+ Habit','Edit goal','Delete goal']);
   await expect(actions.locator('[data-delete-goal="target-goal"]')).toHaveAttribute('aria-label','Delete goal: Feel the Spirit more');
   await expect(actions.locator('[data-delete-goal]')).toBeVisible();
   expect(errors).toEqual([]);
