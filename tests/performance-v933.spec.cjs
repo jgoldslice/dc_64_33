@@ -5,8 +5,9 @@ const base='http://127.0.0.1:8765/';
 
 test('rapid typing batches serialization and blur persists the last edit',async({page})=>{
   await page.goto(base);
+  await page.locator('[data-tab="brainstorm"]').click();
   const result=await page.evaluate(()=>{
-    const el=document.getElementById('todayFocus');
+    const el=document.getElementById('brainstormDraft');
     let writes=0;
     const original=Storage.prototype.setItem;
     Storage.prototype.setItem=function(key,value){
@@ -22,7 +23,7 @@ test('rapid typing batches serialization and blur persists the last edit',async(
       const beforeBlur={writes,dirty:canvasTextSavePending};
       el.blur();
       return {beforeBlur,writes,dirty:canvasTextSavePending,
-        saved:JSON.parse(localStorage.getItem('jgold-planner-v1')).todayFocus};
+        saved:JSON.parse(localStorage.getItem('jgold-planner-v1')).brainstormDraft};
     }finally{Storage.prototype.setItem=original;}
   });
   expect(result.beforeBlur.writes).toBe(0);
