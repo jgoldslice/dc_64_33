@@ -98,7 +98,9 @@ test('delete selected ink can be undone without changing unrelated strokes',asyn
 });
 test('blank or graph paper is a saved preference for each page, not a bitmap overlay',async({page})=>{
   const errors=await openNotes(page);
-  await page.locator('#v928Paper').selectOption('graph');
+  await expect(page.locator('#v928Paper')).toHaveAttribute('aria-pressed','false');
+  await page.locator('#v928Paper').click();
+  await expect(page.locator('#v928Paper')).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('#v76Surface')).toHaveAttribute('data-paper','graph');
   const result=await page.evaluate(()=>({
     style:window.BlueprintNotesBridge.current().page.paperStyle,
@@ -107,10 +109,10 @@ test('blank or graph paper is a saved preference for each page, not a bitmap ove
   }));
   expect(result).toEqual({style:'graph',strokeCount:0,stored:'graph'});
   await page.locator('#v811NewPage').click();
-  await expect(page.locator('#v928Paper')).toHaveValue('plain');
+  await expect(page.locator('#v928Paper')).toHaveAttribute('aria-pressed','false');
   const first=await page.evaluate(()=>String(window.BlueprintNotesBridge.current().p.notePages[0].id));
   await page.locator('#v811PageList [data-v811-page-id="'+first+'"]').click();
-  await expect(page.locator('#v928Paper')).toHaveValue('graph');
+  await expect(page.locator('#v928Paper')).toHaveAttribute('aria-pressed','true');
   expect(errors).toEqual([]);
 });
 test('focus mode hides navigation, expands paper and restores the same notebook afterwards',async({page})=>{
@@ -130,7 +132,8 @@ test('focus mode hides navigation, expands paper and restores the same notebook 
   await page.locator('[data-v928-mode="lasso"]').click();
   await expect(page.locator('#v928Lasso')).toHaveAttribute('aria-pressed','true');
   await page.locator('#v928FocusTools').click();
-  await page.locator('#v928FocusPaper').selectOption('graph');
+  await page.locator('#v928FocusPaper').click();
+  await expect(page.locator('#v928FocusPaper')).toHaveAttribute('aria-pressed','true');
   await page.locator('#v928FocusExit').click();
   await expect(page.locator('#v76Editor')).not.toHaveClass(/v928-focus-mode/);
   expect(await page.evaluate(()=>document.getElementById('v76Editor').parentElement.id)).toBe('projectNotes');
@@ -200,4 +203,55 @@ test('blank paper in Select mode offers Paste and moving/swiping does not accide
   });
   await expect(page.locator('#v930InkContext')).toBeHidden();
   expect(await page.evaluate(()=>window.BlueprintNotesBridge.current().page.strokes.length)).toBe(3);
+});
+
+test('icon-only Lasso and Graph controls sit directly after Eraser with one-tap graph toggle',async({page})=>{
+  const errors=await openNotes(page);
+  const toolbar=page.locator('#v76Editor .v76-toolbar');
+  const buttons=await page.locator('.v79-tool-group[aria-label="Pen"] .v79-tool-buttons').evaluate(el=>
+    [...el.querySelectorAll(':scope > button')].map(btn=>btn.id||btn.dataset.v76Mode)
+  );
+  expect(buttons).toEqual(['pen','erase','v928Lasso','v818InkColor','v76UndoInk']);
+  const pageButtons=await page.locator('.v79-tool-group[aria-label="Misc"] .v79-tool-buttons').evaluate(el=>
+    [...el.querySelectorAll(':scope > button')].map(btn=>btn.id)
+  );
+  expect(pageButtons).toEqual(['v76AddImage','v928Paper']);
+  await expect(page.locator('#v928Lasso .v79-tool-svg')).toHaveCount(1);
+  await expect(page.locator('#v928Paper .v79-tool-svg')).toHaveCount(1);
+  await expect(toolbar.locator('.v928-paper-group')).toHaveCount(0);
+  await expect(page.locator('#v928Paper')).toHaveAttribute('aria-label','Show graph paper');
+  await page.locator('#v928Paper').click();
+  await expect(page.locator('#v76Surface')).toHaveAttribute('data-paper','graph');
+  await expect(page.locator('#v928Paper')).toHaveAttribute('aria-label','Show blank paper');
+  await page.locator('#v928Paper').click();
+  await expect(page.locator('#v76Surface')).toHaveAttribute('data-paper','plain');
+  await expect(page.locator('#v928Paper')).toHaveAttribute('aria-pressed','false');
+  await page.locator('#v928Lasso').click();
+  await expect(page.locator('#v928Lasso')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('[data-v76-mode="erase"]')).toHaveAttribute('aria-pressed','false');
+  await page.locator('[data-v76-mode="erase"]').click();
+  await expect(page.locator('#v928Lasso')).toHaveAttribute('aria-pressed','false');
+  await expect(page.locator('[data-v76-mode="erase"]')).toHaveAttribute('aria-pressed','true');
+  expect(errors).toEqual([]);
+});
+test('graph icon stays within responsive toolbar bounds with 44px targets',async({page})=>{
+  await openNotes(page);
+  for(const [width,height] of [[320,700],[375,812],[430,932],[768,1024],[1024,768],[1366,1024]]){
+    await page.setViewportSize({width,height});
+    const measurements=await page.locator('#v76Editor .v76-toolbar').evaluate(toolbar=>{
+      const t=toolbar.getBoundingClientRect();
+      return ['v928Lasso','v928Paper'].map(id=>{
+        const el=document.getElementById(id),r=el.getBoundingClientRect();
+        return {id,left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:r.width,h:r.height,
+          scrollWidth:toolbar.scrollWidth,clientWidth:toolbar.clientWidth,toolbarLeft:t.left,toolbarRight:t.right};
+      });
+    });
+    for(const m of measurements){
+      expect(m.h,width+' '+m.id).toBeGreaterThanOrEqual(44);
+      expect(m.w,width+' '+m.id).toBeGreaterThanOrEqual(44);
+      expect(m.left,width+' '+m.id).toBeGreaterThanOrEqual(m.toolbarLeft-2);
+      expect(m.right,width+' '+m.id).toBeLessThanOrEqual(m.toolbarRight+2);
+      expect(m.scrollWidth-m.clientWidth,width+' toolbar overflow').toBeLessThanOrEqual(3);
+    }
+  }
 });
