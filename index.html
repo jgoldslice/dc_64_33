@@ -1748,17 +1748,34 @@ async function v6SaveSketch(){
   const title=prompt('Sketch name',v6SketchId?(p.library.find(x=>String(x.id)===String(v6SketchId))?.title||'Sketch'):'Sketch '+(p.library.filter(r=>r.type==='sketch').length+1));
   if(!title?.trim())return;
   const blob=await new Promise(res=>v6Canvas.toBlob(res,'image/png'));if(!blob)return;
-  const id=v6SketchId||v6Id(),key='v6-'+id;
+  const id=v6SketchId||v6Id();
+  // Copy-on-write: never overwrite an existing saved sketch before its new
+  // metadata has committed. A fresh key also survives an ambiguous readback.
+  const key='v6-'+v6Id(),old=p.library.find(r=>String(r.id)===String(id));
+  const oldKey=old?.key;
   try{
     await v6Blob('put',key,blob);
-    const old=p.library.find(r=>String(r.id)===String(id));
-    if(old)old.title=title.trim().slice(0,160);
-    else p.library.push({id,type:'sketch',title:title.trim().slice(0,160),key,mime:'image/png',created:v6Now()});
-    // File the finished drawing away like a note, then show a fresh page.
+    if(old){old.title=title.trim().slice(0,160);old.key=key;}
+    else p.library.push({id,type:'sketch',title:title.trim().slice(0,160),
+      key,mime:'image/png',created:v6Now()});
+    if(!save(true)){
+      // The original image, new image, draft and on-screen drawing all remain.
+      // Keep the unsaved metadata available to Retry / recovery export.
+      alert('Sketch image is preserved on this device, but the Library change was not confirmed. Keep Blueprint open and use Retry or export a recovery copy.');
+      return;
+    }
+    // Only after the manifest is durable may the draft and old, now orphaned
+    // sketch attachment be reclaimed.
     ++v6DraftGeneration;await v6DraftWrite.catch(()=>{});
     await v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
+    const referenced=oldKey&&state.projects.some(other=>
+      (other.library||[]).some(r=>r.key===oldKey)||
+      (other.contentBlocks||[]).some(b=>b.key===oldKey)||
+      (other.notePages||[]).some(pg=>(pg.objects||[]).some(o=>o.key===oldKey)));
+    if(oldKey&&oldKey!==key&&!referenced)
+      v6Blob('delete',oldKey).catch(()=>{});
     v6SketchId=null;v6InkHistory=[];v6ClearCanvas();
-    save();v6RenderLibrary(p);v6SketchGallery();
+    v6RenderLibrary(p);v6SketchGallery();
   }catch(err){alert('Unable to save sketch: '+err.message);}
 }
 async function v6LoadSketch(id){
