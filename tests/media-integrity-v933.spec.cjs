@@ -25,7 +25,6 @@ test('deleting a Note image block with failed manifest save preserves both block
   page.on('dialog',d=>d.accept());
   await page.locator('[data-v74-delete-block="block-img"]').click();
   const after=await page.evaluate(async()=>{
-    Storage.prototype.setItem=window.Storage.prototype.setItem; // replaced below by reload
     const blob=await v6Blob('get','safe-note-image');
     const onDisk=JSON.parse(localStorage.getItem(STORAGE_KEY));
     return {inMemory:state.projects[0].contentBlocks.map(x=>x.id),
@@ -96,7 +95,7 @@ test('complete backup keeps V2 integrity fields with several media entries',asyn
   });
   const [download]=await Promise.all([
     page.waitForEvent('download'),
-    page.locator('#exportData').click()
+    page.evaluate(()=>document.getElementById('exportData').click())
   ]);
   const output=JSON.parse(await fs.readFile(await download.path(),'utf8'));
   expect(output.format).toBe('canvas-complete-backup');
