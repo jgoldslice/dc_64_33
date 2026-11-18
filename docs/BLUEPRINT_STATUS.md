@@ -13,7 +13,7 @@
 
 **Implemented on `feature/v933-nested-data-guard`:** Before normalizing stored planner JSON, validate that known collections contain object records (not null, primitives or arrays), that Goal/Idea Step collections and Project Library/Notes/page collections are arrays when present, and that habit completion maps, schedules and editable ink point arrays are structurally valid. If any known field is malformed, preserve the exact raw original data, disable saving, and offer raw recovery export. Do **not** impose a new schema on unknown future fields or absent optional legacy fields. No user content, IDs, backup formats, or native code migrated.
 
-**Tests:** Adds `tests/nested-storage-guard-v933.spec.cjs` with eight malformed nested-data scenarios, exact-byte write protection and continued support for partial legacy snapshots. CI and physical iOS testing pending. No data reset or CloudKit.
+**Tests:** Adds `tests/nested-storage-guard-v933.spec.cjs` with eight malformed nested-data startup scenarios, exact-byte write protection and partial legacy snapshots. Also extends the `v74.js` complete-backup validator to reject malformed nested structures *before* importing any files, including a checksum-valid v2 archive. New `tests/nested-backup-guard-v933.spec.cjs` covers four damaged archive types and confirms existing storage is unchanged. Missing optional legacy fields and historic plain-text project Notes remain accepted. CI and physical iOS testing pending. No data reset or CloudKit.
 
 ## 2026-11-18 — v9.33 Phase 4/5: relationship integrity and small-screen readability (feature PR; QA pending)
 
