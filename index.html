@@ -1427,6 +1427,7 @@ function v6Render(){
   // previews; don't allocate every hidden Library image or redraw sketches.
   if(v6ProjectTab==='actions')v6RenderActions(p);
   if(v6ProjectTab==='library')v6RenderLibrary(p);
+  else v6SuspendLibrary();
   if(v6ProjectTab==='sketch'){
     v6RenderSketches(p);
     v6RenderSketchView();
@@ -1453,6 +1454,14 @@ function v6RenderActions(p){
   }).join('')||'<p class="muted small">Add actions here, then turn them into Blueprint tasks.</p>';
 }
 let v6PreviewUrls=[],v6ImageViewerUrl=null,v6ImageViewerId=null,v6LibraryRenderToken=0,v6ThumbObserver=null;
+function v6SuspendLibrary(){
+  // Switching projects/sections must release hidden thumbnails and stop old
+  // requests from painting into a newly selected project's Library.
+  ++v6LibraryRenderToken;
+  if(v6ThumbObserver){v6ThumbObserver.disconnect();v6ThumbObserver=null;}
+  for(const url of v6PreviewUrls)URL.revokeObjectURL(url);
+  v6PreviewUrls=[];
+}
 function v6RenderLibrary(p){
   if(v6ThumbObserver){v6ThumbObserver.disconnect();v6ThumbObserver=null;}
   const token=++v6LibraryRenderToken;
@@ -1484,14 +1493,16 @@ function v6RenderLibrary(p){
   }
   const targets=[...host.querySelectorAll('[data-v6-gallery-image]')];
   if(typeof IntersectionObserver==='function'){
-    v6ThumbObserver=new IntersectionObserver(entries=>{
+    const observer=new IntersectionObserver(entries=>{
+      if(token!==v6LibraryRenderToken)return;
       for(const entry of entries){
         if(!entry.isIntersecting)continue;
-        v6ThumbObserver?.unobserve(entry.target);
+        observer.unobserve(entry.target);
         loadThumb(entry.target);
       }
     },{rootMargin:'240px 0px'});
-    targets.forEach(img=>v6ThumbObserver.observe(img));
+    v6ThumbObserver=observer;
+    targets.forEach(img=>observer.observe(img));
   }else targets.forEach(loadThumb);
 }
 async function v6ViewImage(id){
