@@ -1070,7 +1070,9 @@ function saveGoalSteps(g,nextActions){
   for(const habit of state.habits){
     if(String(habit.goalId)!==String(g.id))continue;
     if(habit.actionId&&!nextActions.some(a=>String(a.id)===String(habit.actionId))){
-      habit.goalId='';habit.actionId='';
+      // Removing a Goal Step should not silently detach its recurring Habit
+      // from the Goal itself. Preserve the broader outcome relationship.
+      habit.actionId='';
     }
   }
 }
@@ -1219,7 +1221,7 @@ function handleSave(event){
     const g=existing('goals'),category=state.categories.find(c=>c===String(fd.get('category')||''))||state.categories[0],motivation=String(fd.get('motivation')||'').trim().slice(0,3000);
     const raw=readGoalStepRows().filter(a=>a.title.trim());
     const old=g?.actions||[];
-    const actions=raw.map(a=>{const original=old.find(o=>String(o.id)===String(a.id));return {id:a.id||'a-'+uid(),title:a.title.trim(),done:!!original?.done};});
+    const actions=raw.map(a=>{const original=old.find(o=>String(o.id)===String(a.id));return {...(original||{}),id:a.id||'a-'+uid(),title:a.title.trim(),done:!!original?.done};});
     if(g){g.title=title;g.category=category;g.motivation=motivation;saveGoalSteps(g,actions);}
     else {state.goals.push({id:uid(),title,category,motivation,actions});}
     selectedCategory='All';
