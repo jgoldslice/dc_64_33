@@ -7,6 +7,12 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.33 Weekly Blueprint draft hardening (review branch; CI pending)
+
+**Implemented on `feature/v933-weekly-draft-safe`:** Protect unreadable `blueprint-weekly-v918-draft` bytes rather than overwriting them with a new planning week. When a draft is malformed, the planning sheet disables navigation, presents a raw-data export, and requires explicit confirmation before choosing to start fresh. Text editing in Weekly Blueprint is debounced at 220 ms with flush on input blur, pagehide, backgrounding, and beforeunload. Ordinary staging, Apply, Undo, goal/task/habit links, and weekly events use their existing persistent record formats. Failed draft saves remain flagged and warn on exit. No iOS wrapper or native data has been touched.
+
+**Tests:** `tests/weekly-draft-v933.spec.cjs` adds four regression cases (rapid typing, resume after background, invalid draft exact recovery/reset, quota failure). The initial review branch's run [44406009272](https://github.com/jgoldslice/dc_64_33/actions/runs/44406009272) passed **267/268**; one genuine null-draft recovery bug was fixed in this rebased branch. Its newest CI result must be verified before merge. Physical iPhone/iPad QA outstanding.
+
 ## 2026-11-18 — v9.33 Phase 4/5: relationship integrity and small-screen readability (feature PR; QA pending)
 
 **Implemented on `feature/v933-linked-record-polish`:**
