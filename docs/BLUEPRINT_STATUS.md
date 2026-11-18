@@ -7,18 +7,18 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — Notes contextual lasso actions v9.30 (feature branch; validation pending)
+## 2026-11-18 — Notes contextual lasso actions v9.30 (merged; on-device QA outstanding)
 
 **Requested:** The iPad Safari screenshot showed Copy, Paste and Delete making the Notes toolbar crowded, with labels wrapping. Move these actions to the page like a native selection popover.
 
-**Implemented on `feature/notes-contextual-lasso-v930`:**
+**Implemented and merged:** [PR #47](https://github.com/jgoldslice/dc_64_33/pull/47) squash-merged into `main` as `8fdbcff8c545b2fd1112796266c1c8a7f0b1284f` (feature head `a2ca64db42f2ef4137246706354b23a22c458684`).
 - The regular Notes toolbar keeps the Lasso tool, but no longer shows permanent Copy/Paste/Delete controls. Focus-mode Tools likewise keeps Pen/Lasso/Eraser/Undo and Paper without redundant clipboard controls.
 - After lasso-selecting ink, tapping the selected strokes' bounding region with Pencil, mouse or finger brings up a small floating **Copy | Delete** menu. Dragging the selection still moves it; gestures that draw a new lasso do not automatically open the menu.
 - Once a selection is copied to Blueprint's existing in-app ink clipboard, tapping otherwise blank paper in Lasso mode offers a floating **Paste** action. Blank-paper tap in ordinary Select mode also offers Paste, without affecting the Textbox tool. Paste places editable SVG strokes starting at the tapped page coordinates, rather than shifting copies by a fixed offset; Undo still removes the pasted strokes.
 - Dismissing the menu is supported by tapping outside, changing tools/pages, starting ink drawing, scrolling, resizing and Escape. A finger pan/multitouch pinch cannot paste because it does not qualify as a tap. Popup placement is clamped to the visible viewport with 44px minimum buttons and accessible labels.
 - Files changed: `notes-workspace-v928.js`, `notes-workspace-v928.css`, `tests/notes-workspace-v928.spec.cjs`, `tests/canvas.spec.cjs` and `sw.js` cache version. No new database table, planner state field, backup change, native Swift code or alteration to Pencil input serialization.
 
-**Verification:** JavaScript syntax and CSS structural checks passed. Added browser coverage for selected-ink Copy/Delete, tapped-position Paste, selection touch, non-tap finger gesture safety, 375px popup placement, compact toolbar, and old drawing/Undo compatibility. GitHub browser CI outcome must be verified separately before merging. Physical iPad Apple Pencil and Safari QA, Xcode/Capacitor installation and native Share Extension testing remain outstanding. Do not claim a web push updated the installed iPad app.
+**Verification:** JavaScript syntax and CSS structural checks passed. [GitHub Actions browser run 44390658939](https://github.com/jgoldslice/dc_64_33/actions/runs/44390658939) passed **235/235 Playwright tests** on feature SHA `a2ca64db42f2ef4137246706354b23a22c458684`. Coverage includes selected-ink Copy/Delete, tapped-position Paste, finger taps and swipe safety, narrow viewport popup layout, compact toolbar, and previous drawing/Undo/pressure regression tests. Main-branch publish may run separately. Physical iPad Apple Pencil/Safari QA, Xcode/Capacitor installation and native Share Extension behavior have **not** been verified by this browser suite; do not imply a web push updated the installed iPad app.
 
 ## 2026-11-18 — Notes ink Undo and Pencil pressure v9.29 (merged; physical-device QA outstanding)
 
