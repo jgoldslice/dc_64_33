@@ -647,6 +647,18 @@ const expandedGoals=new Set();
 let selectedCategory='All',categoryManagerOpen=false,activeIdeaId=null,pendingOpeningTimer=null;
 // A failed write must never be silently treated as saved. Keep edits in memory.
 let canvasUnsaved=!!canvasLoadError,canvasExternalChange=false;
+let canvasTextSaveTimer=null,canvasTextSavePending=false;
+function queueTextSave(){
+  canvasTextSavePending=true;
+  clearTimeout(canvasTextSaveTimer);
+  canvasTextSaveTimer=setTimeout(()=>{canvasTextSaveTimer=null;canvasTextSavePending=false;save(true);},250);
+}
+function flushTextSave(){
+  if(!canvasTextSavePending)return;
+  clearTimeout(canvasTextSaveTimer);canvasTextSaveTimer=null;
+  canvasTextSavePending=false;
+  save(true);
+}
 function canvasSaveStatus(failed){
   let notice=document.getElementById('canvasSaveWarning');
   if(!notice&&failed){
@@ -688,6 +700,8 @@ function canvasSaveStatus(failed){
   }
 }
 function save(verify=false){
+  if(canvasTextSaveTimer){clearTimeout(canvasTextSaveTimer);canvasTextSaveTimer=null;}
+  canvasTextSavePending=false;
   try{
     if(canvasLoadError)throw Error('Refusing to overwrite unreadable original planner data');
     // A Safari/Shortcut share can open Blueprint in a second window. Prevent
@@ -715,6 +729,7 @@ function save(verify=false){
     }
     canvasLastManifest=serialized;canvasExternalChange=false;
     canvasUnsaved=false;canvasSaveStatus(false);
+    if($('draftStatus')&&$('draftStatus').textContent==='Saving…')$('draftStatus').textContent='Saved';
     return true;
   }catch(error){
     canvasUnsaved=true;canvasSaveStatus(true);
@@ -723,7 +738,15 @@ function save(verify=false){
   }
 }
 if(canvasLoadError)canvasSaveStatus(true);
+// Safari can suspend a tab without a traditional unload. Preserve the final
+// characters of a pending text edit on every relevant lifecycle boundary.
+document.addEventListener('focusout',event=>{
+  if(event.target?.matches?.('#brainstormDraft,#todayFocus,#weeklyFocus,#openingMessageInput,#projectNotebook'))flushTextSave();
+},true);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flushTextSave();});
+window.addEventListener('pagehide',flushTextSave);
 window.addEventListener('beforeunload',event=>{
+  flushTextSave();
   if(canvasUnsaved){event.preventDefault();event.returnValue='';}
 });
 
@@ -1258,13 +1281,13 @@ document.addEventListener('click',(e)=>{
   const swatch=e.target.closest('[data-color-for]');if(swatch){state[swatch.dataset.colorFor]=swatch.dataset.color;save();render();return;}
   const mode=e.target.closest('[data-appearance]');if(mode){state.appearance=mode.dataset.appearance;save();render();return;}
 });
-$('brainstormDraft').addEventListener('input',e=>{state.brainstormDraft=e.target.value;save();$('draftStatus').textContent='Autosaved draft';});
+$('brainstormDraft').addEventListener('input',e=>{state.brainstormDraft=e.target.value;queueTextSave();$('draftStatus').textContent='Saving…';});
 $('ideaAddAction').addEventListener('submit',e=>{e.preventDefault();addIdeaAction($('ideaActionText').value);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('ideaBack').hidden)closeIdea();});
 for(const key of ['todayFocus','weeklyFocus']){
-  $(key).addEventListener('input',e=>{state[key]=e.target.value;save();});
+  $(key).addEventListener('input',e=>{state[key]=e.target.value;queueTextSave();});
 }
-$('openingMessageInput').addEventListener('input',e=>{state.openingMessage=e.target.value.slice(0,280);save();});
+$('openingMessageInput').addEventListener('input',e=>{state.openingMessage=e.target.value.slice(0,280);queueTextSave();});
 document.addEventListener('change',(e)=>{
   const x=e.target;
   if(x.id==='openingMode'){state.openingMode=x.value;save();return;}if(x.dataset.taskCheck){const item=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);if(item){item.done=x.checked;if(item.goalId!==''&&item.goalId!=null){const g=state.goals.find(g=>String(g.id)===String(item.goalId));const a=g?.actions.find(a=>String(a.id)===String(item.actionId||''));if(a)a.done=x.checked;}if(item.ideaId&&item.ideaActionId){const n=state.ideas.find(n=>String(n.id)===String(item.ideaId));const a=n?.actions?.find(a=>String(a.id)===String(item.ideaActionId));if(a)a.done=x.checked;}}}
@@ -1773,7 +1796,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   const x=e.target,p=v6Project();if(!p)return;
-  if(x.id==='projectNotebook'){p.notebookText=x.value;save();}
+  if(x.id==='projectNotebook'){p.notebookText=x.value;queueTextSave();}
 });
 document.addEventListener('change',e=>{
   const x=e.target,p=v6Project();
