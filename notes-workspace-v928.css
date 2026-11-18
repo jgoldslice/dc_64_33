@@ -34,6 +34,10 @@
   padding:5px 8px;border:1px solid var(--line);border-radius:9px;
   background:var(--surface);color:var(--ink);touch-action:manipulation;
 }
+#v76Editor .v928-tool-group #v928Lasso{
+  min-width:70px;
+  white-space:nowrap;
+}
 #v76Editor .v928-tool-group #v928Lasso[aria-pressed="true"]{
   background:var(--wash);border-color:var(--secondary-ui);color:var(--secondary-ui);
 }
