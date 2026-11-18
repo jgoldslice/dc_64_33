@@ -793,7 +793,7 @@ function applyTheme(){
 }
 const roman=n=>{const symbols=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];let out='';for(const [v,a] of symbols)while(n>=v){out+=a;n-=v;}return out;};
 const ranked=()=>state.tasks.filter(t=>t.priority&&!t.done).sort((a,b)=>(a.priorityRank||9999)-(b.priorityRank||9999)||String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
-function taskRow(t){const rank=ranked().findIndex(x=>String(x.id)===String(t.id))+1;const detail=t.dueDate?'Deadline '+new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}>${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}<span class="entry-text">${esc(t.title)}${detail?'<small class="task-due">'+esc(detail)+'</small>':''}</span><span class="task-row-actions"><button type="button" class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button>${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+esc(t.id)+'" aria-label="Delete completed task '+esc(t.title)+'">Delete</button>':''}</span></div>`;}
+function taskRow(t,rankMap=null){const rank=rankMap?rankMap.get(String(t.id))||0:ranked().findIndex(x=>String(x.id)===String(t.id))+1;const detail=t.dueDate?'Deadline '+new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}>${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}<span class="entry-text">${esc(t.title)}${detail?'<small class="task-due">'+esc(detail)+'</small>':''}</span><span class="task-row-actions"><button type="button" class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button>${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+esc(t.id)+'" aria-label="Delete completed task '+esc(t.title)+'">Delete</button>':''}</span></div>`;}
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}
 function habitGoal(h){return state.goals.find(g=>String(g.id)===String(h.goalId||''));}
 function habitCaption(h){const goal=habitGoal(h);return `<span class="bp-habit-label"><span>${esc(h.title)}</span>${goal?`<small class="bp-habit-goal">${esc(goal.title)}</small>`:''}</span>`;}
@@ -835,6 +835,8 @@ function render(){
     if(document.activeElement!==$(id))$(id).value=value||'';
   }
   const today=localToday();
+  const orderedPriorities=ranked();
+  const rankMap=new Map(orderedPriorities.map((t,i)=>[String(t.id),i+1]));
   const todaysEvents=state.events.filter(e=>e.date===today).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   const todaysTasks=state.tasks.filter(t=>t.dueDate===today).sort((a,b)=>Number(b.priority)-Number(a.priority));
   // A missed deadline must not disappear simply because the calendar rolled over.
@@ -849,10 +851,10 @@ function render(){
   const taskScroll=$('v917TodayTasks').scrollTop;
   $('v917TodayTasks').innerHTML=
     (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
-      overdue.slice(0,3).map(taskRow).join('')+
+      overdue.slice(0,3).map(t=>taskRow(t,rankMap)).join('')+
       (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
     (todaysTasks.length?(overdue.length?'<div class="section-label">Due today</div>':'')+
-      todaysTasks.map(taskRow).join(''):'')+
+      todaysTasks.map(t=>taskRow(t,rankMap)).join(''):'')+
     (!todaysTasks.length&&!overdue.length?'<p class="empty">No tasks due today.</p>':'');
   $('v917TodayTasks').scrollTop=taskScroll;
   const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
@@ -866,10 +868,10 @@ function render(){
   $('weekHabits').innerHTML=state.habits.length?habitTable(start):'<p class="empty">Add a habit to track your week.</p>';
   const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
   $('weekGrid').innerHTML=Array.from({length:5},(_,i)=>dayCard(iso(plusDays(start,i)))).join('')+`<div class="day-card weekend">${weekend}</div>`;
-  const priorities=ranked();
-  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(taskRow).join(''):'<p class="empty">Mark important tasks as priorities to rank them here.</p>';
+  const priorities=orderedPriorities;
+  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(t=>taskRow(t,rankMap)).join(''):'<p class="empty">Mark important tasks as priorities to rank them here.</p>';
   $('tasksPriority').innerHTML=priorities.length?priorities.map((t,i)=>`<div class="priority-edit-row"><span class="rank-badge">${roman(i+1)}</span><span class="entry-text">${esc(t.title)}</span><button data-priority-move="${t.id}" data-dir="-1" ${i===0?'disabled':''} aria-label="Move ${esc(t.title)} up">↑</button><button data-priority-move="${t.id}" data-dir="1" ${i===priorities.length-1?'disabled':''} aria-label="Move ${esc(t.title)} down">↓</button></div>`).join(''):'<p class="empty">No priorities yet. Mark any task as a priority.</p>';
-  $('allTasks').innerHTML=state.tasks.slice().sort((a,b)=>Number(a.done)-Number(b.done)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))).map(taskRow).join('')||'<p class="empty">Add your first task.</p>';
+  $('allTasks').innerHTML=state.tasks.slice().sort((a,b)=>Number(a.done)-Number(b.done)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))).map(t=>taskRow(t,rankMap)).join('')||'<p class="empty">Add your first task.</p>';
   renderGoals();
   renderCategories();
   renderIdeas();
