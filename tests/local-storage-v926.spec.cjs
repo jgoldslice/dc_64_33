@@ -97,3 +97,67 @@ test('an unsaved in-memory edit remains exportable for emergency recovery after 
   expect(archive.version).toBe(2);
   expect(archive.state.todayFocus).toBe('Uncommitted but recoverable work');
 });
+
+test('editing a task preserves unseen scheduling and project/idea relationships',async({page})=>{
+  await page.goto(base);
+  const seed=await page.evaluate(()=>{
+    state.goals=[{id:'g1',title:'Goal',category:'Personal',actions:[{id:'a1',title:'Step',done:false}]}];
+    state.tasks=[{id:'linked',title:'Before',date:'2026-11-19',dueDate:'2026-11-19',
+      scheduledDate:'2026-11-20',scheduledTime:'14:30',priority:true,priorityRank:3,
+      goalId:'g1',actionId:'a1',actionIndex:0,projectId:'project-1',projectActionId:'pa-1',
+      ideaId:'idea-1',ideaActionId:'ia-1',done:false}];
+    if(!save(true))throw Error('fixture save failed');
+    openModal('task','linked');
+    return structuredClone(state.tasks[0]);
+  });
+  await page.locator('#modalForm [name="title"]').fill('After');
+  await page.locator('#modalForm button[type="submit"]').click();
+  const result=await page.evaluate(()=>state.tasks[0]);
+  expect(result.title).toBe('After');
+  for(const key of ['scheduledDate','scheduledTime','projectId','projectActionId',
+      'ideaId','ideaActionId','goalId','actionId','actionIndex','done'])
+    expect(result[key],key).toEqual(seed[key]);
+  expect(result.scheduledDate).toBe('2026-11-20');
+  expect(result.scheduledTime).toBe('14:30');
+  await page.reload();
+  expect(await page.evaluate(()=>state.tasks.find(t=>t.id==='linked').scheduledTime)).toBe('14:30');
+});
+test('changing parent goal clears a stale step link without deleting project linkage',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.goals=[{id:'g1',title:'First goal',category:'Personal',actions:[{id:'a1',title:'Step',done:false}]},
+                 {id:'g2',title:'New goal',category:'Personal',actions:[]}];
+    state.tasks=[{id:'linked',title:'Linked Task',date:'2026-11-19',dueDate:'2026-11-19',
+      goalId:'g1',actionId:'a1',actionIndex:0,projectId:'project-1',projectActionId:'pa-1',
+      scheduledDate:'2026-11-20',scheduledTime:'11:00',done:false}];
+    save(true);openModal('task','linked');
+  });
+  await page.locator('#modalForm [name="goalId"]').selectOption('g2');
+  await page.locator('#modalForm button[type="submit"]').click();
+  const task=await page.evaluate(()=>state.tasks[0]);
+  expect(task.goalId).toBe('g2');
+  expect(task.actionId).toBe('');
+  expect(task.actionIndex).toBe('');
+  expect(task.projectActionId).toBe('pa-1');
+  expect(task.scheduledTime).toBe('11:00');
+});
+test('a failed save exposes an emergency recovery download without clearing local data',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.todayFocus='Unsaved recovery';
+    const original=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(key,value){
+      if(key==='jgold-planner-v1')throw new DOMException('quota','QuotaExceededError');
+      return original.call(this,key,value);
+    };
+    try{save(true);}finally{Storage.prototype.setItem=original;}
+  });
+  await expect(page.locator('#canvasSaveRecovery')).toBeVisible();
+  const [download]=await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#canvasSaveRecovery').click()
+  ]);
+  const data=JSON.parse(await fs.readFile(await download.path(),'utf8'));
+  expect(data.state.todayFocus).toBe('Unsaved recovery');
+  expect(data.format).toBe('blueprint-unsaved-recovery');
+});
