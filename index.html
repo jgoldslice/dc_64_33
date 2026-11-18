@@ -652,13 +652,16 @@ try{
         throw Error('Stored planner has invalid habit schedule');
     }
     for(const project of decoded.projects||[]){
-      for(const field of ['notes','actions','library','notePages','contentBlocks'])
+      // Legacy project.notes may contain plain text; validate its container
+      // without imposing object-only semantics on historic notes.
+      if(project.notes!==undefined&&!Array.isArray(project.notes))
+        throw Error('Stored planner has an invalid project notes collection');
+      for(const field of ['actions','library','notePages','contentBlocks'])
         nested(project,field,'project');
       for(const page of project.notePages||[]){
         nested(page,'objects','note page');
         const strokes=nested(page,'strokes','note page');
-        for(const stroke of strokes)if(stroke.points!==undefined&&!Array.isArray(stroke.points))
-          throw Error('Stored planner has invalid handwritten stroke points');
+        for(const stroke of strokes)nested(stroke,'points','handwritten stroke');
       }
     }
     stored=decoded;
