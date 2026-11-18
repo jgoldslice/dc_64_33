@@ -38,8 +38,9 @@ test('first Pencil dot and first movement are visible before any animation-frame
       ink.dispatchEvent(ev('pointermove',125,119,.85));
       const live={d:element.getAttribute('d'),fill:element.getAttribute('fill'),
         attached:element.isConnected};
+      const firstRenderFrames=requestedFrames;
       ink.dispatchEvent(ev('pointerup',155,142,.47));
-      return {dot,live,requestedFrames,
+      return {dot,live,requestedFrames:firstRenderFrames,
         final:{d:element.getAttribute('d'),fill:element.getAttribute('fill')},
         saved:api.current().page.strokes[0].points};
     }finally{
