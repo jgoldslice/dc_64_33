@@ -7,6 +7,21 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — Notes workspace v9.28 (feature branch; iPad verification pending)
+
+**Requested:** OneNote-like lasso move/copy/paste, full-screen page focus, graph-paper background, and sharper/smoother Apple Pencil ink.
+
+**Implemented in feature/notes-lasso-focus-graph-v928:**
+- An SVG stroke lasso can select intersecting ink strokes, drag them together, Copy/Paste inside Blueprint and across pages, delete selection, and undo lasso edits. These are still vector strokes with unique IDs, not flattened images. This is an in-app clipboard, not the iOS general clipboard.
+- Per-page Blank/Graph selector: graph-paper grid is a repeating CSS background anchored to the page and scales with notebook zoom. Optional paperStyle property goes into existing notePage records and backups; old pages stay blank. Graph backgrounds are not baked into exported sketch PNGs.
+- Full-screen Focus temporarily moves the *same live editor* above the navigation and page sidebar, showing only the page and a compact Tools/Done control. Exiting restores the original editor position without copying pages.
+- A narrow integration bridge in v76.js uses its original stroke store, render pathway, coordinates, and save functions. It honors Pencil/mouse contacts and keeps fingers for panning/pinching. This feature does not change native Swift or enable the experimental PencilKit sidecar.
+- Source files: v76.js, notes-workspace-v928.js, notes-workspace-v928.css, index.html, sw.js, tests/notes-workspace-v928.spec.cjs.
+
+**Verification status:** Implemented on a feature branch. Playwright browser tests for lasso selection/move/clipboard, undo, per-page graph, focus-mode entry/exit were authored; CI outcomes and separate native-device test are to be recorded after actual runs. PencilKit-like pressure/tilt strokes, system clipboard support, true native low-latency rendering, lassoing text/image objects, and high-zoom WebKit quality remain unimplemented.
+
+**Data/rollout:** No schema reset, new storage key, or destructive migration. Existing project attachment blobs, note pages and backup formats are retained; graph paper adds only an optional property. Do backup/export restore checks and physical Pencil/finger/zoom tests on iPad before relying on this release. The Mac Capacitor/Xcode wrapper is separate and not updated by a web push; preserve native App Group/Share Extension and never clear device data.
+
 ## 2026-11-18 — Goal-linked habits v9.27 (merged into main; iOS device QA outstanding)
 
 **Requested:** From Goal cards, add a recurring Habit directly, retain one shared habit record, and display the parent Goal in smaller italic type throughout Habits. The piano example also needs an optional flexible target (e.g., 4 practice days per week instead of mandatory fixed weekdays).
