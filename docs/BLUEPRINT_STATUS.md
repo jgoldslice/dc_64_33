@@ -18,6 +18,16 @@
 
 **Verification status:** Browser CI and device QA pending. Responsive browser widths are simulated—not physical Split View/Dynamic Type measurements. No Xcode/Capacitor synchronization performed.
 
+## 2026-11-18 — v9.33 Weekly Blueprint draft protection (rebased; CI pending)
+
+**Implemented on `feature/v933-weekly-draft-final`:**
+- Preserve unreadable original `blueprint-weekly-v918-draft` bytes, block silent autosave overwrite and show a recovery view with raw export and explicitly confirmed reset.
+- Batch rapid free-text weekly draft edits (220 ms), flush on blur, pagehide and app background, and warn on failed writes before exit. Checkbox/drag/Apply/Undo operations retain immediate persistence.
+- Fixed a real null-draft dereference in the recovery open flow discovered by browser CI (PR #55 failed this one case; the other 267 tests passed). The new branch includes the fix.
+- Added regression tests in `tests/weekly-draft-v933.spec.cjs` for typing/blur, reload, malformed draft export/reset and quota failure warning. The persisted draft key and planner backup formats are unchanged.
+
+**Verification:** The unrebased PR #55 suite reported 267 passed/1 failed before the null-draft fix. A fresh full CI run is required on this head; iPad physical and Xcode QA remain outstanding.
+
 ## 2026-11-18 — v9.33 Phase 2: autosave, targeted rendering and Library loading (feature branch; QA pending)
 
 **Implemented on `feature/v933-performance`:**
