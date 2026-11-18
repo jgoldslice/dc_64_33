@@ -138,3 +138,19 @@ test('one Pencil tap makes a visible filled dot with adjustable pressure',async(
   expect(dot.d).toContain(' a');
   expect(dot.d).toContain('Z');
 });
+
+test('Focus tools and Command-Z use the same Undo history for pressure ink',async({page})=>{
+  await openNotebook(page);
+  await stroke(page,'pen',[{x:180,y:160,p:.2},{x:215,y:182,p:.8},{x:240,y:190,p:.5}]);
+  expect((await ids(page)).length).toBe(1);
+  await page.locator('#v928Focus').click();
+  await page.locator('#v928FocusTools').click();
+  await expect(page.locator('[data-v928-action="undo"]')).toBeVisible();
+  await page.locator('[data-v928-action="undo"]').click();
+  expect(await ids(page)).toEqual([]);
+  await page.locator('#v928FocusExit').click();
+  await stroke(page,'pen',[{x:150,y:120,p:.3},{x:160,y:130,p:.6}]);
+  expect((await ids(page)).length).toBe(1);
+  await page.keyboard.press('Control+z');
+  expect(await ids(page)).toEqual([]);
+});
