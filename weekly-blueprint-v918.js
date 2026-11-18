@@ -27,8 +27,16 @@
     newTasks:[],taskForm:{title:'',dueDate:start,goalId:''},
     created:Date.now()
   });
-  let draft=read(DRAFT_KEY);
-  if(!draft||draft.version!==1||!draft.weekStart||!draft.taskDone||!draft.habitDays||!draft.goals)draft=null;
+  // Unreadable weekly drafts are user data too: never silently replace their
+  // original bytes with a fresh draft. Offer an explicit recovery path.
+  let draft=null,rawDraft=null,draftLoadError=null,draftSaveTimer=null,draftSavePending=false,draftUnsaved=false;
+  try{
+    rawDraft=localStorage.getItem(DRAFT_KEY);
+    if(rawDraft!==null)draft=JSON.parse(rawDraft);
+    if(draft!==null&&(!draft||draft.version!==1||!draft.weekStart||
+       !draft.taskDone||!draft.habitDays||!draft.goals))
+      throw Error('Saved weekly draft has an invalid structure');
+  }catch(error){draftLoadError=error;draft=null;console.error('Blueprint weekly draft could not be read',error);}
   let returnFocus=null,originalOverflow='',goalOpen=new Set(),dragged=null,pointerDrag=null;
   const background=document.querySelector('.shell');
   const overlay=document.createElement('div');
@@ -46,11 +54,56 @@
       '<button type="button" id="wbNextButton" data-wb-next class="wb-primary">Continue</button>'+
       '</div></footer></section>';
   document.body.append(overlay);
+  const recovery=document.createElement('span');
+  recovery.id='wbDraftRecovery';recovery.hidden=true;
+  recovery.innerHTML='<button type="button" id="wbDownloadBadDraft">Export original draft</button>'+
+    '<button type="button" id="wbResetBadDraft">Start fresh…</button>';
+  overlay.querySelector('.wb-footer-actions').prepend(recovery);
   function storeDraft(){
-    if(!draft)return true;
-    try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));return true;}
-    catch(e){E('wbStatus').textContent='Draft could not be saved on this device. Check storage before leaving.';console.error('Weekly Blueprint draft save failed',e);return false;}
+    clearTimeout(draftSaveTimer);draftSaveTimer=null;draftSavePending=false;
+    if(draftLoadError){
+      E('wbStatus').textContent='Unrecognized weekly draft. Export the original before starting fresh.';
+      return false;
+    }
+    if(!draft){draftUnsaved=false;return true;}
+    try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));draftUnsaved=false;
+      if(E('wbStatus').textContent.startsWith('Draft could not be saved'))E('wbStatus').textContent='';
+      return true;}
+    catch(e){draftUnsaved=true;E('wbStatus').textContent='Draft could not be saved on this device. Check storage before leaving.';console.error('Weekly Blueprint draft save failed',e);return false;}
   }
+  function queueDraftSave(){
+    if(!draft||draftLoadError)return;
+    draftSavePending=true;draftUnsaved=true;
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer=setTimeout(storeDraft,220);
+  }
+  function flushDraftSave(){
+    return (draftSavePending||draftUnsaved)?storeDraft():!draftLoadError;
+  }
+  overlay.addEventListener('focusout',e=>{
+    if(e.target?.matches?.('input,textarea'))flushDraftSave();
+  },true);
+  window.addEventListener('pagehide',flushDraftSave);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)flushDraftSave();});
+  window.addEventListener('beforeunload',event=>{
+    if(!flushDraftSave()){event.preventDefault();event.returnValue='';}
+  });
+  recovery.querySelector('#wbDownloadBadDraft').addEventListener('click',()=>{
+    if(rawDraft===null)return;
+    const u=URL.createObjectURL(new Blob([rawDraft],{type:'text/plain'}));
+    const a=document.createElement('a');a.href=u;a.download='blueprint-original-weekly-draft.txt';
+    document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u),30000);
+  });
+  recovery.querySelector('#wbResetBadDraft').addEventListener('click',()=>{
+    if(!draftLoadError||!confirm('Discard the unreadable weekly draft? Export the original first if you may need to recover it.'))return;
+    try{localStorage.removeItem(DRAFT_KEY);}
+    catch(error){E('wbStatus').textContent='Could not clear the unreadable draft: '+error.message;return;}
+    draftLoadError=null;rawDraft=null;draft=newDraft(draftStart());
+    recovery.hidden=true;
+    E('wbNextButton').disabled=false;E('wbBackButton').disabled=false;
+    storeDraft();renderSheet(true);
+  });
   function draftStart(){return iso(plusDays(startOfWeek(new Date()),7));}
   function previousWeek(){return add(draft.weekStart,-7);}
   function current(id){return state.tasks.find(t=>idString(t.id)===idString(id));}
@@ -112,12 +165,22 @@
   }
   function open(fromWeek){
     returnFocus=document.activeElement;
-    if(!draft)draft=newDraft(fromWeek?iso(startOfWeek(selectedWeek)):draftStart());
+    if(!draft&&!draftLoadError)draft=newDraft(fromWeek?iso(startOfWeek(selectedWeek)):draftStart());
     if(!draft.selectedDay)draft.selectedDay=draft.weekStart;
     originalOverflow=document.body.style.overflow;
     document.body.style.overflow='hidden';
     if(background)background.inert=true;
     overlay.hidden=false;
+    if(draftLoadError){
+      recovery.hidden=false;
+      E('wbMain').innerHTML='<p>Blueprint could not read a saved Weekly Blueprint draft. Its original contents have not been modified. Export the original draft before deciding whether to start fresh.</p>';
+      E('wbProgress').replaceChildren();
+      E('wbBackButton').disabled=true;E('wbNextButton').disabled=true;
+      E('wbStatus').textContent='Draft recovery required: automatic saving is blocked.';
+      E('wbMain').focus({preventScroll:true});return;
+    }
+    recovery.hidden=true;
+    E('wbBackButton').disabled=false;E('wbNextButton').disabled=false;
     storeDraft();renderSheet(true);E('wbMain').focus({preventScroll:true});
   }
   function close(){
@@ -372,6 +435,7 @@
     draft.priority=ids;draft.priorityTouched=true;storeDraft();renderSheet(false);
   }
   function apply(){
+    if(draftLoadError)return;
     if(!draft||draft.step!==4||!meaningfulChanges())return;
     const before={};for(const key of FIELDS)before[key]=clone(state[key]);
     const next=clone(before),find=(key,id)=>next[key].find(x=>idString(x.id)===idString(id));
@@ -387,7 +451,7 @@
         g.title=clean(update.title).slice(0,160)||g.title;
         g.category=state.categories.includes(update.category)?update.category:g.category;
         g.motivation=String(update.motivation||'').slice(0,3000);
-        g.actions=clone(update.actions||[]).filter(a=>clean(a.title)).map(a=>({id:a.id,title:clean(a.title).slice(0,160),done:!!a.done}));
+        g.actions=clone(update.actions||[]).filter(a=>clean(a.title)).map(a=>({...a,id:a.id,title:clean(a.title).slice(0,160),done:!!a.done}));
         const retained=new Set(g.actions.map(a=>idString(a.id)));
         for(const t of next.tasks){
           if(idString(t.goalId||'')!==id)continue;
@@ -396,7 +460,7 @@
           else if(old){t.actionId=old.id;t.actionIndex=g.actions.findIndex(a=>idString(a.id)===idString(old.id));}
         }
         for(const h of next.habits){
-          if(idString(h.goalId||'')===id&&h.actionId&&!retained.has(idString(h.actionId))){h.goalId='';h.actionId='';}
+          if(idString(h.goalId||'')===id&&h.actionId&&!retained.has(idString(h.actionId))){h.actionId='';}
         }
         for(const t of next.tasks){
           if(idString(t.goalId||'')!==id)continue;
@@ -547,7 +611,7 @@
       const f=x.closest('form');
       draft.taskForm={title:f.elements.title.value,dueDate:f.elements.dueDate.value,goalId:f.elements.goalId.value};
     }else return;
-    storeDraft();
+    queueDraftSave();
   });
   overlay.addEventListener('change',function(e){
     const x=e.target;
