@@ -5,7 +5,7 @@ const base='http://127.0.0.1:8765/';
 async function setup(page){
   await page.goto(base);
   await page.locator('[data-tab="myplan"]').click();
-  await page.locator('[data-plan-tab="goals"]').click();
+  await page.locator('.plan-tabs [data-plan-tab="goals"]').click();
   await page.evaluate(()=>{
     state.goals=[{id:'piano',title:'Learn My Song on Piano',category:'Personal',actions:[{id:'verse',title:'Learn first verse',done:false}]}];
     state.habits=[];
@@ -36,12 +36,12 @@ test('create a habit from a goal and show it in the goal and Habits without dupl
   const record=await page.evaluate(()=>state.habits);
   expect(record).toHaveLength(1);
   expect(record[0]).toMatchObject({title:'Practice piano',goalId:'piano',actionId:'',weeklyTarget:4,days:{}});
-  await page.locator('[data-plan-tab="habits"]').click();
+  await page.locator('.plan-tabs [data-plan-tab="habits"]').click();
   await expect(page.locator('#habitsTracker .bp-habit-goal')).toContainText('Learn My Song on Piano');
   await expect(page.locator('#habitManager .bp-habit-goal')).toContainText('Learn My Song on Piano');
   await page.reload();
   await page.locator('[data-tab="myplan"]').click();
-  await page.locator('[data-plan-tab="habits"]').click();
+  await page.locator('.plan-tabs [data-plan-tab="habits"]').click();
   expect(await page.evaluate(()=>state.habits.filter(h=>h.goalId==='piano').length)).toBe(1);
   await expect(page.locator('#habitManager .bp-habit-goal')).toContainText('Learn My Song on Piano');
 });
@@ -53,15 +53,15 @@ test('checking Today and the weekly tracker updates the same linked habit',async
   await page.locator('#todayHabits input[data-habit-check]').check();
   expect(await page.evaluate(date=>state.habits[0].days[date],today)).toBe(true);
   await page.locator('[data-tab="myplan"]').click();
-  await page.locator('[data-plan-tab="goals"]').click();
+  await page.locator('.plan-tabs [data-plan-tab="goals"]').click();
   await expect(page.locator('details[data-goal="piano"] .bp-goal-habit-title small')).toContainText('this week');
-  await page.locator('[data-plan-tab="habits"]').click();
+  await page.locator('.plan-tabs [data-plan-tab="habits"]').click();
   await expect(page.locator('#habitsTracker input[data-date="'+today+'"]')).toBeChecked();
 });
 test('editing a habit can change or remove its goal without losing history',async({page})=>{
   await createFromGoal(page);
   await page.evaluate(()=>{state.goals.push({id:'research',title:'Finish research paper',category:'Research',actions:[]});save(true);render();});
-  await page.locator('[data-plan-tab="habits"]').click();
+  await page.locator('.plan-tabs [data-plan-tab="habits"]').click();
   await page.locator('#habitManager [data-edit-habit]').click();
   await expect(page.locator('#modalForm [name="goalId"]')).toHaveValue('piano');
   await page.locator('#modalForm [name="goalId"]').selectOption('research');
@@ -92,7 +92,7 @@ test('deleting a goal keeps its habits but disconnects the parent label',async({
   expect(await page.evaluate(()=>state.habits.map(h=>({title:h.title,goalId:h.goalId,actionId:h.actionId})))).toEqual([
     {title:'Practice piano',goalId:'',actionId:''}
   ]);
-  await page.locator('[data-plan-tab="habits"]').click();
+  await page.locator('.plan-tabs [data-plan-tab="habits"]').click();
   await expect(page.locator('#habitManager .bp-habit-goal')).toHaveCount(0);
   await expect(page.locator('#habitManager')).toContainText('Practice piano');
 });
