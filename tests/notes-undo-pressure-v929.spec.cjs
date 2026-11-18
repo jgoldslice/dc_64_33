@@ -27,7 +27,8 @@ async function seedInk(page){
   });
 }
 async function stroke(page,mode,sequence){
-  await page.locator('[data-v76-mode="'+mode+'"]').click();
+  const tool=page.locator('[data-v76-mode="'+mode+'"]');
+  if(await tool.getAttribute('aria-pressed')!=='true')await tool.click();
   await page.evaluate(({sequence,mode})=>{
     const api=window.BlueprintNotesBridge,ink=api.ink,matrix=ink.getScreenCTM();
     // Synthetic stylus contact: browser integration, not a hardware Pencil test.
