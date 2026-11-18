@@ -18,6 +18,18 @@
 
 **Verification:** Static inline-script parsing passed. Full browser CI and timing results not yet confirmed. Actual iPhone/iPad touch, low-memory, Split View and Pencil behavior remain physical-device QA gates. No native Swift/Capacitor files touched, no migration and no schema/backup format change.
 
+## 2026-11-18 — v9.33 Phase 2/3: focused renders and efficient project loading (review branch)
+
+**Implemented in `feature/v933-performance`:**
+- Added a 250 ms batched text-save pathway for ordinary Focus, brainstorm draft, opening message and project notebook typing; immediately flushes outstanding text on blur, visibility-hidden, pagehide, and beforeunload. Task/event/habit/check actions still call immediate save, which also flushes pending text state. Existing saved-data guards and retry/recovery warnings remain in effect.
+- Task priority ranks are computed once per full or task-focused render instead of sorting every time a task row is displayed.
+- Extracted focused Task and Habit render functions. Task checkbox changes redraw task lists, weekly calendar and dependent goals/ideas; Habit checkbox changes redraw habit sections and dependent goals. Structural changes still call full render, preserving the legacy fallback. The Weekly Blueprint overview wrapper now forwards render scopes.
+- Project renderer no longer rebuilds unrelated hidden Library, action, sketch, or notebook panels on every project visit. Its Overview previews refresh when that panel is visible. Library thumbnails are read lazily using IntersectionObserver, with a no-observer fallback and per-project stale-response guards. Original media keys/bytes remain untouched.
+- `tests/performance-v933.spec.cjs` covers typing/blur/background saving, targeted DOM stability, hidden Library behavior and a reproducible browser planner stress dataset (220 tasks, 36 habits and 35 goals). It logs browser timings but does not claim device speedups without measurement.
+- No framework migration, storage schema change, native Swift change or alteration to Notes ink data/backup formats.
+
+**Verification:** Browser CI and responsive regression checks are pending on this feature branch. Physical iPad/iPhone performance and native Capacitor/Xcode validation remain outstanding. Review any timer failure or cross-window conflict before shipping; never infer device FPS from Playwright.
+
 ## 2026-11-18 — v9.33 Phase 1: guard local data and preserve task fields (merged)
 
 **Requested:** Full app-wide reliability and performance overhaul; begin with preventing irreversible overwrites and preserving backwards-compatible backup/record formats.
