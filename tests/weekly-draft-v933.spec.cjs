@@ -126,7 +126,15 @@ test('applying a Weekly Blueprint Step deletion preserves the parent Goal link o
   await page.locator('[data-wb-goal-details="wbg1"] summary').click();
   await page.locator('[data-wb-step-delete="wbg1"][data-wb-step="step1"]').click();
   expect(await page.evaluate(()=>state.goals[0].actions)).toHaveLength(2);
+  // Verify the edit remains staged and distinct from the real planner before
+  // switching stages; this protects against accidental early mutation.
+  const staged=await page.evaluate(()=>({
+    pending:BlueprintWeekly.getDraft()?.goals?.wbg1?.actions?.map(a=>a.id)||[],
+    original:state.goals[0].actions.map(a=>a.id)
+  }));
+  expect(staged).toEqual({pending:['step2'],original:['step1','step2']});
   await page.locator('[data-wb-step="4"]').click();
+  await expect(page.locator('[data-wb-next]')).toBeEnabled();
   await page.locator('[data-wb-next]').click();
   const result=await page.evaluate(()=>({
     habit:structuredClone(state.habits[0]),
