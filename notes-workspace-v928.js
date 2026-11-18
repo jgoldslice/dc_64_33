@@ -24,7 +24,9 @@
   paperButton.setAttribute('aria-pressed','false');
   paperButton.innerHTML=graphIcon;
   eraserButton.insertAdjacentElement('afterend',lassoButton);
-  lassoButton.insertAdjacentElement('afterend',paperButton);
+  // Page background belongs with the Picture/Page tools, not the Pen nibs.
+  const pageTools=toolbar.querySelector('.v79-tool-group[aria-label="Misc"] .v79-tool-buttons');
+  pageTools.append(paperButton);
   const focusButton=document.createElement('button');
   focusButton.type='button';focusButton.id='v928Focus';focusButton.textContent='Focus';
   focusButton.title='Full-screen writing workspace';
