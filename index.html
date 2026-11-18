@@ -817,7 +817,56 @@ function showOpening(){
   if(overlay){overlay.hidden=true;overlay.classList.remove('closing');}
 }
 
-function render(){
+// Focused render paths keep independent cards stable after small checkbox edits.
+// The all-screens render remains the fallback for structural changes.
+function renderTaskSections(today=localToday()){
+  const orderedPriorities=ranked();
+  const rankMap=new Map(orderedPriorities.map((t,i)=>[String(t.id),i+1]));
+  const todaysTasks=state.tasks.filter(t=>t.dueDate===today).sort((a,b)=>Number(b.priority)-Number(a.priority));
+  // A missed deadline must not disappear simply because the calendar rolled over.
+  // Keep overdue items inside Today at a Glance, not another home card.
+  const overdue=state.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<today)
+    .sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
+  const taskScroll=$('v917TodayTasks').scrollTop;
+  $('v917TodayTasks').innerHTML=
+    (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
+      overdue.slice(0,3).map(t=>taskRow(t,rankMap)).join('')+
+      (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
+    (todaysTasks.length?(overdue.length?'<div class="section-label">Due today</div>':'')+
+      todaysTasks.map(t=>taskRow(t,rankMap)).join(''):'')+
+    (!todaysTasks.length&&!overdue.length?'<p class="empty">No tasks due today.</p>':'');
+  $('v917TodayTasks').scrollTop=taskScroll;
+  const priorities=orderedPriorities;
+  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(t=>taskRow(t,rankMap)).join(''):'<p class="empty">Mark important tasks as priorities to rank them here.</p>';
+  $('tasksPriority').innerHTML=priorities.length?priorities.map((t,i)=>`<div class="priority-edit-row"><span class="rank-badge">${roman(i+1)}</span><span class="entry-text">${esc(t.title)}</span><button data-priority-move="${t.id}" data-dir="-1" ${i===0?'disabled':''} aria-label="Move ${esc(t.title)} up">↑</button><button data-priority-move="${t.id}" data-dir="1" ${i===priorities.length-1?'disabled':''} aria-label="Move ${esc(t.title)} down">↓</button></div>`).join(''):'<p class="empty">No priorities yet. Mark any task as a priority.</p>';
+  $('allTasks').innerHTML=state.tasks.slice().sort((a,b)=>Number(a.done)-Number(b.done)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))).map(t=>taskRow(t,rankMap)).join('')||'<p class="empty">Add your first task.</p>';
+}
+function renderHabitSections(today=localToday(),start=selectedWeek){
+  const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
+  const habitScroll=$('todayHabits').scrollTop;
+  $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today">${habitCaption(h)}${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
+  $('todayHabits').scrollTop=habitScroll;
+  $('weekHabits').innerHTML=state.habits.length?habitTable(start):'<p class="empty">Add a habit to track your week.</p>';
+  $('habitsWeekTitle').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
+  v916WeekProgress(start);
+  $('habitsTracker').innerHTML=state.habits.length?habitTable(start):'<p class="empty">No habits yet. Add your first habit.</p>';
+  $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item"><div><strong>${esc(h.title)}</strong>${habitGoal(h)?'<small class="bp-habit-goal">'+esc(habitGoal(h).title)+'</small>':''}<small>${h.weeklyTarget?'Goal: '+h.weeklyTarget+' days/week · ':''}${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
+}
+function renderCalendarGrid(start=selectedWeek){
+  const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
+  $('weekGrid').innerHTML=Array.from({length:5},(_,i)=>dayCard(iso(plusDays(start,i)))).join('')+`<div class="day-card weekend">${weekend}</div>`;
+}
+function render(scope='all'){
+  if(scope==='habits'){
+    renderHabitSections();
+    renderGoals(); // Goal habit progress is a dependent view.
+    return;
+  }
+  if(scope==='tasks'){
+    renderTaskSections();renderCalendarGrid();
+    renderGoals();renderIdeas(); // Linked idea actions can reflect task completion.
+    return;
+  }
   // Upgrade legacy habits once. A stable start date prevents unknown earlier
   // days being counted as missed and keeps the same baseline after relaunch.
   let migratedHabits=false;
@@ -835,50 +884,22 @@ function render(){
     if(document.activeElement!==$(id))$(id).value=value||'';
   }
   const today=localToday();
-  const orderedPriorities=ranked();
-  const rankMap=new Map(orderedPriorities.map((t,i)=>[String(t.id),i+1]));
   const todaysEvents=state.events.filter(e=>e.date===today).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  const todaysTasks=state.tasks.filter(t=>t.dueDate===today).sort((a,b)=>Number(b.priority)-Number(a.priority));
-  // A missed deadline must not disappear simply because the calendar rolled over.
-  // Keep overdue items inside Today at a Glance, not another home card.
-  const overdue=state.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<today)
-    .sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
   const scheduleScroll=$('todayGlance').scrollTop;
   $('todayGlance').innerHTML=todaysEvents.length
     ?todaysEvents.map(eventRow).join('')
     :'<p class="empty">No events scheduled today.</p>';
   $('todayGlance').scrollTop=scheduleScroll;
-  const taskScroll=$('v917TodayTasks').scrollTop;
-  $('v917TodayTasks').innerHTML=
-    (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
-      overdue.slice(0,3).map(t=>taskRow(t,rankMap)).join('')+
-      (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
-    (todaysTasks.length?(overdue.length?'<div class="section-label">Due today</div>':'')+
-      todaysTasks.map(t=>taskRow(t,rankMap)).join(''):'')+
-    (!todaysTasks.length&&!overdue.length?'<p class="empty">No tasks due today.</p>':'');
-  $('v917TodayTasks').scrollTop=taskScroll;
-  const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
-  const habitScroll=$('todayHabits').scrollTop;
-  $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today">${habitCaption(h)}${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
-  $('todayHabits').scrollTop=habitScroll;
   const start=selectedWeek;
   const monthDay=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   $('weekTitle').textContent=`${monthDay(start)} – ${monthDay(plusDays(start,6))}`;
   $('weekLabel').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
-  $('weekHabits').innerHTML=state.habits.length?habitTable(start):'<p class="empty">Add a habit to track your week.</p>';
-  const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
-  $('weekGrid').innerHTML=Array.from({length:5},(_,i)=>dayCard(iso(plusDays(start,i)))).join('')+`<div class="day-card weekend">${weekend}</div>`;
-  const priorities=orderedPriorities;
-  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(t=>taskRow(t,rankMap)).join(''):'<p class="empty">Mark important tasks as priorities to rank them here.</p>';
-  $('tasksPriority').innerHTML=priorities.length?priorities.map((t,i)=>`<div class="priority-edit-row"><span class="rank-badge">${roman(i+1)}</span><span class="entry-text">${esc(t.title)}</span><button data-priority-move="${t.id}" data-dir="-1" ${i===0?'disabled':''} aria-label="Move ${esc(t.title)} up">↑</button><button data-priority-move="${t.id}" data-dir="1" ${i===priorities.length-1?'disabled':''} aria-label="Move ${esc(t.title)} down">↓</button></div>`).join(''):'<p class="empty">No priorities yet. Mark any task as a priority.</p>';
-  $('allTasks').innerHTML=state.tasks.slice().sort((a,b)=>Number(a.done)-Number(b.done)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))).map(t=>taskRow(t,rankMap)).join('')||'<p class="empty">Add your first task.</p>';
+  renderTaskSections(today);
+  renderHabitSections(today,start);
+  renderCalendarGrid(start);
   renderGoals();
   renderCategories();
   renderIdeas();
-  $('habitsWeekTitle').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
-  v916WeekProgress(start);
-  $('habitsTracker').innerHTML=state.habits.length?habitTable(start):'<p class="empty">No habits yet. Add your first habit.</p>';
-  $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item"><div><strong>${esc(h.title)}</strong>${habitGoal(h)?'<small class="bp-habit-goal">'+esc(habitGoal(h).title)+'</small>':''}<small>${h.weeklyTarget?'Goal: '+h.weeklyTarget+' days/week · ':''}${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
   $('openingMode').value=state.openingMode;
   if(document.activeElement!==$('openingMessageInput'))$('openingMessageInput').value=state.openingMessage;
   for(const prop of ['primary','secondary']){
@@ -1303,7 +1324,8 @@ document.addEventListener('change',(e)=>{
   else if(x.dataset.actionCheck){const g=state.goals.find(t=>String(t.id)===x.dataset.actionCheck);if(g){const a=g.actions.find(a=>String(a.id)===String(x.dataset.actionId));if(a){a.done=x.checked;for(const t of state.tasks.filter(t=>String(t.goalId)===x.dataset.actionCheck&&String(t.actionId||'')===String(a.id)))t.done=x.checked;}}expandedGoals.add(x.dataset.actionCheck);}
   else if(x.id==='primaryCustom'||x.id==='secondaryCustom'){const prop=x.id.replace('Custom','');if(/^#[a-fA-F0-9]{6}$/.test(x.value))state[prop]=x.value;else return;}
   else return;
-  save();render();
+  save();
+  render(x.dataset.habitCheck?'habits':x.dataset.taskCheck?'tasks':'all');
 });
 document.addEventListener('toggle',(e)=>{if(!e.target.matches('details[data-goal]'))return;const id=e.target.dataset.goal;if(e.target.open)expandedGoals.add(id);else expandedGoals.delete(id);},true);
 $('prevWeek').onclick=()=>{selectedWeek=plusDays(selectedWeek,-7);render();};
