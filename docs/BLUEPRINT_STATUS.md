@@ -7,39 +7,21 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — v9.33 Phase 4/5: relationship integrity and small-screen readability (feature PR; QA pending)
+## 2026-11-18 — v9.33 verified web implementation and outstanding device QA
 
-**Implemented on `feature/v933-linked-record-polish`:**
-- Removing a Goal Step now removes a recurring Habit's obsolete `actionId` but preserves its `goalId`, weekly target, schedule, check-in history and metadata. A habitual behavior still supports the parent Goal after its individual Step is deleted. Goal-linked Tasks keep the existing explicit Step unlinking behavior.
-- Editing existing Goal Steps preserves their additional/unknown metadata rather than reconstructing the object with just ID/title/done. Event, Task and Habit extra fields remain intact during their editors' normal `Object.assign` updates.
-- Two-line titles with anywhere wrapping in Project Overview and Library image cards avoid truncating long descriptions into illegible one-line snippets. Card visuals, touch targets, drag reordering and resource IDs are unchanged.
-- Regression tests: `tests/goal-relationship-v933.spec.cjs` covers deleting a Goal Step and retained Habit/Task relationships, extra Goal Step fields, Event/Habit data, and persistence. `tests/responsive-polish-v933.spec.cjs` covers 320px–1180px viewport widths and preservation of in-progress Event form entries when the selected week changes.
-- Changed `index.html`, `library-order-v923.css`, `project-overview-v919.css`, `sw.js`, and two test files. No migrations, native project edits, new persisted fields, or modification to existing note ink.
+**Merged into `main`:**
+- **Phase 1, PR #50**, commit `960e8d9b644b5b2fe2fad8cadaba7a9719950386`: unreadable-data write protection and exact raw recovery, emergency exports, Task schedule/link preservation and read-only attachment audit. [CI run 44401108946](https://github.com/jgoldslice/dc_64_33/actions/runs/44401108946): **250/250 passing**.
+- **Phase 2, PR #51**, commit `cf8a6690046f9c784b4cc08de56f4fb3eb88945f`: 250 ms text batching with lifecycle flush, selective Task/Habit rendering, one priority index per render, lazy hidden-project/Library media loading. [CI run 44403919516](https://github.com/jgoldslice/dc_64_33/actions/runs/44403919516): **262/262 passing**. On one 600-task CI browser dataset naive priority sorting took 22.9 ms and indexed calculation 0.2 ms; populated 220-task+36-habit+35-goal layout measured 108 ms full render, 21.3 ms focused Habit render and 56.7 ms focused Task render. These are browser timings, not iPhone/iPad frames.
+- **Phase 3, PR #52**, commit `23c2a488c6cd8237ca95ca5f6d63c1e2202425f7`: incremental Blob-part assembly of the existing v2 complete backup, large image/pressure-note roundtrip tests, and `docs/BLUEPRINT_NATIVE_READINESS.md` migration gates. [CI run 44405118166](https://github.com/jgoldslice/dc_64_33/actions/runs/44405118166): **264/264 passing**. Export is less duplicative but NOT fully streamed to disk; large imports still parse full JSON in memory.
+- **Phase 4/5, PR #54**, commit `d6425024eb3ffd5ff740c47b5879cbd913449896`: deleting a Goal Step preserves connected Habits' parent Goal, retains Step metadata on edits, and wraps Project Overview/Library titles within two lines. Tests include 320–1180 px layouts and in-progress Event form field preservation. [CI run 44405708984](https://github.com/jgoldslice/dc_64_33/actions/runs/44405708984): **269/269 passing**.
 
-**Verification status:** Browser CI and device QA pending. Responsive browser widths are simulated—not physical Split View/Dynamic Type measurements. No Xcode/Capacitor synchronization performed.
+**Still unverified:** actual Pencil latency, native backup/export under iPad memory pressure, iPhone/iPad portrait/landscape and Split View gesture behavior, native Share Extension, PencilKit, local notifications, CloudKit sync, and the installed Capacitor/Xcode app. The above web commits do not update installed iOS builds.
 
-## 2026-11-18 — v9.33 Phase 2: autosave, targeted rendering and Library loading (feature branch; QA pending)
+## 2026-11-18 — v9.33 Weekly Blueprint guarded draft update (new review branch; automated CI pending)
 
-**Implemented on `feature/v933-performance`:**
-- Ordinary text input for Today/Week focus, opening message, Brainstorm draft and project notebook is batched (250 ms) and flushed on blur, pagehide, visibility hidden, beforeunload, or any immediate planner save. Existing cross-window stale-write guard remains the single writer; no new cache or data store. The draft indicator says Saving… until actually persisted.
-- `render('habits')` updates Habit tracking and associated Goal progress without recreating tasks/calendar; `render('tasks')` updates Today/Plan tasks, priorities, affected weekly calendar and related Goals/Ideas without rebuilding Habit checkboxes. Structural edits still call full `render()`. The Weekly Blueprint wrapper forwards partial-render scopes.
-- Task ordering is sorted once per render and looked up from an ID→rank map, instead of sorting priorities for every row.
-- Hidden project Notes/Actions/Library/Sketches no longer redraw whenever the project overview refreshes; panels render on open. The Library only reads blobs for images approaching the visible viewport using IntersectionObserver, releases image URLs/observers when leaving and guards stale asynchronous results.
-- Changed `index.html`, `weekly-blueprint-v918.js`, `sw.js`; added `tests/blueprint-performance-v933.spec.cjs` with real browser tests and a 600-task timing comparison.
+**Implemented on `feature/v933-weekly-ready`:** Rebased safe 220 ms free-text draft autosaving, blur/visibility/pagehide flush, explicit raw recovery for unreadable weekly drafts, warning on failed writes and no silent draft replacement from the older feature branch. On Apply, a removed Goal Step clears only a connected Habit's stale Step ID, retaining the parent Goal; retained Goal Steps keep unknown metadata instead of being reduced to ID/title/done. New browser test verifies this data relationship after Apply/reload. No draft schema change or Pencil/SVG/native code changes.
 
-**Verification:** Static inline-script parsing passed. Full browser CI and timing results not yet confirmed. Actual iPhone/iPad touch, low-memory, Split View and Pencil behavior remain physical-device QA gates. No native Swift/Capacitor files touched, no migration and no schema/backup format change.
-
-## 2026-11-18 — v9.33 Phase 2/3: focused renders and efficient project loading (review branch)
-
-**Implemented in `feature/v933-performance`:**
-- Added a 250 ms batched text-save pathway for ordinary Focus, brainstorm draft, opening message and project notebook typing; immediately flushes outstanding text on blur, visibility-hidden, pagehide, and beforeunload. Task/event/habit/check actions still call immediate save, which also flushes pending text state. Existing saved-data guards and retry/recovery warnings remain in effect.
-- Task priority ranks are computed once per full or task-focused render instead of sorting every time a task row is displayed.
-- Extracted focused Task and Habit render functions. Task checkbox changes redraw task lists, weekly calendar and dependent goals/ideas; Habit checkbox changes redraw habit sections and dependent goals. Structural changes still call full render, preserving the legacy fallback. The Weekly Blueprint overview wrapper now forwards render scopes.
-- Project renderer no longer rebuilds unrelated hidden Library, action, sketch, or notebook panels on every project visit. Its Overview previews refresh when that panel is visible. Library thumbnails are read lazily using IntersectionObserver, with a no-observer fallback and per-project stale-response guards. Original media keys/bytes remain untouched.
-- `tests/performance-v933.spec.cjs` covers typing/blur/background saving, targeted DOM stability, hidden Library behavior and a reproducible browser planner stress dataset (220 tasks, 36 habits and 35 goals). It logs browser timings but does not claim device speedups without measurement.
-- No framework migration, storage schema change, native Swift change or alteration to Notes ink data/backup formats.
-
-**Verification:** Browser CI and responsive regression checks are pending on this feature branch. Physical iPad/iPhone performance and native Capacitor/Xcode validation remain outstanding. Review any timer failure or cross-window conflict before shipping; never infer device FPS from Playwright.
+**Verification:** Await GitHub Actions on this rebased feature; physical iOS and Xcode tests still pending.
 
 ## 2026-11-18 — v9.33 Phase 1: guard local data and preserve task fields (merged)
 
