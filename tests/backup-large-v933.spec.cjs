@@ -5,6 +5,7 @@ const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:390,height:844},isMobile:true,hasTouch:true});
 
 test('large media backup keeps v2 checksums, pressure ink, and all attachment bytes',async({browser,page})=>{
+  test.setTimeout(120000); // Multi-megabyte media and SHA-256 validation.
   await page.goto(base);
   await page.evaluate(async()=>{
     const sizes=[1048576,1310720,1572864];
