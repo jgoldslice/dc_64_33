@@ -152,7 +152,10 @@ test('lasso actions are contextual and the toolbar stays compact on narrow scree
   expect(position.y).toBeGreaterThanOrEqual(0);
   await page.locator('[data-v930-action="copy"]').click();
   await page.setViewportSize({width:375,height:812});
-  await penGesture(page,[[210,300],[210,300]]);
+  await page.locator('#v928Lasso').click(); // Select: blank paper is the paste target.
+  await page.locator('#v76Surface').dispatchEvent('click',{bubbles:true,
+    clientX:369,clientY:220});
+  await expect(page.locator('[data-v930-action="paste"]')).toBeVisible();
   const box=await page.locator('#v930InkContext').boundingBox();
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x+box.width).toBeLessThanOrEqual(375);
