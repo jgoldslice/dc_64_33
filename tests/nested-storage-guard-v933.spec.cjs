@@ -35,7 +35,7 @@ test('partial legacy planner records with valid known arrays still load and rema
   await page.goto(base);
   const prior={tasks:[{id:5,title:'Legacy task',done:false}],
     goals:[{id:2,title:'Legacy goal',category:'Personal',actions:[{title:'Legacy step',done:false}]}],
-    projects:[{id:'old-project',title:'Old project',library:[],notes:[]}]};
+    projects:[{id:'old-project',title:'Old project',library:[],notes:['Historical text note']}]};
   await page.evaluate(value=>localStorage.setItem('jgold-planner-v1',JSON.stringify(value)),prior);
   await page.reload();
   const result=await page.evaluate(()=>({
