@@ -680,7 +680,7 @@
     if(e.target.closest('[data-wb-undo]'))undo();
   });
   const oldRender=render;
-  render=function(){oldRender();renderOverview();};
+  render=function(scope){oldRender(scope);renderOverview();};
   renderOverview();
   window.BlueprintWeekly={open:()=>open(false),close,getDraft:()=>draft?clone(draft):null,hasDraft:()=>!!draft};
 })();
