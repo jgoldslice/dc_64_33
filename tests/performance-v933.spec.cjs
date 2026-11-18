@@ -98,7 +98,7 @@ test('hidden project Library does not fetch blobs until Library tab is opened',a
       {id:'image-1',title:'photo.png',type:'file',mime:'image/png',key:'perf-image-1'}
     ],notePages:[]}];
     window.v6ActiveProjectId='p-perf';
-    v6ProjectTab='overview';
+    v6ProjectTab='notes';
     let fetchCount=0;
     const original=v6Blob;
     v6Blob=async (...args)=>{if(args[0]==='get')fetchCount++;return original(...args);};
