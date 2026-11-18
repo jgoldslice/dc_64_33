@@ -37,7 +37,7 @@
 #v76Editor .v928-tool-group #v928Lasso[aria-pressed="true"]{
   background:var(--wash);border-color:var(--secondary-ui);color:var(--secondary-ui);
 }
-#v76Editor .v928-tool-group button:disabled{opacity:.38}
+#v76Editor .v928-tool-group button:disabled{display:none!important}
 #v76Editor .v928-paper-group{
   display:flex;align-items:center;gap:7px;white-space:nowrap;
   font-size:12px;font-weight:650;color:var(--muted);
