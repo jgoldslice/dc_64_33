@@ -7,11 +7,34 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — v9.33 Phase 1: guard local data and preserve task fields (PR under review)
+## 2026-11-18 — v9.33 Phase 2: autosave, targeted rendering and Library loading (feature branch; QA pending)
+
+**Implemented on `feature/v933-performance`:**
+- Ordinary text input for Today/Week focus, opening message, Brainstorm draft and project notebook is batched (250 ms) and flushed on blur, pagehide, visibility hidden, beforeunload, or any immediate planner save. Existing cross-window stale-write guard remains the single writer; no new cache or data store. The draft indicator says Saving… until actually persisted.
+- `render('habits')` updates Habit tracking and associated Goal progress without recreating tasks/calendar; `render('tasks')` updates Today/Plan tasks, priorities, affected weekly calendar and related Goals/Ideas without rebuilding Habit checkboxes. Structural edits still call full `render()`. The Weekly Blueprint wrapper forwards partial-render scopes.
+- Task ordering is sorted once per render and looked up from an ID→rank map, instead of sorting priorities for every row.
+- Hidden project Notes/Actions/Library/Sketches no longer redraw whenever the project overview refreshes; panels render on open. The Library only reads blobs for images approaching the visible viewport using IntersectionObserver, releases image URLs/observers when leaving and guards stale asynchronous results.
+- Changed `index.html`, `weekly-blueprint-v918.js`, `sw.js`; added `tests/blueprint-performance-v933.spec.cjs` with real browser tests and a 600-task timing comparison.
+
+**Verification:** Static inline-script parsing passed. Full browser CI and timing results not yet confirmed. Actual iPhone/iPad touch, low-memory, Split View and Pencil behavior remain physical-device QA gates. No native Swift/Capacitor files touched, no migration and no schema/backup format change.
+
+## 2026-11-18 — v9.33 Phase 2/3: focused renders and efficient project loading (review branch)
+
+**Implemented in `feature/v933-performance`:**
+- Added a 250 ms batched text-save pathway for ordinary Focus, brainstorm draft, opening message and project notebook typing; immediately flushes outstanding text on blur, visibility-hidden, pagehide, and beforeunload. Task/event/habit/check actions still call immediate save, which also flushes pending text state. Existing saved-data guards and retry/recovery warnings remain in effect.
+- Task priority ranks are computed once per full or task-focused render instead of sorting every time a task row is displayed.
+- Extracted focused Task and Habit render functions. Task checkbox changes redraw task lists, weekly calendar and dependent goals/ideas; Habit checkbox changes redraw habit sections and dependent goals. Structural changes still call full render, preserving the legacy fallback. The Weekly Blueprint overview wrapper now forwards render scopes.
+- Project renderer no longer rebuilds unrelated hidden Library, action, sketch, or notebook panels on every project visit. Its Overview previews refresh when that panel is visible. Library thumbnails are read lazily using IntersectionObserver, with a no-observer fallback and per-project stale-response guards. Original media keys/bytes remain untouched.
+- `tests/performance-v933.spec.cjs` covers typing/blur/background saving, targeted DOM stability, hidden Library behavior and a reproducible browser planner stress dataset (220 tasks, 36 habits and 35 goals). It logs browser timings but does not claim device speedups without measurement.
+- No framework migration, storage schema change, native Swift change or alteration to Notes ink data/backup formats.
+
+**Verification:** Browser CI and responsive regression checks are pending on this feature branch. Physical iPad/iPhone performance and native Capacitor/Xcode validation remain outstanding. Review any timer failure or cross-window conflict before shipping; never infer device FPS from Playwright.
+
+## 2026-11-18 — v9.33 Phase 1: guard local data and preserve task fields (merged)
 
 **Requested:** Full app-wide reliability and performance overhaul; begin with preventing irreversible overwrites and preserving backwards-compatible backup/record formats.
 
-**Implemented on `feature/v933-storage-safety` (awaiting CI):**
+**Implemented and merged:** [PR #50](https://github.com/jgoldslice/dc_64_33/pull/50), merge commit `960e8d9b644b5b2fe2fad8cadaba7a9719950386`.
 - Startup rejects malformed or non-object planner JSON and invalid known collection shapes before enabling writes; original unreadable bytes are never overwritten by a normalized demo state. A persistent warning offers an exact raw-data export and blocks misleading complete-backup exports. Existing data and the storage key remain intact.
 - Failed writes (including quota issues and cross-window changes) retain in-memory edits and expose a recovery export. Existing stale-manifest protection remains active.
 - Edit Task preserves hidden `scheduledDate`, `scheduledTime`, project/idea links, completion status and other uninvolved properties. Changing parent Goal explicitly clears an obsolete Goal Step link without erasing independent project links.
@@ -20,7 +43,7 @@
 - Added `tests/local-storage-v926.spec.cjs` for malformed data, safe recovery, missing attachments, quota failure and task-field preservation. Cache includes diagnostic file.
 - Changed `index.html`, `v74.js`, `sw.js`; added `local-storage-health-v926.js` and tests. No schema key reset, migration, native Swift or PencilKit changes.
 
-**Verification:** Implementation and tests are committed to a review branch; automated browser results and device checks must be established from actual runs before merging. No performance metrics claimed. Physical iOS and native wrapper unchanged.
+**Verification:** GitHub Actions [PR browser run 44401108946](https://github.com/jgoldslice/dc_64_33/actions/runs/44401108946) passed **250/250 browser tests**. Native iPhone/iPad QA is still outstanding; no installed app was changed.
 
 ## 2026-11-18 — Notes low-latency ink v9.32 (merged; physical-device QA outstanding)
 

@@ -647,6 +647,18 @@ const expandedGoals=new Set();
 let selectedCategory='All',categoryManagerOpen=false,activeIdeaId=null,pendingOpeningTimer=null;
 // A failed write must never be silently treated as saved. Keep edits in memory.
 let canvasUnsaved=!!canvasLoadError,canvasExternalChange=false;
+let canvasTextSaveTimer=null,canvasTextSavePending=false;
+function queueTextSave(){
+  canvasTextSavePending=true;
+  clearTimeout(canvasTextSaveTimer);
+  canvasTextSaveTimer=setTimeout(()=>{canvasTextSaveTimer=null;canvasTextSavePending=false;save(true);},250);
+}
+function flushTextSave(){
+  if(!canvasTextSavePending)return;
+  clearTimeout(canvasTextSaveTimer);canvasTextSaveTimer=null;
+  canvasTextSavePending=false;
+  save(true);
+}
 function canvasSaveStatus(failed){
   let notice=document.getElementById('canvasSaveWarning');
   if(!notice&&failed){
@@ -688,6 +700,8 @@ function canvasSaveStatus(failed){
   }
 }
 function save(verify=false){
+  if(canvasTextSaveTimer){clearTimeout(canvasTextSaveTimer);canvasTextSaveTimer=null;}
+  canvasTextSavePending=false;
   try{
     if(canvasLoadError)throw Error('Refusing to overwrite unreadable original planner data');
     // A Safari/Shortcut share can open Blueprint in a second window. Prevent
@@ -715,6 +729,7 @@ function save(verify=false){
     }
     canvasLastManifest=serialized;canvasExternalChange=false;
     canvasUnsaved=false;canvasSaveStatus(false);
+    if($('draftStatus')&&$('draftStatus').textContent==='Saving…')$('draftStatus').textContent='Saved';
     return true;
   }catch(error){
     canvasUnsaved=true;canvasSaveStatus(true);
@@ -723,7 +738,15 @@ function save(verify=false){
   }
 }
 if(canvasLoadError)canvasSaveStatus(true);
+// Safari can suspend a tab without a traditional unload. Preserve the final
+// characters of a pending text edit on every relevant lifecycle boundary.
+document.addEventListener('focusout',event=>{
+  if(event.target?.matches?.('#brainstormDraft,#todayFocus,#weeklyFocus,#openingMessageInput,#projectNotebook'))flushTextSave();
+},true);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flushTextSave();});
+window.addEventListener('pagehide',flushTextSave);
 window.addEventListener('beforeunload',event=>{
+  flushTextSave();
   if(canvasUnsaved){event.preventDefault();event.returnValue='';}
 });
 
@@ -770,7 +793,7 @@ function applyTheme(){
 }
 const roman=n=>{const symbols=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];let out='';for(const [v,a] of symbols)while(n>=v){out+=a;n-=v;}return out;};
 const ranked=()=>state.tasks.filter(t=>t.priority&&!t.done).sort((a,b)=>(a.priorityRank||9999)-(b.priorityRank||9999)||String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
-function taskRow(t){const rank=ranked().findIndex(x=>String(x.id)===String(t.id))+1;const detail=t.dueDate?'Deadline '+new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}>${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}<span class="entry-text">${esc(t.title)}${detail?'<small class="task-due">'+esc(detail)+'</small>':''}</span><span class="task-row-actions"><button type="button" class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button>${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+esc(t.id)+'" aria-label="Delete completed task '+esc(t.title)+'">Delete</button>':''}</span></div>`;}
+function taskRow(t,rankMap=null){const rank=rankMap instanceof Map?rankMap.get(String(t.id))||0:ranked().findIndex(x=>String(x.id)===String(t.id))+1;const detail=t.dueDate?'Deadline '+new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}>${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}<span class="entry-text">${esc(t.title)}${detail?'<small class="task-due">'+esc(detail)+'</small>':''}</span><span class="task-row-actions"><button type="button" class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button>${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+esc(t.id)+'" aria-label="Delete completed task '+esc(t.title)+'">Delete</button>':''}</span></div>`;}
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}
 function habitGoal(h){return state.goals.find(g=>String(g.id)===String(h.goalId||''));}
 function habitCaption(h){const goal=habitGoal(h);return `<span class="bp-habit-label"><span>${esc(h.title)}</span>${goal?`<small class="bp-habit-goal">${esc(goal.title)}</small>`:''}</span>`;}
@@ -794,7 +817,56 @@ function showOpening(){
   if(overlay){overlay.hidden=true;overlay.classList.remove('closing');}
 }
 
-function render(){
+// Focused render paths keep independent cards stable after small checkbox edits.
+// The all-screens render remains the fallback for structural changes.
+function renderTaskSections(today=localToday()){
+  const orderedPriorities=ranked();
+  const rankMap=new Map(orderedPriorities.map((t,i)=>[String(t.id),i+1]));
+  const todaysTasks=state.tasks.filter(t=>t.dueDate===today).sort((a,b)=>Number(b.priority)-Number(a.priority));
+  // A missed deadline must not disappear simply because the calendar rolled over.
+  // Keep overdue items inside Today at a Glance, not another home card.
+  const overdue=state.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<today)
+    .sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
+  const taskScroll=$('v917TodayTasks').scrollTop;
+  $('v917TodayTasks').innerHTML=
+    (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
+      overdue.slice(0,3).map(t=>taskRow(t,rankMap)).join('')+
+      (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
+    (todaysTasks.length?(overdue.length?'<div class="section-label">Due today</div>':'')+
+      todaysTasks.map(t=>taskRow(t,rankMap)).join(''):'')+
+    (!todaysTasks.length&&!overdue.length?'<p class="empty">No tasks due today.</p>':'');
+  $('v917TodayTasks').scrollTop=taskScroll;
+  const priorities=orderedPriorities;
+  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(t=>taskRow(t,rankMap)).join(''):'<p class="empty">Mark important tasks as priorities to rank them here.</p>';
+  $('tasksPriority').innerHTML=priorities.length?priorities.map((t,i)=>`<div class="priority-edit-row"><span class="rank-badge">${roman(i+1)}</span><span class="entry-text">${esc(t.title)}</span><button data-priority-move="${t.id}" data-dir="-1" ${i===0?'disabled':''} aria-label="Move ${esc(t.title)} up">↑</button><button data-priority-move="${t.id}" data-dir="1" ${i===priorities.length-1?'disabled':''} aria-label="Move ${esc(t.title)} down">↓</button></div>`).join(''):'<p class="empty">No priorities yet. Mark any task as a priority.</p>';
+  $('allTasks').innerHTML=state.tasks.slice().sort((a,b)=>Number(a.done)-Number(b.done)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))).map(t=>taskRow(t,rankMap)).join('')||'<p class="empty">Add your first task.</p>';
+}
+function renderHabitSections(today=localToday(),start=selectedWeek){
+  const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
+  const habitScroll=$('todayHabits').scrollTop;
+  $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today">${habitCaption(h)}${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
+  $('todayHabits').scrollTop=habitScroll;
+  $('weekHabits').innerHTML=state.habits.length?habitTable(start):'<p class="empty">Add a habit to track your week.</p>';
+  $('habitsWeekTitle').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
+  v916WeekProgress(start);
+  $('habitsTracker').innerHTML=state.habits.length?habitTable(start):'<p class="empty">No habits yet. Add your first habit.</p>';
+  $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item"><div><strong>${esc(h.title)}</strong>${habitGoal(h)?'<small class="bp-habit-goal">'+esc(habitGoal(h).title)+'</small>':''}<small>${h.weeklyTarget?'Goal: '+h.weeklyTarget+' days/week · ':''}${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
+}
+function renderCalendarGrid(start=selectedWeek){
+  const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
+  $('weekGrid').innerHTML=Array.from({length:5},(_,i)=>dayCard(iso(plusDays(start,i)))).join('')+`<div class="day-card weekend">${weekend}</div>`;
+}
+function render(scope='all'){
+  if(scope==='habits'){
+    renderHabitSections();
+    renderGoals(); // Goal habit progress is a dependent view.
+    return;
+  }
+  if(scope==='tasks'){
+    renderTaskSections();renderCalendarGrid();
+    renderGoals();renderIdeas(); // Linked idea actions can reflect task completion.
+    return;
+  }
   // Upgrade legacy habits once. A stable start date prevents unknown earlier
   // days being counted as missed and keeps the same baseline after relaunch.
   let migratedHabits=false;
@@ -813,47 +885,21 @@ function render(){
   }
   const today=localToday();
   const todaysEvents=state.events.filter(e=>e.date===today).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  const todaysTasks=state.tasks.filter(t=>t.dueDate===today).sort((a,b)=>Number(b.priority)-Number(a.priority));
-  // A missed deadline must not disappear simply because the calendar rolled over.
-  // Keep overdue items inside Today at a Glance, not another home card.
-  const overdue=state.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<today)
-    .sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
   const scheduleScroll=$('todayGlance').scrollTop;
   $('todayGlance').innerHTML=todaysEvents.length
     ?todaysEvents.map(eventRow).join('')
     :'<p class="empty">No events scheduled today.</p>';
   $('todayGlance').scrollTop=scheduleScroll;
-  const taskScroll=$('v917TodayTasks').scrollTop;
-  $('v917TodayTasks').innerHTML=
-    (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
-      overdue.slice(0,3).map(taskRow).join('')+
-      (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
-    (todaysTasks.length?(overdue.length?'<div class="section-label">Due today</div>':'')+
-      todaysTasks.map(taskRow).join(''):'')+
-    (!todaysTasks.length&&!overdue.length?'<p class="empty">No tasks due today.</p>':'');
-  $('v917TodayTasks').scrollTop=taskScroll;
-  const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
-  const habitScroll=$('todayHabits').scrollTop;
-  $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today">${habitCaption(h)}${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
-  $('todayHabits').scrollTop=habitScroll;
   const start=selectedWeek;
   const monthDay=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   $('weekTitle').textContent=`${monthDay(start)} – ${monthDay(plusDays(start,6))}`;
   $('weekLabel').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
-  $('weekHabits').innerHTML=state.habits.length?habitTable(start):'<p class="empty">Add a habit to track your week.</p>';
-  const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
-  $('weekGrid').innerHTML=Array.from({length:5},(_,i)=>dayCard(iso(plusDays(start,i)))).join('')+`<div class="day-card weekend">${weekend}</div>`;
-  const priorities=ranked();
-  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(taskRow).join(''):'<p class="empty">Mark important tasks as priorities to rank them here.</p>';
-  $('tasksPriority').innerHTML=priorities.length?priorities.map((t,i)=>`<div class="priority-edit-row"><span class="rank-badge">${roman(i+1)}</span><span class="entry-text">${esc(t.title)}</span><button data-priority-move="${t.id}" data-dir="-1" ${i===0?'disabled':''} aria-label="Move ${esc(t.title)} up">↑</button><button data-priority-move="${t.id}" data-dir="1" ${i===priorities.length-1?'disabled':''} aria-label="Move ${esc(t.title)} down">↓</button></div>`).join(''):'<p class="empty">No priorities yet. Mark any task as a priority.</p>';
-  $('allTasks').innerHTML=state.tasks.slice().sort((a,b)=>Number(a.done)-Number(b.done)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))).map(taskRow).join('')||'<p class="empty">Add your first task.</p>';
+  renderTaskSections(today);
+  renderHabitSections(today,start);
+  renderCalendarGrid(start);
   renderGoals();
   renderCategories();
   renderIdeas();
-  $('habitsWeekTitle').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
-  v916WeekProgress(start);
-  $('habitsTracker').innerHTML=state.habits.length?habitTable(start):'<p class="empty">No habits yet. Add your first habit.</p>';
-  $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item"><div><strong>${esc(h.title)}</strong>${habitGoal(h)?'<small class="bp-habit-goal">'+esc(habitGoal(h).title)+'</small>':''}<small>${h.weeklyTarget?'Goal: '+h.weeklyTarget+' days/week · ':''}${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
   $('openingMode').value=state.openingMode;
   if(document.activeElement!==$('openingMessageInput'))$('openingMessageInput').value=state.openingMessage;
   for(const prop of ['primary','secondary']){
@@ -1258,13 +1304,13 @@ document.addEventListener('click',(e)=>{
   const swatch=e.target.closest('[data-color-for]');if(swatch){state[swatch.dataset.colorFor]=swatch.dataset.color;save();render();return;}
   const mode=e.target.closest('[data-appearance]');if(mode){state.appearance=mode.dataset.appearance;save();render();return;}
 });
-$('brainstormDraft').addEventListener('input',e=>{state.brainstormDraft=e.target.value;save();$('draftStatus').textContent='Autosaved draft';});
+$('brainstormDraft').addEventListener('input',e=>{state.brainstormDraft=e.target.value;queueTextSave();$('draftStatus').textContent='Saving…';});
 $('ideaAddAction').addEventListener('submit',e=>{e.preventDefault();addIdeaAction($('ideaActionText').value);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('ideaBack').hidden)closeIdea();});
 for(const key of ['todayFocus','weeklyFocus']){
-  $(key).addEventListener('input',e=>{state[key]=e.target.value;save();});
+  $(key).addEventListener('input',e=>{state[key]=e.target.value;queueTextSave();});
 }
-$('openingMessageInput').addEventListener('input',e=>{state.openingMessage=e.target.value.slice(0,280);save();});
+$('openingMessageInput').addEventListener('input',e=>{state.openingMessage=e.target.value.slice(0,280);queueTextSave();});
 document.addEventListener('change',(e)=>{
   const x=e.target;
   if(x.id==='openingMode'){state.openingMode=x.value;save();return;}if(x.dataset.taskCheck){const item=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);if(item){item.done=x.checked;if(item.goalId!==''&&item.goalId!=null){const g=state.goals.find(g=>String(g.id)===String(item.goalId));const a=g?.actions.find(a=>String(a.id)===String(item.actionId||''));if(a)a.done=x.checked;}if(item.ideaId&&item.ideaActionId){const n=state.ideas.find(n=>String(n.id)===String(item.ideaId));const a=n?.actions?.find(a=>String(a.id)===String(item.ideaActionId));if(a)a.done=x.checked;}}}
@@ -1278,7 +1324,8 @@ document.addEventListener('change',(e)=>{
   else if(x.dataset.actionCheck){const g=state.goals.find(t=>String(t.id)===x.dataset.actionCheck);if(g){const a=g.actions.find(a=>String(a.id)===String(x.dataset.actionId));if(a){a.done=x.checked;for(const t of state.tasks.filter(t=>String(t.goalId)===x.dataset.actionCheck&&String(t.actionId||'')===String(a.id)))t.done=x.checked;}}expandedGoals.add(x.dataset.actionCheck);}
   else if(x.id==='primaryCustom'||x.id==='secondaryCustom'){const prop=x.id.replace('Custom','');if(/^#[a-fA-F0-9]{6}$/.test(x.value))state[prop]=x.value;else return;}
   else return;
-  save();render();
+  save();
+  render(x.dataset.habitCheck?'habits':x.dataset.taskCheck?'tasks':'all');
 });
 document.addEventListener('toggle',(e)=>{if(!e.target.matches('details[data-goal]'))return;const id=e.target.dataset.goal;if(e.target.open)expandedGoals.add(id);else expandedGoals.delete(id);},true);
 $('prevWeek').onclick=()=>{selectedWeek=plusDays(selectedWeek,-7);render();};
@@ -1376,9 +1423,16 @@ function v6Render(){
   // Never initialize notebook geometry in a hidden panel. Zero-width layouts
   // previously corrupted text-box positioning when Notes later became visible.
   if(v6ProjectTab==='notes')v6RenderNotes(p);
-  v6RenderActions(p);v6RenderLibrary(p);v6RenderSketches(p);
-  v6RenderSketchView();
-  window.v919RenderProjectOverview?.(p);
+  // Each project panel refreshes when opened. The overview has its own small
+  // previews; don't allocate every hidden Library image or redraw sketches.
+  if(v6ProjectTab==='actions')v6RenderActions(p);
+  if(v6ProjectTab==='library')v6RenderLibrary(p);
+  else v6SuspendLibrary();
+  if(v6ProjectTab==='sketch'){
+    v6RenderSketches(p);
+    v6RenderSketchView();
+  }
+  if(v6ProjectTab==='overview')window.v919RenderProjectOverview?.(p);
   if(v6ProjectTab==='sketch'&&!v6SketchEditing)v6CheckDraft(p);
 }
 function v6RenderNotes(p){
@@ -1399,8 +1453,17 @@ function v6RenderActions(p){
     return '<div class="v6-action-row '+(a.done?'completed':'')+'"><input type="checkbox" data-v6-check="'+esc(a.id)+'" aria-label="Complete '+esc(a.title)+'" '+(a.done?'checked':'')+'><span>'+esc(a.title)+'</span><button type="button" class="text-button" data-v6-task="'+esc(a.id)+'">'+(linked?'Task':'→ Task')+'</button><button class="v6-icon-btn" type="button" data-v6-remove-action="'+esc(a.id)+'">×</button></div>';
   }).join('')||'<p class="muted small">Add actions here, then turn them into Blueprint tasks.</p>';
 }
-let v6PreviewUrls=[],v6ImageViewerUrl=null,v6ImageViewerId=null,v6LibraryRenderToken=0;
+let v6PreviewUrls=[],v6ImageViewerUrl=null,v6ImageViewerId=null,v6LibraryRenderToken=0,v6ThumbObserver=null;
+function v6SuspendLibrary(){
+  // Switching projects/sections must release hidden thumbnails and stop old
+  // requests from painting into a newly selected project's Library.
+  ++v6LibraryRenderToken;
+  if(v6ThumbObserver){v6ThumbObserver.disconnect();v6ThumbObserver=null;}
+  for(const url of v6PreviewUrls)URL.revokeObjectURL(url);
+  v6PreviewUrls=[];
+}
 function v6RenderLibrary(p){
+  if(v6ThumbObserver){v6ThumbObserver.disconnect();v6ThumbObserver=null;}
   const token=++v6LibraryRenderToken;
   for(const url of v6PreviewUrls)URL.revokeObjectURL(url);
   v6PreviewUrls=[];
@@ -1415,14 +1478,32 @@ function v6RenderLibrary(p){
     return '<div class="v6-resource"><span class="muted">'+(r.type==='code'?'⌘':r.type==='link'?'↗':'▤')+'</span><div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>'+esc(kind)+'</small>'+preview+'</div><button class="text-button" type="button" data-v6-open-resource="'+esc(r.id)+'">'+(r.type==='code'?'Copy':'Open')+'</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'" aria-label="Remove item">×</button></div>';
   }).join('')+'</div>':'';
   $('projectLibraryList').innerHTML=gallery+list||'<p class="muted small">Your saved images, sketches, and resources will appear here.</p>';
-  const projectId=String(p.id);
-  for(const r of images){
-    v6Blob('get',r.key).then(blob=>{
-      if(!blob||token!==v6LibraryRenderToken||String(v6Project()?.id)!==projectId)return;
-      const img=[...$('projectLibraryList').querySelectorAll('[data-v6-gallery-image]')].find(x=>String(x.dataset.v6GalleryImage)===String(r.id));
-      if(img){const url=URL.createObjectURL(blob);v6PreviewUrls.push(url);img.src=url;}
-    }).catch(()=>{});
+  const projectId=String(p.id),host=$('projectLibraryList');
+  const byRecordId=new Map(images.map(r=>[String(r.id),r]));
+  function loadThumb(img){
+    if(img.dataset.v6Loading)return;
+    const record=byRecordId.get(String(img.dataset.v6GalleryImage));
+    if(!record?.key)return;
+    img.dataset.v6Loading='true';
+    v6Blob('get',record.key).then(blob=>{
+      if(!blob||token!==v6LibraryRenderToken||String(v6Project()?.id)!==projectId||!host.contains(img))return;
+      const url=URL.createObjectURL(blob);
+      v6PreviewUrls.push(url);img.src=url;
+    }).catch(error=>console.warn('Could not load Library thumbnail',error));
   }
+  const targets=[...host.querySelectorAll('[data-v6-gallery-image]')];
+  if(typeof IntersectionObserver==='function'){
+    const observer=new IntersectionObserver(entries=>{
+      if(token!==v6LibraryRenderToken)return;
+      for(const entry of entries){
+        if(!entry.isIntersecting)continue;
+        observer.unobserve(entry.target);
+        loadThumb(entry.target);
+      }
+    },{rootMargin:'240px 0px'});
+    v6ThumbObserver=observer;
+    targets.forEach(img=>observer.observe(img));
+  }else targets.forEach(loadThumb);
 }
 async function v6ViewImage(id){
   const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));
@@ -1773,7 +1854,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('input',e=>{
   const x=e.target,p=v6Project();if(!p)return;
-  if(x.id==='projectNotebook'){p.notebookText=x.value;save();}
+  if(x.id==='projectNotebook'){p.notebookText=x.value;queueTextSave();}
 });
 document.addEventListener('change',e=>{
   const x=e.target,p=v6Project();
