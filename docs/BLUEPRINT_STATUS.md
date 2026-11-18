@@ -1,11 +1,18 @@
 # Blueprint — Development Status
 
-**Last documentation update:** 2026-11-11  
+**Last documentation update:** 2026-11-17
+
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
 **Verification scope:** Fetched root README and index.html; checked that AGENTS.md and this status file were absent; inspected recent commit identifiers. This is **not** a full source-code audit, automated test run, or iOS device test.
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
+
+## 2026-11-17 — Golden compass app icon (feature branch)
+
+- Commit `84f2cbc334a9b33b976bd37abe1b6781e8fa665b` introduces a gold drafting compass with one leg flowing directly into a golden spiral on a solid blue background. The browser favicon and web app manifest use the same SVG. The service worker cache version was updated to refresh the icon for offline use.
+- Verified in Chromium that the favicon and maskable manifest entries resolve to the new SVG and that the service worker serves that SVG offline. All four branding and responsive audit tests passed. Reviewed raster renders at 32 and 180 pixels.
+- The native iPhone and iPad home-screen icon requires replacing the AppIcon image in the separate Xcode project with the exported 1024 × 1024 PNG and rebuilding the app for each device. Device verification is pending.
 
 ## 2026-11-11 — Full-app layout and swipe polish v9.25 (web published; physical-device QA outstanding)
 
