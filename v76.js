@@ -279,8 +279,11 @@
     // iPad fingers should navigate the page without leaving stray Pencil marks
     // or moving a selected image while a second finger joins the gesture.
     if(activeStroke){
-      // A second finger begins navigation, not Undo: retain sampled ink.
-      flushInkRender();activeStroke=null;persist();
+      // A second finger ends this Pencil mark; keep it undoable.
+      const pending=activeStroke;
+      flushInkRender();activeStroke=null;
+      pushInkUndo(pending.page,{type:'draw',id:pending.stroke.id});
+      persist();
     }
     if(activeErase){
       const pending=activeErase;activeErase=null;
@@ -428,7 +431,11 @@
     const points=stroke.points||[];
     if(!points.length)return '';
     const width=(Number(stroke.width)||2.5);
-    const radius=p=>width*(.5+Math.max(0,Math.min(1,Number(p?.p??.5))))/2;
+    const readPressure=p=>{
+      const n=Number(p?.p);
+      return Number.isFinite(n)?Math.max(0,Math.min(1,n)):.5;
+    };
+    const radius=p=>width*(.5+readPressure(p))/2;
     const first=points[0],last=points.at(-1);
     if(points.length===1||points.every(p=>Math.hypot(p.x-first.x,p.y-first.y)<.01)){
       const r=radius(first);
@@ -443,7 +450,7 @@
       const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
       const tx=dx/len,ty=dy/len,nx=-ty,ny=tx;
       const before=points[Math.max(0,i-1)],after=points[Math.min(points.length-1,i+1)];
-      const p=(Number(before.p??.5)+2*Number(points[i].p??.5)+Number(after.p??.5))/4;
+      const p=(readPressure(before)+2*readPressure(points[i])+readPressure(after))/4;
       const r=width*(.5+Math.max(0,Math.min(1,p)))/2;
       left.push({x:points[i].x+nx*r,y:points[i].y+ny*r});
       right.push({x:points[i].x-nx*r,y:points[i].y-ny*r});
@@ -474,9 +481,9 @@
   }
   const pressureStroke=stroke=>(stroke.points||[]).some(p=>typeof p.p==='number');
   const strokePath=stroke=>pressureStroke(stroke)?variableInkPath(stroke):smoothInkPath(stroke.points||[]);
-  function inkSample(e,last){
+  function inkSample(e,last,penContact=false){
     const point=inkPosition(e);
-    if(e.pointerType==='pen'){
+    if(e.pointerType==='pen'||penContact){
       const pressure=Number(e.pressure);
       // At lift-off iOS reports 0: retain the final contact pressure.
       point.p=Math.round((Number.isFinite(pressure)&&pressure>.01?
@@ -1256,7 +1263,7 @@
     ctx.page.strokes.push(stroke);
     const element=makeInkElement(stroke);
     ink.append(element);
-    activeStroke={id:e.pointerId,stroke,page:ctx.page,element};
+    activeStroke={id:e.pointerId,stroke,page:ctx.page,element,isPen:e.pointerType==='pen'};
   });
   ink.addEventListener('pointermove',e=>{
     if(activeErase&&e.pointerId===activeErase.id){
@@ -1268,7 +1275,7 @@
     if(e.cancelable)e.preventDefault(); // Never allow Safari to steal Pencil motion.
     for(const sample of pointerSamples(e)){
       const last=activeStroke.stroke.points.at(-1);
-      const point=inkSample(sample,last);
+      const point=inkSample(sample,last,activeStroke.isPen);
       if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
     }
     // Update only the active path instead of rebuilding every previous stroke.
@@ -1295,7 +1302,7 @@
         persist();return;
       }
       if(e.type==='pointerup'){
-        const last=activeStroke.stroke.points.at(-1),point=inkSample(e,last);
+        const last=activeStroke.stroke.points.at(-1),point=inkSample(e,last,activeStroke.isPen);
         if(Math.hypot(point.x-last.x,point.y-last.y)>.12)activeStroke.stroke.points.push(point);
       }
       const completed=activeStroke;
