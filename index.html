@@ -1401,8 +1401,14 @@ function v6Render(){
   // Never initialize notebook geometry in a hidden panel. Zero-width layouts
   // previously corrupted text-box positioning when Notes later became visible.
   if(v6ProjectTab==='notes')v6RenderNotes(p);
-  v6RenderActions(p);v6RenderLibrary(p);v6RenderSketches(p);
-  v6RenderSketchView();
+  // Each project panel refreshes when opened. The overview has its own small
+  // previews; don't allocate every hidden Library image or redraw sketches.
+  if(v6ProjectTab==='actions')v6RenderActions(p);
+  if(v6ProjectTab==='library')v6RenderLibrary(p);
+  if(v6ProjectTab==='sketch'){
+    v6RenderSketches(p);
+    v6RenderSketchView();
+  }
   window.v919RenderProjectOverview?.(p);
   if(v6ProjectTab==='sketch'&&!v6SketchEditing)v6CheckDraft(p);
 }
@@ -1424,8 +1430,9 @@ function v6RenderActions(p){
     return '<div class="v6-action-row '+(a.done?'completed':'')+'"><input type="checkbox" data-v6-check="'+esc(a.id)+'" aria-label="Complete '+esc(a.title)+'" '+(a.done?'checked':'')+'><span>'+esc(a.title)+'</span><button type="button" class="text-button" data-v6-task="'+esc(a.id)+'">'+(linked?'Task':'→ Task')+'</button><button class="v6-icon-btn" type="button" data-v6-remove-action="'+esc(a.id)+'">×</button></div>';
   }).join('')||'<p class="muted small">Add actions here, then turn them into Blueprint tasks.</p>';
 }
-let v6PreviewUrls=[],v6ImageViewerUrl=null,v6ImageViewerId=null,v6LibraryRenderToken=0;
+let v6PreviewUrls=[],v6ImageViewerUrl=null,v6ImageViewerId=null,v6LibraryRenderToken=0,v6ThumbObserver=null;
 function v6RenderLibrary(p){
+  if(v6ThumbObserver){v6ThumbObserver.disconnect();v6ThumbObserver=null;}
   const token=++v6LibraryRenderToken;
   for(const url of v6PreviewUrls)URL.revokeObjectURL(url);
   v6PreviewUrls=[];
@@ -1440,14 +1447,30 @@ function v6RenderLibrary(p){
     return '<div class="v6-resource"><span class="muted">'+(r.type==='code'?'⌘':r.type==='link'?'↗':'▤')+'</span><div class="v6-resource-info"><strong>'+esc(r.title)+'</strong><small>'+esc(kind)+'</small>'+preview+'</div><button class="text-button" type="button" data-v6-open-resource="'+esc(r.id)+'">'+(r.type==='code'?'Copy':'Open')+'</button><button class="v6-icon-btn" type="button" data-v6-delete-resource="'+esc(r.id)+'" aria-label="Remove item">×</button></div>';
   }).join('')+'</div>':'';
   $('projectLibraryList').innerHTML=gallery+list||'<p class="muted small">Your saved images, sketches, and resources will appear here.</p>';
-  const projectId=String(p.id);
-  for(const r of images){
-    v6Blob('get',r.key).then(blob=>{
-      if(!blob||token!==v6LibraryRenderToken||String(v6Project()?.id)!==projectId)return;
-      const img=[...$('projectLibraryList').querySelectorAll('[data-v6-gallery-image]')].find(x=>String(x.dataset.v6GalleryImage)===String(r.id));
-      if(img){const url=URL.createObjectURL(blob);v6PreviewUrls.push(url);img.src=url;}
-    }).catch(()=>{});
+  const projectId=String(p.id),host=$('projectLibraryList');
+  const byRecordId=new Map(images.map(r=>[String(r.id),r]));
+  function loadThumb(img){
+    if(img.dataset.v6Loading)return;
+    const record=byRecordId.get(String(img.dataset.v6GalleryImage));
+    if(!record?.key)return;
+    img.dataset.v6Loading='true';
+    v6Blob('get',record.key).then(blob=>{
+      if(!blob||token!==v6LibraryRenderToken||String(v6Project()?.id)!==projectId||!host.contains(img))return;
+      const url=URL.createObjectURL(blob);
+      v6PreviewUrls.push(url);img.src=url;
+    }).catch(error=>console.warn('Could not load Library thumbnail',error));
   }
+  const targets=[...host.querySelectorAll('[data-v6-gallery-image]')];
+  if(typeof IntersectionObserver==='function'){
+    v6ThumbObserver=new IntersectionObserver(entries=>{
+      for(const entry of entries){
+        if(!entry.isIntersecting)continue;
+        v6ThumbObserver?.unobserve(entry.target);
+        loadThumb(entry.target);
+      }
+    },{rootMargin:'240px 0px'});
+    targets.forEach(img=>v6ThumbObserver.observe(img));
+  }else targets.forEach(loadThumb);
 }
 async function v6ViewImage(id){
   const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));
