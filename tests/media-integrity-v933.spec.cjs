@@ -23,7 +23,9 @@ test('deleting a Note image block with failed manifest save preserves both block
     return JSON.parse(localStorage.getItem(STORAGE_KEY));
   });
   page.on('dialog',d=>d.accept());
-  await page.locator('[data-v74-delete-block="block-img"]').click();
+  // Legacy block UI can be hidden behind the newer Notes editor, but its
+  // delegated Delete action must still preserve bytes on a failed save.
+  await page.evaluate(()=>document.querySelector('[data-v74-delete-block="block-img"]').click());
   const after=await page.evaluate(async()=>{
     const blob=await v6Blob('get','safe-note-image');
     const onDisk=JSON.parse(localStorage.getItem(STORAGE_KEY));
