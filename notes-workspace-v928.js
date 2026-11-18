@@ -6,28 +6,30 @@
   if(!api)return;
   const {root,surface,ink,zoomViewport}=api;
   const toolbar=root.querySelector('.v76-toolbar');
-  const pageToolbar=document.createElement('div');
-  pageToolbar.className='v79-tool-group v928-tool-group';
-  pageToolbar.setAttribute('role','group');
-  pageToolbar.setAttribute('aria-label','Ink selection and paper');
-  pageToolbar.innerHTML=
-    '<div class="v79-tool-buttons">'+
-    '<button type="button" id="v928Lasso" aria-label="Lasso-select handwritten strokes" aria-pressed="false" title="Lasso">Lasso</button>'+
-    '</div>';
-  const paperGroup=document.createElement('div');
-  paperGroup.className='v79-tool-group v928-paper-group';
-  paperGroup.innerHTML='<label for="v928Paper">Paper</label>'+
-    '<select id="v928Paper" aria-label="Page paper style"><option value="plain">Blank</option><option value="graph">Graph</option></select>';
+  const penTools=toolbar.querySelector('.v79-tool-group[aria-label="Pen"] .v79-tool-buttons');
+  const eraserButton=penTools.querySelector('[data-v76-mode="erase"]');
+  // Keep both paper/selection actions beside Eraser rather than introducing
+  // another toolbar section. Reuse the same SVG icon dimensions as Pen/Eraser.
+  const lassoButton=document.createElement('button');
+  lassoButton.type='button';lassoButton.id='v928Lasso';
+  lassoButton.setAttribute('aria-label','Lasso-select handwritten strokes');
+  lassoButton.setAttribute('title','Lasso');
+  lassoButton.setAttribute('aria-pressed','false');
+  lassoButton.innerHTML='<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="11.5" cy="10" rx="7.4" ry="5.2" transform="rotate(-21 11.5 10)"/><path d="M6.6 14.7c-1.4 1.6-1.6 4.8 1.1 5.2 2.1.3 3.3-1.8 2-3.1"/></svg>';
+  const graphIcon='<svg class="v79-tool-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.7"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>';
+  const paperButton=document.createElement('button');
+  paperButton.type='button';paperButton.id='v928Paper';
+  paperButton.setAttribute('aria-label','Show graph paper');
+  paperButton.setAttribute('title','Show graph paper');
+  paperButton.setAttribute('aria-pressed','false');
+  paperButton.innerHTML=graphIcon;
+  eraserButton.insertAdjacentElement('afterend',lassoButton);
+  lassoButton.insertAdjacentElement('afterend',paperButton);
   const focusButton=document.createElement('button');
   focusButton.type='button';focusButton.id='v928Focus';focusButton.textContent='Focus';
   focusButton.title='Full-screen writing workspace';
   focusButton.setAttribute('aria-label','Enter full-screen Notes focus mode');
-  toolbar.insertBefore(pageToolbar,toolbar.querySelector('.v815-zoom-tools'));
-  toolbar.insertBefore(paperGroup,toolbar.querySelector('.v815-zoom-tools'));
   toolbar.append(focusButton);
-
-  const lassoButton=root.querySelector('#v928Lasso');
-  const paperSelect=root.querySelector('#v928Paper');
   const svgNS='http://www.w3.org/2000/svg';
   const overlay=document.createElementNS(svgNS,'svg');
   overlay.id='v928InkOverlay';
@@ -42,7 +44,7 @@
     '<button type="button" data-v928-mode="lasso">Lasso</button>'+
     '<button type="button" data-v928-mode="erase">Eraser</button>'+
     '<button type="button" data-v928-action="undo">Undo</button>'+
-    '<label>Paper<select id="v928FocusPaper" aria-label="Paper style in focus"><option value="plain">Blank</option><option value="graph">Graph</option></select></label>'+
+    '<button type="button" id="v928FocusPaper" aria-label="Show graph paper" aria-pressed="false" title="Toggle graph paper">'+graphIcon+'</button>'+
     '</div>';
   root.append(focusBar);
   const focusMenu=focusBar.querySelector('#v928FocusMenu');
@@ -176,6 +178,15 @@
   }
   function resetSelection(){closeInkMenu();selected.clear();gesture=null;renderSelection();}
   function paperFor(page){return page?.paperStyle==='graph'?'graph':'plain';}
+  function syncPaperButtons(mode){
+    surface.dataset.paper=mode;
+    const graph=mode==='graph';
+    for(const button of [paperButton,focusPaper]){
+      button.setAttribute('aria-pressed',String(graph));
+      button.setAttribute('aria-label',graph?'Show blank paper':'Show graph paper');
+      button.title=graph?'Show blank paper':'Show graph paper';
+    }
+  }
   function setPaper(value){
     const ctx=present();if(!ctx)return;
     const mode=value==='graph'?'graph':'plain';
@@ -183,12 +194,12 @@
       ctx.page.paperStyle=mode;
       api.persist();
     }
-    surface.dataset.paper=mode;paperSelect.value=mode;focusPaper.value=mode;
+    syncPaperButtons(mode);
   }
   function onPageChange(project,page){
     closeInkMenu();touchTap=null;
     activePageRef=page;selected.clear();gesture=null;
-    surface.dataset.paper=paperFor(page);paperSelect.value=paperFor(page);focusPaper.value=paperFor(page);
+    syncPaperButtons(paperFor(page));
     renderSelection();
   }
   function onInkRedraw(page){
@@ -376,7 +387,7 @@
   zoomViewport.addEventListener('scroll',closeInkMenu,{passive:true});
   window.addEventListener('resize',closeInkMenu);
   lassoButton.addEventListener('click',()=>api.setMode(api.getMode()==='lasso'?'select':'lasso'));
-  paperSelect.addEventListener('change',()=>setPaper(paperSelect.value));
+  paperButton.addEventListener('click',()=>setPaper(paperFor(present()?.page)==='graph'?'plain':'graph'));
 
   const toggleFocusTools=open=>{
     focusMenu.hidden=!open;
@@ -416,7 +427,7 @@
       document.getElementById('v76UndoInk').click();return;
     }
   });
-  focusPaper.addEventListener('change',()=>setPaper(focusPaper.value));
+  focusPaper.addEventListener('click',()=>setPaper(paperFor(present()?.page)==='graph'?'plain':'graph'));
   document.addEventListener('keydown',e=>{
     if(!root.isConnected||!present()||!root.getClientRects().length)return;
     const active=document.activeElement;
