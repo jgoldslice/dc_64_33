@@ -61,7 +61,20 @@
    const add=e.target.closest('#v74AddBlock');
    if(add){const p=getProject();if(!p)return;const type=document.getElementById('v74BlockType').value;if(type==='image'){document.getElementById('v74BlockImage').click();return;}addBlock(p,type);return;}
    const del=e.target.closest('[data-v74-delete-block]');
-   if(del){const p=getProject();if(!p||!confirm('Delete this block?'))return;const block=p.contentBlocks.find(b=>String(b.id)===String(del.dataset.v74DeleteBlock));p.contentBlocks=p.contentBlocks.filter(b=>String(b.id)!==del.dataset.v74DeleteBlock);save();renderBlocks(p);if(block?.type==='image'&&block.key)v6Blob('delete',block.key).catch(()=>{});return;}
+   if(del){
+     const p=getProject();if(!p||!confirm('Delete this block?'))return;
+     const block=p.contentBlocks.find(b=>String(b.id)===String(del.dataset.v74DeleteBlock));
+     if(!block)return;
+     const previous=p.contentBlocks;
+     p.contentBlocks=previous.filter(b=>String(b.id)!==String(block.id));
+     // Never delete file bytes until the revised manifest is durably saved.
+     if(!save(true)){p.contentBlocks=previous;renderBlocks(p);return;}
+     renderBlocks(p);
+     // Multiple saved pages can reference the same image key.
+     if(block.type==='image'&&block.key&&!attachmentKeys(state).required.has(String(block.key)))
+       v6Blob('delete',block.key).catch(error=>console.warn('Could not delete orphan image',error));
+     return;
+   }
    const move=e.target.closest('[data-v74-move-block]');
    if(move){const p=getProject();if(!p)return;const i=p.contentBlocks.findIndex(b=>String(b.id)===move.dataset.v74MoveBlock),next=i+(move.dataset.direction==='up'?-1:1);if(i<0||next<0||next>=p.contentBlocks.length)return;[p.contentBlocks[i],p.contentBlocks[next]]=[p.contentBlocks[next],p.contentBlocks[i]];save();renderBlocks(p);return;}
  });
@@ -212,19 +225,26 @@
  }
  async function exportCompleteBackup(){
    if(canvasLoadError)throw Error('Saved planner data could not be loaded; export the untouched original using the recovery warning instead');
-   // Preserve the in-memory emergency export path on ordinary save failures.
+   // Ordinary unsaved edits remain eligible for an emergency complete backup.
    const snapshot=structuredClone(state);
-   const {required,drafts}=attachmentKeys(snapshot),attachments=[];
+   const {required,drafts}=attachmentKeys(snapshot);
+   // Preserve V2 JSON fields/checksums, but store each base64 attachment
+   // immediately as a Blob part instead of retaining every base64 string
+   // in one large object until the final JSON.stringify.
+   const header={format:'canvas-complete-backup',version:2,
+     exportedAt:new Date().toISOString(),state:snapshot,stateSha256:await hashState(snapshot)};
+   const parts=[JSON.stringify(header).slice(0,-1)+',"attachments":['];
+   let first=true;
    for(const key of new Set([...required,...drafts])){
      const blob=await v6Blob('get',key);
      if(!blob){if(required.has(key))throw Error('Missing saved attachment: '+key);continue;}
-     attachments.push({key,mime:blob.type||'application/octet-stream',
-       size:blob.size,sha256:await hashBlob(blob),base64:await blobToBase64(blob)});
+     const entry={key,mime:blob.type||'application/octet-stream',
+       size:blob.size,sha256:await hashBlob(blob),base64:await blobToBase64(blob)};
+     parts.push(new Blob([(first?'':',')+JSON.stringify(entry)]));
+     first=false;
    }
-   // Finish the integrity manifest before offering a download.
-   const packageData={format:'canvas-complete-backup',version:2,
-     exportedAt:new Date().toISOString(),state:snapshot,stateSha256:await hashState(snapshot),attachments};
-   const u=URL.createObjectURL(new Blob([JSON.stringify(packageData)],{type:'application/json'}));
+   parts.push(']}');
+   const u=URL.createObjectURL(new Blob(parts,{type:'application/json'}));
    const a=document.createElement('a');
    a.href=u;a.download='canvas-complete-'+new Date().toISOString().slice(0,10)+'.json';
    document.body.appendChild(a);a.click();a.remove();
