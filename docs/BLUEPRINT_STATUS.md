@@ -7,6 +7,18 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — PencilKit stuck on "Opening…": native response lifecycle fix (device QA pending)
+
+**Owner report:** The new native-ink toolbar button stays on "Opening…" and the native editor does not become visible. **Confirmed code bug:** In the separately installed Swift prototype package, `openEditor` resolved the Capacitor promise only inside the editor's `onClose` callback. The current web action awaited that promise before restoring the button, so it could appear permanently busy. This explains the pending label; an invisible native view may have an additional UIKit presentation problem not verifiable without Xcode logs.
+
+**GitHub implementation:** Updated `pencilkit-entry-v92.js` to require an `opened: true` acknowledgement from the native editor and to time out native `capabilities` (8 s) / `openEditor` (12 s) calls with an actionable error and unconditional button recovery. Updated offline cache ID in `sw.js`; added `tests/pencilkit-open-response-v934.test.cjs` as regression coverage. No localStorage, IndexedDB, notes schema, SVG ink, or backup logic altered.
+
+**Local Swift patch, separately packaged:** `BlueprintPencilPlugin.swift` now resolves `openEditor` after the UIKit navigation controller finishes appearing, rather than after dismissal, and rejects failed presentations. The Swift plugin and drawing view also print `BLUEPRINT PENCIL` request/presentation/appearance logs for debugging. `BlueprintPencilViewController.swift` otherwise retains autosave, explicit save-on-Done, page-specific Application Support sidecars and Pencil-only drawing. The files must be installed in the separately maintained `canvas-ios` local App target; not committed to this web-only GitHub repository. Existing native Share plugin is unchanged.
+
+**Actual verification:** A local Node `node --test` harness passed six mocked JavaScript flow checks (successful open, unresolved open timeout, missing capabilities, stale native response, web-only guard, invalid page guard). Linux `swiftc -frontend -parse` succeeded for both Swift files (syntax-only; not type checking against Apple's SDK). Neither the updated Swift code nor the new GitHub test file has been built/run in Xcode/Playwright CI in this session; physical iPad retest is pending.
+
+**Important limitations:** Native `PKDrawing` sidecars are still excluded from Blueprint's complete backup and are separate from existing SVG/text/image layers. No automatic mixed-canvas/toolbar tool mapping or sync is claimed. Do not uninstall the app or delete local data to troubleshoot.
+
 ## 2026-11-18 — PencilKit entry diagnostics and Notes toolbar placement (device QA pending)
 
 **Reported by owner:** The original Swift test editor compiled and opened on iPad, but the follow-on `PencilKit` web action did nothing. The optional `pencilkit-entry-v92.js` previously hid its action until an asynchronous `capabilities` call succeeded, swallowing errors; this could make a stale local Swift plugin or stale staged web build look like a dead button. The local wrapper and native files cannot be inspected from GitHub.
