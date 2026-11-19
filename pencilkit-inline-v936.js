@@ -168,6 +168,9 @@
       const workspace=document.getElementById('projectWorkspace');
       if(workspace)observer.observe(workspace,
         {attributes:true,attributeFilter:['class','style','hidden']});
+      const brainstorm=document.getElementById('brainstorm');
+      if(brainstorm)observer.observe(brainstorm,
+        {attributes:true,attributeFilter:['class','style','hidden']});
     }
     schedule();
   }
