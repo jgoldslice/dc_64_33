@@ -7,6 +7,18 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.42 compact Plan section headings (feature branch; browser/iPad QA pending)
+
+**Latest owner request:** Remove redundant Plan page-level headings/subtitles such as "Areas", "Your responsibilities", "All tasks and priorities", and "Daily consistency" while retaining the section tabs, the Add actions, the actual Goal/Task/Habit cards and useful headings within those cards. This is a narrow presentation cleanup, not a data or model change.
+
+**Implemented on `feature/plan-minimal-headings-v942`:**
+- `areas-v939.js` removes the duplicate Areas title and eyebrow from the Areas overview while preserving the `+ Area` button, responsive Area tiles, and accessible tab names.
+- `index.html` removes Tasks and Habits helper subtitles and right-aligns their existing `+ Task` and `+ Habit` actions without altering card contents, names, progress or storage.
+- `plan-layout-v910.css` and `areas-v939.css` close the empty gap between Plan tabs, action rows, and the cards. `sw.js` revs the asset cache. Existing browser tests for Areas were adjusted to assert the new minimal header, and `tests/plan-minimal-headings-v942.spec.cjs` was added.
+- No changes to goals/tasks/habits records, IDs, attachment storage, PencilKit, backups, or Capacitor native files.
+
+**Verification:** GitHub Actions test run and iPad Safari device verification pending. Do not infer the Xcode app is updated by a GitHub push.
+
 ## 2026-11-18 — v9.41 PencilKit viewport pinch/pan (merged; browser verified; native Xcode wiring/device QA pending)
 
 **Owner request and iPad screenshots:** Native PencilKit tool picker and drawing are working, but while PencilKit is enabled the user cannot pinch zoom or move the Notes sheet with fingers; web-mode zoom and +/- buttons already exist. Preserve the native handwriting tool picker and existing strokes.

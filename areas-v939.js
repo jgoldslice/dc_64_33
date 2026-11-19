@@ -121,7 +121,7 @@
       return '<button type="button" class="card bp-area-tile" data-bpa-open="'+escapeHtml(a)+'" '+(a===INBOX?'':'aria-haspopup="dialog" title="Press and hold for options"')+'><span class="bp-area-tile-title">'+icon(a===INBOX?'check':'plan')+'<strong>'+escapeHtml(display(a))+'</strong><span class="bp-area-chevron">›</span></span>'+
         '<span class="bp-area-tile-sub">'+(count?counts(data):'No items yet')+'</span></button>';
     }).join('');
-    mount.innerHTML='<header class="bp-areas-header"><div><span class="eyebrow">Your responsibilities</span><h1>Areas</h1></div><div class="bp-area-heading-actions"><button type="button" class="primary-button" data-bpa-new>+ Area</button></div></header>'+
+    mount.innerHTML='<header class="bp-areas-header" aria-label="Area actions"><div class="bp-area-heading-actions"><button type="button" class="primary-button" data-bpa-new>+ Area</button></div></header>'+
       '<div class="bp-area-grid">'+tiles+'</div>';
     document.getElementById('overview')?.classList.remove('bp-area-detail');
   }

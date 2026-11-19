@@ -1,6 +1,6 @@
 /* Blueprint v9.10: goal-first Plan workspace.
    Categories remain functional filters, intentionally visually subordinate. */
-#myplan > .plan-tabs{margin-top:0}
+#myplan > .plan-tabs{margin-top:0;margin-bottom:8px}
 #goals .category-card{margin:14px 0 0;padding:12px 14px;box-shadow:none}
 #goals .category-card .card-heading{margin-bottom:4px}
 #goals .category-card h2{font:normal 16px/1.3 Georgia,serif;color:var(--muted)}
