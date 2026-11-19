@@ -52,6 +52,69 @@
   const zoomResetButton=document.getElementById('v815ZoomReset');
   const pageSelect=document.getElementById('v76PageSelect');
   const textSizeSelect=document.getElementById('v80TextSize');
+  // A split Textbox control: tap T to place a text box, or the small chevron
+  // to choose its size. The original select/event handler is retained and
+  // moved to an unclipped body popover rather than keeping a wide selector
+  // in the horizontally scrolling Notes toolbar.
+  const textboxButton=root.querySelector('.v812-textbox-button');
+  const textTool=document.createElement('span');
+  textTool.className='v938-text-tool';
+  textboxButton.before(textTool);
+  textTool.append(textboxButton);
+  const textSizeTrigger=document.createElement('button');
+  textSizeTrigger.type='button';
+  textSizeTrigger.id='v938TextSizeTrigger';
+  textSizeTrigger.className='v938-text-size-trigger';
+  textSizeTrigger.setAttribute('aria-label','Choose text box font size');
+  textSizeTrigger.setAttribute('aria-haspopup','dialog');
+  textSizeTrigger.setAttribute('aria-controls','v938TextSizeMenu');
+  textSizeTrigger.setAttribute('aria-expanded','false');
+  textSizeTrigger.title='Text size';
+  textSizeTrigger.textContent='⌄';
+  textTool.append(textSizeTrigger);
+  const textSizeMenu=document.createElement('div');
+  textSizeMenu.id='v938TextSizeMenu';
+  textSizeMenu.className='v938-text-size-menu';
+  textSizeMenu.setAttribute('role','dialog');
+  textSizeMenu.setAttribute('aria-label','Text box size');
+  textSizeMenu.hidden=true;
+  const textSizeLabel=document.createElement('label');
+  textSizeLabel.htmlFor='v80TextSize';
+  textSizeLabel.textContent='Font size';
+  textSizeMenu.append(textSizeLabel,textSizeSelect);
+  document.body.append(textSizeMenu);
+  function hideTextSizeMenu(restoreFocus=false){
+    if(textSizeMenu.hidden)return;
+    textSizeMenu.hidden=true;
+    textSizeTrigger.setAttribute('aria-expanded','false');
+    if(restoreFocus)textSizeTrigger.focus({preventScroll:true});
+  }
+  function toggleTextSizeMenu(){
+    if(!textSizeMenu.hidden){hideTextSizeMenu(true);return;}
+    const rect=textSizeTrigger.getBoundingClientRect();
+    const width=184,estimatedHeight=99;
+    const left=Math.max(8,Math.min(innerWidth-width-8,rect.left-125));
+    const top=rect.bottom+8+estimatedHeight>innerHeight
+      ?Math.max(8,rect.top-estimatedHeight-8):rect.bottom+8;
+    textSizeMenu.style.left=Math.round(left)+'px';
+    textSizeMenu.style.top=Math.round(top)+'px';
+    textSizeMenu.hidden=false;
+    textSizeTrigger.setAttribute('aria-expanded','true');
+    textSizeSelect.focus({preventScroll:true});
+  }
+  textSizeTrigger.addEventListener('click',toggleTextSizeMenu);
+  textSizeSelect.addEventListener('change',()=>hideTextSizeMenu());
+  document.addEventListener('pointerdown',event=>{
+    if(!textSizeMenu.hidden&&!textSizeMenu.contains(event.target)&&
+       !textTool.contains(event.target))hideTextSizeMenu();
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&!textSizeMenu.hidden){
+      event.preventDefault();hideTextSizeMenu(true);
+    }
+  });
+  window.addEventListener('resize',()=>hideTextSizeMenu());
+  document.addEventListener('scroll',()=>hideTextSizeMenu(),true);
   const validSizes=new Set(['small','medium','large']);
   const sizeName=value=>validSizes.has(value)?value:'medium';
   // Colors belong to the drawing tool, not the app theme; existing stroke
