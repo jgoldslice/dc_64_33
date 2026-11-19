@@ -7,9 +7,9 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-19 — v9.46 native notebook and shared sheets
+## 2026-11-19 — v9.46 native notebook and shared sheets (merged, device QA pending)
 
-[PR #74](https://github.com/jgoldslice/dc_64_33/pull/74) implementation commit `eadd662`, based on `42566c0`. Reviewed the actual wrapper target, historical backup draft PR #40, local changes and existing offline assets. The archived local Swift checkpoint is outside the web repository.
+[PR #74](https://github.com/jgoldslice/dc_64_33/pull/74) merged to main as `93eba97`. Final feature head `474b64e` flushes the live PKDrawing snapshot before closing or exporting, including when a delegate callback is still pending. The initial implementation `eadd662` was based on `42566c0`. Reviewed the actual wrapper target, historical backup draft PR #40, local changes and existing offline assets. The archived local Swift checkpoint is outside the web repository.
 
 - Projects, Areas, Library links/code/image actions and Notes page actions use accessible sheets. Existing Task, Event, Goal and Habit forms remain in place. Destructive planner imports retain explicit confirmation. Notes uses the project switcher as its title and reserves space for Focus controls above PencilKit.
 - The local compiled Swift plugin and view controller are now represented in `native-pencilkit/current/`. Navigation uses the same PKCanvasView and the existing web viewport. Storage notices are acknowledged per device and archive capability. Existing sidecars keep their original names and location.
@@ -17,7 +17,9 @@
 - The page rail supports press-and-hold without switching pages, arrow navigation and Escape to restore focus. A native restore regression injects a disk error on the second page before the planner commit.
 - A real PencilKit stroke round-tripped through the shipping store on macOS, retaining the original bytes and point coordinates. The same test checked overwrite refusal, corrupt input and loss of a previously recorded drawing. All App-target Swift sources compiled and linked together as an arm64 iPhoneOS executable. Physical Pencil input and a signed build remain pending.
 - First browser run 403 passed 314/317. Two tests accessed the new project before sheet dismissal completed. One exposed a logical height change at 200% zoom after compacting the header. Follow-up commit `3cbb114` includes the native store regression. The sheet test helper now waits for dismissal and the logical page height stays stable when zoomed in.
-- Local verification: 29/29 Node tests, JavaScript syntax review and iPhoneOS Swift module compilation with the installed Capacitor framework. Local Playwright startup was blocked on loopback bind. Xcode project build encountered a SwiftPM manifest-cache write restriction. The Swift files also compiled to an arm64 iPhoneOS object. The web assets and both native share hooks were verified in the existing Xcode target after Capacitor copy. Neither a signed application nor physical-device testing has been verified. Previous v9.45 test totals below apply only to that release.
+- [Final browser run #406](https://github.com/jgoldslice/dc_64_33/actions/runs/44479889301) passed **318/318 Playwright tests**, including page long-press, keyboard/focus, zoom, legacy imports, corrupt archives and an interrupted two-page native restore using a simulated bridge. All **29 standalone Node tests** passed locally. Physical iPad gestures, native tool-picker behavior and a complete restore on a device still need verification.
+- Verified 53 staged web resources and the wrapper's two share hooks after Capacitor copy. The App target linked against the existing Capacitor framework. Share extension sources also compiled for iPhoneOS with an existing UIButton deprecation warning. The full Xcode build could not resolve SwiftPM through its restricted manifest cache. No device install occurred.
+- For this Mac, the web bundle and native App target are ready. Run `open ~/Documents/ChatGPT/dc6433/canvas-ios/ios/App/App.xcodeproj`, select scheme **App**, choose the device and press **⌘R** with the same signing identity. See [native staging and device QA](../native-pencilkit/README.md) for repeatable asset staging and a disposable-notebook restore check.
 
 ## 2026-11-18 — v9.45 Area Add popover (merged; browser verified; iOS device QA pending)
 
