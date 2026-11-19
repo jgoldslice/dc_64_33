@@ -180,3 +180,25 @@ body.v928-notes-focus{overflow:hidden!important}
 @media(hover:hover){
   #v930InkContext button:hover{background:var(--wash)}
 }
+
+/* v9.37: PencilKit is the drawing toolbar on capable native iPads.
+   Preserve SVG controls in source for browser/legacy recovery, not in the
+   normal iPad or focused drawing interface. */
+body.v937-pencilkit-native #v76Editor #v92LegacyInkTools,
+body.v937-pencilkit-native #v76Editor #v928FocusTools,
+body.v937-pencilkit-native #v76Editor #v928FocusMenu {
+  display:none!important;
+}
+#v76Editor #v928FocusBar #v937FocusNativeInk {
+  min-width:128px;
+  background:var(--wash);
+  border-color:var(--secondary-ui);
+  font-weight:750;
+  white-space:nowrap;
+}
+#v76Editor #v928FocusBar #v937FocusNativeInk[aria-pressed="true"] {
+  box-shadow:inset 0 0 0 1px var(--secondary-ui);
+}
+#v76Editor #v928FocusBar #v937FocusNativeInk[hidden]{
+  display:none!important;
+}
