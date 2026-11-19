@@ -5,9 +5,14 @@
    experimental until Swift/Xcode builds and complete backup are validated. */
 (function(){
   const native=window.Capacitor;
-  if(!native?.isNativePlatform?.()||!native?.isPluginAvailable?.('BlueprintPencil'))return;
-  const plugin=native.Plugins?.BlueprintPencil;
-  if(typeof plugin?.openEditor!=='function'||typeof plugin?.capabilities!=='function')return;
+  if(!native?.isNativePlatform?.()||typeof native.nativePromise!=='function')return;
+  // Capacitor 8 can register an explicitly instantiated Swift plugin after
+  // the injected JS proxy list is formed. Call the verified native bridge.
+  // No PencilKit button is shown on Safari/PWA.
+  const plugin={
+    capabilities:()=>native.nativePromise('BlueprintPencil','capabilities',{}),
+    openEditor:args=>native.nativePromise('BlueprintPencil','openEditor',args)
+  };
   const actions=document.querySelector('#projectWorkspace .v82-project-header-actions');
   if(!actions||document.getElementById('v92PencilKit'))return;
 
@@ -19,10 +24,15 @@
   button.title='Experimental native Apple Pencil editor (iPad only)';
   button.setAttribute('aria-label','Open experimental native PencilKit drawing editor');
   actions.append(button);
+  // Hide on wrappers without the native editor. Existing web Notes remain usable.
+  plugin.capabilities().then(result=>{
+    if(result?.available===true&&result?.schemaVersion===1)button.hidden=false;
+  }).catch(()=>{});
+  button.hidden=true;
   let opening=false,acknowledged=false;
 
   button.addEventListener('click',async()=>{
-    if(opening)return;
+    if(opening||button.hidden)return;
     const project=typeof v6Project==='function'?v6Project():null;
     const pages=project?.notePages;
     const id=project?.activeNotePageId;
