@@ -7,6 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — PencilKit entry diagnostics and Notes toolbar placement (device QA pending)
+
+**Reported by owner:** The original Swift test editor compiled and opened on iPad, but the follow-on `PencilKit` web action did nothing. The optional `pencilkit-entry-v92.js` previously hid its action until an asynchronous `capabilities` call succeeded, swallowing errors; this could make a stale local Swift plugin or stale staged web build look like a dead button. The local wrapper and native files cannot be inspected from GitHub.
+
+**Implemented on main:** Native-only `Native ink` action now appears in the existing Notes toolbar (with project-header fallback) and reports actual errors for missing `capabilities` / `openEditor`. It obtains stable project/page identifiers from `BlueprintNotesBridge.current()`, not an uninitialized raw page list, and calls the manually registered Capacitor 8 plugin through `nativePromise`. It continues warning that sidecars are not in complete backups or visible in the mixed web page. No automatic launch, PencilKit canvas embedding, SVG migration, or toolbar-to-native tool remapping is claimed. Cache version bumped to invalidate prior JavaScript.
+
+**Verification:** Code reviewed, not run in browser CI or current iPad binary. User must stage new web bundle and ensure the two upgraded local Swift files from the separate installer were installed. Xcode compilation, persistent reopen, autosave, undo, pan/zoom, and restore remain unverified. Full native integration requires a coherent mixed-content coordinate/rendering model, PencilKit tool control APIs and audited backup roundtrips; do not simply replace SVG Notes.
+
 ## 2026-11-18 — Native PencilKit sidecar integration (local installation required)
 
 **Verified by owner on physical iPad:** The initial local Xcode PencilKit prototype compiled, registered as `BlueprintPencil` and opened successfully through `Capacitor.nativePromise('BlueprintPencil','open',{})`. The existing app and native Share plugin continued running. This confirms the *prototype* only, not the new persistent editor.
