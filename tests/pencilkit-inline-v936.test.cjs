@@ -70,18 +70,21 @@ test('renders native ink over the current Notes page, not a modal',async()=>{
   const x=makeApp(true);await x.settle();
   assert.equal(x.old.hidden,true);
   const button=x.buttons[0];
-  assert.equal(button.textContent,'Draw on page');
+  assert.equal(button.textContent,'PencilKit');
+  assert.equal(button.attributes['aria-pressed'],'false');
   assert.equal(x.calls.filter(c=>c.method==='showInline').length,1);
   assert.equal(x.calls.at(-1).args.pageId,'pageA');
   assert.equal(x.calls.at(-1).args.editing,false);
   await button.click();
-  assert.equal(button.textContent,'Edit content');
+  assert.equal(button.textContent,'PencilKit');
+  assert.equal(button.attributes['aria-pressed'],'true');
   assert.equal(x.calls.at(-1).method,'showInline');
   assert.equal(x.calls.at(-1).args.editing,true);
   assert.ok(!x.calls.some(c=>c.method==='openEditor'));
   await button.click();
   assert.equal(x.calls.at(-1).args.editing,false);
-  assert.equal(button.textContent,'Draw on page');
+  assert.equal(button.textContent,'PencilKit');
+  assert.equal(button.attributes['aria-pressed'],'false');
 });
 test('native ink tracks page switching and hides when Notes leaves view',async()=>{
   const x=makeApp(true);await x.settle();await x.buttons[0].click();
