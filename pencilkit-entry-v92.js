@@ -17,6 +17,17 @@
   // Manually registered Capacitor 8 Swift plugins can be callable even if
   // they are missing from the global JS Plugins registry.
   const invoke=(method,args={})=>native.nativePromise('BlueprintPencil',method,args);
+  // Failure to respond must not leave the native-ink control disabled forever.
+  const timedInvoke=(method,args={},timeoutMs=12000)=>new Promise((resolve,reject)=>{
+    const timer=setTimeout(()=>reject(Error(
+      'No response from native '+method+' after '+Math.round(timeoutMs/1000)+
+      ' seconds. Check the Xcode console for BLUEPRINT PENCIL logs and install the latest Swift files.'
+    )),timeoutMs);
+    Promise.resolve().then(()=>invoke(method,args)).then(
+      value=>{clearTimeout(timer);resolve(value);},
+      error=>{clearTimeout(timer);reject(error);}
+    );
+  });
   let opening=false,acknowledged=false;
   const status=message=>{
     const live=document.getElementById('v81A11yStatus');
@@ -33,7 +44,7 @@
     opening=true;button.disabled=true;button.textContent='Opening…';
     try{
       let capabilities;
-      try{capabilities=await invoke('capabilities');}
+      try{capabilities=await timedInvoke('capabilities',{},8000);}
       catch(error){
         throw Error('The installed native plugin does not expose persistent PencilKit yet. Install the newer Swift files and rebuild in Xcode. Details: '+(error?.message||String(error)));
       }
@@ -45,11 +56,14 @@
         if(!ok)return;
         acknowledged=true;
       }
-      const result=await invoke('openEditor',{
+      const result=await timedInvoke('openEditor',{
         projectId:String(project.id),pageId:String(page.id),
         pageIds:project.notePages.map(p=>String(p.id))
-      });
-      status(result?.saved?'Native PencilKit drawing saved on this device.':'Native editor closed.');
+      },12000);
+      if(result?.opened!==true){
+        throw Error('Native editor did not confirm its presentation. Update both Swift files in Xcode.');
+      }
+      status('PencilKit editor opened. Drawings autosave locally; native drawings are not in Blueprint backups.');
     }catch(error){
       const message='Unable to open PencilKit: '+(error?.message||String(error));
       status(message);alert(message);
