@@ -372,3 +372,16 @@
 .v818-palette-colors button:focus-visible{
   outline:3px solid var(--secondary-ui);outline-offset:3px;
 }
+
+/* Native PencilKit draws in its own iOS sheet. Collapse duplicate SVG ink
+   controls only after native capabilities confirm; keep legacy ink editable. */
+#v76Editor .v92-web-ink-collapsed{display:none!important}
+#v76Editor .v92-pencil-entry-group{align-items:center}
+#v76Editor .v92-pencil-entry-group #v92PencilKit{
+  min-height:40px;min-width:92px;padding:7px 12px;font-size:13px;font-weight:700;
+  border-color:var(--secondary-ui);background:var(--wash);
+}
+#v76Editor .v92-pencil-entry-group #v92LegacyInkTools{
+  min-height:40px;padding:7px 10px;font-size:12px;font-weight:600;color:var(--muted);
+}
+#v76Editor .v92-pencil-entry-group [hidden]{display:none!important}
