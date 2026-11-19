@@ -17,9 +17,7 @@
   // picker, but existing SVG strokes must remain editable on demand.
   const webPenGroup=host.querySelector?.('[data-v76-mode="pen"]')?.closest('.v79-tool-group');
   const saveSketchGroup=host.querySelector?.('#v819SaveSketch')?.closest('.v79-tool-group');
-  let webToolsOpen=false;
   let nativeEditorAvailable=false;
-  let legacyToggle=null;
   if(webPenGroup){
     const nativeGroup=document.createElement('div');
     nativeGroup.className='v79-tool-group v92-pencil-entry-group';
@@ -27,39 +25,19 @@
     nativeGroup.setAttribute('aria-label','Drawing tools');
     button.classList.add('v92-native-ink-primary');
     nativeGroup.append(button);
-    legacyToggle=document.createElement('button');
-    legacyToggle.type='button';
-    legacyToggle.id='v92LegacyInkTools';
-    legacyToggle.textContent='Web tools';
-    legacyToggle.title='Edit existing SVG ink with Blueprint drawing tools';
-    legacyToggle.setAttribute('aria-label','Show legacy Blueprint drawing tools');
-    legacyToggle.setAttribute('aria-pressed','false');
-    legacyToggle.hidden=true;
-    nativeGroup.append(legacyToggle);
     host.insertBefore(nativeGroup,webPenGroup);
   }else{
     host.append(button);
   }
   function syncDrawingToolbar(){
     if(!webPenGroup)return;
-    const collapse=nativeEditorAvailable&&!webToolsOpen;
-    webPenGroup.classList.toggle('v92-web-ink-collapsed',collapse);
-    saveSketchGroup?.classList.toggle('v92-web-ink-collapsed',collapse);
-    if(legacyToggle){
-      legacyToggle.hidden=!nativeEditorAvailable;
-      legacyToggle.setAttribute('aria-pressed',String(webToolsOpen));
-      legacyToggle.setAttribute('aria-label',webToolsOpen
-        ?'Hide legacy Blueprint drawing tools'
-        :'Show legacy Blueprint drawing tools');
-      legacyToggle.textContent=webToolsOpen?'Hide web tools':'Web tools';
-    }
-    // Don't leave the invisible SVG ink overlay intercepting finger input.
-    if(collapse)window.BlueprintNotesBridge?.setMode?.('select');
+    webPenGroup.classList.toggle('v92-web-ink-collapsed',nativeEditorAvailable);
+    saveSketchGroup?.classList.toggle('v92-web-ink-collapsed',nativeEditorAvailable);
+    // Existing web SVG ink data and controls remain in the code for browsers,
+    // old native versions and non-destructive recovery. No duplicate toolbar
+    // is shown when an embedded PencilKit canvas is actually available.
+    if(nativeEditorAvailable)window.BlueprintNotesBridge?.setMode?.('select');
   }
-  legacyToggle?.addEventListener('click',()=>{
-    webToolsOpen=!webToolsOpen;
-    syncDrawingToolbar();
-  });
   // Manually registered Capacitor 8 Swift plugins can be callable even if
   // they are missing from the global JS Plugins registry.
   const invoke=(method,args={})=>native.nativePromise('BlueprintPencil',method,args);
@@ -74,12 +52,12 @@
       error=>{clearTimeout(timer);reject(error);}
     );
   });
-  // Only collapse old controls once the installed iOS plugin confirms that
-  // the persistent native editor is actually available. On an old build,
-  // preserve every existing web drawing control.
+  // Collapse duplicate web controls only for the embedded PencilKit engine.
+  // Older native versions retain the original editable SVG toolbar.
   if(webPenGroup){
     timedInvoke('capabilities',{},5000).then(capabilities=>{
-      if(capabilities?.available===true&&capabilities?.schemaVersion===1){
+      if(capabilities?.available===true&&capabilities?.schemaVersion===1&&
+         capabilities?.embeddedAvailable===true){
         nativeEditorAvailable=true;
         syncDrawingToolbar();
       }
