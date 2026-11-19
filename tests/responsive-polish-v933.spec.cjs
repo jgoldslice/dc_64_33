@@ -64,3 +64,21 @@ test('open Event form does not lose unsaved edits when the week changes',async({
   expect(output.date).toBe('2026-12-04');
   expect(output.time).toBe('14:30');
 });
+
+test('Today Schedule adds an event directly and Tasks opens the task form',async({page})=>{
+  await page.goto(base);
+  const schedule=page.locator('#today .v917-schedule');
+  await schedule.getByRole('button',{name:'Add event',exact:true}).click();
+  const eventForm=page.getByRole('dialog',{name:'Add Event',exact:true});
+  await expect(eventForm.getByLabel('Date',{exact:true})).toHaveValue(await page.evaluate(()=>localToday()));
+  await eventForm.getByLabel('Title',{exact:true}).fill('Reactor lab meeting');
+  await eventForm.getByLabel('Start time').fill('14:30');
+  await eventForm.getByRole('button',{name:'Save',exact:true}).click();
+  await expect(schedule.getByText('Reactor lab meeting')).toBeVisible();
+  await page.reload();
+  await expect(schedule.getByText('Reactor lab meeting')).toBeVisible();
+
+  await page.locator('#today .v917-tasks').getByRole('button',{name:'+ Add',exact:true}).click();
+  const taskForm=page.getByRole('dialog',{name:'Add Task',exact:true});
+  await expect(taskForm.getByLabel('Deadline')).toBeVisible();
+});
