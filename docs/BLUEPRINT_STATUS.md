@@ -7,17 +7,17 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — v9.43 Plan Add actions follow cards (feature branch; automated/device QA pending)
+## 2026-11-18 — v9.43 Plan Add actions follow cards (merged; browser verified; iOS device QA pending)
 
 **Owner screenshot and request:** On the Tasks tab the `+ Task` row still occupies empty space between the Plan tabs and the content cards. Place it *below* the task cards, so the first card is immediately under the tabs. Apply the consistent placement across Goals, Habits, and Area overview.
 
-**Implementation on `feature/plan-add-buttons-below-cards-v943`:**
+**Implemented and merged from `feature/plan-add-buttons-below-cards-v943`:**
 - Move the existing `data-open="task"` button after the Priority Order and All Tasks stack; move `+ Goal` after `#goalsList`, `+ Habit` after the tracker and management cards, and `+ Area` after the Area card grid.
 - Retain the same delegated creation actions and accessible tab labels, card headings, item lists, goal/area relationships, and weekly planning entry. Use a compact 10px margin before the Add actions; no empty action row above the cards.
 - `tests/plan-add-actions-v943.spec.cjs` exercises DOM and bounding-box placement at iPad and narrow-device widths, along with Task creation modal availability, other Plan sections, and Area ordering. `sw.js` cache key revised.
 - No changes to storage, backup/export formats, PencilKit, native Capacitor files or task/habit/goal data.
 
-**Verification:** Pending GitHub Actions and iPhone/iPad physical-device check. A GitHub merge does not rebuild the installed iOS app.
+**Verification:** GitHub Actions [run #392](https://github.com/jgoldslice/dc_64_33/actions/runs/44467108626) passed **306/306 Playwright tests**, including three new positioning and creation-action tests at iPad and phone breakpoints; JavaScript syntax checks passed. [PR #71](https://github.com/jgoldslice/dc_64_33/pull/71) merged into main as `23b801baab85aef4164efaa4c3593709016b4d39`. iPhone/iPad physical-device QA, GitHub Pages propagation, Capacitor/Xcode build, and native installation remain unverified. No installed app update is implied by the GitHub merge.
 
 ## 2026-11-18 — v9.42 compact Plan section headings (merged; browser verified; iPad QA pending)
 
