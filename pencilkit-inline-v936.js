@@ -183,6 +183,17 @@
 
   function watch(){
     window.addEventListener('scroll',schedule,true);
+    window.addEventListener('blueprint:notes-viewport-change',schedule);
+    // The native PKCanvasView receives finger gestures above the WKWebView;
+    // forward them to the existing Notes zoom/scroll engine. Ignore stale
+    // events arriving after a project/page switch or when drawing is paused.
+    window.addEventListener('blueprint:pencil-navigation',event=>{
+      if(!supported||!active)return;
+      const detail=event.detail||{},ctx=notes.current?.();
+      if(detail.pageId&&String(detail.pageId)!==String(ctx?.page?.id))return;
+      if(detail.projectId&&String(detail.projectId)!==String(ctx?.p?.id))return;
+      if(notes.handlePencilViewportGesture?.(detail))schedule();
+    });
     document.addEventListener('scroll',schedule,true);
     window.addEventListener('resize',schedule);
     window.addEventListener('orientationchange',schedule);
