@@ -284,7 +284,7 @@
       zoomViewport.clientWidth/noteZoom));
     const cssMinHeight=parseFloat(getComputedStyle(surface).minHeight)||0;
     const baseHeight=Math.ceil(Math.max(740,cssMinHeight,Number(ctx?.page.height)||740,
-      zoomViewport.clientHeight/noteZoom));
+      zoomViewport.clientHeight/Math.min(1,noteZoom)));
     const priorWidth=surface.clientWidth,priorHeight=surface.clientHeight;
     const width=baseWidth+'px',height=baseHeight+'px';
     if(surface.style.width!==width)surface.style.width=width;
