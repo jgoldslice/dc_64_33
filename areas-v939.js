@@ -28,7 +28,8 @@
   if(!mount)return;
   const escapeHtml=text=>String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const icon=name=>'<svg class="icon" aria-hidden="true"><use href="#i-'+name+'"></use></svg>';
-  let selected=null,pending=false,menuOpen=false;
+  let selected=null,pending=false;
+  let createMenu=null,createTrigger=null;
   const expanded=new Set(),openGoals=new Set();
   let areaMenu=null,press=null,pressTimer=null,suppressCardTap=null;
   const HOLD_MS=520,MOVE_LIMIT=12;
@@ -68,6 +69,69 @@
     document.body.append(layer);
     areaMenu=layer;
     layer.querySelector('[data-bpa-rename]')?.focus({preventScroll:true});
+  }
+
+  // A single anchored popover replaces the layout-shifting inline add row.
+  // It lives outside the notebook grid so opening it never moves Area cards.
+  function closeCreateMenu(restoreFocus=false){
+    if(!createMenu)return;
+    const trigger=createTrigger;
+    createMenu.remove();
+    createMenu=null;
+    createTrigger=null;
+    if(trigger?.isConnected){
+      trigger.setAttribute('aria-expanded','false');
+      if(restoreFocus)trigger.focus({preventScroll:true});
+    }
+  }
+  function showCreateMenu(trigger){
+    if(selected===null)return;
+    if(createMenu){closeCreateMenu(true);return;}
+    const choices=[
+      ['task','check','Task','A one-time action'],
+      ['habit','habit','Habit','Something to repeat'],
+      ['goal','goal','Goal','An outcome to pursue'],
+      ['project','plan','Project','Notes, to-dos and files']
+    ];
+    const layer=document.createElement('div');
+    layer.className='bp-area-create-backdrop';
+    layer.innerHTML='<div class="bp-area-create-popover" role="dialog" aria-modal="true" aria-label="Add to '+escapeHtml(display(selected))+'">'+
+      '<div class="bp-area-create-header"><strong>Add to '+escapeHtml(display(selected))+'</strong>'+
+      '<button type="button" class="bp-area-create-close" data-bpa-add-close aria-label="Close Add menu">×</button></div>'+
+      choices.map(([kind,symbol,title,subtitle])=>
+        '<button type="button" class="bp-area-create-option" data-bpa-add-kind="'+kind+'">'+
+          '<span class="bp-area-create-icon">'+icon(symbol)+'</span>'+
+          '<span class="bp-area-create-copy"><strong>'+title+'</strong><small>'+subtitle+'</small></span>'+
+          '<span class="bp-area-create-chevron" aria-hidden="true">›</span></button>').join('')+'</div>';
+    const popover=layer.firstElementChild;
+    layer.addEventListener('click',event=>{
+      if(event.target===layer)closeCreateMenu(true);
+    });
+    layer.addEventListener('keydown',event=>{
+      if(event.key!=='Tab')return;
+      const buttons=[...popover.querySelectorAll('button:not([disabled])')];
+      if(!buttons.length)return;
+      const first=buttons[0],last=buttons[buttons.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    });
+    document.body.append(layer);
+    createMenu=layer;
+    createTrigger=trigger;
+    trigger.setAttribute('aria-expanded','true');
+    if(window.innerWidth>600){
+      // Adapt placement above/below the trigger for Split View and iPad.
+      const rect=trigger.getBoundingClientRect();
+      const width=popover.offsetWidth;
+      const height=popover.offsetHeight;
+      const left=Math.min(Math.max(12,rect.right-width),Math.max(12,window.innerWidth-width-12));
+      const below=window.innerHeight-rect.bottom;
+      let top=below>=height+12?rect.bottom+8:rect.top-height-8;
+      top=Math.min(Math.max(12,top),Math.max(12,window.innerHeight-height-12));
+      popover.style.left=Math.round(left)+'px';
+      popover.style.top=Math.round(top)+'px';
+    }
+    popover.querySelector('[data-bpa-add-kind]')?.focus({preventScroll:true});
   }
 
   function display(area){return area===INBOX?'Unassigned':area;}
@@ -136,16 +200,15 @@
     const standaloneTasks=data.tasks.filter(t=>!data.goals.some(g=>String(g.id)===String(t.goalId||'')));
     const standaloneHabits=data.habits.filter(h=>!data.goals.some(g=>String(g.id)===String(h.goalId||'')));
     const hasContent=Object.values(data).some(list=>list.length);
-    mount.innerHTML='<header class="bp-area-detail-head"><button type="button" class="bp-area-back" data-bpa-back>‹ Areas</button><div class="bp-area-detail-title"><h1>'+escapeHtml(display(selected))+'</h1><button class="primary-button" type="button" data-bpa-add-toggle aria-expanded="'+menuOpen+'">+ Add</button></div>'+
-      (menuOpen?'<div class="bp-area-add-menu" role="group" aria-label="Add to '+escapeHtml(display(selected))+'">'+['task','habit','goal','project'].map(kind=>'<button type="button" data-bpa-add-kind="'+kind+'">+ '+kind[0].toUpperCase()+kind.slice(1)+'</button>').join('')+'</div>':'')+'</header>'+
+    mount.innerHTML='<header class="bp-area-detail-head"><button type="button" class="bp-area-back" data-bpa-back>‹ Areas</button><div class="bp-area-detail-title"><h1>'+escapeHtml(display(selected))+'</h1><button class="primary-button" type="button" data-bpa-add-toggle aria-haspopup="dialog" aria-expanded="false">+ Add</button></div></header>'+
       (hasContent?'<div class="bp-area-sections">'+
         section('Goals','goals',data.goals,g=>goalRow(g,data))+
         section('Tasks','tasks',standaloneTasks,taskRow)+
         section('Habits','habits',standaloneHabits,habitRow)+
         section('Projects','projects',data.projects,projectRow)+'</div>':
-        '<div class="card bp-area-empty">'+icon('plan')+'<h3>Nothing here yet</h3><p>Add a task, habit, goal, or project. Goals and projects are completely optional.</p><button type="button" class="secondary-button" data-bpa-add-toggle>+ Add to '+escapeHtml(display(selected))+'</button></div>');
+        '<div class="card bp-area-empty">'+icon('plan')+'<h3>Nothing here yet</h3><p>Add a task, habit, goal, or project. Goals and projects are completely optional.</p><button type="button" class="secondary-button" data-bpa-add-toggle aria-haspopup="dialog" aria-expanded="false">+ Add to '+escapeHtml(display(selected))+'</button></div>');
   }
-  function render(){if(!mount)return;closeAreaMenu();cancelPress();if(selected===null)renderOverview();else renderDetail();}
+  function render(){if(!mount)return;closeCreateMenu();closeAreaMenu();cancelPress();if(selected===null)renderOverview();else renderDetail();}
   function refresh(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render();});}
   root.blueprintAreas={refresh,model};
   const trySave=()=>{save(true);refresh();};
@@ -170,7 +233,11 @@
     setTimeout(()=>{suppressCardTap=null;},0);
   });
   mount.addEventListener('pointercancel',cancelPress);
-  document.addEventListener('scroll',cancelPress,true);
+  document.addEventListener('scroll',event=>{
+    cancelPress();
+    if(createMenu&&!createMenu.contains(event.target))closeCreateMenu();
+  },true);
+  window.addEventListener('resize',()=>closeCreateMenu());
   window.addEventListener('blur',cancelPress);
   mount.addEventListener('contextmenu',event=>{
     const tile=event.target.closest?.('[data-bpa-open]');
@@ -187,19 +254,21 @@
     }
   });
   document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&createMenu){event.preventDefault();closeCreateMenu(true);return;}
     if(event.key==='Escape'&&areaMenu){event.preventDefault();closeAreaMenu(true);}
   });
   document.addEventListener('click',event=>{
-    const btn=event.target.closest('[data-bpa-open],[data-bpa-back],[data-bpa-new],[data-bpa-rename],[data-bpa-remove],[data-bpa-menu-close],[data-bpa-add-toggle],[data-bpa-add-kind],[data-bpa-expand],[data-bpa-edit-goal],[data-bpa-project]');
+    const btn=event.target.closest('[data-bpa-open],[data-bpa-back],[data-bpa-new],[data-bpa-rename],[data-bpa-remove],[data-bpa-menu-close],[data-bpa-add-toggle],[data-bpa-add-kind],[data-bpa-add-close],[data-bpa-expand],[data-bpa-edit-goal],[data-bpa-project]');
     if(!btn)return;
     if(btn.hasAttribute('data-bpa-open')){
       if(suppressCardTap===btn){suppressCardTap=null;event.preventDefault();return;}
       if(areaMenu)return;
-      selected=btn.dataset.bpaOpen;menuOpen=false;expanded.clear();render();return;
+      selected=btn.dataset.bpaOpen;expanded.clear();render();return;
     }
     if(btn.hasAttribute('data-bpa-menu-close')){closeAreaMenu(true);return;}
-    if(btn.hasAttribute('data-bpa-back')){selected=null;menuOpen=false;render();return;}
-    if(btn.hasAttribute('data-bpa-add-toggle')){menuOpen=!menuOpen;render();return;}
+    if(btn.hasAttribute('data-bpa-back')){selected=null;render();return;}
+    if(btn.hasAttribute('data-bpa-add-toggle')){showCreateMenu(btn);return;}
+    if(btn.hasAttribute('data-bpa-add-close')){closeCreateMenu(true);return;}
     if(btn.hasAttribute('data-bpa-expand')){const key=selected+':'+btn.dataset.bpaExpand;expanded.has(key)?expanded.delete(key):expanded.add(key);render();return;}
     if(btn.hasAttribute('data-bpa-new')){
       const next=prompt('New Area name');
@@ -237,7 +306,7 @@
     if(btn.hasAttribute('data-bpa-edit-goal')){openModal('goal',btn.dataset.bpaEditGoal);return;}
     if(btn.hasAttribute('data-bpa-project')){tab('brainstorm');v6OpenProject(btn.dataset.bpaProject);return;}
     if(btn.hasAttribute('data-bpa-add-kind')){
-      const kind=btn.dataset.bpaAddKind;menuOpen=false;
+      const kind=btn.dataset.bpaAddKind;closeCreateMenu();
       root.blueprintAreaCreationContext=selected===INBOX?'':selected;
       if(kind==='project'){
         const name=prompt('Project name');
