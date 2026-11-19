@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const base = 'http://127.0.0.1:8765/';
-test('Blueprint opens without splash and navigates into Plan Overview by default', async ({ page }) => {
+test('Blueprint opens without splash and navigates into Plan Areas by default', async ({ page }) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
@@ -16,7 +16,9 @@ test('Blueprint opens without splash and navigates into Plan Overview by default
   await expect(page.locator('#overview')).toBeVisible();
   await expect(page.locator('#goals')).toBeHidden();
   await expect(page.locator('#tasks')).toBeHidden();
-  await expect(page.locator('#myplan .eyebrow')).toContainText('Weekly Blueprint');
+  await expect(page.locator('#bpAreasRoot .eyebrow')).toContainText('Your responsibilities');
+  await expect(page.locator('#bpAreasRoot h1')).toHaveText('Areas');
+  await expect(page.locator('#overview [data-wb-launch]')).toBeVisible();
   await page.locator('[data-plan-tab="tasks"]').click();
   await expect(page.locator('#tasks')).toBeVisible();
   await page.locator('.bottom-nav button[data-tab="today"]').click();

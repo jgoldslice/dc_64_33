@@ -354,6 +354,7 @@
 <link rel="stylesheet" href="project-overview-v919.css">
 <link rel="stylesheet" href="library-order-v923.css">
 <link rel="stylesheet" href="goal-habits-v927.css">
+<link rel="stylesheet" href="areas-v939.css">
 <link rel="stylesheet" href="notes-workspace-v928.css">
 <style>
 /* iOS Safari zooms focused inputs below 16px. Preserve pinch zoom and
@@ -434,13 +435,13 @@
       </div>
     </section>
     <section class="view" id="myplan" aria-label="Plan">
-      <div class="segmented plan-tabs" role="tablist" aria-label="Plan sections"><button type="button" data-plan-tab="overview" role="tab" class="selected" aria-selected="true">Overview</button><button type="button" data-plan-tab="goals" role="tab" aria-selected="false">Goals</button><button type="button" data-plan-tab="tasks" role="tab" aria-selected="false">Tasks</button><button type="button" data-plan-tab="habits" role="tab" aria-selected="false">Habits</button></div>
-    <section class="plan-panel active" id="overview" aria-label="Plan overview"><section class="card wb-overview-feature"><div class="wb-overview-top"><div><span class="eyebrow">Weekly Blueprint</span><h2>Design your week</h2><p class="muted">Report, review goals, schedule and prioritize—in one guided workspace.</p></div><svg class="icon" aria-hidden="true"><use href="#i-plan"/></svg></div><div class="wb-overview-actions"><button type="button" class="primary-button" data-wb-launch>Design Your Week</button><span class="muted small" id="wbDraftStatus"></span></div></section><div class="wb-overview-sections"><section class="card"><div class="card-heading"><h2>Active Goals</h2><button type="button" class="text-button" data-wb-view-goals>View all</button></div><div id="wbOverviewGoals"></div></section><section class="card"><div class="card-heading"><h2>Coming Up</h2><button type="button" class="text-button" data-wb-view-week>View week</button></div><div id="wbOverviewUpcoming"></div></section></div><div id="wbUndoRegion" aria-live="polite"></div></section>
+      <div class="segmented plan-tabs" role="tablist" aria-label="Plan sections"><button type="button" data-plan-tab="overview" role="tab" class="selected" aria-selected="true">Areas</button><button type="button" data-plan-tab="goals" role="tab" aria-selected="false">Goals</button><button type="button" data-plan-tab="tasks" role="tab" aria-selected="false">Tasks</button><button type="button" data-plan-tab="habits" role="tab" aria-selected="false">Habits</button></div>
+    <section class="plan-panel active" id="overview" aria-label="Areas"><div id="bpAreasRoot" aria-live="off"></div><section class="card wb-overview-feature"><div class="wb-overview-top"><div><span class="eyebrow">Weekly Blueprint</span><h2>Design your week</h2><p class="muted">Report, review goals, schedule and prioritize—in one guided workspace.</p></div><svg class="icon" aria-hidden="true"><use href="#i-plan"/></svg></div><div class="wb-overview-actions"><button type="button" class="primary-button" data-wb-launch>Design Your Week</button><span class="muted small" id="wbDraftStatus"></span></div></section><div class="wb-overview-sections"><section class="card"><div class="card-heading"><h2>Active Goals</h2><button type="button" class="text-button" data-wb-view-goals>View all</button></div><div id="wbOverviewGoals"></div></section><section class="card"><div class="card-heading"><h2>Coming Up</h2><button type="button" class="text-button" data-wb-view-week>View week</button></div><div id="wbOverviewUpcoming"></div></section></div><div id="wbUndoRegion" aria-live="polite"></div></section>
     <section class="plan-panel" id="tasks" aria-label="Tasks"><div class="plan-toolbar"><span class="muted">All tasks and priorities</span><button class="primary-button" data-open="task">+ Task</button></div><div class="stack"><section class="card"><div class="card-heading"><h2>Priority Order</h2></div><div id="tasksPriority"></div></section><section class="card"><div class="card-heading"><h2>All Tasks</h2></div><div id="allTasks"></div></section></div></section>
     <section class="plan-panel" id="goals" aria-label="Goals">
       <div class="plan-toolbar" style="justify-content:flex-end"><button class="primary-button" data-open="goal">+ Goal</button></div>
       <div class="stack" id="goalsList"></div>
-      <section class="card category-card"><div class="card-heading"><h2>Categories</h2><button type="button" class="text-button" id="manageCategories">Manage</button></div><div id="categoryChips" class="category-chips"></div><div id="categoryManager" hidden></div></section>
+      <section class="card category-card"><div class="card-heading"><h2>Areas</h2><button type="button" class="text-button" id="manageCategories">Manage</button></div><div id="categoryChips" class="category-chips"></div><div id="categoryManager" hidden></div></section>
     </section>
     <section class="plan-panel" id="habits" aria-label="Habits"><div class="plan-toolbar"><span class="muted">Daily consistency</span><button class="primary-button" data-open="habit">+ Habit</button></div><div class="stack"><section class="card"><div class="card-heading v916-week-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Weekly Tracker</h2><div class="v916-week-actions"><button type="button" id="v916HabitPrev" aria-label="Previous habit tracking week">‹</button><span id="habitsWeekTitle" class="muted small" aria-live="polite"></span><button type="button" id="v916HabitNext" aria-label="Next habit tracking week">›</button></div></div><p class="v916-week-progress" id="v916WeeklyProgress"></p><div id="habitsTracker"></div></section><section class="card"><div class="card-heading"><h2>Manage Habits</h2></div><div id="habitManager"></div></section></div></section>
     </section>
@@ -759,6 +760,7 @@ function save(verify=false){
     }
     canvasLastManifest=serialized;canvasExternalChange=false;
     canvasUnsaved=false;canvasSaveStatus(false);
+    window.blueprintAreas?.refresh();
     if($('draftStatus')&&$('draftStatus').textContent==='Saving…')$('draftStatus').textContent='Saved';
     return true;
   }catch(error){
@@ -887,6 +889,7 @@ function renderCalendarGrid(start=selectedWeek){
   $('weekGrid').innerHTML=Array.from({length:5},(_,i)=>dayCard(iso(plusDays(start,i)))).join('')+`<div class="day-card weekend">${weekend}</div>`;
 }
 function render(scope='all'){
+  window.blueprintAreas?.refresh();
   if(scope==='habits'){
     renderHabitSections();
     renderGoals(); // Goal habit progress is a dependent view.
@@ -1118,24 +1121,30 @@ function openModal(type,id=null,parent=null){
   let fields='';
   const name=(value='')=>formLine('Title',`<input name="title" required maxlength="160" value="${esc(value)}" placeholder="Enter a title">`);
   const selectedGoalId=String(item?.goalId??parent??'');
+  const linkedGoal=state.goals.find(g=>String(g.id)===selectedGoalId);
+  const currentArea=linkedGoal?.category||item?.area||window.blueprintAreaCreationContext||'';
+  const areaField=formLine('Area',`<select name="area"><option value="">Unassigned</option>${state.categories.map(area=>`<option value="${esc(area)}" ${area===currentArea?'selected':''}>${esc(area)}</option>`).join('')}</select>`);
   if(type==='task')fields=name(item?.title)
     +formLine('Deadline',`<input type="date" name="dueDate" value="${esc(item?.dueDate??($('today').classList.contains('active')?localToday():''))}">`)
     +`<label class="inline-check"><input type="checkbox" name="priority" ${item?.priority?'checked':''}>Priority</label>`
-    +formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${g.id}" ${String(item?.goalId)===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`);
+    +formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${g.id}" ${selectedGoalId===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`)+areaField;
   else if(type==='event')fields=name(item?.title)+formLine('Date',`<input type="date" name="date" value="${esc(item?.date||localToday())}" required>`)+formLine('Start time',`<input type="time" name="time" value="${esc(item?.time||'09:00')}" required>`);
-  else if(type==='habit')fields=name(item?.title)+formLine('Repeat on',`<div class="days-picker">${['S','M','T','W','T','F','S'].map((day,i)=>`<label><span>${day}</span><input type="checkbox" name="schedule" value="${i}" ${(item?.schedule||[0,1,2,3,4,5,6]).includes(i)?'checked':''}></label>`).join('')}</div>`)+formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${esc(g.id)}" ${selectedGoalId===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`)+formLine('Weekly target (optional)',`<input name="weeklyTarget" type="number" min="1" max="7" inputmode="numeric" placeholder="All selected days" value="${esc(item?.weeklyTarget??'')}"><small>For a flexible goal such as four days per week, leave all seven days selected above.</small>`);
+  else if(type==='habit')fields=name(item?.title)+areaField+formLine('Repeat on',`<div class="days-picker">${['S','M','T','W','T','F','S'].map((day,i)=>`<label><span>${day}</span><input type="checkbox" name="schedule" value="${i}" ${(item?.schedule||[0,1,2,3,4,5,6]).includes(i)?'checked':''}></label>`).join('')}</div>`)+formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${esc(g.id)}" ${selectedGoalId===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`)+formLine('Weekly target (optional)',`<input name="weeklyTarget" type="number" min="1" max="7" inputmode="numeric" placeholder="All selected days" value="${esc(item?.weeklyTarget??'')}"><small>For a flexible goal such as four days per week, leave all seven days selected above.</small>`);
   else if(type==='goal')fields=name(item?.title)
-    +formLine('Category',`<select name="category" required>${state.categories.map(cat=>`<option value="${esc(cat)}" ${(item?.category||state.categories[0])===cat?'selected':''}>${esc(cat)}</option>`).join('')}</select>`)
+    +formLine('Area',`<select name="category" required>${state.categories.map(cat=>`<option value="${esc(cat)}" ${(item?.category||window.blueprintAreaCreationContext||state.categories[0])===cat?'selected':''}>${esc(cat)}</option>`).join('')}</select>`)
     +formLine('Motivation',`<textarea name="motivation" rows="3" maxlength="3000" placeholder="Why does this goal matter to you?">${esc(item?.motivation||'')}</textarea>`)
     +`<div class="goal-step-header"><svg class="icon"><use href="#i-stairs"/></svg><span>Steps</span></div><div id="goalStepsEditor"></div><button type="button" class="goal-step-add" data-step-add>+ Add Step</button>`;
   else if(type==='todayFocus'||type==='weeklyFocus')fields=formLine('Your focus',`<textarea name="title" maxlength="180" placeholder="Write your focus here…">${esc(state[type])}</textarea>`);
   else fields=name(item?.title);
   $('modalFields').innerHTML=fields;
+  const goalPicker=$('modalFields').querySelector('select[name="goalId"]');
+  const areaPicker=$('modalFields').querySelector('select[name="area"]');
+  if(goalPicker&&areaPicker&&goalPicker.value)areaPicker.disabled=true;
   if(type==='goal')renderGoalStepRows((item?.actions||[]).map(a=>({id:a.id,title:a.title})));
   $('modalBack').classList.add('open');
   // Keep the keyboard closed on open; text fields focus only after a user taps them.
 }
-function closeModal(){$('modalBack').classList.remove('open');modalMode=null;modalId=null;modalParent=null;}
+function closeModal(){$('modalBack').classList.remove('open');modalMode=null;modalId=null;modalParent=null;window.blueprintAreaCreationContext='';}
 function uid(){return Date.now()+Math.floor(Math.random()*100000);}
 let lastMainTab='today';
 let activePlanTab='overview';
@@ -1242,11 +1251,13 @@ function handleSave(event){
     const nextRank=Math.max(0,...state.tasks.filter(x=>x.priority).map(x=>x.priorityRank||0))+1;
     const priorityRank=priority?(wasRanked?t.priorityRank:nextRank):0;
     const actionIndex=t&&String(t.goalId)===goalId?t.actionIndex??'':'';
-    const fields={title,date:dueDate,dueDate,scheduledDate:t?.scheduledDate??'',scheduledTime:t?.scheduledTime??'',priority,priorityRank,goalId,actionIndex};
+    const targetGoal=state.goals.find(g=>String(g.id)===goalId);
+    const area=targetGoal?.category||state.categories.find(a=>a===String(fd.get('area')||''))||'';
+    const fields={title,date:dueDate,dueDate,scheduledDate:t?.scheduledDate??'',scheduledTime:t?.scheduledTime??'',priority,priorityRank,goalId,actionIndex,area};
     if(t){if(String(t.goalId||'')!==goalId){t.actionId='';t.actionIndex='';}Object.assign(t,fields);}else state.tasks.push({id:uid(),...fields,done:false});
   }
   else if(modalMode==='event'){const e=existing('events');const fields={title,date,time:String(fd.get('time')||'09:00')};if(e)Object.assign(e,fields);else state.events.push({id:uid(),...fields});}
-  else if(modalMode==='habit'){const h=existing('habits'),schedule=fd.getAll('schedule').map(Number),target=state.goals.find(g=>String(g.id)===String(fd.get('goalId')||'')),goalId=target?String(target.id):'',rawTarget=String(fd.get('weeklyTarget')||'').trim(),weeklyTarget=rawTarget?Number(rawTarget):null;if(weeklyTarget!==null&&(!Number.isInteger(weeklyTarget)||weeklyTarget<1||weeklyTarget>schedule.length)){alert('The weekly target must be between 1 and the number of selected days.');return;}if(h){const previousGoalId=String(h.goalId||'');Object.assign(h,{title,schedule,goalId,weeklyTarget,actionId:previousGoalId===goalId?(h.actionId||''):''});}else state.habits.push({id:uid(),title,schedule,days:{},createdOn:localToday(),goalId,actionId:'',weeklyTarget});}
+  else if(modalMode==='habit'){const h=existing('habits'),schedule=fd.getAll('schedule').map(Number),target=state.goals.find(g=>String(g.id)===String(fd.get('goalId')||'')),goalId=target?String(target.id):'',rawTarget=String(fd.get('weeklyTarget')||'').trim(),weeklyTarget=rawTarget?Number(rawTarget):null;if(weeklyTarget!==null&&(!Number.isInteger(weeklyTarget)||weeklyTarget<1||weeklyTarget>schedule.length)){alert('The weekly target must be between 1 and the number of selected days.');return;}if(h){const previousGoalId=String(h.goalId||'');Object.assign(h,{title,schedule,goalId,area:target?.category||state.categories.find(a=>a===String(fd.get('area')||''))||'',weeklyTarget,actionId:previousGoalId===goalId?(h.actionId||''):''});}else state.habits.push({id:uid(),title,schedule,days:{},createdOn:localToday(),goalId,area:target?.category||state.categories.find(a=>a===String(fd.get('area')||''))||'',actionId:'',weeklyTarget});}
   else if(modalMode==='goal'){
     const g=existing('goals'),category=state.categories.find(c=>c===String(fd.get('category')||''))||state.categories[0],motivation=String(fd.get('motivation')||'').trim().slice(0,3000);
     const raw=readGoalStepRows().filter(a=>a.title.trim());
@@ -1300,10 +1311,11 @@ document.addEventListener('click',(e)=>{
     if(duplicate){alert('That category already exists.');return;}
     state.categories=state.categories.map(c=>c===old?cleaned:c);
     for(const g of state.goals)if(g.category===old)g.category=cleaned;
+    for(const type of ['tasks','habits','projects'])for(const item of state[type]||[])if(item.area===old)item.area=cleaned;
     if(selectedCategory===old)selectedCategory=cleaned;save();render();return;
   }
   const remove=e.target.closest('[data-cat-remove]');
-  if(remove){const cat=remove.dataset.catRemove;if(state.goals.some(g=>g.category===cat)){alert('Move these goals into another category first.');return;}
+  if(remove){const cat=remove.dataset.catRemove;if(state.goals.some(g=>g.category===cat)||['tasks','habits','projects'].some(type=>state[type]?.some(item=>item.area===cat))){alert('Move the items out of this Area first.');return;}
     if(!confirm('Delete category "'+cat+'"?'))return;
     state.categories=state.categories.filter(c=>c!==cat);if(!state.categories.length)state.categories=['Personal'];
     if(selectedCategory===cat)selectedCategory='All';save();render();return;
@@ -1365,6 +1377,12 @@ $('nextWeek').onclick=()=>{selectedWeek=plusDays(selectedWeek,7);render();};
 $('v916HabitPrev').onclick=()=>{$('prevWeek').click();};
 $('v916HabitNext').onclick=()=>{$('nextWeek').click();};
 $('modalForm').addEventListener('submit',handleSave);
+$('modalForm').addEventListener('change',e=>{
+  if(e.target.name!=='goalId')return;
+  const picker=$('modalFields').querySelector('select[name="area"]');if(!picker)return;
+  const goal=state.goals.find(g=>String(g.id)===e.target.value);
+  picker.disabled=!!goal;if(goal)picker.value=goal.category;
+});
 $('cancelModal').onclick=closeModal;
 $('modalBack').onclick=e=>{if(e.target===$('modalBack'))closeModal();};
 function deletePlannerItem(type,id,fromModal=false){
@@ -1379,8 +1397,8 @@ function deletePlannerItem(type,id,fromModal=false){
       :'Delete this item? This cannot be undone.';
   if(!confirm(message))return false;
   if(type==='goal'){
-    for(const t of state.tasks.filter(t=>String(t.goalId)===String(id))){t.goalId='';t.actionId='';t.actionIndex='';}
-    for(const h of state.habits.filter(h=>String(h.goalId)===String(id))){h.goalId='';h.actionId='';}
+    for(const t of state.tasks.filter(t=>String(t.goalId)===String(id))){t.area=item.category;t.goalId='';t.actionId='';t.actionIndex='';}
+    for(const h of state.habits.filter(h=>String(h.goalId)===String(id))){h.area=item.category;h.goalId='';h.actionId='';}
     expandedGoals.delete(String(id));
   }
   if(type==='task')for(const n of state.ideas)for(const a of n.actions||[])if(String(a.taskId)===String(id))a.taskId='';
@@ -1610,7 +1628,8 @@ function v6RenderSketches(p){
 }
 function v6CreateProject(name){
   name=String(name||'').trim().slice(0,120);if(!name)return;
-  const p={id:v6Id(),title:name,notes:[],actions:[],library:[],created:v6Now()};
+  const area=state.categories.includes(window.blueprintAreaCreationContext)?window.blueprintAreaCreationContext:'';
+  const p={id:v6Id(),title:name,area,notes:[],actions:[],library:[],created:v6Now()};
   state.projects.push(p);save();v6OpenProject(p.id);return p;
 }
 function v6ActionToTask(id){
@@ -1955,4 +1974,5 @@ v6Normalize();v6Render();
 <script src="project-overview-v919.js"></script>
 <script src="library-order-v923.js"></script>
 <script src="local-storage-health-v926.js"></script>
+<script src="areas-v939.js"></script>
 </body></html>

@@ -1,0 +1,81 @@
+/* Blueprint v9.39 — responsive adaptive Areas dashboard */
+#myplan #overview #bpAreasRoot{display:block;max-width:1080px;margin:0 auto 14px;}
+.bp-areas-header,.bp-area-detail-title{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.bp-areas-header{margin:4px 0 16px;align-items:flex-end;}
+.bp-areas-header h1,.bp-area-detail-head h1{font:normal clamp(27px,4vw,34px) Georgia,serif;letter-spacing:-.5px;margin:3px 0 0;color:var(--ink);}
+.bp-area-heading-actions{display:flex;align-items:center;gap:7px;}
+.bp-area-heading-actions .primary-button{min-height:40px;}
+.bp-area-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.bp-area-tile{display:flex;flex-direction:column;align-items:stretch;justify-content:center;text-align:left;gap:14px;min-height:108px;color:var(--ink);cursor:pointer;}
+.bp-area-tile-title{display:flex;align-items:center;gap:9px;min-width:0;font-size:16px;}
+.bp-area-tile-title strong{overflow-wrap:anywhere;flex:1;}
+.bp-area-tile-title .icon{width:20px;height:20px;stroke:var(--secondary-ui);}
+.bp-area-chevron{margin-left:auto;color:var(--muted);font-size:19px;line-height:1;flex:none;}
+.bp-area-tile-sub{display:flex;flex-wrap:wrap;gap:7px 12px;font-size:11px;color:var(--muted);min-height:18px;line-height:1.3;}
+.bp-area-stat{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+.bp-area-stat .icon{width:13px;height:13px;stroke:var(--secondary-ui);}
+.bp-area-tile:focus-visible,.bp-area-item button:focus-visible,.bp-area-project-open:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:3px;}
+.bp-area-detail-head{position:relative;display:grid;gap:11px;margin:0 0 14px;}
+.bp-area-back{padding:7px 0;background:none;border:0;justify-self:start;color:var(--secondary-ui);font-weight:650;}
+.bp-area-detail-title h1{overflow-wrap:anywhere;min-width:0;}
+.bp-area-detail-title .primary-button{flex:none;min-height:41px;}
+.bp-area-add-menu{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:6px;}
+.bp-area-add-menu button{min-height:43px;background:var(--primary-wash);color:var(--ink);border:0;border-radius:8px;font-size:13px;cursor:pointer;}
+.bp-area-sections{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;}
+.bp-area-section{padding:14px 16px;}
+.bp-area-section-head{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.bp-area-section-head h3{display:flex;align-items:center;gap:9px;font:600 16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;flex:1;}
+.bp-area-section-head .icon{stroke:var(--secondary-ui);width:19px;height:19px;}
+.bp-area-count{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;}
+.bp-area-item{display:flex;align-items:center;gap:10px;min-height:45px;border-top:1px solid var(--line);}
+.bp-area-item input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:19px;height:19px;border:1.5px solid var(--secondary-ui);border-radius:5px;background:var(--surface);display:grid;place-items:center;margin:0;cursor:pointer;}
+.bp-area-item input[type=checkbox]:checked{background:var(--primary);border-color:var(--primary);}
+.bp-area-item input[type=checkbox]:checked:after{content:'✓';color:var(--surface);font-size:13px;font-weight:800;}
+.bp-area-item input[type=checkbox]:disabled{opacity:.4;cursor:not-allowed;}
+.bp-area-item-title{font-size:13px;line-height:1.35;flex:1;min-width:0;overflow-wrap:anywhere;}
+button.bp-area-item-title{border:0;background:none;color:var(--ink);text-align:left;padding:11px 3px;cursor:pointer;}
+.bp-done{color:var(--muted)!important;text-decoration:line-through;}
+.bp-area-step .bp-area-item-title{color:var(--muted);}
+.bp-area-goal{border-top:1px solid var(--line);}
+.bp-area-goal summary{list-style:none;display:flex;align-items:center;gap:9px;padding:12px 0;cursor:pointer;min-height:46px;}
+.bp-area-goal summary::-webkit-details-marker{display:none;}
+.bp-area-goal summary .icon{stroke:var(--secondary-ui);width:17px;height:17px;}
+.bp-area-goal summary strong{font-weight:600;flex:1;font-size:13px;}
+.bp-area-goal-body{padding:0 0 10px 25px;}
+.bp-area-goal-body .text-button{margin-top:4px;}
+.bp-area-more{border:0;background:none;color:var(--secondary-ui);font-weight:650;font-size:12px;padding:12px 0 0;cursor:pointer;}
+.bp-area-project{display:flex;align-items:center;gap:7px;min-height:48px;border-top:1px solid var(--line);}
+.bp-area-project-open{display:flex;align-items:center;gap:8px;flex:1;min-width:0;background:none;border:0;padding:10px 0;color:var(--ink);text-align:left;cursor:pointer;}
+.bp-area-project-open span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere;font-size:13px;}
+.bp-area-project-open .icon{width:17px;height:17px;stroke:var(--secondary-ui);}
+.bp-area-project-move select{max-width:115px;min-height:35px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--muted);font-size:11px;}
+.bp-area-empty{display:flex;align-items:center;flex-direction:column;gap:9px;text-align:center;padding:32px 20px;}
+.bp-area-empty h3{margin:0;font:normal 22px Georgia,serif;}
+.bp-area-empty p{margin:0 0 8px;max-width:330px;color:var(--muted);font-size:13px;}
+.bp-area-empty>.icon{height:30px;width:30px;stroke:var(--secondary-ui);}
+.bp-area-manager{margin-top:14px;}
+.bp-area-manager h3{font:normal 19px Georgia,serif;margin:0 0 5px;}
+.bp-area-manage-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px;}
+.bp-area-manage-row strong{flex:1;overflow-wrap:anywhere;}
+.bp-area-manage-row button{border:0;background:none;color:var(--secondary-ui);padding:8px;min-height:36px;}
+.bp-area-manager .bp-area-manage-row button:last-child{color:var(--muted);}
+.bp-visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;border:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+/* Hide duplicate old overview data while preserving Weekly Blueprint action. */
+#myplan #overview>.wb-overview-sections{display:none;}
+#myplan #overview>.wb-overview-feature{max-width:1080px;margin:16px auto 0;padding:12px 14px;}
+#myplan #overview>.wb-overview-feature .wb-overview-top{display:none;}
+#myplan #overview>.wb-overview-feature .wb-overview-actions{margin:0;}
+#myplan #overview.bp-area-detail>.wb-overview-feature{display:none;}
+#myplan #goals>.category-card{display:none;}
+@media(max-width:375px){
+  .bp-area-grid{grid-template-columns:1fr;}
+  .bp-areas-header{flex-wrap:wrap;align-items:center;}
+  .bp-area-tile{min-height:80px;gap:9px;}
+  .bp-area-add-menu{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .bp-area-project-move select{max-width:90px;}
+}
+@media(min-width:760px){
+  .bp-area-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .bp-area-sections{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;}
+}
+@media(prefers-reduced-motion:reduce){.bp-area-tile,.bp-area-section{transition:none!important;}}

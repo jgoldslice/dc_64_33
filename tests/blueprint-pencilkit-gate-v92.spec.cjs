@@ -28,10 +28,15 @@ test('native iPad offers opt-in PencilKit and never mutates original SVG/project
     window.__v92Calls=[];
     window.Capacitor={
       isNativePlatform:()=>true,isPluginAvailable:name=>name==='BlueprintPencil',
-      Plugins:{BlueprintPencil:{
-        capabilities:async()=>({available:true,schemaVersion:1}),
-        openEditor:async options=>{window.__v92Calls.push(options);return {pageId:options.pageId};}
-      }}
+      nativePromise:async(name,method,options)=>{
+        if(name!=='BlueprintPencil')throw Error('Unexpected native plugin');
+        if(method==='capabilities')return {available:true,schemaVersion:1};
+        if(method==='openEditor'){
+          window.__v92Calls.push(options);
+          return {opened:true,pageId:options.pageId};
+        }
+        throw Error('Unexpected native call');
+      }
     };
   });
   await page.goto(base);
@@ -54,7 +59,7 @@ test('native iPad offers opt-in PencilKit and never mutates original SVG/project
   expect(info.calls[0].pageId).toBe(JSON.parse(before).activeNotePageId);
   expect(info.calls[0].pageIds).toEqual(JSON.parse(before).notePages.map(p=>String(p.id)));
   expect(info.project).toBe(before);
-  expect(info.announcement).toContain('saved separately');
+  expect(info.announcement).toContain('not in Blueprint backups');
   await expect(button).toBeEnabled();
 });
 

@@ -7,6 +7,21 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.39 adaptive Plan → Areas dashboard (feature branch; QA pending)
+
+**Owner-approved design:** Version B (compact cards), no goal progress bars in the Area dashboard. Areas may contain any combination of goals, independent tasks, habits, and Brainstorm projects; an Area with only tasks/habits is valid. The Plan tab opens on Areas, with one adaptive dashboard per Area.
+
+**Implemented on `feature/areas-dashboard-v939`:**
+- `areas-v939.js` and `areas-v939.css`: responsive Areas overview and single-Area dashboard; hide missing/empty sections; show a useful empty-Area welcome; show up to three records per section with See all; expand goals to reveal their associated steps/tasks/habits without duplicating them in independent task/habit cards. No progress bars in these new Area cards.
+- Reuses the existing `state.categories` and `goal.category` as the Area source of truth, keeping original category labels and older saved records intact. Tasks, habits and projects acquire *optional* additive `area` fields in the existing planner JSON. Goal-linked tasks/habits inherit the goal's Area dynamically; project-linked tasks can inherit their project's Area. Unassigned records remain accessible in a conditional Unassigned tile.
+- Add to Area offers Task, Habit, Goal and Project with default Area assignment. Existing task/habit/goal dialogs have Area choices; existing projects can be reassigned from their Area dashboard. Renaming an Area updates explicit assignments, and deletion is refused while records still reference it. Deleting a goal preserves its Area on formerly linked tasks/habits.
+- Existing Today/Week planners, the other Plan panels and the Weekly Blueprint launcher remain intact. No migration, new localStorage key, IndexedDB changes, note/PencilKit changes, attachment changes, data reset or backup-format version bump. New assets were added to `sw.js` and its cache key incremented.
+- `tests/areas-v939.test.cjs` exercises goal inheritance, independent task/habit-only Areas, projects, unassigned records, old assignments and HTML/cache wiring.
+
+**Verification scope:** Source and regression test files authored on GitHub. Node tests, browser/device UI validation, GitHub Actions and Xcode compilation are **not claimed until they actually run**. The local Capacitor/Xcode wrapper is separate; a GitHub commit does not update an installed app.
+
+**Release/QA:** Before installing on a real device, verify existing JSON backup/export/import, add/rename/delete Areas, Goal inheritance, no-goal/no-project Areas, unassigned records, task/habit updates, project navigation, iPhone compact width, iPad Split View and offline reload. Preserve local data, use the checked-in `scripts/stage-ios-web.py` staging command when preparing a native build, then `npx cap copy ios` and install via Xcode without deleting the existing app.
+
 ## 2026-11-18 — v9.38 compact Notes toolbar: Textbox size menu and PencilKit label (web committed; iPad QA pending)
 
 **Latest owner request:** Clean the Notes toolbar by combining font size into the T/Textbox tool, remove the visible Web tools switch, and use the constant label **PencilKit** rather than alternating "Draw on page" and "Edit content".
