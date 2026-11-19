@@ -62,22 +62,21 @@ function harness(nativePromise){
   vm.runInNewContext(source,{window:view,document:doc,confirm:()=>true,
     alert:message=>alerts.push(message),setTimeout,clearTimeout});
   const group=inserts[0]?.[0];
-  const button=group?.children[0],toggle=group?.children[1];
-  return {penGroup,saveGroup,group,button,toggle,inserts,calls,alerts,selection,status};
+  const button=group?.children[0];
+  return {penGroup,saveGroup,group,button,inserts,calls,alerts,selection,status};
 }
 
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 
 test('native-capable iPad replaces duplicate web ink controls, preserves other tools',async()=>{
   const a=harness(method=>Promise.resolve(method==='capabilities'
-    ?{available:true,schemaVersion:1}:{opened:true}));
+    ?{available:true,schemaVersion:1,embeddedAvailable:true}:{opened:true}));
   await tick();
   assert.equal(a.inserts.length,1);
   assert.equal(a.inserts[0][1],a.penGroup);
   assert.equal(a.penGroup.classList.contains('v92-web-ink-collapsed'),true);
   assert.equal(a.saveGroup.classList.contains('v92-web-ink-collapsed'),true);
-  assert.equal(a.toggle.hidden,false);
-  assert.equal(a.toggle.attributes['aria-pressed'],'false');
+  assert.equal(a.group.children.length,1); // No extra Web tools button.
   assert.deepEqual(a.selection,['select']);
   await a.button.click();
   assert.equal(a.button.textContent,'Native ink');
@@ -85,17 +84,13 @@ test('native-capable iPad replaces duplicate web ink controls, preserves other t
   assert.match(a.status.textContent,/editor opened/);
 });
 
-test('legacy ink toggle restores existing SVG editing controls reversibly',async()=>{
+test('older full-screen native plugin keeps the original web SVG tools',async()=>{
   const a=harness(()=>Promise.resolve({available:true,schemaVersion:1}));
   await tick();
-  a.toggle.click();
   assert.equal(a.penGroup.classList.contains('v92-web-ink-collapsed'),false);
   assert.equal(a.saveGroup.classList.contains('v92-web-ink-collapsed'),false);
-  assert.equal(a.toggle.attributes['aria-pressed'],'true');
-  a.toggle.click();
-  assert.equal(a.penGroup.classList.contains('v92-web-ink-collapsed'),true);
-  assert.equal(a.toggle.attributes['aria-pressed'],'false');
-  assert.deepEqual(a.selection,['select','select']);
+  assert.equal(a.group.children.length,1);
+  assert.equal(a.selection.length,0);
 });
 
 test('unavailable PencilKit never hides old SVG tools',async()=>{
@@ -103,7 +98,7 @@ test('unavailable PencilKit never hides old SVG tools',async()=>{
   await tick();
   assert.equal(a.penGroup.classList.contains('v92-web-ink-collapsed'),false);
   assert.equal(a.saveGroup.classList.contains('v92-web-ink-collapsed'),false);
-  assert.equal(a.toggle.hidden,true);
+  assert.equal(a.group.children.length,1);
   assert.equal(a.selection.length,0);
 });
 
@@ -111,5 +106,5 @@ test('older native plugin capability schema preserves web ink tools',async()=>{
   const a=harness(()=>Promise.resolve({available:true,schemaVersion:0}));
   await tick();
   assert.equal(a.penGroup.classList.contains('v92-web-ink-collapsed'),false);
-  assert.equal(a.toggle.hidden,true);
+  assert.equal(a.group.children.length,1);
 });
