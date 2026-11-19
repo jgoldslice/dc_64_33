@@ -28,8 +28,48 @@
   if(!mount)return;
   const escapeHtml=text=>String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const icon=name=>'<svg class="icon" aria-hidden="true"><use href="#i-'+name+'"></use></svg>';
-  let selected=null,managing=false,pending=false,menuOpen=false;
+  let selected=null,pending=false,menuOpen=false;
   const expanded=new Set(),openGoals=new Set();
+  let areaMenu=null,press=null,pressTimer=null,suppressCardTap=null;
+  const HOLD_MS=520,MOVE_LIMIT=12;
+  function cancelPress(){
+    if(pressTimer!==null)clearTimeout(pressTimer);
+    pressTimer=null;press=null;
+  }
+  function closeAreaMenu(restoreFocus=false){
+    if(!areaMenu)return;
+    const area=areaMenu.dataset.area;
+    areaMenu.remove();areaMenu=null;
+    if(restoreFocus){
+      const tile=[...mount.querySelectorAll('[data-bpa-open]')].find(el=>el.dataset.bpaOpen===area);
+      tile?.focus({preventScroll:true});
+    }
+  }
+  function showAreaMenu(area,tile){
+    if(area===INBOX||!state.categories.includes(area))return;
+    cancelPress();
+    closeAreaMenu();
+    const layer=document.createElement('div');
+    layer.className='bp-area-menu-layer';
+    layer.dataset.area=area;
+    const rect=tile.getBoundingClientRect();
+    const menuWidth=Math.min(240,window.innerWidth-24);
+    const left=Math.min(Math.max(12,rect.right-menuWidth),window.innerWidth-menuWidth-12);
+    const top=Math.max(12,Math.min(rect.top,window.innerHeight-210));
+    layer.innerHTML='<div class="bp-area-context-menu" role="dialog" aria-modal="true" aria-label="Options for '+escapeHtml(area)+'" style="left:'+Math.round(left)+'px;top:'+Math.round(top)+'px;width:'+menuWidth+'px">'+
+      '<div class="bp-area-context-title">'+escapeHtml(area)+'</div>'+
+      '<button type="button" data-bpa-rename="'+escapeHtml(area)+'">Rename</button>'+
+      '<button type="button" class="bp-area-danger" data-bpa-remove="'+escapeHtml(area)+'">Delete</button>'+
+      '<button type="button" data-bpa-menu-close>Cancel</button></div>';
+    const openedAt=Date.now();
+    layer.addEventListener('click',event=>{
+      if(event.target===layer&&Date.now()-openedAt>550)closeAreaMenu(true);
+    });
+    document.body.append(layer);
+    areaMenu=layer;
+    layer.querySelector('[data-bpa-rename]')?.focus({preventScroll:true});
+  }
+
   function display(area){return area===INBOX?'Unassigned':area;}
   function counts(data){
     return [['goals','Goals','goal'],['tasks','Tasks','check'],['habits','Habits','habit'],['projects','Projects','plan']]
@@ -78,12 +118,11 @@
     const tiles=keys.map(a=>{
       const data=contents(state,a);
       const count=Object.values(data).reduce((n,items)=>n+items.length,0);
-      return '<button type="button" class="card bp-area-tile" data-bpa-open="'+escapeHtml(a)+'"><span class="bp-area-tile-title">'+icon(a===INBOX?'check':'plan')+'<strong>'+escapeHtml(display(a))+'</strong><span class="bp-area-chevron">›</span></span>'+
+      return '<button type="button" class="card bp-area-tile" data-bpa-open="'+escapeHtml(a)+'" '+(a===INBOX?'':'aria-haspopup="dialog" title="Press and hold for options"')+'><span class="bp-area-tile-title">'+icon(a===INBOX?'check':'plan')+'<strong>'+escapeHtml(display(a))+'</strong><span class="bp-area-chevron">›</span></span>'+
         '<span class="bp-area-tile-sub">'+(count?counts(data):'No items yet')+'</span></button>';
     }).join('');
-    const manager=managing?'<section class="card bp-area-manager"><h3>Manage Areas</h3>'+state.categories.map(a=>'<div class="bp-area-manage-row"><strong>'+escapeHtml(a)+'</strong><button type="button" data-bpa-rename="'+escapeHtml(a)+'">Rename</button><button type="button" data-bpa-remove="'+escapeHtml(a)+'">Delete</button></div>').join('')+'</section>':'';
-    mount.innerHTML='<header class="bp-areas-header"><div><span class="eyebrow">Your responsibilities</span><h1>Areas</h1></div><div class="bp-area-heading-actions"><button type="button" class="text-button" data-bpa-manage aria-pressed="'+managing+'">'+(managing?'Done':'Manage')+'</button><button type="button" class="primary-button" data-bpa-new>+ Area</button></div></header>'+
-      '<div class="bp-area-grid">'+tiles+'</div>'+manager;
+    mount.innerHTML='<header class="bp-areas-header"><div><span class="eyebrow">Your responsibilities</span><h1>Areas</h1></div><div class="bp-area-heading-actions"><button type="button" class="primary-button" data-bpa-new>+ Area</button></div></header>'+
+      '<div class="bp-area-grid">'+tiles+'</div>';
     document.getElementById('overview')?.classList.remove('bp-area-detail');
   }
   function renderDetail(){
@@ -103,28 +142,72 @@
         section('Projects','projects',data.projects,projectRow)+'</div>':
         '<div class="card bp-area-empty">'+icon('plan')+'<h3>Nothing here yet</h3><p>Add a task, habit, goal, or project. Goals and projects are completely optional.</p><button type="button" class="secondary-button" data-bpa-add-toggle>+ Add to '+escapeHtml(display(selected))+'</button></div>');
   }
-  function render(){if(!mount)return;if(selected===null)renderOverview();else renderDetail();}
+  function render(){if(!mount)return;closeAreaMenu();cancelPress();if(selected===null)renderOverview();else renderDetail();}
   function refresh(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render();});}
   root.blueprintAreas={refresh,model};
   const trySave=()=>{save(true);refresh();};
+  // Native-feeling long press for touch/Pencil; cancel when scrolling or dragging.
+  mount.addEventListener('pointerdown',event=>{
+    const tile=event.target.closest?.('[data-bpa-open]');
+    if(!tile||tile.dataset.bpaOpen===INBOX||event.isPrimary===false||event.button!==0)return;
+    cancelPress();
+    press={tile,id:event.pointerId,x:event.clientX,y:event.clientY};
+    pressTimer=setTimeout(()=>{
+      if(!press||press.tile!==tile)return;
+      suppressCardTap=tile;
+      showAreaMenu(tile.dataset.bpaOpen,tile);
+    },HOLD_MS);
+  });
+  mount.addEventListener('pointermove',event=>{
+    if(press&&event.pointerId===press.id&&
+       Math.hypot(event.clientX-press.x,event.clientY-press.y)>MOVE_LIMIT)cancelPress();
+  });
+  mount.addEventListener('pointerup',()=>{
+    cancelPress();
+    setTimeout(()=>{suppressCardTap=null;},0);
+  });
+  mount.addEventListener('pointercancel',cancelPress);
+  document.addEventListener('scroll',cancelPress,true);
+  window.addEventListener('blur',cancelPress);
+  mount.addEventListener('contextmenu',event=>{
+    const tile=event.target.closest?.('[data-bpa-open]');
+    if(!tile||tile.dataset.bpaOpen===INBOX)return;
+    event.preventDefault();
+    showAreaMenu(tile.dataset.bpaOpen,tile);
+  });
+  mount.addEventListener('keydown',event=>{
+    const tile=event.target.closest?.('[data-bpa-open]');
+    if(tile&&tile.dataset.bpaOpen!==INBOX&&
+       (event.key==='ContextMenu'||(event.shiftKey&&event.key==='F10'))){
+      event.preventDefault();
+      showAreaMenu(tile.dataset.bpaOpen,tile);
+    }
+  });
+  document.addEventListener('keydown',event=>{
+    if(event.key==='Escape'&&areaMenu){event.preventDefault();closeAreaMenu(true);}
+  });
   document.addEventListener('click',event=>{
-    const btn=event.target.closest('[data-bpa-open],[data-bpa-back],[data-bpa-new],[data-bpa-manage],[data-bpa-rename],[data-bpa-remove],[data-bpa-add-toggle],[data-bpa-add-kind],[data-bpa-expand],[data-bpa-edit-goal],[data-bpa-project]');
+    const btn=event.target.closest('[data-bpa-open],[data-bpa-back],[data-bpa-new],[data-bpa-rename],[data-bpa-remove],[data-bpa-menu-close],[data-bpa-add-toggle],[data-bpa-add-kind],[data-bpa-expand],[data-bpa-edit-goal],[data-bpa-project]');
     if(!btn)return;
-    if(btn.hasAttribute('data-bpa-open')){selected=btn.dataset.bpaOpen;menuOpen=false;expanded.clear();render();return;}
+    if(btn.hasAttribute('data-bpa-open')){
+      if(suppressCardTap===btn){suppressCardTap=null;event.preventDefault();return;}
+      if(areaMenu)return;
+      selected=btn.dataset.bpaOpen;menuOpen=false;expanded.clear();render();return;
+    }
+    if(btn.hasAttribute('data-bpa-menu-close')){closeAreaMenu(true);return;}
     if(btn.hasAttribute('data-bpa-back')){selected=null;menuOpen=false;render();return;}
     if(btn.hasAttribute('data-bpa-add-toggle')){menuOpen=!menuOpen;render();return;}
     if(btn.hasAttribute('data-bpa-expand')){const key=selected+':'+btn.dataset.bpaExpand;expanded.has(key)?expanded.delete(key):expanded.add(key);render();return;}
-    if(btn.hasAttribute('data-bpa-manage')){managing=!managing;render();return;}
     if(btn.hasAttribute('data-bpa-new')){
       const next=prompt('New Area name');
       if(next===null)return;
       const name=normalizedCategory(next).slice(0,60);
       if(!name)return;
-      if(addCategory(name)){selected=name;managing=false;render();}
+      if(addCategory(name)){selected=name;render();}
       return;
     }
     if(btn.hasAttribute('data-bpa-rename')){
-      const before=btn.dataset.bpaRename,next=prompt('Rename Area',before);
+      const before=btn.dataset.bpaRename;closeAreaMenu();const next=prompt('Rename Area',before);
       if(next===null)return;
       const name=normalizedCategory(next).slice(0,60);
       if(!name||name===before)return;
@@ -137,7 +220,7 @@
       trySave();render();return;
     }
     if(btn.hasAttribute('data-bpa-remove')){
-      const area=btn.dataset.bpaRemove;
+      const area=btn.dataset.bpaRemove;closeAreaMenu();
       if(contents(state,area).goals.length||state.tasks.some(t=>t.area===area)||state.habits.some(h=>h.area===area)||state.projects.some(p=>p.area===area)){
         alert('Move the items out of this Area first.');return;
       }
