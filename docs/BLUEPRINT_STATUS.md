@@ -7,6 +7,25 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.37 native PencilKit in Focus mode (web committed; Mac/iPad installation pending)
+
+**Owner-reported device finding:** In-page native PencilKit now works in normal Notes on iPad, but entering Focus loses the native tool picker and the old web Pen tools are unavailable. This is **not** evidence that the native drawing files were lost.
+
+**Root cause verified in current code:** `notes-workspace-v928.js` physically reparents `#v76Editor` to `document.body` in Focus mode, hides the usual Notes toolbar, and automatically sets the web SVG pen. Meanwhile `pencilkit-inline-v936.js` computed the native viewport clip using `#projectNotes`, which is no longer a visible ancestor during Focus. That sends empty geometry and removes the native overlay/PKToolPicker. The Focus menu only included legacy SVG actions.
+
+**Implemented in GitHub (web):**
+- `pencilkit-inline-v936.js` clips native ink to the moved `#v76Editor` when focused, not the hidden former `#projectNotes` pane. Focus state is included in the `showInline` payload so native code can reacquire PencilKit tool-picker visibility once on each Focus transition.
+- Adds compact **Draw with PencilKit / Edit content** to the existing Focus header; entering Focus activates native drawing. The native tool picker handles pen, eraser, lasso, color and undo when available.
+- `notes-workspace-v928.js` signals Focus enter/exit via `blueprint:notes-focus-change`, and does not activate the old SVG pen on supported native devices. Browser/PWA and older native builds retain web Focus tools.
+- `notes-workspace-v928.css` removes legacy **Tools**, **Web tools** and legacy ink menu from the supported iOS presentation while preserving source code and all existing SVG strokes for fallback/recovery. No permanent deletion, migration or modification to existing note data.
+- `tests/pencilkit-focus-v937.test.cjs` adds simulated DOM coverage for Focus clipping, native editing, content editing, returning to normal Notes, and unsupported native fallback; `sw.js` cache version refreshed.
+
+**Separate local Swift patch package:** `blueprint-pencilkit-focus-v937.zip` includes a guarded installer that updates only the known Xcode-compiled top-level `ios/App/BlueprintPencilPlugin.swift`, **not** the duplicate file in `ios/App/App`. It backs up the original and adds `focused` handling and a re-assertion of the `PKToolPicker` first responder only after Focus transitions, not on every scroll event. It does not change `PKDrawing` files, the drawing storage layout, App Group sharing, or the web backup format. The installer refuses unknown source structures and is idempotent.
+
+**Verification:** Current inline JS source parsed in a V8 JavaScript function parser. A simulated run of actual `pencilkit-inline-v936.js` confirmed ordinary Notes mode, Focus mode with the old Notes pane having a zero-width bounding rectangle, visible positive-size Focus clip, native drawing mode and Focus header controls, return to content editing, Focus exit, and older plugin fallback. Standalone Swift parser `swiftc -frontend -parse` passed for the native reference patch; guarded installer logic was exercised using a test Xcode-style file and a Swift parser shim, including repeat-install no-op. GitHub test file was committed but full GitHub Actions/Playwright and physical iPad Focus testing are **not** confirmed. The actual local Mac Swift app is not modified by pushing GitHub.
+
+**Release gates:** Install the narrow Swift patch and stage current GitHub web files, run `npx cap copy ios`, build/install via Xcode without deleting the app, then verify normal/Focus transitions, native toolbar, finger pan/pinch, 50/100/200% zoom, page changes, Done, and relaunch persistence. Native `PKDrawing` sidecars are still separate from SVG/text/image notes and excluded from complete backups and cross-device sync. Do not delete legacy ink or reset storage.
+
 ## 2026-11-18 — v9.36 opt-in in-page PencilKit preview (Swift installation and iPad QA pending)
 
 **Request:** Owner confirmed that the previous "Native ink" still opened a full-screen test page. This was expected from its actual `openEditor` implementation: the v9.35 change only collapsed redundant web ink buttons, and did not embed PencilKit. The requested behavior is drawing on the existing Blueprint Notes sheet, with native Apple drawing tools and web text/images/pages preserved.
