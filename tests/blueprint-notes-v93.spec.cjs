@@ -1,12 +1,13 @@
 'use strict';
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 test.use({browserName:'chromium',viewport:{width:1366,height:1024},isMobile:true,hasTouch:true});
 const base=process.env.TEST_URL||'http://127.0.0.1:8765/';
 async function openNotebook(page){
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept('Notes V93 Test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Notes V93 Test');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Editor')).toBeVisible();
 }
@@ -17,8 +18,8 @@ test('new page is created immediately; options menu lives next to its name',asyn
   await expect(page.locator('#v811PageList .v811-current .v811-page-labels strong')).toHaveText('Page 2');
   await page.locator('#v811PageList .v811-current .v811-page-rename').click();
   await expect(page.locator('#v811PageList .v811-current #v76PageMenu')).toBeVisible();
-  page.once('dialog',d=>d.accept('Experiments'));
   await page.locator('#v76RenamePage').click();
+  await submitSheet(page, 'Experiments');
   await expect(page.locator('#v811PageList .v811-current .v811-page-labels strong')).toHaveText('Experiments');
 });
 test('full-width notes hides Pages and restores it without changing page',async({page})=>{

@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:390,height:844},isMobile:true,hasTouch:true});
@@ -5,8 +6,8 @@ test.use({browserName:'chromium',viewport:{width:390,height:844},isMobile:true,h
 async function notebook(page){
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Reliability test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Reliability test');
   await page.locator('[data-v919-project-open="notes"]').click();
   await page.locator('[data-v76-mode="pen"]').click();
   const ink=page.locator('#v76Ink');
@@ -181,8 +182,8 @@ test('responsive notebook controls remain usable and Reduce Motion is respected'
     await page.setViewportSize({width,height:1024});
     await page.locator('[data-tab="brainstorm"]').click();
     if(!(await page.locator('#v76Editor').isVisible())){
-      page.once('dialog',dialog=>dialog.accept('Responsive test'));
       await page.locator('#newProject').click();
+  await submitSheet(page, 'Responsive test');
   await page.locator('[data-v919-project-open="notes"]').click();
     }
     const metrics=await page.evaluate(()=>{

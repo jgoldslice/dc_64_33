@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:1366,height:1024},isMobile:true,hasTouch:true});
@@ -28,8 +29,8 @@ async function openNotebook(page,title='Zoom Window'){
   const errors=[];page.on('pageerror',err=>errors.push(err.message));
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept(title));
   await page.locator('#newProject').click();
+  await submitSheet(page, title);
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v815ZoomViewport')).toBeVisible();
   // Project Overview opens the notebook lazily; its first visible layout

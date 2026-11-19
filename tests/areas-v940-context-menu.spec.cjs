@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 async function openAreas(page){
@@ -63,8 +64,8 @@ test('A moving finger cancels long press, and keyboard opens the accessible menu
 test('Rename preserves goal links; Delete refuses an Area with content',async({page})=>{
   await openAreas(page);
   await page.locator('[data-bpa-open="Research"]').click({button:'right'});
-  page.once('dialog',d=>d.accept('Research Lab'));
   await page.getByRole('dialog',{name:'Options for Research'}).getByRole('button',{name:'Rename'}).click();
+  await submitSheet(page, 'Research Lab');
   await expect(page.locator('[data-bpa-open="Research Lab"]')).toBeVisible();
   await page.locator('[data-bpa-open="Research Lab"]').click();
   await expect(page.locator('.bp-area-goal summary')).toContainText('Finish research manuscript');
@@ -82,13 +83,13 @@ test('Rename preserves goal links; Delete refuses an Area with content',async({p
 });
 test('Deleting an empty Area requires confirmation, leaves other Areas intact',async({page})=>{
   await openAreas(page);
-  page.once('dialog',d=>d.accept('Temporary'));
   await page.locator('[data-bpa-new]').click();
+  await submitSheet(page, 'Temporary');
   await page.locator('[data-bpa-back]').click();
   await expect(page.locator('[data-bpa-open="Temporary"]')).toBeVisible();
   await page.locator('[data-bpa-open="Temporary"]').click({button:'right'});
-  page.once('dialog',d=>d.accept());
   await page.getByRole('dialog',{name:'Options for Temporary'}).getByRole('button',{name:'Delete'}).click();
+  await submitSheet(page);
   await expect(page.locator('[data-bpa-open="Temporary"]')).toHaveCount(0);
   await expect(page.locator('[data-bpa-open="Research"]')).toBeVisible();
 });

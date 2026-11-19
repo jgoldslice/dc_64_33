@@ -47,10 +47,10 @@
     return controls;
   }
 
-  function renameImage(id){
+  async function renameImage(id){
     const p=project(),record=p?.library.find(r=>String(r.id)===String(id));
     if(!record||!current(p))return;
-    const next=prompt('Rename image',String(record.title||'Image'));
+    const next=await BlueprintSheet.name('Rename image',String(record.title||'Image'),'image:'+id);
     if(next===null)return;
     const title=next.trim().slice(0,180);
     if(!title){announce('An image name cannot be empty.');return;}

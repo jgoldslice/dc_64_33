@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 async function makeArea(page,name='Work'){
@@ -5,8 +6,8 @@ async function makeArea(page,name='Work'){
   await page.locator('.bottom-nav button[data-tab="myplan"]').click();
   await expect(page.locator('#bpAreasRoot [data-bpa-new]')).toBeVisible();
   await expect(page.locator('#bpAreasRoot .bp-areas-header h1')).toHaveCount(0);
-  page.once('dialog',d=>d.accept(name));
   await page.locator('[data-bpa-new]').click();
+  await submitSheet(page, name);
   await expect(page.locator('.bp-area-detail-title h1')).toHaveText(name);
 }
 async function createItem(page,kind,title){

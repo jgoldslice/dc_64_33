@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 
@@ -5,8 +6,8 @@ async function project(page,title='Device layout QA'){
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept(title));
   await page.locator('#newProject').click();
+  await submitSheet(page, title);
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v815ZoomViewport')).toBeVisible();
   return errors;

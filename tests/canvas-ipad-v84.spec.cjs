@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:834,height:1194},isMobile:true,hasTouch:true});
@@ -46,8 +47,8 @@ test.describe('Canvas adaptive iPad workspace',()=>{
   test('a small multitasking window returns to mobile navigation without data loss',async({page})=>{
     await page.goto(base);
     await page.locator('[data-tab="brainstorm"]').click();
-    page.once('dialog',d=>d.accept('iPad Window Test'));
     await page.locator('#newProject').click();
+  await submitSheet(page, 'iPad Window Test');
   await page.locator('[data-v919-project-open="notes"]').click();
     await expect(page.locator('#projectTitle')).toHaveText('iPad Window Test');
     await page.setViewportSize({width:600,height:900});
@@ -70,8 +71,8 @@ test.describe('Canvas iPad landscape and notebook',()=>{
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(base);
     await page.locator('[data-tab="brainstorm"]').click();
-    page.once('dialog',d=>d.accept('Notebook on iPad'));
     await page.locator('#newProject').click();
+  await submitSheet(page, 'Notebook on iPad');
   await page.locator('[data-v919-project-open="notes"]').click();
     await expect(page.locator('#v76Editor')).toBeVisible();
     await expect(page.locator('.v81-project-rail')).toHaveCount(0);

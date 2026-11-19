@@ -225,3 +225,34 @@ test('an aborted IndexedDB write rejects rather than reporting a successful atta
   expect(result).not.toBe('unexpected success');
   expect(await page.evaluate(async()=>v6Blob('get','abort-tx-test'))).toBeUndefined();
 });
+
+test('native archive round trip stages fresh drawings and rejects corrupt ink before writing',async({page})=>{
+  await page.addInitScript(()=>{
+    window.stagedInk=[];
+    window.Capacitor={isNativePlatform:()=>true,nativePromise:async(_,method,args)=>{
+      if(method==='capabilities')return {drawingArchiveVersion:1};
+      if(method==='exportDrawing')return {base64:btoa(args.pageId)};
+      if(method==='stageDrawing'){
+        window.stagedInk.push(atob(args.base64));
+        return {pageId:crypto.randomUUID()};
+      }
+    }};
+  });
+  await seed(page);
+  const archive=await exportData(page);
+  expect(archive.version).toBe(3);
+  const corrupt=structuredClone(archive);
+  corrupt.drawings[0].base64='AAAA';
+  const result=await page.evaluate(async data=>{
+    try{await v74ImportBackup(new Blob([JSON.stringify(data)]));}
+    catch(error){return error.message;}
+  },corrupt);
+  expect(result).toContain('Drawing manifest checksum mismatch');
+  expect(await page.evaluate(()=>window.stagedInk)).toEqual([]);
+  page.on('dialog',d=>d.accept());
+  await page.evaluate(data=>v74ImportBackup(new Blob([JSON.stringify(data)])),archive);
+  expect(await page.evaluate(()=>window.stagedInk)).toEqual(['page-a','page-b']);
+  const pageRecord=await page.evaluate(()=>state.projects[0].notePages[0]);
+  expect(pageRecord.id).not.toBe('page-a');
+  expect(pageRecord.strokes).toEqual(archive.state.projects[0].notePages[0].strokes);
+});

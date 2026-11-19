@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:1366,height:1024},isMobile:true,hasTouch:true});
@@ -6,8 +7,8 @@ async function openNotebook(page,name='Zoom Test'){
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept(name));
   await page.locator('#newProject').click();
+  await submitSheet(page, name);
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Editor')).toBeVisible();
   await expect(page.locator('#v815ZoomReset')).toHaveText('100%');

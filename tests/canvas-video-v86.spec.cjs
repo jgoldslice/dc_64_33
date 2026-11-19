@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 const youtube='https://youtube.com/shorts/QaB8oahyId8?si=cMzjaXARf1amSDiH';
@@ -14,8 +15,8 @@ async function setup(page){
   }));
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept('Video Link Test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Video Link Test');
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await page.locator('[data-v919-project-open="library"]').click();
   await expect(page.locator('#projectLibrary')).toBeVisible();
@@ -57,16 +58,9 @@ test('existing YouTube Shorts links become thumbnail cards with click-to-play, w
 test('Add Link uses a short human-friendly default title for YouTube Shorts',async({page})=>{
   await setup(page);
   await page.locator('#libraryAddToggle').click();
-  let index=0;
-  page.on('dialog',d=>{
-    index++;
-    if(index===1) d.accept(youtube);
-    else if(index===2){
-      expect(d.defaultValue()).toBe('YouTube Short');
-      d.accept();
-    }else d.dismiss();
-  });
   await page.locator('[data-library-add="link"]').click();
+  await page.getByLabel('URL',{exact:true}).fill(youtube);
+  await submitSheet(page);
   await expect(page.locator('.v86-video-card')).toHaveCount(1);
   const data=await page.evaluate(()=>v6Project().library[0]);
   expect(data.type).toBe('link');

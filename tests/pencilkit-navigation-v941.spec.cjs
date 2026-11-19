@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 async function openNativeNotebook(page){
@@ -19,12 +20,12 @@ async function openNativeNotebook(page){
   });
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Native Navigation QA'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Native Navigation QA');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v936InlineInk')).toBeVisible();
-  page.once('dialog',dialog=>dialog.accept());
   await page.locator('#v936InlineInk').click();
+  await submitSheet(page);
   await expect(page.locator('#v936InlineInk')).toHaveAttribute('aria-pressed','true');
 }
 async function nativeEvent(page,phase,x,y,scale=1,pageId){

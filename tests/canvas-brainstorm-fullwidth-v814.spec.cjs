@@ -1,10 +1,11 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:1366,height:1024},isMobile:true,hasTouch:true});
 
 async function createProject(page,title){
-  page.once('dialog',d=>d.accept(title));
   await page.locator('#newProject').click();
+  await submitSheet(page, title);
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectTitle')).toHaveText(title);
   return page.evaluate(()=>String(v6Project().id));

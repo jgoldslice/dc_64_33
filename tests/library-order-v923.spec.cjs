@@ -1,4 +1,5 @@
 'use strict';
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium'});
@@ -6,8 +7,8 @@ test.use({browserName:'chromium'});
 async function setup(page){
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Order QA'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Order QA');
   await expect(page.locator('#projectOverview')).toBeVisible();
   await page.evaluate(async()=>{
     const p=v6Project();
@@ -128,8 +129,8 @@ test('each image has a menu; rename preserves the attachment and updates the Ove
   await menu.click();
   await expect(image.locator('[data-v923-rename]')).toBeVisible();
   await expect(menu).toHaveAttribute('aria-expanded','true');
-  page.once('dialog',d=>d.accept('A · Renamed figure'));
   await image.locator('[data-v923-rename]').click();
+  await submitSheet(page, 'A · Renamed figure');
   await expect(image).toContainText('A · Renamed figure');
   const recorded=await page.evaluate(()=>v6Project().library.find(r=>r.id==='image-a'));
   expect(recorded.title).toBe('A · Renamed figure');
@@ -147,8 +148,8 @@ test('delete option confirms, removes only chosen image, and leaves other resour
   await setup(page);
   await page.locator('[data-v919-project-open="library"]').click();
   await page.locator('[data-v923-item="image-a"] [data-v923-more]').click();
-  page.once('dialog',d=>d.accept());
   await page.locator('[data-v923-item="image-a"] [data-v923-remove]').click();
+  await submitSheet(page);
   await expect(page.locator('[data-v923-item="image-a"]')).toHaveCount(0);
   expect(await order(page)).toEqual(['link-b','image-c','video-d']);
   await expect.poll(async()=>page.evaluate(()=>v6Blob('get','test-v923-a'))).toBeUndefined();

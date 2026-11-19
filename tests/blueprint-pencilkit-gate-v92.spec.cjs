@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:834,height:1194},isMobile:true,hasTouch:true});
@@ -5,8 +6,8 @@ test.use({browserName:'chromium',viewport:{width:834,height:1194},isMobile:true,
 test('Safari and PWAs never display PencilKit because it requires installed native Swift code',async({page})=>{
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Web-only project'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Web-only project');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v92PencilKit')).toHaveCount(0);
   await expect(page.locator('#v815ZoomViewport')).toBeVisible();
@@ -41,14 +42,14 @@ test('native iPad offers opt-in PencilKit and never mutates original SVG/project
   });
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Native bridge QA'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Native bridge QA');
   await page.locator('[data-v919-project-open="notes"]').click();
   const button=page.locator('#v92PencilKit');
   await expect(button).toBeVisible();
   const before=await page.evaluate(()=>JSON.stringify(v6Project()));
-  page.once('dialog',dialog=>dialog.accept());
   await button.click();
+  await submitSheet(page);
   await expect.poll(()=>page.evaluate(()=>window.__v92Calls.length)).toBe(1);
   const info=await page.evaluate(()=>({
     calls:window.__v92Calls,

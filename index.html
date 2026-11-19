@@ -373,6 +373,8 @@
 }
 </style>
 
+<link rel="stylesheet" href="blueprint-sheet.css">
+<script src="blueprint-sheet.js"></script>
 </head>
 <body>
 <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -1707,7 +1709,7 @@ async function v6OpenResource(id){
   }catch(err){alert('Could not open file: '+err.message);}
 }
 async function v6DeleteResource(id){
-  const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));if(!r||!confirm('Remove '+r.title+'?'))return;
+  const p=v6Project(),r=p?.library.find(x=>String(x.id)===String(id));if(!r||!await BlueprintSheet.confirm('Remove '+r.title+' from this project library?'))return;
   const previousLibrary=p.library;
   p.library=p.library.filter(x=>String(x.id)!==String(id));
   if(!save(true)){
@@ -1729,17 +1731,16 @@ function v6CloseLibraryMenu(){
   $('libraryAddChoices').hidden=true;
   $('libraryAddToggle').setAttribute('aria-expanded','false');
 }
-function v6AddLibrary(type){
+async function v6AddLibrary(type){
   const p=v6Project();if(!p)return;
   if(type==='link'){
-    let url=prompt('Link URL');if(url===null)return;url=url.trim();
+    const values=await BlueprintSheet.open({title:'Add link',key:'link:'+p.id,fields:[{label:'URL',type:'url'},{label:'Title',required:false}],action:'Add'});if(!values)return;let url=values[0].trim();
     try{const u=new URL(url);if(!['https:','http:'].includes(u.protocol))throw Error();url=u.href;}catch{alert('Enter a valid http or https URL.');return;}
-    const title=prompt('Link title',window.canvasVideoLink?.label(url)||url)||(window.canvasVideoLink?.label(url)||url);
+    const title=values[1].trim()||(window.canvasVideoLink?.label(url)||url);
     p.library.push({id:v6Id(),type:'link',title:title.slice(0,180),url,created:v6Now()});
   }else{
-    const title=prompt('Code snippet title');if(!title?.trim())return;
-    const language=prompt('Language (optional)','Python')||'';
-    const content=prompt('Paste code');if(content===null)return;
+    const values=await BlueprintSheet.open({title:'Add code',key:'code:'+p.id,fields:[{label:'Title'},{label:'Language',value:'Python',required:false},{label:'Code',multiline:true}],action:'Add'});if(!values)return;
+    const [title,language,content]=values;
     p.library.push({id:v6Id(),type:'code',title:title.slice(0,180),language,content,created:v6Now()});
   }
   save();v6Render();
@@ -1837,19 +1838,19 @@ async function v6LoadSketch(id){
   }catch(err){alert('Could not load sketch: '+err.message);}
 }
 // Project navigation and all workspace controls use event delegation.
-document.addEventListener('click',e=>{
+document.addEventListener('click',async e=>{
   if(!(e.target instanceof Element))return;
   const tgt=e.target,match=selector=>tgt.closest(selector);
   const folder=match('[data-v6-project]');if(folder){v6OpenProject(folder.dataset.v6Project);return;}
-  if(match('#newProject')){const name=prompt('Project name');if(name!==null)v6CreateProject(name);return;}
+  if(match('#newProject')){const name=await BlueprintSheet.name('New project');if(name!==null)v6CreateProject(name);return;}
   if(match('#backProjects')){window.v6ActiveProjectId=null;v6SketchEditing=false;v6SketchId=null;v6Canvas.dataset.project='';v6Render();renderIdeas();return;}
   if(match('#v82RenameProject')){
     const p=v6Project();if(!p)return;
-    const title=prompt('Rename project',p.title);if(!title?.trim())return;
+    const title=await BlueprintSheet.name('Rename project',p.title,'project:'+p.id,$('renameProject'));if(!title?.trim())return;
     p.title=title.trim().slice(0,120);save();v6Render();return;
   }
   if(match('#deleteProject')){
-    const p=v6Project();if(!p||!confirm('Delete project "'+p.title+'"? Its notes, library entries, and sketches will be removed. Linked Blueprint tasks and saved ideas will remain.'))return;
+    const p=v6Project();if(!p||!await BlueprintSheet.confirm('Delete project "'+p.title+'"? Its notes, library entries, and sketches will be removed. Linked Blueprint tasks and saved ideas will remain.'))return;
     for(const n of state.ideas)if(String(n.projectId)===String(p.id)){n.projectId='';n.convertedToProject=false;}
     // Collect the complete set of associated files, not merely Library files.
     // A notebook picture may be shared with another page/project.
@@ -1955,6 +1956,7 @@ v6Canvas.addEventListener('pointercancel',v6End);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('v6ImageViewer').hidden)v6CloseImage();else if(!$('projectChatBack').hidden)v6HideChat();}});
 v6Normalize();v6Render();
 </script>
+<script src="drawing-archive.js"></script>
 <script src="v74.js"></script>
 <script src="v76.js"></script>
 <script src="v77.js"></script>

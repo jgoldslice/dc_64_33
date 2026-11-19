@@ -402,7 +402,9 @@
     focusBar.hidden=true;root.classList.remove('v928-focus-mode');
     document.body.classList.remove('v928-notes-focus');
     document.body.style.overflow=previousOverflow;
+    const offset=[zoomViewport.scrollLeft,zoomViewport.scrollTop];
     if(placeholder?.parentNode)placeholder.replaceWith(root);
+    zoomViewport.scrollTo(...offset);
     placeholder=null;
     // The native PencilKit overlay must return to ordinary Notes clipping.
     window.dispatchEvent(new CustomEvent('blueprint:notes-focus-change',
@@ -414,11 +416,13 @@
     closeInkMenu();focus=true;previousOverflow=document.body.style.overflow;
     placeholder=document.createComment('Notes original position');
     root.parentNode.insertBefore(placeholder,root);
+    const offset=[zoomViewport.scrollLeft,zoomViewport.scrollTop];
     document.body.append(root);
     root.classList.add('v928-focus-mode');
     document.body.classList.add('v928-notes-focus');
     document.body.style.overflow='hidden';
     focusBar.hidden=false;toggleFocusTools(false);
+    zoomViewport.scrollTo(...offset);
     // Focus is a native drawing workspace when PencilKit is installed.
     // Never activate the legacy SVG pen over an embedded PKCanvasView.
     if(window.BlueprintPencilInline?.isAvailable?.()){

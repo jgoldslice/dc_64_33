@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const { test, expect } = require('@playwright/test');
 const baseURL = 'http://127.0.0.1:8765/';
 
@@ -41,8 +42,8 @@ test('Project shortcuts open the workspace and note pages persist after refresh'
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog', d => d.accept('Smoke Project'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Smoke Project');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await expect(page.locator('#v76Editor')).toBeVisible();
@@ -76,8 +77,8 @@ test('Tap selects note text; left and right resize handles work, move control re
   const errors=[];page.on('pageerror',e=>errors.push(e.stack||e.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept('Resize Test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Resize Test');
   await page.locator('[data-v919-project-open="notes"]').click();
   const box=page.locator('#v76Surface .v76-text').first();
   await expect(box).toBeVisible();
@@ -132,8 +133,8 @@ test('Tap selects note text; left and right resize handles work, move control re
 test('Pictures use OneNote-style selection, corner resizing and a move control instead of six dots', async ({ page }) => {
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept('Photo Test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Photo Test');
   await page.locator('[data-v919-project-open="notes"]').click();
   await page.locator('#v76PageMore').click();
   await expect(page.locator('#v76PageMenu')).toBeVisible();
@@ -175,8 +176,8 @@ test('Notebook toolbar has a Textbox tool; blank taps create text only when it i
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog', d => d.accept('Minimal Toolbar Test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Minimal Toolbar Test');
   await page.locator('[data-v919-project-open="notes"]').click();
   const toolbar = page.locator('#v76Editor .v76-toolbar');
   // v8.10 uses a compact icon-only toolbar but preserves the accessible groups.
@@ -227,8 +228,8 @@ test('Text stays transparent over images and size choices persist independently'
   page.on('pageerror', e=>errors.push(e.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog', d=>d.accept('Transparency Test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Transparency Test');
   await page.locator('[data-v919-project-open="notes"]').click();
   const text=page.locator('#v76Surface .v76-text').first();
   await expect(text).toBeVisible();
@@ -270,8 +271,8 @@ test('Selected notebook controls prevent native long-press selection but text ed
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(baseURL);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept('Touch Safety Test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Touch Safety Test');
   await page.locator('[data-v919-project-open="notes"]').click();
   const box=page.locator('#v76Surface .v76-text').first();
   const rich=box.locator('.v76-rich');

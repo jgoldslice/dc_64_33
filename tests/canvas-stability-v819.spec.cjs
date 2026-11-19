@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 
@@ -35,8 +36,8 @@ test('Add Event commits the date only after scroll settles and never advances tw
 test('failed planner save does not allow an attached file to be deleted',async({page})=>{
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Recovery test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Recovery test');
   await page.locator('[data-v919-project-open="notes"]').click();
   const result=await page.evaluate(async()=>{
     const p=v6Project();
@@ -44,14 +45,14 @@ test('failed planner save does not allow an attached file to be deleted',async({
     await v6Blob('put',key,new Blob(['keep me'],{type:'text/plain'}));
     p.library.push({id:'v819-file',type:'file',title:'Important.txt',key,mime:'text/plain'});
     if(!save(true))throw Error('Could not seed data');
-    const originalSet=Storage.prototype.setItem,originalConfirm=window.confirm;
+    const originalSet=Storage.prototype.setItem,originalConfirm=BlueprintSheet.confirm;
     Storage.prototype.setItem=function(name,value){
       if(name===STORAGE_KEY)return;
       return originalSet.call(this,name,value);
     };
-    window.confirm=()=>true;
+    BlueprintSheet.confirm=()=>true;
     try{await v6DeleteResource('v819-file');}
-    finally{Storage.prototype.setItem=originalSet;window.confirm=originalConfirm;}
+    finally{Storage.prototype.setItem=originalSet;BlueprintSheet.confirm=originalConfirm;}
     const linked=p.library.some(item=>item.id==='v819-file');
     const blob=await v6Blob('get',key);
     const persisted=JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -65,8 +66,8 @@ test('failed planner save does not allow an attached file to be deleted',async({
 test('interrupted Pencil stroke retains ink already drawn',async({page})=>{
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Pencil cancel test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Pencil cancel test');
   await page.locator('[data-v919-project-open="notes"]').click();
   await page.locator('[data-v76-mode="pen"]').click();
   const ink=page.locator('#v76Ink');
@@ -93,8 +94,8 @@ test('interrupted Pencil stroke retains ink already drawn',async({page})=>{
 test('failed upload index save preserves the file in memory for a later retry',async({page})=>{
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Upload recovery test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Upload recovery test');
   await page.locator('[data-v919-project-open="notes"]').click();
   const result=await page.evaluate(async()=>{
     const p=v6Project();
@@ -120,8 +121,8 @@ test('failed upload index save preserves the file in memory for a later retry',a
 test('notebook has no instruction paragraph and can save ink to project library',async({page})=>{
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Sketch export'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Sketch export');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('.v76-tip')).toHaveCount(0);
   await expect(page.locator('#v819SaveSketch')).toBeVisible();

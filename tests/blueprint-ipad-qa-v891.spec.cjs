@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const { test, expect } = require('@playwright/test');
 const base = 'http://127.0.0.1:8765/';
 
@@ -18,8 +19,8 @@ test('iPad sidebar and notebook controls have 44px targets without resizing the 
   await toggle.click();
 
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog', dialog => dialog.accept('Blueprint iPad QA'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Blueprint iPad QA');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v815ZoomViewport')).toBeVisible();
   await expect(page.locator('#projectNotes .v76-toolbar')).toHaveCSS('flex-wrap', 'wrap');
@@ -82,8 +83,8 @@ test('phone wraps Notes toolbar controls and hides iPad rail toggle', async ({ p
   await page.goto(base);
   await expect(page.locator('.canvas-ipad-collapse')).toBeHidden();
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog', dialog => dialog.accept('Blueprint phone QA'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Blueprint phone QA');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectNotes .v76-toolbar')).toHaveCSS('flex-wrap', 'wrap');
   const overflow=await page.locator('#projectNotes .v76-toolbar').evaluate(el=>el.scrollWidth-el.clientWidth);
