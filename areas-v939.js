@@ -29,7 +29,7 @@
   const escapeHtml=text=>String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const icon=name=>'<svg class="icon" aria-hidden="true"><use href="#i-'+name+'"></use></svg>';
   let selected=null,managing=false,pending=false,menuOpen=false;
-  const expanded=new Set();
+  const expanded=new Set(),openGoals=new Set();
   function display(area){return area===INBOX?'Unassigned':area;}
   function counts(data){
     return [['goals','Goals','goal'],['tasks','Tasks','check'],['habits','Habits','habit'],['projects','Projects','plan']]
@@ -55,7 +55,7 @@
     const tasks=data.tasks.filter(t=>String(t.goalId||'')===String(g.id));
     const habits=data.habits.filter(h=>String(h.goalId||'')===String(g.id));
     const children=stepsForGoal(g,tasks)+tasks.map(taskRow).join('')+habits.map(habitRow).join('');
-    return '<details class="bp-area-goal"><summary>'+icon('goal')+'<strong>'+escapeHtml(g.title)+'</strong><span class="bp-area-chevron">⌄</span></summary>'+
+    return '<details class="bp-area-goal" data-bpa-goal="'+escapeHtml(g.id)+'" '+(openGoals.has(String(g.id))?'open':'')+'><summary>'+icon('goal')+'<strong>'+escapeHtml(g.title)+'</strong><span class="bp-area-chevron">⌄</span></summary>'+
       '<div class="bp-area-goal-body">'+(children||'<p class="muted small">No linked tasks or habits yet.</p>')+
       '<button type="button" class="text-button" data-bpa-edit-goal="'+escapeHtml(g.id)+'">Edit goal</button></div></details>';
   }
@@ -163,6 +163,12 @@
       render();
     }
   });
+  document.addEventListener('toggle',event=>{
+    const goal=event.target.closest?.('[data-bpa-goal]');
+    if(!goal)return;
+    if(goal.open)openGoals.add(String(goal.dataset.bpaGoal));
+    else openGoals.delete(String(goal.dataset.bpaGoal));
+  },true);
   document.addEventListener('change',event=>{
     const select=event.target.closest('[data-bpa-project-area]');
     if(!select)return;
@@ -172,4 +178,4 @@
     trySave();
   });
   render();
-})(window);
+})(typeof window==='undefined'?{}:window);
