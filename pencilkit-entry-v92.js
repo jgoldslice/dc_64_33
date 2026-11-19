@@ -1,79 +1,60 @@
 'use strict';
-/* Blueprint v9.2: optional bridge entry point for a REGISTERED native PencilKit plugin.
-   Invisible on Safari/PWA and on native apps lacking the plugin. Does not change
-   existing SVG notes, backup files or application storage. Native source stays
-   experimental until Swift/Xcode builds and complete backup are validated. */
+/* Native PencilKit test entry. Does not migrate SVG notes or native backup data. */
 (function(){
   const native=window.Capacitor;
   if(!native?.isNativePlatform?.()||typeof native.nativePromise!=='function')return;
-  // Capacitor 8 can register an explicitly instantiated Swift plugin after
-  // the injected JS proxy list is formed. Call the verified native bridge.
-  // No PencilKit button is shown on Safari/PWA.
-  const plugin={
-    capabilities:()=>native.nativePromise('BlueprintPencil','capabilities',{}),
-    openEditor:args=>native.nativePromise('BlueprintPencil','openEditor',args)
-  };
-  const actions=document.querySelector('#projectWorkspace .v82-project-header-actions');
-  if(!actions||document.getElementById('v92PencilKit'))return;
-
+  const host=document.querySelector('#v76Editor .v76-toolbar')||
+             document.querySelector('#projectWorkspace .v82-project-header-actions');
+  if(!host||document.getElementById('v92PencilKit'))return;
   const button=document.createElement('button');
   button.type='button';
   button.id='v92PencilKit';
-  button.className='text-button v92-native-pencil-entry';
-  button.textContent='PencilKit';
-  button.title='Experimental native Apple Pencil editor (iPad only)';
-  button.setAttribute('aria-label','Open experimental native PencilKit drawing editor');
-  actions.append(button);
-  // Hide on wrappers without the native editor. Existing web Notes remain usable.
-  plugin.capabilities().then(result=>{
-    if(result?.available===true&&result?.schemaVersion===1)button.hidden=false;
-  }).catch(()=>{});
-  button.hidden=true;
+  button.className='secondary-button v92-native-pencil-entry';
+  button.textContent='Native ink';
+  button.title='Open native PencilKit for the current Notes page (experimental)';
+  button.setAttribute('aria-label','Open native PencilKit for current note page');
+  host.append(button);
+  // Manually registered Capacitor 8 Swift plugins can be callable even if
+  // they are missing from the global JS Plugins registry.
+  const invoke=(method,args={})=>native.nativePromise('BlueprintPencil',method,args);
   let opening=false,acknowledged=false;
-
+  const status=message=>{
+    const live=document.getElementById('v81A11yStatus');
+    if(live)live.textContent=message;
+  };
   button.addEventListener('click',async()=>{
-    if(opening||button.hidden)return;
-    const project=typeof v6Project==='function'?v6Project():null;
-    const pages=project?.notePages;
-    const id=project?.activeNotePageId;
-    if(!project||!Array.isArray(pages)||!pages.some(page=>String(page.id)===String(id))){
-      alert('Open a project notebook page before opening PencilKit.');
+    if(opening)return;
+    const ctx=window.BlueprintNotesBridge?.current?.();
+    const project=ctx?.p,page=ctx?.page;
+    if(!project||!page||!Array.isArray(project.notePages)){
+      alert('Open a project Notes page before using native ink.');
       return;
     }
-    if(!acknowledged){
-      const ok=confirm(
-        'Experimental native PencilKit editor.\n\nNative drawings are currently saved separately on this device. '+
-        'They are NOT included in Blueprint’s existing complete backup, and do NOT sync to your iPhone. '+
-        'Your existing SVG notes remain unchanged.\n\nContinue only with a disposable test project.'
-      );
-      if(!ok)return;
-      acknowledged=true;
-    }
-    opening=true;
-    button.disabled=true;
-    button.textContent='Opening…';
+    opening=true;button.disabled=true;button.textContent='Opening…';
     try{
-      const capabilities=await plugin.capabilities();
-      if(capabilities?.available!==true||capabilities?.schemaVersion!==1){
-        throw Error('Incompatible PencilKit plugin. Update the native iOS build.');
+      let capabilities;
+      try{capabilities=await invoke('capabilities');}
+      catch(error){
+        throw Error('The installed native plugin does not expose persistent PencilKit yet. Install the newer Swift files and rebuild in Xcode. Details: '+(error?.message||String(error)));
       }
-      // Only existing stable page IDs are passed; opening native does not
-      // create, migrate, or replace any web note.
-      const result=await plugin.openEditor({
-        projectId:String(project.id),
-        pageId:String(id),
-        pageIds:pages.map(page=>String(page.id))
+      if(capabilities?.available!==true||capabilities?.schemaVersion!==1){
+        throw Error('This PencilKit plugin is outdated or incompatible. Install the newer Swift files and rebuild.');
+      }
+      if(!acknowledged){
+        const ok=confirm('Native PencilKit drawings save separately on this device. They are NOT visible alongside Blueprint text/images, included in the complete backup, or synced. Use a disposable test page. Continue?');
+        if(!ok)return;
+        acknowledged=true;
+      }
+      const result=await invoke('openEditor',{
+        projectId:String(project.id),pageId:String(page.id),
+        pageIds:project.notePages.map(p=>String(p.id))
       });
-      const announce=document.getElementById('v81A11yStatus');
-      if(announce)announce.textContent=result?.pageId
-        ?'Native PencilKit drawing saved separately on this device.'
-        :'Native PencilKit editor closed.';
+      status(result?.saved?'Native PencilKit drawing saved on this device.':'Native editor closed.');
     }catch(error){
-      alert('Could not open or save native PencilKit drawing: '+(error?.message||String(error)));
+      const message='Unable to open PencilKit: '+(error?.message||String(error));
+      status(message);alert(message);
     }finally{
-      opening=false;
-      button.disabled=false;
-      button.textContent='PencilKit';
+      opening=false;button.disabled=false;button.textContent='Native ink';
     }
   });
 })();
