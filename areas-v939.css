@@ -1,7 +1,7 @@
 /* Blueprint v9.39 — responsive adaptive Areas dashboard */
 #myplan #overview #bpAreasRoot{display:block;max-width:1080px;margin:0 auto 14px;}
 .bp-areas-header,.bp-area-detail-title{display:flex;justify-content:space-between;align-items:center;gap:12px;}
-.bp-areas-header{margin:0 0 10px;align-items:center;justify-content:flex-end;}
+.bp-areas-header{margin:10px 0 0;align-items:center;justify-content:flex-end;}
 .bp-areas-header h1,.bp-area-detail-head h1{font:normal clamp(27px,4vw,34px) Georgia,serif;letter-spacing:-.5px;margin:3px 0 0;color:var(--ink);}
 .bp-area-heading-actions{display:flex;align-items:center;gap:7px;}
 .bp-area-heading-actions .primary-button{min-height:40px;}
