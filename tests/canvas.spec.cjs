@@ -184,7 +184,7 @@ test('Notebook toolbar has a Textbox tool; blank taps create text only when it i
   await expect(toolbar.locator('.v79-tool-group[aria-label="Text"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Pen"]')).toHaveCount(1);
   await expect(toolbar.locator('.v79-tool-group[aria-label="Misc"]')).toHaveCount(1);
-  await expect(toolbar.locator('button')).toHaveCount(15); // Icon Lasso + Graph toggle + Focus; contextual ink actions live on paper.
+  await expect(toolbar.locator('button')).toHaveCount(16); // Textbox size chevron is integrated with the T tool in v9.38.
   await expect(toolbar.locator('#v928Lasso')).toBeVisible();
   await expect(toolbar.locator('#v928Focus')).toBeVisible();
   await expect(toolbar.locator('#v818InkColor')).toBeVisible();
@@ -238,9 +238,11 @@ test('Text stays transparent over images and size choices persist independently'
   await rich.fill('This text should float over a picture');
   const size=page.locator('#v80TextSize');
   await expect(size).toHaveValue('medium');
+  await page.locator('#v938TextSizeTrigger').click();
   await size.selectOption('small');
   await expect(rich).toHaveAttribute('data-font-size','small');
   const savedText=await rich.textContent();
+  await page.locator('#v938TextSizeTrigger').click();
   await size.selectOption('large');
   await expect(rich).toHaveAttribute('data-font-size','large');
   const color=await text.evaluate(el=>({
