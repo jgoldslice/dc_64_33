@@ -8,8 +8,12 @@
   const surface=document.getElementById('v76Surface');
   const viewport=document.getElementById('v815ZoomViewport');
   const pane=document.getElementById('projectNotes');
+  const root=notes?.root;
+  const focusBar=document.getElementById('v928FocusBar');
+  const focusTools=document.getElementById('v928FocusTools');
+  const focusMenu=document.getElementById('v928FocusMenu');
   if(!native?.isNativePlatform?.()||typeof native.nativePromise!=='function'||
-     !notes||!oldButton||!surface||!viewport||!pane)return;
+     !notes||!oldButton||!surface||!viewport||!pane||!root)return;
 
   const invoke=(method,args={})=>native.nativePromise('BlueprintPencil',method,args);
   let supported=false,active=false,mounted=false,accepted=false;
@@ -23,6 +27,13 @@
   button.setAttribute('aria-label','Draw on page with native PencilKit');
   button.setAttribute('aria-pressed','false');
   button.hidden=true;
+  // Focus relocates the Notes root outside #projectNotes. It needs a native
+  // mode switch in its own compact header, not the hidden SVG tool menu.
+  const focusInkButton=document.createElement('button');
+  focusInkButton.type='button';
+  focusInkButton.id='v937FocusNativeInk';
+  focusInkButton.hidden=true;
+  focusInkButton.setAttribute('aria-label','Draw using native PencilKit');
 
   function status(message){
     const live=document.getElementById('v81A11yStatus');
@@ -33,6 +44,11 @@
     button.setAttribute('aria-pressed',String(active));
     button.title=active?'Turn off PencilKit drawing to edit Blueprint objects':
       'Draw on this page using native PencilKit';
+    focusInkButton.textContent=active?'Edit content':'Draw with PencilKit';
+    focusInkButton.setAttribute('aria-pressed',String(active));
+    focusInkButton.setAttribute('aria-label',active
+      ?'Switch to Blueprint text and image editing'
+      :'Start native PencilKit drawing');
   }
   function rect(r){
     return {x:Math.round((r.left??r.x)*2)/2,y:Math.round((r.top??r.y)*2)/2,
@@ -43,7 +59,11 @@
     if(!ctx?.p||!ctx?.page||!surface.getClientRects().length)return null;
     const box=surface.getBoundingClientRect();
     const v=viewport.getBoundingClientRect();
-    const n=pane.getBoundingClientRect();
+    // Focus moves #v76Editor into <body> and hides the former #projectNotes
+    // ancestor. Clipping against that old container produced an empty rect
+    // and removed the native overlay (including its PKToolPicker).
+    const inFocus=root.classList.contains('v928-focus-mode');
+    const n=(inFocus?root:pane).getBoundingClientRect();
     const left=Math.max(0,box.left,v.left,n.left);
     const top=Math.max(0,box.top,v.top,n.top);
     const right=Math.min(window.innerWidth,box.right,v.right,n.right);
@@ -53,7 +73,7 @@
       projectId:String(ctx.p.id),pageId:String(ctx.page.id),
       surface:rect(box),clip:rect({left,top,width:right-left,height:bottom-top}),
       logicalWidth:surface.clientWidth,logicalHeight:surface.clientHeight,
-      editing:active
+      editing:active,focused:inFocus
     };
   }
   async function sync(){
@@ -98,6 +118,9 @@
     supported=false;
     active=false;
     button.hidden=true;
+    focusInkButton.hidden=true;
+    document.body.classList.remove('v937-pencilkit-native');
+    if(focusTools)focusTools.hidden=false;
     oldButton.hidden=false;
     invoke('hideInline').catch(err=>console.warn('PencilKit cleanup failed:',err));
     return message;
@@ -110,17 +133,18 @@
       refresh().catch(stopWithError);
     });
   }
-  button.addEventListener('click',async()=>{
+  async function setDrawingEnabled(next){
     if(button.disabled)return;
     if(!accepted){
       if(!confirm('In-page PencilKit is experimental. Native drawings are saved locally but are not part of Blueprint complete backups or sync. Use a disposable test project. Continue?'))return;
       accepted=true;
     }
     const previous=active;
-    active=!active;
+    active=next;
     if(active)notes.setMode?.('select');
     label();
     button.disabled=true;
+    focusInkButton.disabled=true;
     try{
       if(!(await refresh())){
         throw Error('Open a visible project Notes page first.');
@@ -133,14 +157,34 @@
       alert(stopWithError(error));
     }finally{
       button.disabled=false;
+      focusInkButton.disabled=false;
     }
-  });
+  }
+  button.addEventListener('click',()=>setDrawingEnabled(!active));
+  focusInkButton.addEventListener('click',()=>setDrawingEnabled(!active));
+
+  function focusChanged(entering){
+    if(!supported)return false;
+    // The root has already been moved before this hook runs, so its
+    // new geometry is reflected by the next native showInline request.
+    if(entering&&!active){
+      void setDrawingEnabled(true);
+    }else{
+      schedule();
+    }
+    return true;
+  }
 
   function watch(){
     window.addEventListener('scroll',schedule,true);
     document.addEventListener('scroll',schedule,true);
     window.addEventListener('resize',schedule);
     window.addEventListener('orientationchange',schedule);
+    // Explicitly refresh after Notes is reparented in/out of Focus, even
+    // when neither the viewport nor the sheet's dimensions have changed.
+    window.addEventListener('blueprint:notes-focus-change',event=>{
+      focusChanged(!!event.detail?.focused);
+    });
     window.visualViewport?.addEventListener('resize',schedule);
     window.visualViewport?.addEventListener('scroll',schedule);
     document.addEventListener('visibilitychange',schedule);
@@ -171,6 +215,7 @@
       const brainstorm=document.getElementById('brainstorm');
       if(brainstorm)observer.observe(brainstorm,
         {attributes:true,attributeFilter:['class','style','hidden']});
+      observer.observe(root,{attributes:true,attributeFilter:['class','style','hidden']});
     }
     schedule();
   }
@@ -183,7 +228,22 @@
     group.insertBefore(button,oldButton);
     oldButton.hidden=true;
     button.hidden=false;
+    // Keep the SVG editor and its data as a recovery fallback, but hide
+    // redundant web ink tools on native-capable iPads.
+    document.body.classList.add('v937-pencilkit-native');
+    const legacy=document.getElementById('v92LegacyInkTools');
+    if(legacy)legacy.hidden=true;
+    if(focusBar){
+      const exit=focusBar.querySelector('#v928FocusExit');
+      focusBar.insertBefore(focusInkButton,exit||null);
+      focusInkButton.hidden=false;
+    }
+    if(focusTools)focusTools.hidden=true;
+    if(focusMenu)focusMenu.hidden=true;
+    window.BlueprintPencilInline={isAvailable:()=>supported,focusChanged,
+      isDrawing:()=>active};
     label();
     watch();
+    if(root.classList.contains('v928-focus-mode'))focusChanged(true);
   }).catch(()=>{}); // Older installed binaries retain the working full-screen editor.
 })();
