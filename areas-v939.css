@@ -53,13 +53,17 @@ button.bp-area-item-title{border:0;background:none;color:var(--ink);text-align:l
 .bp-area-empty h3{margin:0;font:normal 22px Georgia,serif;}
 .bp-area-empty p{margin:0 0 8px;max-width:330px;color:var(--muted);font-size:13px;}
 .bp-area-empty>.icon{height:30px;width:30px;stroke:var(--secondary-ui);}
-.bp-area-manager{margin-top:14px;}
-.bp-area-manager h3{font:normal 19px Georgia,serif;margin:0 0 5px;}
-.bp-area-manage-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px;}
-.bp-area-manage-row strong{flex:1;overflow-wrap:anywhere;}
-.bp-area-manage-row button{border:0;background:none;color:var(--secondary-ui);padding:8px;min-height:36px;}
-.bp-area-manager .bp-area-manage-row button:last-child{color:var(--muted);}
 .bp-visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;border:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;}
+/* Press and hold opens a small Apple-style context menu without selection. */
+.bp-area-tile{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:pan-y;}
+.bp-area-menu-layer{position:fixed;inset:0;z-index:90;background:rgba(20,24,20,.12);}
+.bp-area-context-menu{position:absolute;display:flex;flex-direction:column;padding:6px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:15px;box-shadow:0 14px 42px rgba(0,0,0,.22);max-height:calc(100dvh - 24px);overflow:auto;}
+.bp-area-context-title{font-size:12px;color:var(--muted);padding:9px 11px 10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bp-area-context-menu button{border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;color:var(--ink);text-align:left;font-size:14px;font-weight:600;padding:12px 11px;min-height:45px;cursor:pointer;}
+.bp-area-context-menu button:active,.bp-area-context-menu button:focus-visible{background:var(--primary-wash);border-radius:8px;}
+.bp-area-context-menu .bp-area-danger{color:#b64c45;}
+.bp-area-context-menu [data-bpa-menu-close]{color:var(--muted);}
+@media(prefers-color-scheme:dark){.bp-area-menu-layer{background:rgba(0,0,0,.32);}}
 /* Hide duplicate old overview data while preserving Weekly Blueprint action. */
 #myplan #overview>.wb-overview-sections{display:none;}
 #myplan #overview>.wb-overview-feature{max-width:1080px;margin:16px auto 0;padding:12px 14px;}
