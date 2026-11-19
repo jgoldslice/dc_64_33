@@ -7,6 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — Native PencilKit persistence verified by owner on iPad
+
+**Physical-device verification (owner report):** In the installed local Xcode build, native PencilKit launches from Blueprint's project Notes, accepts Apple Pencil ink, persists the drawing after tapping Done, reloads the same project/page drawing when reopened, and retains it across closing and relaunching Blueprint. This supersedes the earlier reports that the button remained stuck on Opening and that `capabilities` timed out on an older build. Exact current native Swift source/commit, measured latency, multi-page isolation, crash recovery, and full backup/restore are **not** independently verified.
+
+**Safe next integration boundary:** Native `PKDrawing` remains a separate Application Support sidecar, not rendered inline with SVG, text or image objects in the web Notes page. It is not part of the current Blueprint complete backup. Do **not** silently switch all Notes users to native ink or discard existing strokes. Before making PencilKit the default ink engine, implement a non-destructive export/import roundtrip for the sidecars, test old backup compatibility, and establish a shared page coordinate/zoom model with UIKit touch forwarding. Then link toolbar modes to the embedded native canvas and test Apple Pencil and finger gestures on real iPad.
+
+**Status:** Native test editor and per-page retention: device-verified by owner. Unified Notes UI / native backup: requested, not yet implemented. No GitHub changes to the native wrapper made in this status update.
+
 ## 2026-11-18 — PencilKit stuck on "Opening…": native response lifecycle fix (device QA pending)
 
 **Owner report:** The new native-ink toolbar button stays on "Opening…" and the native editor does not become visible. **Confirmed code bug:** In the separately installed Swift prototype package, `openEditor` resolved the Capacitor promise only inside the editor's `onClose` callback. The current web action awaited that promise before restoring the button, so it could appear permanently busy. This explains the pending label; an invisible native view may have an additional UIKit presentation problem not verifiable without Xcode logs.
