@@ -7,17 +7,17 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — v9.42 compact Plan section headings (feature branch; browser/iPad QA pending)
+## 2026-11-18 — v9.42 compact Plan section headings (merged; browser verified; iPad QA pending)
 
 **Latest owner request:** Remove redundant Plan page-level headings/subtitles such as "Areas", "Your responsibilities", "All tasks and priorities", and "Daily consistency" while retaining the section tabs, the Add actions, the actual Goal/Task/Habit cards and useful headings within those cards. This is a narrow presentation cleanup, not a data or model change.
 
-**Implemented on `feature/plan-minimal-headings-v942`:**
+**Implemented and merged from `feature/plan-minimal-headings-v942`:**
 - `areas-v939.js` removes the duplicate Areas title and eyebrow from the Areas overview while preserving the `+ Area` button, responsive Area tiles, and accessible tab names.
 - `index.html` removes Tasks and Habits helper subtitles and right-aligns their existing `+ Task` and `+ Habit` actions without altering card contents, names, progress or storage.
 - `plan-layout-v910.css` and `areas-v939.css` close the empty gap between Plan tabs, action rows, and the cards. `sw.js` revs the asset cache. Existing browser tests for Areas were adjusted to assert the new minimal header, and `tests/plan-minimal-headings-v942.spec.cjs` was added.
 - No changes to goals/tasks/habits records, IDs, attachment storage, PencilKit, backups, or Capacitor native files.
 
-**Verification:** GitHub Actions test run and iPad Safari device verification pending. Do not infer the Xcode app is updated by a GitHub push.
+**Verification:** [GitHub Actions browser run #389](https://github.com/jgoldslice/dc_64_33/actions/runs/44466028347) passed **303/303 Playwright tests**, including the new compact Plan headings tests, and JavaScript syntax validation. [PR #70](https://github.com/jgoldslice/dc_64_33/pull/70) merged to main as `3630998efe7655ea3c94442a2c00d24529e726fd`. No physical-device QA, Capacitor/Xcode compilation, or native-app deployment was performed. The browser build can update independently of the installed iOS app.
 
 ## 2026-11-18 — v9.41 PencilKit viewport pinch/pan (merged; browser verified; native Xcode wiring/device QA pending)
 
