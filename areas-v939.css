@@ -41,7 +41,7 @@
 @media(max-width:600px){
   .bp-area-create-backdrop{background:rgba(10,15,14,.3);}
   .bp-area-create-popover{left:12px!important;top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom));width:calc(100% - 24px)!important;max-width:none;border-radius:20px;transform-origin:50% 100%;animation-name:bp-area-create-sheet-appear;}
-  @keyframes bp-area-create-sheet-appear{from{opacity:0;transform:translateY(14px) scale(.99);}to{opacity:1;transform:translateY(0) scale(1);}}
+  @keyframes bp-area-create-sheet-appear{from{opacity:0;transform:translateY(6px) scale(.99);}to{opacity:1;transform:translateY(0) scale(1);}}
 }
 @media(prefers-reduced-motion:reduce){.bp-area-create-popover{animation:none!important;}}
 
