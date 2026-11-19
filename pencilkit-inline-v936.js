@@ -155,8 +155,8 @@
       if(!(await refresh())){
         throw Error('Open a visible project Notes page first.');
       }
-      status(active?'PencilKit drawing on this page. Tap Edit content for text/images.':
-        'Blueprint text and image editing enabled. Native ink remains visible.');
+      status(active?'PencilKit drawing enabled. Tap PencilKit again to edit text and images.':
+        'PencilKit drawing paused. Blueprint text and image editing enabled.');
     }catch(error){
       active=previous;
       label();
