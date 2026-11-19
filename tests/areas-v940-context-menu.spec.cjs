@@ -69,11 +69,14 @@ test('Rename preserves goal links; Delete refuses an Area with content',async({p
   await expect(page.locator('.bp-area-goal summary')).toContainText('Finish research manuscript');
   await page.locator('[data-bpa-back]').click();
   await page.locator('[data-bpa-open="Research Lab"]').click({button:'right'});
-  const alert=page.waitForEvent('dialog');
+  const alerts=[];
+  page.once('dialog',dialog=>{
+    alerts.push(dialog.message());
+    return dialog.accept();
+  });
   await page.getByRole('dialog',{name:'Options for Research Lab'}).getByRole('button',{name:'Delete'}).click();
-  const dialog=await alert;
-  expect(dialog.message()).toContain('Move the items out of this Area first');
-  await dialog.accept();
+  expect(alerts).toHaveLength(1);
+  expect(alerts[0]).toContain('Move the items out of this Area first');
   await expect(page.locator('[data-bpa-open="Research Lab"]')).toBeVisible();
 });
 test('Deleting an empty Area requires confirmation, leaves other Areas intact',async({page})=>{
