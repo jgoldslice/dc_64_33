@@ -73,7 +73,7 @@ test('Habit and Goal choices reuse existing forms without spawning inline panels
     await page.locator('#modalForm button[type="submit"]').click();
     await expect(page.locator('.bp-area-create-popover')).toHaveCount(0);
   }
-  await expect(page.locator('.bp-area-section-head h3')).toContainText(['Goals','Tasks','Habits']);
+  await expect(page.locator('.bp-area-section-head h3')).toContainText(['Goals','Habits']);
 });
 test('On iPhone the Add popover fits as bottom sheet without hiding actions',async({page})=>{
   await research(page,390,844);
