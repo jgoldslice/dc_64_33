@@ -7,6 +7,18 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.40 Area context menus (feature branch; automated and iPad QA pending)
+
+**Owner request and screenshot:** Remove the redundant Manage Areas panel and header control. A normal tap on an Area card should still open it, while pressing and holding on the card should open a small menu with Rename and Delete. Preserve the current compact iPad Plan layout.
+
+**Implementation:**
+- `areas-v939.js`: delegated pointer long-press (520 ms) with drag/scroll/cancel handling, suppressed card click after a hold, native `contextmenu` for mouse/trackpad and Shift+F10 / ContextMenu for keyboard. Popup contains Area name, Rename, Delete, Cancel; Escape and outside-tap dismiss it. The virtual Unassigned tile has no rename/delete, since it is not a saved Area.
+- Existing rename logic updates goal category and explicit task/habit/project area references. Existing delete logic refuses to remove Areas with linked items and confirms deletion of empty Areas. No data schema or backup change.
+- `areas-v939.css`: small anchored iOS-style context menu with accessible tap targets, no native text selection/callout on Area cards, removed unused Manage Areas styling. `sw.js`: new offline cache revision.
+- `tests/areas-v940-context-menu.spec.cjs`: browser regressions for normal tap, context menu on right-click, touch hold click suppression, scroll cancellation, keyboard menu, rename propagation, protected populated deletion, confirmed empty deletion.
+
+**Verification:** Pending GitHub Actions/browser and physical iPad testing. iPad Safari touch behavior must be checked on device; the installed Capacitor/Xcode app is not changed by GitHub publication.
+
 ## 2026-11-18 — v9.39 adaptive Plan → Areas dashboard (merged; browser QA passed; iOS QA pending)
 
 **Owner-approved design:** Version B (compact cards), no goal progress bars in the Area dashboard. Areas may contain any combination of goals, independent tasks, habits, and Brainstorm projects; an Area with only tasks/habits is valid. The Plan tab opens on Areas, with one adaptive dashboard per Area.
