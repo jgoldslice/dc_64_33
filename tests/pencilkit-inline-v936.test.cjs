@@ -7,9 +7,17 @@ const path=require('node:path');
 const src=fs.readFileSync(path.join(__dirname,'../pencilkit-inline-v936.js'),'utf8');
 
 function element(id,bounds={}){
-  const handlers={},attributes={};
+  const handlers={},attributes={},classes=new Set();
   return {
     id,handlers,attributes,hidden:false,textContent:'',disabled:false,
+    classList:{
+      add:name=>classes.add(name),
+      remove:name=>classes.delete(name),
+      contains:name=>classes.has(name)
+    },
+    children:[],
+    insertBefore(child){this.children.push(child);},
+    querySelector(){return element('exit');},
     clientWidth:bounds.width||800,clientHeight:bounds.height||1000,
     setAttribute(name,value){attributes[name]=value;},
     addEventListener(name,fn){handlers[name]=fn;},
@@ -30,10 +38,13 @@ function makeApp(embeddedAvailable=true){
   const viewport=element('v815ZoomViewport',{left:450,top:150,width:800,height:800});
   const pane=element('projectNotes',{left:200,top:0,width:1300,height:1000});
   const pageA={id:'pageA'},pageB={id:'pageB'};
+  const root=element('notesRoot');
   const project={id:'projectA',notePages:[pageA,pageB]};
   const context={p:project,page:pageA};
   const nodes={v92PencilKit:old,v76Surface:surface,v815ZoomViewport:viewport,
     projectNotes:pane,v81A11yStatus:element('status'),
+    v928FocusBar:element('focusBar'),v928FocusTools:element('focusTools'),
+    v928FocusMenu:element('focusMenu'),
     v76PageSelect:element('selector'),v811PageList:element('list'),
     projectWorkspace:element('workspace'),brainstorm:element('brainstorm')};
   const window={
@@ -49,11 +60,11 @@ function makeApp(embeddedAvailable=true){
         return Promise.resolve({hidden:true});
       }
     },
-    BlueprintNotesBridge:{current:()=>context,setMode:mode=>modeCalls.push(mode)},
+    BlueprintNotesBridge:{root,current:()=>context,setMode:mode=>modeCalls.push(mode)},
     addEventListener(){},
     requestAnimationFrame:fn=>frames.push(fn)
   };
-  const document={getElementById:id=>nodes[id]||null,
+  const document={body:element('body'),getElementById:id=>nodes[id]||null,
     createElement:()=>element('button'),addEventListener(){}};
   vm.runInNewContext(src,{window,document,confirm:()=>true,
     alert:msg=>alerts.push(msg),setTimeout:()=>0,console});
