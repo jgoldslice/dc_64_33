@@ -93,12 +93,14 @@ test('Focus retains inline native drawing after moving Notes outside hidden pane
   assert.equal(focused.editing,true);
   assert.ok(focused.clip.width>0);
   assert.equal(a.bar.children[0].id,'v937FocusNativeInk');
-  assert.equal(a.bar.children[0].textContent,'Edit content');
+  assert.equal(a.bar.children[0].textContent,'PencilKit');
+  assert.equal(a.bar.children[0].attrs['aria-pressed'],'true');
   assert.deepEqual(a.modes,['select']);
   assert.ok(!a.calls.some(c=>c.method==='openEditor'));
   await a.bar.children[0].click();
   assert.equal(a.calls.filter(c=>c.method==='showInline').at(-1).args.editing,false);
-  assert.equal(a.bar.children[0].textContent,'Draw with PencilKit');
+  assert.equal(a.bar.children[0].textContent,'PencilKit');
+  assert.equal(a.bar.children[0].attrs['aria-pressed'],'false');
   a.root.classList.remove('v928-focus-mode');
   delete a.pane.rect;
   a.events['blueprint:notes-focus-change']({detail:{focused:false}});
