@@ -403,7 +403,11 @@
     document.body.classList.remove('v928-notes-focus');
     document.body.style.overflow=previousOverflow;
     if(placeholder?.parentNode)placeholder.replaceWith(root);
-    placeholder=null;resizeNotebook();
+    placeholder=null;
+    // The native PencilKit overlay must return to ordinary Notes clipping.
+    window.dispatchEvent(new CustomEvent('blueprint:notes-focus-change',
+      {detail:{focused:false}}));
+    resizeNotebook();
   }
   function enterFocus(){
     if(focus||!root.isConnected)return;
@@ -415,7 +419,15 @@
     document.body.classList.add('v928-notes-focus');
     document.body.style.overflow='hidden';
     focusBar.hidden=false;toggleFocusTools(false);
-    if(api.getMode()==='select')api.setMode('pen');
+    // Focus is a native drawing workspace when PencilKit is installed.
+    // Never activate the legacy SVG pen over an embedded PKCanvasView.
+    if(window.BlueprintPencilInline?.isAvailable?.()){
+      api.setMode('select');
+    }else if(api.getMode()==='select'){
+      api.setMode('pen'); // Browser/PWA retains the existing SVG behavior.
+    }
+    window.dispatchEvent(new CustomEvent('blueprint:notes-focus-change',
+      {detail:{focused:true}}));
     resizeNotebook();
   }
   focusButton.addEventListener('click',enterFocus);
