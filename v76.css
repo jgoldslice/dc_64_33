@@ -396,3 +396,38 @@
   color:var(--ink);box-shadow:inset 0 0 0 1px var(--secondary-ui);
 }
 #v76Editor .v92-pencil-entry-group #v936InlineInk[hidden]{display:none!important}
+
+/* v9.38 — compact Textbox split action: T inserts text, chevron opens size. */
+#v76Editor .v938-text-tool{
+  display:inline-flex;align-items:stretch;flex:none;height:40px;
+  overflow:hidden;border:1px solid var(--line);border-radius:10px;
+  background:var(--surface);
+}
+#v76Editor .v79-tool-buttons .v938-text-tool > button{
+  margin:0;min-height:38px;height:38px;border:0;border-radius:0;
+  background:transparent;box-shadow:none;
+}
+#v76Editor .v79-tool-buttons .v938-text-tool > .v812-textbox-button{
+  width:39px;min-width:39px;padding:7px;
+}
+#v76Editor .v79-tool-buttons .v938-text-tool > .v938-text-size-trigger{
+  width:27px;min-width:27px;padding:4px;
+  border-left:1px solid var(--line);font-size:19px;
+  font-weight:700;line-height:1;color:var(--secondary-ui);
+}
+#v76Editor .v938-text-tool:has(.v812-textbox-button.v76-on){
+  background:var(--wash);border-color:var(--secondary-ui);
+}
+.v938-text-size-menu{
+  position:fixed;z-index:2147483500;width:184px;
+  display:flex;flex-direction:column;gap:8px;padding:12px;
+  border:1px solid var(--line);border-radius:13px;
+  background:var(--surface);color:var(--ink);
+  box-shadow:0 9px 25px #0003;
+}
+.v938-text-size-menu[hidden]{display:none!important}
+.v938-text-size-menu label{font-size:12px;font-weight:700;color:var(--muted)}
+.v938-text-size-menu .v80-text-size{
+  display:block;width:100%;min-height:44px;font-size:16px;
+  background:var(--surface);color:var(--ink);
+}
