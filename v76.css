@@ -385,3 +385,14 @@
   min-height:40px;padding:7px 10px;font-size:12px;font-weight:600;color:var(--muted);
 }
 #v76Editor .v92-pencil-entry-group [hidden]{display:none!important}
+
+/* v9.36 opt-in native PencilKit overlay is drawn on the existing Notes page. */
+#v76Editor .v92-pencil-entry-group #v936InlineInk{
+  min-height:40px;min-width:100px;padding:7px 12px;font-size:13px;
+  font-weight:700;border-color:var(--secondary-ui);background:var(--wash);
+  white-space:nowrap;
+}
+#v76Editor .v92-pencil-entry-group #v936InlineInk[aria-pressed="true"]{
+  color:var(--ink);box-shadow:inset 0 0 0 1px var(--secondary-ui);
+}
+#v76Editor .v92-pencil-entry-group #v936InlineInk[hidden]{display:none!important}
