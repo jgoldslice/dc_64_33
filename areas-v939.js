@@ -122,7 +122,10 @@
         '<span class="bp-area-tile-sub">'+(count?counts(data):'No items yet')+'</span></button>';
     }).join('');
     mount.innerHTML='<div class="bp-area-grid">'+tiles+'</div>'+
-      '<div class="bp-areas-header" aria-label="Area actions"><div class="bp-area-heading-actions"><button type="button" class="primary-button" data-bpa-new>+ Area</button></div></div>';
+      '<div class="bp-areas-header" aria-label="Area actions"><div class="bp-area-heading-actions">'+
+        '<button type="button" class="secondary-button" data-bpa-new>+ Area</button>'+
+        '<button type="button" class="primary-button bp-area-week-action" data-wb-launch aria-label="Design your week" title="Design your week">'+icon('calendar')+'<span>Design Week</span></button>'+
+        '</div></div>';
     document.getElementById('overview')?.classList.remove('bp-area-detail');
   }
   function renderDetail(){
