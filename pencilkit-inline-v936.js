@@ -210,7 +210,7 @@
     // Page controls and nav are DOM-driven; update after their click handlers.
     document.addEventListener('click',event=>{
       const target=event.target?.closest?.(
-        '[data-v76-mode="text"],#v76AddImage,#v92LegacyInkTools');
+        '[data-v76-mode="text"],[data-v76-format],#v76AddImage,#v92LegacyInkTools');
       if(target&&active){
         active=false;
         label();

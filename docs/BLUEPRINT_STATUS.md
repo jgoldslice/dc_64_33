@@ -9,12 +9,12 @@
 
 ## 2026-11-19 — v9.46 native notebook and shared sheets
 
-Based on `42566c0`. Reviewed the actual wrapper target, historical backup draft PR #40, local changes and existing offline assets. The archived local Swift checkpoint is outside the web repository.
+[PR #74](https://github.com/jgoldslice/dc_64_33/pull/74) implementation commit `eadd662`, based on `42566c0`. Reviewed the actual wrapper target, historical backup draft PR #40, local changes and existing offline assets. The archived local Swift checkpoint is outside the web repository.
 
 - Projects, Areas, Library links/code/image actions and Notes page actions use accessible sheets. Existing Task, Event, Goal and Habit forms remain in place. Destructive planner imports retain explicit confirmation. Notes uses the project switcher as its title and reserves space for Focus controls above PencilKit.
 - The local compiled Swift plugin and view controller are now represented in `native-pencilkit/current/`. Navigation uses the same PKCanvasView and the existing web viewport. Storage notices are acknowledged per device and archive capability. Existing sidecars keep their original names and location.
 - Native v3 archives include validated drawing/page relationships and a SHA-256 drawing manifest. Unchanged browser exports use v2. Imported native files are staged under fresh IDs. Earlier backup formats and SVG ink remain readable. Partial native staging can leave unreferenced copies. See the native README for rollout and physical QA.
-- Local verification: 29/29 Node tests, JavaScript syntax review and iPhoneOS Swift module compilation with the installed Capacitor framework. Local Playwright startup was blocked on loopback bind. Xcode project build encountered a SwiftPM manifest-cache write restriction. Neither a signed application nor physical-device testing has been verified. Previous v9.45 test totals below apply only to that release.
+- Local verification: 29/29 Node tests, JavaScript syntax review and iPhoneOS Swift module compilation with the installed Capacitor framework. Local Playwright startup was blocked on loopback bind. Xcode project build encountered a SwiftPM manifest-cache write restriction. The Swift files also compiled to an arm64 iPhoneOS object. The web assets and both native share hooks were verified in the existing Xcode target after Capacitor copy. Neither a signed application nor physical-device testing has been verified. Previous v9.45 test totals below apply only to that release.
 
 ## 2026-11-18 — v9.45 Area Add popover (merged; browser verified; iOS device QA pending)
 

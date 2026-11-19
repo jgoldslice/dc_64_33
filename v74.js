@@ -219,6 +219,8 @@
      return {complete:false,data:source,media:new Map()};
    }
    if(![1,2,3].includes(source.version))throw Error('Unsupported complete backup version');
+   if(source.version<3 && ('drawings' in source || 'drawingsSha256' in source))
+     throw Error('Native drawing manifest requires backup version 3');
    validatePlannerShape(source.state);
    if(!Array.isArray(source.attachments))throw Error('Backup has no attachment manifest');
    if(source.version>=2){
@@ -293,6 +295,7 @@
    a.href=u;a.download='canvas-complete-'+new Date().toISOString().slice(0,10)+'.json';
    document.body.appendChild(a);a.click();a.remove();
    setTimeout(()=>URL.revokeObjectURL(u),30000);
+   return drawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
  }
  async function importCompleteBackup(file){
    const source=JSON.parse(await file.text());
@@ -367,8 +370,12 @@
    alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.'));
  }
  document.getElementById('exportData').onclick=async()=>{
-   try{await exportCompleteBackup();}
+   const button=document.getElementById('exportData');
+   if(button.disabled)return;
+   button.disabled=true;button.setAttribute('aria-busy','true');
+   try{BlueprintSheet.toast(await exportCompleteBackup());}
    catch(err){alert('Backup failed. No incomplete backup was downloaded. '+err.message);}
+   finally{button.disabled=false;button.removeAttribute('aria-busy');}
  };
  window.v74ImportBackup=importCompleteBackup;
 

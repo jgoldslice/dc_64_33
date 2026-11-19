@@ -83,6 +83,38 @@ window.BlueprintSheet = (() => {
   async function confirm(message, action = 'Delete', title = 'Confirm deletion', anchor) {
     return !!await open({title, message, action, danger:action === 'Delete', anchor});
   }
+  function menuKeyboard(menu, dismiss) {
+    menu.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        dismiss();
+        return;
+      }
+      if (!['ArrowUp','ArrowDown','Home','End'].includes(event.key)) return;
+      event.preventDefault();
+      const items = [...menu.querySelectorAll('button:not([disabled])')];
+      if (!items.length) return;
+      const index = items.indexOf(document.activeElement);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 :
+        (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      items[next].focus({preventScroll:true});
+    });
+  }
+  let toastTimer;
+  function toast(message) {
+    let node = document.getElementById('bpToast');
+    if (!node) {
+      node = document.createElement('div');
+      node.id = 'bpToast';
+      node.setAttribute('role','status');
+      document.body.append(node);
+    }
+    node.textContent = message;
+    node.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { node.hidden = true; }, 3200);
+  }
   let pendingNotice;
   function allowInk(withArchive) {
     const key = 'blueprint-ink-notice-' + (withArchive ? 'archive' : 'local');
@@ -96,5 +128,5 @@ window.BlueprintSheet = (() => {
       }).finally(() => { pendingNotice = null; });
     return pendingNotice;
   }
-  return {open, name, confirm, allowInk};
+  return {open, name, confirm, allowInk, menuKeyboard, toast};
 })();

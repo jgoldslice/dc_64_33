@@ -23,3 +23,5 @@ body.v937-pencilkit-native #v76Editor.v928-focus-mode #v928FocusBar {
 body.v937-pencilkit-native #v76Editor.v928-focus-mode .v811-note-body {height:auto!important}
 #projectNotes .v76-toolbar {row-gap:3px}
 @media(min-width:561px){#bpSheet.bp-anchored {position:fixed;margin:0}}
+
+#bpToast {position:fixed;z-index:10000;pointer-events:none;bottom:calc(env(safe-area-inset-bottom) + 72px);left:50%;transform:translateX(-50%);width:max-content;max-width:90vw;padding:8px 14px;border-radius:12px;background:var(--ink);color:var(--surface);font-size:.9rem}

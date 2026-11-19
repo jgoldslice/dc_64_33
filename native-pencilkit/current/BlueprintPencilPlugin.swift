@@ -19,16 +19,39 @@ private enum BlueprintPencilStore {
         return folder.appendingPathComponent(key(pageId) + ".pkdrawing", isDirectory: false)
     }
 
+    private static func presenceKey(_ url: URL) -> String {
+        "BlueprintPencil.saved." + url.deletingLastPathComponent().lastPathComponent + "." + url.lastPathComponent
+    }
+
+    static func remember(_ url: URL) {
+        UserDefaults.standard.set(true, forKey: presenceKey(url))
+    }
+
+    static func bytes(at file: URL) throws -> Data? {
+        do {
+            let data = try Data(contentsOf: file)
+            if !UserDefaults.standard.bool(forKey: presenceKey(file)) { remember(file) }
+            return data
+        } catch let error as NSError where error.domain == NSCocoaErrorDomain && error.code == NSFileReadNoSuchFileError {
+            if UserDefaults.standard.bool(forKey: presenceKey(file)) {
+                throw NSError(domain: "BlueprintPencil", code: 1, userInfo: [
+                    NSLocalizedDescriptionKey: "A previously saved drawing is missing. Recover it from a complete backup."
+                ])
+            }
+            return nil
+        }
+    }
+
     static func load(projectId: String, pageId: String) throws -> PKDrawing {
         let file = try url(projectId: projectId, pageId: pageId)
-        guard FileManager.default.fileExists(atPath: file.path) else { return PKDrawing() }
-        // Never silently replace unreadable existing artwork with a blank page.
-        return try PKDrawing(data: Data(contentsOf: file))
+        guard let data = try bytes(at: file) else { return PKDrawing() }
+        return try PKDrawing(data: data)
     }
 
     static func save(_ drawing: PKDrawing, projectId: String, pageId: String) throws {
         let file = try url(projectId: projectId, pageId: pageId)
         try drawing.dataRepresentation().write(to: file, options: .atomic)
+        remember(file)
     }
 }
 
@@ -61,10 +84,9 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                     try session.saveNow()
                 }
                 let url = try BlueprintPencilStore.url(projectId: project, pageId: page)
-                guard FileManager.default.fileExists(atPath: url.path) else {
+                guard let bytes = try BlueprintPencilStore.bytes(at: url) else {
                     call.resolve(["missing": true]); return
                 }
-                let bytes = try Data(contentsOf: url)
                 _ = try PKDrawing(data: bytes)
                 call.resolve(["base64": bytes.base64EncodedString()])
             } catch { call.reject("Drawing export failed: " + error.localizedDescription) }
@@ -83,6 +105,7 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
             let url = try BlueprintPencilStore.url(projectId: project, pageId: page)
             try bytes.write(to: url, options: .withoutOverwriting)
             guard try Data(contentsOf: url) == bytes else { call.reject("Drawing verification failed"); return }
+            BlueprintPencilStore.remember(url)
             call.resolve(["pageId": page])
         } catch { call.reject("Drawing restore failed: " + error.localizedDescription) }
     }
@@ -119,7 +142,7 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                 if self.inlineSession == nil {
                     let drawing = try BlueprintPencilStore.load(projectId: projectId, pageId: pageId)
                     let session = BlueprintPencilInlineSession(
-                        host: controller.view,
+                        host: controller,
                         projectId: projectId, pageId: pageId,
                         drawing: drawing,
                         save: { updated in
@@ -239,13 +262,14 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
     private let canvas = PKCanvasView()
     private let picker = PKToolPicker()
     private let saveDrawing: (PKDrawing) throws -> Void
+    private weak var hostController: UIViewController?
     private var dirty = false
     private var pendingSave: DispatchWorkItem?
     private var observation: [NSObjectProtocol] = []
     private var observingPicker = false
     private var editing = false
 
-    init(host: UIView, projectId: String, pageId: String,
+    init(host: UIViewController, projectId: String, pageId: String,
          drawing: PKDrawing, save: @escaping (PKDrawing) throws -> Void) {
         self.projectId = projectId
         self.pageId = pageId
@@ -266,7 +290,8 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
         canvas.drawing = drawing
         canvas.delegate = self
         overlay.addSubview(canvas)
-        host.addSubview(overlay)
+        hostController = host
+        host.view.addSubview(overlay)
         observation.append(NotificationCenter.default.addObserver(
             forName: UIApplication.didEnterBackgroundNotification,
             object: nil, queue: .main) { [weak self] _ in
@@ -331,10 +356,21 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
         pendingSave?.cancel()
         let work = DispatchWorkItem { [weak self] in
             do { try self?.saveNow() }
-            catch { print("BLUEPRINT PENCIL: inline autosave failed: \(error)") }
+            catch { self?.reportSaveFailure(error) }
         }
         pendingSave = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
+    }
+
+    private func reportSaveFailure(_ error: Error) {
+        NSLog("Blueprint PencilKit save failed: %@", error.localizedDescription)
+        guard let host = hostController, host.presentedViewController == nil else { return }
+        let alert = UIAlertController(title: "Handwriting hasn't saved",
+            message: "Keep this page open and retry saving your strokes.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Retry", style: .default) { [weak self] _ in
+            do { try self?.saveNow() } catch { self?.reportSaveFailure(error) }
+        })
+        host.present(alert, animated: true)
     }
 
     func saveNow() throws {

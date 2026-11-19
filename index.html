@@ -1703,7 +1703,7 @@ async function v6OpenResource(id){
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=r.title+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);return;
   }
   if(r.type==='link'){window.open(r.url,'_blank','noopener,noreferrer');return;}
-  if(r.type==='code'){try{await navigator.clipboard.writeText(r.content||'');alert('Code copied.');}catch{prompt('Copy code',r.content||'');}return;}
+  if(r.type==='code'){try{await navigator.clipboard.writeText(r.content||'');BlueprintSheet.toast('Code copied.');}catch{prompt('Copy code',r.content||'');}return;}
   try{const blob=await v6Blob('get',r.key);if(!blob)throw Error('File not found in this browser');
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=r.title;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
   }catch(err){alert('Could not open file: '+err.message);}

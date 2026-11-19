@@ -887,21 +887,27 @@
   const pageMore=document.getElementById('v76PageMore');
   const pageMenu=document.getElementById('v76PageMenu');
   const pageMenuHome=document.querySelector('.v76-page-controls');
-  let pageMenuTarget=null;
+  let pageMenuTarget=null,pageMenuTrigger=null;
+  BlueprintSheet.menuKeyboard(pageMenu,()=>{
+    const trigger=pageMenuTrigger;
+    closePageMenu();
+    trigger?.focus({preventScroll:true});
+  });
   function closePageMenu(){
     pageMenu.hidden=true;pageMore.setAttribute('aria-expanded','false');
     pageList.querySelectorAll('.v811-page-rename').forEach(button=>button.setAttribute('aria-expanded','false'));
     pageMenuHome.append(pageMenu);
-    pageMenuTarget=null;
+    pageMenuTarget=null;pageMenuTrigger=null;
   }
   function showPageMenu(button,id){
     const repeat=!pageMenu.hidden&&pageMenuTarget===String(id);
     closePageMenu();
     if(repeat)return;
-    pageMenuTarget=String(id);
+    pageMenuTarget=String(id);pageMenuTrigger=button;
     button.closest('.v811-page-row').append(pageMenu);
     pageMenu.hidden=false;
     button.setAttribute('aria-expanded','true');
+    pageMenu.firstElementChild.focus({preventScroll:true});
   }
   pageList.addEventListener('contextmenu', event=>{
     const row=event.target.closest('.v811-page-row');
@@ -914,28 +920,29 @@
     const wasOpen=!pageMenu.hidden;
     closePageMenu();
     if(wasOpen)return;
-    pageMenuTarget=String(current()?.page.id||'');
+    pageMenuTarget=String(current()?.page.id||'');pageMenuTrigger=pageMore;
     pageMenu.hidden=false;pageMore.setAttribute('aria-expanded','true');
+    pageMenu.firstElementChild.focus({preventScroll:true});
   });
   document.addEventListener('click',e=>{
     if(!(e.target instanceof Element))return;
     if(!e.target.closest('.v76-page-controls,.v811-page-rename,.v76-page-menu'))closePageMenu();
   });
   document.getElementById('v76RenamePage').addEventListener('click',async()=>{
-    const target=pageMenuTarget;closePageMenu();
+    const target=pageMenuTarget,trigger=pageMenuTrigger;closePageMenu();
     const ctx=current();if(!ctx)return;
     const pg=ctx.p.notePages.find(p=>String(p.id)===target)||ctx.page;
-    const entered=await BlueprintSheet.name('Rename page',pg.title,'page:'+ctx.p.id+':'+pg.id,pageMore);
+    const entered=await BlueprintSheet.name('Rename page',pg.title,'page:'+ctx.p.id+':'+pg.id,trigger);
     if(entered===null)return;
     const title=entered.trim().slice(0,80);if(!title)return;
     pg.title=title;persist();renderPage(ctx.p,true);
   });
   document.getElementById('v76DeletePage').addEventListener('click',async()=>{
-    const target=pageMenuTarget;closePageMenu();
+    const target=pageMenuTarget,trigger=pageMenuTrigger;closePageMenu();
     const ctx=current();if(!ctx)return;
     const pg=ctx.p.notePages.find(p=>String(p.id)===target)||ctx.page;
     if(ctx.p.notePages.length<2){alert('Keep at least one page in each project.');return;}
-    if(!await BlueprintSheet.confirm('Delete "'+pg.title+'" including its text, pictures and handwriting? Export a backup first if you need a copy. This cannot be undone.'))return;
+    if(!await BlueprintSheet.confirm('Delete "'+pg.title+'" including its text, pictures and handwriting? Export a backup first if you need a copy. This cannot be undone.','Delete','Delete page',trigger))return;
     const index=ctx.p.notePages.indexOf(pg);
     ctx.p.notePages=ctx.p.notePages.filter(page=>page!==pg);
     if(String(ctx.p.activeNotePageId)===String(pg.id)){
