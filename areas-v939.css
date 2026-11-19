@@ -3,8 +3,11 @@
 .bp-areas-header,.bp-area-detail-title{display:flex;justify-content:space-between;align-items:center;gap:12px;}
 .bp-areas-header{margin:10px 0 0;align-items:center;justify-content:flex-end;}
 .bp-areas-header h1,.bp-area-detail-head h1{font:normal clamp(27px,4vw,34px) Georgia,serif;letter-spacing:-.5px;margin:3px 0 0;color:var(--ink);}
-.bp-area-heading-actions{display:flex;align-items:center;gap:7px;}
-.bp-area-heading-actions .primary-button{min-height:40px;}
+.bp-area-heading-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
+.bp-area-heading-actions .primary-button,.bp-area-heading-actions .secondary-button{min-height:44px;}
+.bp-area-week-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:750;}
+.bp-area-week-action .icon{height:17px;width:17px;stroke:currentColor;flex:none;}
+
 .bp-area-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
 .bp-area-tile{display:flex;flex-direction:column;align-items:stretch;justify-content:center;text-align:left;gap:14px;min-height:108px;color:var(--ink);cursor:pointer;}
 .bp-area-tile-title{display:flex;align-items:center;gap:9px;min-width:0;font-size:16px;}
@@ -64,12 +67,8 @@ button.bp-area-item-title{border:0;background:none;color:var(--ink);text-align:l
 .bp-area-context-menu .bp-area-danger{color:#b64c45;}
 .bp-area-context-menu [data-bpa-menu-close]{color:var(--muted);}
 @media(prefers-color-scheme:dark){.bp-area-menu-layer{background:rgba(0,0,0,.32);}}
-/* Hide duplicate old overview data while preserving Weekly Blueprint action. */
+/* Retain legacy data hooks for weekly draft/undo; their overview cards stay hidden. */
 #myplan #overview>.wb-overview-sections{display:none;}
-#myplan #overview>.wb-overview-feature{max-width:1080px;margin:16px auto 0;padding:12px 14px;}
-#myplan #overview>.wb-overview-feature .wb-overview-top{display:none;}
-#myplan #overview>.wb-overview-feature .wb-overview-actions{margin:0;}
-#myplan #overview.bp-area-detail>.wb-overview-feature{display:none;}
 #myplan #goals>.category-card{display:none;}
 @media(max-width:375px){
   .bp-area-grid{grid-template-columns:1fr;}
