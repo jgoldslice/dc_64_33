@@ -24,7 +24,7 @@
     taskDone:{},habitDays:{},carry:{},goals:{},
     newEvents:[],eventEdits:{},eventForm:{title:'',date:start,time:'09:00'},
     editingEvent:null,priority:null,priorityTouched:false,
-    newTasks:[],taskForm:{title:'',dueDate:start,goalId:''},
+    newTasks:[],taskForm:{title:'',dueDate:start,goalId:'',area:''},
     created:Date.now()
   });
   // Unreadable weekly drafts are user data too: never silently replace their
@@ -113,6 +113,10 @@
     return row&&Object.hasOwn(row,date)?!!row[date]:!!h.days?.[date];
   }
   function goalFor(id){return draft.goals[idString(id)]||state.goals.find(g=>idString(g.id)===idString(id));}
+  function priorityTaskArea(area,goal){
+    const category=goal?.category||area;
+    return state.categories.includes(category)?category:'';
+  }
   function editableGoal(id){
     const key=idString(id);
     if(!draft.goals[key]){
@@ -325,15 +329,19 @@
     }
     available+='</div>';
     const form=draft.taskForm;
+    const goal=goalFor(form.goalId),area=priorityTaskArea(form.area,goal);
     return '<h3 class="wb-section-heading">Set your priorities</h3><p class="wb-subtext">Rank what matters this week. Drag to reorder, or use the arrows.</p>'+
       '<section class="wb-block"><div class="wb-block-title"><h3>Priority order</h3><small>'+ids.length+' selected</small></div>'+
       (ids.length?ordered:'<p class="wb-empty">No priorities selected.</p>')+'</section>'+
       '<section class="wb-block"><div class="wb-block-title"><h3>Tasks due this week</h3></div>'+available+'</section>'+
       '<section class="wb-block"><div class="wb-block-title"><h3>Add a priority task</h3></div>'+
       '<form class="wb-new-priority" id="wbNewTaskForm"><label>Task name<input maxlength="160" required name="title" value="'+attr(form.title||'')+'" placeholder="What needs to get done?"></label>'+
-      '<label>Due date<input name="dueDate" type="date" value="'+attr(form.dueDate||draft.weekStart)+'"></label>'+
+      '<label class="wb-priority-date">Due date<input name="dueDate" type="date" value="'+attr(form.dueDate||draft.weekStart)+'"></label>'+
       '<label>Connected goal<select name="goalId"><option value="">None</option>'+
       state.goals.map(g=>'<option value="'+attr(g.id)+'" '+(idString(form.goalId)===idString(g.id)?'selected':'')+'>'+attr(g.title)+'</option>').join('')+
+      '</select></label>'+
+      '<label>Area<select name="area" '+(goal?'disabled':'')+'><option value="">Unassigned</option>'+
+      state.categories.map(a=>'<option value="'+attr(a)+'" '+(a===area?'selected':'')+'>'+attr(a)+'</option>').join('')+
       '</select></label><button type="submit" class="wb-input-button">+ Add task</button></form></section>';
   }
   function reviewMarkup(){
@@ -363,7 +371,10 @@
       ['Goal updates',goalChanges],
       ['Calendar',eventChanges],
       ['Carry forward',carry],
-      ['New tasks',draft.newTasks.map(t=>t.title+' · '+(t.dueDate?niceDate(t.dueDate):'No deadline'))],
+      ['New tasks',draft.newTasks.map(t=>{
+        const area=priorityTaskArea(t.area,goalFor(t.goalId));
+        return t.title+' · '+(t.dueDate?niceDate(t.dueDate):'No deadline')+(area?' · '+area:'');
+      })],
       ['Priority order',priorityRows]
     ];
     let markup='<h3 class="wb-section-heading">Review your weekly blueprint</h3>'+
@@ -501,7 +512,8 @@
       const newTaskIds={};
       for(const t of draft.newTasks){
         const newId=uid();newTaskIds[idString(t.id)]=idString(newId);
-        next.tasks.push({id:newId,title:t.title,dueDate:t.dueDate||'',date:t.dueDate||'',scheduledDate:'',scheduledTime:'',done:false,priority:false,priorityRank:0,goalId:t.goalId||'',actionId:'',actionIndex:''});
+        const goal=find('goals',t.goalId);
+        next.tasks.push({id:newId,title:t.title,dueDate:t.dueDate||'',date:t.dueDate||'',scheduledDate:'',scheduledTime:'',done:false,priority:false,priorityRank:0,goalId:goal?idString(goal.id):'',area:priorityTaskArea(t.area,goal),actionId:'',actionIndex:''});
       }
       if(draft.priorityTouched){
         const order=priorityIds().map(id=>newTaskIds[id]||id);
@@ -588,11 +600,13 @@
       e.preventDefault();
       const f=new FormData(e.target),title=clean(f.get('title')).slice(0,160);
       if(!title||!e.target.reportValidity())return;
-      const newTask={id:'wbt-'+uid(),title,dueDate:String(f.get('dueDate')||draft.weekStart),goalId:String(f.get('goalId')||'')};
+      const area=f.get('area');
+      const newTask={id:'wbt-'+uid(),title,dueDate:String(f.get('dueDate')||draft.weekStart),goalId:String(f.get('goalId')||''),
+        area:priorityTaskArea(area)};
       draft.newTasks.push(newTask);
       draft.priority=priorityIds().concat(idString(newTask.id));
       draft.priorityTouched=true;
-      draft.taskForm={title:'',dueDate:newTask.dueDate,goalId:newTask.goalId};
+      draft.taskForm={title:'',dueDate:newTask.dueDate,goalId:newTask.goalId,area:draft.taskForm.area||''};
       storeDraft();renderSheet(false);
     }
   });
@@ -609,7 +623,14 @@
       draft.eventForm={title:f.elements.title.value,date:f.elements.date.value,time:f.elements.time.value};
     }else if(x.closest('#wbNewTaskForm')){
       const f=x.closest('form');
-      draft.taskForm={title:f.elements.title.value,dueDate:f.elements.dueDate.value,goalId:f.elements.goalId.value};
+      const area=f.elements.area;
+      draft.taskForm={title:f.elements.title.value,dueDate:f.elements.dueDate.value,goalId:f.elements.goalId.value,
+        area:area.disabled?draft.taskForm.area||'':area.value};
+      if(x===f.elements.goalId){
+        const goal=goalFor(draft.taskForm.goalId);
+        area.disabled=!!goal;
+        area.value=priorityTaskArea(draft.taskForm.area,goal);
+      }
     }else return;
     queueDraftSave();
   });

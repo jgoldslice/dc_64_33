@@ -151,3 +151,99 @@ test('applying a Weekly Blueprint Step deletion preserves the parent Goal link o
   await page.reload();
   expect(await page.evaluate(()=>state.habits[0].goalId)).toBe('wbg1');
 });
+
+test('weekly priority task keeps its selected Area through draft resume and Apply',async({page})=>{
+  await page.setViewportSize({width:320,height:740});
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.categories=['Personal','Research & Lab'];
+    state.tasks=[];
+    state.goals=[];
+    save(true);
+    render();
+  });
+  const plan=()=>page.locator('[data-tab="myplan"]').click();
+  const launch=()=>page.locator('[data-wb-launch]').click();
+  await plan();
+  await launch();
+  await page.locator('[data-wb-step="3"]').click();
+  const form=page.locator('#wbNewTaskForm');
+  const area=form.getByRole('combobox',{name:'Area',exact:true});
+  await expect(area).toHaveValue('');
+  await form.getByLabel('Task name').fill('Order catalyst supplies');
+  await area.selectOption('Research & Lab');
+  expect(await form.evaluate(el=>{
+    const bounds=el.getBoundingClientRect();
+    return [...el.querySelectorAll('input, select, button')].every(control=>{
+      const rect=control.getBoundingClientRect();
+      return rect.left>=bounds.left-1&&rect.right<=bounds.right+1&&rect.height>=44;
+    });
+  })).toBe(true);
+  await page.locator('[data-wb-close]').click();
+  await page.reload();
+  await plan();
+  await launch();
+  await expect(form.getByLabel('Task name')).toHaveValue('Order catalyst supplies');
+  await expect(area).toHaveValue('Research & Lab');
+  await form.getByRole('button',{name:'+ Add task'}).click();
+  expect(await page.evaluate(()=>state.tasks)).toEqual([]);
+  await page.locator('[data-wb-step="4"]').click();
+  await expect(page.locator('#wbMain')).toContainText(/Order catalyst supplies.*Research & Lab/);
+  await page.locator('[data-wb-next]').click();
+  await expect(page.locator('#wbOverlay')).toBeHidden();
+  await page.reload();
+  await plan();
+  await page.locator('[data-bpa-open="Research & Lab"]').click();
+  await expect(page.locator('#bpAreasRoot [data-edit-task]')).toHaveText('Order catalyst supplies');
+});
+
+test('weekly tasks inherit the goal Area and legacy drafts still apply as unassigned',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.categories=['Personal','Research','School'];
+    state.goals=[{id:'area-goal',title:'Publish paper',category:'Research',actions:[]}];
+    state.tasks=[];
+    save(true);
+    render();
+  });
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  await page.locator('[data-wb-step="3"]').click();
+  const form=page.locator('#wbNewTaskForm');
+  const area=form.getByRole('combobox',{name:'Area',exact:true});
+  const goal=form.getByRole('combobox',{name:'Connected goal',exact:true});
+  await area.selectOption('Personal');
+  await goal.selectOption('area-goal');
+  await expect(area).toBeDisabled();
+  await expect(area).toHaveValue('Research');
+  await goal.selectOption('');
+  await expect(area).toBeEnabled();
+  await expect(area).toHaveValue('Personal');
+  await goal.selectOption('area-goal');
+  await form.getByLabel('Task name').fill('Write abstract');
+  await form.getByRole('button',{name:'+ Add task'}).click();
+  await page.locator('[data-wb-step="1"]').click();
+  await page.locator('[data-wb-goal-details="area-goal"] summary').click();
+  await page.locator('[data-wb-goal-field="category"]').selectOption('School');
+  await page.locator('[data-wb-step="3"]').click();
+  await expect(area).toHaveValue('School');
+  await page.locator('[data-wb-close]').click();
+  await page.evaluate(()=>{
+    const key='blueprint-weekly-v918-draft';
+    const draft=JSON.parse(localStorage.getItem(key));
+    delete draft.taskForm.area;
+    draft.newTasks.push({id:'old-task',title:'Earlier weekly task',dueDate:draft.weekStart,goalId:''});
+    localStorage.setItem(key,JSON.stringify(draft));
+  });
+  await page.reload();
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  await expect(area).toHaveValue('School');
+  await page.locator('[data-wb-step="4"]').click();
+  await expect(page.locator('#wbMain')).toContainText(/Write abstract.*School/);
+  await page.locator('[data-wb-next]').click();
+  expect(await page.evaluate(()=>state.tasks.map(({title,goalId,area})=>({title,goalId,area})))).toEqual([
+    {title:'Write abstract',goalId:'area-goal',area:'School'},
+    {title:'Earlier weekly task',goalId:'',area:''}
+  ]);
+});

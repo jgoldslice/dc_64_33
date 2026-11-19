@@ -93,7 +93,10 @@
 .wb-priority .wb-priority-title small{display:block;color:var(--muted);font-size:11px}
 .wb-priority-num{font:normal 18px Georgia,serif;color:var(--secondary-ui);width:22px;flex:none}
 .wb-order-actions{display:flex;gap:4px}
-.wb-new-priority{display:grid;grid-template-columns:minmax(0,2fr) minmax(130px,1fr) auto;gap:8px;align-items:end}
+.wb-new-priority{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:8px;align-items:end}
+.wb-new-priority label{min-width:0}
+.wb-new-priority input,.wb-new-priority select,.wb-new-priority button{min-height:44px}
+.wb-new-priority button{grid-column:1/-1;justify-self:end}
 .wb-review-group{border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:10px}
 .wb-review-group h3{font-size:14px;margin:0 0 9px}
 .wb-review-group p{font-size:13px;margin:5px 0;color:var(--muted)}
@@ -121,8 +124,8 @@
   .wb-event-editor{grid-template-columns:repeat(2,minmax(0,1fr))}
   .wb-event-editor label:first-child{grid-column:1/-1}
   .wb-new-priority{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .wb-new-priority label:first-child{grid-column:1/-1}
-  .wb-new-priority button{grid-column:1/-1}
+  .wb-new-priority label:first-child,.wb-priority-date{grid-column:1/-1}
+  .wb-new-priority button{justify-self:stretch}
   .wb-overview-sections{grid-template-columns:minmax(0,1fr)}
   #week .wb-week-shortcut{font-size:10px;min-width:0}
 }
