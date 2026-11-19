@@ -209,7 +209,7 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
     private let picker = PKToolPicker()
     private let saveDrawing: (PKDrawing) throws -> Void
     private weak var hostController: UIViewController?
-    private var dirty = false
+    private var lastSaved: PKDrawing
     private var pendingSave: DispatchWorkItem?
     private var observation: [NSObjectProtocol] = []
     private var observingPicker = false
@@ -220,6 +220,7 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
         self.projectId = projectId
         self.pageId = pageId
         self.saveDrawing = save
+        self.lastSaved = drawing
         super.init()
         overlay.isOpaque = false
         overlay.backgroundColor = .clear
@@ -298,7 +299,6 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-        dirty = true
         pendingSave?.cancel()
         let work = DispatchWorkItem { [weak self] in
             do { try self?.saveNow() }
@@ -322,9 +322,12 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
     func saveNow() throws {
         pendingSave?.cancel()
         pendingSave = nil
-        guard dirty else { return }
-        try saveDrawing(canvas.drawing)
-        dirty = false
+        // Snapshot the canvas itself on exit/export, even if a delegate
+        // notification for the last stroke has not been delivered yet.
+        let snapshot = canvas.drawing
+        guard snapshot != lastSaved else { return }
+        try saveDrawing(snapshot)
+        lastSaved = snapshot
     }
 
     func close() throws {
