@@ -7,6 +7,19 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.44 compact Design Week action (feature branch, browser/device QA pending)
+
+**Owner request and screenshots:** The old native iPad app shows a large "Design Your Week" feature card above Active Goals / Coming Up, while the newer web Areas overview still has a separate weekly-planning action card below the Area grid. Replace the large/standalone card with a compact calendar-icon **Design Week** button adjacent to **+ Area**, beneath the Area cards. Give weekly planning slightly stronger visual weight.
+
+**Implemented on `feature/compact-week-action-v944`:**
+- `areas-v939.js` now renders + Area (secondary style) and icon-led Design Week (primary style, existing `data-wb-launch` hook) together in the Area actions row. It is not an extra tab and does not create a second weekly-planning workflow.
+- `index.html` removes the oversized weekly feature card, keeping `wbDraftStatus` as an accessible live region, hidden legacy `wbOverviewGoals`/`wbOverviewUpcoming` data anchors expected by the existing weekly module, and `wbUndoRegion` for reversibility after planning.
+- `areas-v939.css` makes the paired controls at least 44px high, permits wrapping on small devices, and removes obsolete feature-card display overrides. The action remains beneath the Area cards and the Areas page continues to have no redundant title.
+- `tests/area-compact-week-action-v944.spec.cjs` checks absence of the old card, side-by-side actions at iPhone/iPad widths, the five-stage launch, and draft resume; `sw.js` cache revision bumped.
+- No changes to planner drafts, task/goal/habit/project data, complete backups, PencilKit code, or native Swift.
+
+**Verification:** GitHub Actions/browser tests pending. The native iOS app seen in the screenshot is a separate Capacitor/Xcode installation and remains outdated until its web bundle is staged and the app rebuilt without deleting local user data. Physical iPad QA remains open.
+
 ## 2026-11-18 — v9.43 Plan Add actions follow cards (merged; browser verified; iOS device QA pending)
 
 **Owner screenshot and request:** On the Tasks tab the `+ Task` row still occupies empty space between the Plan tabs and the content cards. Place it *below* the task cards, so the first card is immediately under the tabs. Apply the consistent placement across Goals, Habits, and Area overview.
