@@ -9,7 +9,7 @@ async function makeArea(page,name='Work'){
   await expect(page.locator('.bp-area-detail-title h1')).toHaveText(name);
 }
 async function createItem(page,kind,title){
-  await page.locator('[data-bpa-add-toggle]').click();
+  await page.locator('.bp-area-detail-title [data-bpa-add-toggle]').click();
   await page.locator('[data-bpa-add-kind="'+kind+'"]').click();
   await page.locator('#modalFields [name="title"]').fill(title);
 }
