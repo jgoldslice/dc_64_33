@@ -3,7 +3,8 @@ const base='http://127.0.0.1:8765/';
 async function openAreas(page){
   await page.goto(base);
   await page.locator('.bottom-nav button[data-tab="myplan"]').click();
-  await expect(page.locator('#bpAreasRoot h1')).toHaveText('Areas');
+  await expect(page.locator('#bpAreasRoot [data-bpa-new]')).toBeVisible();
+  await expect(page.locator('#bpAreasRoot .bp-areas-header h1')).toHaveCount(0);
 }
 test('Area cards open normally, but right-click opens a rename/delete context menu',async({page})=>{
   await openAreas(page);
