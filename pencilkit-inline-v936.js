@@ -22,9 +22,9 @@
   button.type='button';
   button.id='v936InlineInk';
   button.className='v92-native-ink-primary';
-  button.textContent='Draw on page';
-  button.title='Draw directly on this Notes page using Apple PencilKit';
-  button.setAttribute('aria-label','Draw on page with native PencilKit');
+  button.textContent='PencilKit';
+  button.title='Enable native PencilKit drawing';
+  button.setAttribute('aria-label','Enable native PencilKit drawing');
   button.setAttribute('aria-pressed','false');
   button.hidden=true;
   // Focus relocates the Notes root outside #projectNotes. It needs a native
@@ -40,15 +40,21 @@
     if(live)live.textContent=message;
   }
   function label(){
-    button.textContent=active?'Edit content':'Draw on page';
+    // Keep a single stable name in regular and Focus toolbars. Native ink
+    // state is conveyed by highlight and aria-pressed, not a changing label.
+    button.textContent='PencilKit';
     button.setAttribute('aria-pressed',String(active));
-    button.title=active?'Turn off PencilKit drawing to edit Blueprint objects':
-      'Draw on this page using native PencilKit';
-    focusInkButton.textContent=active?'Edit content':'Draw with PencilKit';
+    button.setAttribute('aria-label',active
+      ?'Turn off PencilKit drawing to edit Blueprint content'
+      :'Enable PencilKit drawing on this page');
+    button.title=active?'PencilKit on — tap to edit text and images':
+      'PencilKit off — tap to draw';
+    focusInkButton.textContent='PencilKit';
     focusInkButton.setAttribute('aria-pressed',String(active));
     focusInkButton.setAttribute('aria-label',active
-      ?'Switch to Blueprint text and image editing'
-      :'Start native PencilKit drawing');
+      ?'Turn off PencilKit drawing to edit Blueprint content'
+      :'Enable PencilKit drawing in Focus');
+    focusInkButton.title=button.title;
   }
   function rect(r){
     return {x:Math.round((r.left??r.x)*2)/2,y:Math.round((r.top??r.y)*2)/2,
@@ -228,11 +234,9 @@
     group.insertBefore(button,oldButton);
     oldButton.hidden=true;
     button.hidden=false;
-    // Keep the SVG editor and its data as a recovery fallback, but hide
-    // redundant web ink tools on native-capable iPads.
+    // Keep the SVG editor and its saved data as a fallback. PencilKit's
+    // own PKToolPicker is the sole visible ink toolbar on capable iPads.
     document.body.classList.add('v937-pencilkit-native');
-    const legacy=document.getElementById('v92LegacyInkTools');
-    if(legacy)legacy.hidden=true;
     if(focusBar){
       const exit=focusBar.querySelector('#v928FocusExit');
       focusBar.insertBefore(focusInkButton,exit||null);
