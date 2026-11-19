@@ -7,6 +7,12 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-19 — Area picker for weekly priority tasks
+
+- Commit `34072f3` adds an optional Area picker to Weekly Blueprint → Prioritize. Connected goals supply their Area, including edits made in the same weekly draft. Review shows the assigned Area, and Apply writes it to the existing task field. Earlier drafts without an Area still apply.
+- The due date gets a full row on narrow screens. Local verification passed all 321 Playwright tests and all 29 standalone Node tests, including draft resume, Area dashboard placement after Apply, goal inheritance, legacy draft compatibility and containment at 320px.
+- GitHub Pages publishes the web change from main. The installed iOS app requires staging the updated web bundle and rebuilding with the [existing wrapper instructions](../native-pencilkit/README.md). Physical-device verification is pending.
+
 ## 2026-11-19 — Today Schedule opens Add Event
 
 - Commit `94004f6` routes the Schedule card's **+ Add** directly to the existing Add Event form with the current local date. It removes the inline menu whose event choice was clipped on iPhone. The Tasks card continues to open Add Task.
