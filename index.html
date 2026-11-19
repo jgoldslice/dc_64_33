@@ -1851,6 +1851,7 @@ document.addEventListener('click',async e=>{
   }
   if(match('#deleteProject')){
     const p=v6Project();if(!p||!await BlueprintSheet.confirm('Delete project "'+p.title+'"? Its notes, library entries, and sketches will be removed. Linked Blueprint tasks and saved ideas will remain.'))return;
+    const oldState=structuredClone(state);
     for(const n of state.ideas)if(String(n.projectId)===String(p.id)){n.projectId='';n.convertedToProject=false;}
     // Collect the complete set of associated files, not merely Library files.
     // A notebook picture may be shared with another page/project.
@@ -1859,7 +1860,6 @@ document.addEventListener('click',async e=>{
       ...(p.contentBlocks||[]).map(b=>b.key),
       ...(p.notePages||[]).flatMap(page=>(page.objects||[]).map(o=>o.key))
     ].filter(Boolean));
-    const oldState=structuredClone(state);
     state.projects=state.projects.filter(x=>String(x.id)!==String(p.id));
     // Persist before deleting binary attachments. On a storage failure,
     // return to the original project instead of destroying the user's files.

@@ -233,6 +233,7 @@ test('native archive round trip stages fresh drawings and rejects corrupt ink be
       if(method==='capabilities')return {drawingArchiveVersion:1};
       if(method==='exportDrawing')return {base64:btoa(args.pageId)};
       if(method==='stageDrawing'){
+        if(window.failSecond && window.stagedInk.length===1)throw Error('Storage full');
         window.stagedInk.push(atob(args.base64));
         return {pageId:crypto.randomUUID()};
       }
@@ -250,6 +251,17 @@ test('native archive round trip stages fresh drawings and rejects corrupt ink be
   expect(result).toContain('Drawing manifest checksum mismatch');
   expect(await page.evaluate(()=>window.stagedInk)).toEqual([]);
   page.on('dialog',d=>d.accept());
+  const before=await page.evaluate(()=>localStorage.getItem(STORAGE_KEY));
+  const failure=await page.evaluate(async data=>{
+    window.failSecond=true;
+    try{await v74ImportBackup(new Blob([JSON.stringify(data)]));}
+    catch(error){return error.message;}
+    finally{window.failSecond=false;}
+  },archive);
+  expect(failure).toContain('Storage full');
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)))).toEqual(JSON.parse(before));
+  expect(await page.evaluate(()=>window.stagedInk)).toEqual(['page-a']);
+  await page.evaluate(()=>{window.stagedInk=[];});
   await page.evaluate(data=>v74ImportBackup(new Blob([JSON.stringify(data)])),archive);
   expect(await page.evaluate(()=>window.stagedInk)).toEqual(['page-a','page-b']);
   const pageRecord=await page.evaluate(()=>state.projects[0].notePages[0]);

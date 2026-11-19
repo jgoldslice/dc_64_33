@@ -909,12 +909,41 @@
     button.setAttribute('aria-expanded','true');
     pageMenu.firstElementChild.focus({preventScroll:true});
   }
-  pageList.addEventListener('contextmenu', event=>{
-    const row=event.target.closest('.v811-page-row');
-    const button=row?.querySelector('[data-v811-rename-id]');
-    if(!button)return;
-    event.preventDefault();
-    showPageMenu(button,button.dataset.v811RenameId);
+  let holdTimer,heldLink,holdStart,suppressLink;
+  function clearPageHold(){
+    clearTimeout(holdTimer);heldLink=null;
+  }
+  function openLinkOptions(link){
+    const button=link.closest('.v811-page-row')?.querySelector('[data-v811-rename-id]');
+    if(button && (pageMenu.hidden || pageMenuTarget!==button.dataset.v811RenameId))
+      showPageMenu(button,button.dataset.v811RenameId);
+  }
+  pageList.addEventListener('pointerdown',event=>{
+    clearPageHold();suppressLink=null;
+    if(!event.isPrimary || event.button!==0)return;
+    heldLink=event.target.closest('[data-v811-page-id]');
+    if(!heldLink)return;
+    holdStart={x:event.clientX,y:event.clientY,id:event.pointerId};
+    holdTimer=setTimeout(()=>{
+      if(!heldLink?.isConnected)return;
+      suppressLink=heldLink;openLinkOptions(heldLink);clearPageHold();
+    },520);
+  });
+  pageList.addEventListener('pointermove',event=>{
+    if(heldLink && (event.pointerId!==holdStart.id ||
+       Math.hypot(event.clientX-holdStart.x,event.clientY-holdStart.y)>10))clearPageHold();
+  });
+  for(const type of ['pointerup','pointercancel','pointerleave','scroll'])
+    pageList.addEventListener(type,clearPageHold);
+  pageList.addEventListener('click',event=>{
+    if(suppressLink && suppressLink.contains(event.target)){
+      event.preventDefault();event.stopImmediatePropagation();suppressLink=null;
+    }
+  },true);
+  pageList.addEventListener('contextmenu',event=>{
+    const link=event.target.closest('[data-v811-page-id]');
+    if(!link)return;
+    event.preventDefault();clearPageHold();openLinkOptions(link);
   });
   pageMore.addEventListener('click',()=>{
     const wasOpen=!pageMenu.hidden;
