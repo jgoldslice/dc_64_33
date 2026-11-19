@@ -103,6 +103,8 @@
     textSizeSelect.focus({preventScroll:true});
   }
   textSizeTrigger.addEventListener('click',toggleTextSizeMenu);
+  // The primary T action must still select text placement in one tap.
+  textboxButton.addEventListener('click',()=>hideTextSizeMenu());
   textSizeSelect.addEventListener('change',()=>hideTextSizeMenu());
   document.addEventListener('pointerdown',event=>{
     if(!textSizeMenu.hidden&&!textSizeMenu.contains(event.target)&&
