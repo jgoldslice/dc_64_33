@@ -16,8 +16,9 @@ test('Blueprint opens without splash and navigates into Plan Areas by default', 
   await expect(page.locator('#overview')).toBeVisible();
   await expect(page.locator('#goals')).toBeHidden();
   await expect(page.locator('#tasks')).toBeHidden();
-  await expect(page.locator('#bpAreasRoot .eyebrow')).toContainText('Your responsibilities');
-  await expect(page.locator('#bpAreasRoot h1')).toHaveText('Areas');
+  await expect(page.locator('#bpAreasRoot .eyebrow')).toHaveCount(0);
+  await expect(page.locator('#bpAreasRoot [data-bpa-new]')).toBeVisible();
+  await expect(page.locator('#bpAreasRoot .bp-areas-header h1')).toHaveCount(0);
   await expect(page.locator('#overview [data-wb-launch]')).toBeVisible();
   await page.locator('[data-plan-tab="tasks"]').click();
   await expect(page.locator('#tasks')).toBeVisible();
