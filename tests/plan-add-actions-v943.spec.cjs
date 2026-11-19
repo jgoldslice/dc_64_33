@@ -27,9 +27,6 @@ test('Tasks cards start immediately under tabs, with the only Add Task below bot
     await expect(stack.locator('.card h2')).toHaveText(['Priority Order','All Tasks']);
     await add.click();
     await expect(page.locator('#modalBack')).toHaveClass(/open/);
-    await page.locator('#modalBack .modal-close').first().click().catch(async()=>{
-      await page.keyboard.press('Escape');
-    });
   }
 });
 test('Goals and Habits Add controls follow the content, without duplicate top action bars',async({page})=>{
