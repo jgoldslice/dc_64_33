@@ -7,6 +7,12 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-19 — Today Schedule opens Add Event
+
+- Commit `94004f6` routes the Schedule card's **+ Add** directly to the existing Add Event form with the current local date. It removes the inline menu whose event choice was clipped on iPhone. The Tasks card continues to open Add Task.
+- The phone-width Chromium regression checks both entry points and verifies that a saved event remains in Schedule after reload. The targeted Playwright file passed all 3 tests and the Node suite passed all 29 tests.
+- Web delivery runs through GitHub Pages from main. A separate installed iOS build requires staging the updated web bundle and rebuilding in Xcode using the [existing wrapper instructions](../native-pencilkit/README.md). The fix has not been tested on a physical device.
+
 ## 2026-11-19 — v9.46 native notebook and shared sheets (merged, device QA pending)
 
 [PR #74](https://github.com/jgoldslice/dc_64_33/pull/74) merged to main as `93eba97`. Final feature head `474b64e` flushes the live PKDrawing snapshot before closing or exporting, including when a delegate callback is still pending. The initial implementation `eadd662` was based on `42566c0`. Reviewed the actual wrapper target, historical backup draft PR #40, local changes and existing offline assets. The archived local Swift checkpoint is outside the web repository.
