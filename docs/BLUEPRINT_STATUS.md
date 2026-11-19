@@ -7,6 +7,18 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — Native PencilKit sidecar integration (local installation required)
+
+**Verified by owner on physical iPad:** The initial local Xcode PencilKit prototype compiled, registered as `BlueprintPencil` and opened successfully through `Capacitor.nativePromise('BlueprintPencil','open',{})`. The existing app and native Share plugin continued running. This confirms the *prototype* only, not the new persistent editor.
+
+**Repository implementation:** Updated `pencilkit-entry-v92.js` to communicate over Capacitor 8's verified `nativePromise` path, check `capabilities` before showing the existing PencilKit project action, and use `openEditor` with the existing project/page identifiers. The prior optional entry did not work with the owner's explicitly registered Capacitor 8 plugin, which was missing from the JavaScript global proxy registry. Updated service-worker cache identifier to load the revised entry. No existing SVG stroke schema, page data, backup format, web drawing behavior, or native Share integration was modified.
+
+**Local Swift integration provided separately:** Revised `BlueprintPencilPlugin.swift` and `BlueprintPencilViewController.swift` source package for the owner's separate `canvas-ios` Xcode project, which is **not maintained in this repository**. The revised `capabilities`/`openEditor` plugin uses a stable project/page-scoped Application Support sidecar, PKDrawing serialization, save-on-change debounce and save on background/close, native drawing tools, Pencil-only inking and touch pan/zoom. On read/decode failure the editor rejects rather than overwriting unreadable art. Existing native `open` remains a disposable diagnostics route. **Not built or tested in Xcode yet**; the owner must install both files, build, and run save/relaunch/pan/zoom device QA. Do not claim native production deployment.
+
+**Data limitation / release blocker:** These PencilKit files are *outside* the existing complete Blueprint backup/export and do not sync to other devices; no export/import or coordinated migration of native art into the mixed text/image/SVG note layer has been implemented. UI explicitly retains the warning. Until an audited native-backup integration exists, this is an opt-in experimental sidecar editor for disposable test notes. Never uninstall/erase the app or rely on existing complete backups to protect native test drawings. Work remains to add verified, non-destructive native drawing backup/restore and mixed-content presentation.
+
+**Verification:** Repository edits reviewed against current `v76.js`, `pencilkit-entry-v92.js`, existing backup contract and current status. No GitHub Actions, automated browser tests, Swift compilation, or persistent-device QA run for this change. 
+
 ## 2026-11-18 — v9.33 ready for Xcode device testing
 
 Integrated the Weekly Blueprint recovery and Goal Step navigation fix, nested planner and backup validation, and the simplified web compass icon. Weekly Step move/delete buttons now update the draft, while the planning stage controls navigate between stages. The browser suite passed on weekly fix `c39212ab`. [PR #64](https://github.com/jgoldslice/dc_64_33/pull/64) merged as `75d15ead7d4020e980cafc3f95c61e35bece68b7`. [Combined Chromium CI](https://github.com/jgoldslice/dc_64_33/actions/runs/44408766988) passed all 290 tests on `a5b0e828`. The release scan also verified all 45 HTML asset references against the offline manifest, all 46 precached files, and standalone and inline JavaScript syntax.
