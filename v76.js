@@ -338,6 +338,47 @@
   zoomOutButton.addEventListener('click',()=>changeZoomStep(-1));
   zoomInButton.addEventListener('click',()=>changeZoomStep(1));
   zoomResetButton.addEventListener('click',()=>setNoteZoom(1));
+  // The in-page PencilKit canvas sits above this WKWebView and intercepts
+  // touch events. Native Swift forwards finger navigation here so PencilKit
+  // and the HTML page share ONE bounded zoom and scroll transform. The
+  // editable strokes, their page-local coordinates, and backup formats do
+  // not change. phase=start/change/end/cancel, scale is relative to start.
+  let pencilViewportGesture=null;
+  function handlePencilViewportGesture(detail){
+    if(!detail||!surface.getClientRects().length)return false;
+    const phase=String(detail.phase||'');
+    if(phase==='end'||phase==='cancel'){
+      pencilViewportGesture=null;
+      suppressPageClickUntil=Date.now()+400;
+      return true;
+    }
+    const x=Number(detail.x),y=Number(detail.y);
+    if(!Number.isFinite(x)||!Number.isFinite(y))return false;
+    if(phase==='start'){
+      pencilViewportGesture={startZoom:noteZoom,lastX:x,lastY:y,
+        pageId:String(current()?.page?.id||'')};
+      cancelDrawingForPinch();
+      suppressPageClickUntil=Date.now()+400;
+      return true;
+    }
+    if(phase!=='change')return false;
+    const currentPage=String(current()?.page?.id||'');
+    if(!pencilViewportGesture||pencilViewportGesture.pageId!==currentPage)return false;
+    // Zoom around the PREVIOUS contact center, then translate to the new
+    // center. Updating both in one frame avoids cumulative finger drift.
+    const old=pencilViewportGesture;
+    const rawScale=Number(detail.scale);
+    const scale=Number.isFinite(rawScale)&&rawScale>0?rawScale:1;
+    setNoteZoom(old.startZoom*scale,{x:old.lastX,y:old.lastY});
+    zoomViewport.scrollLeft-=x-old.lastX;
+    zoomViewport.scrollTop-=y-old.lastY;
+    old.lastX=x;old.lastY=y;
+    suppressPageClickUntil=Date.now()+400;
+    // ResizeObserver does not fire for CSS transform changes. Explicitly
+    // signal the native overlay to realign after the zoom/pan frame.
+    window.dispatchEvent(new Event('blueprint:notes-viewport-change'));
+    return true;
+  }
   // Ctrl/Command+wheel includes common trackpad pinch gestures on desktop.
   zoomViewport.addEventListener('wheel',e=>{
     if(!e.ctrlKey&&!e.metaKey)return;
@@ -758,7 +799,7 @@
     // After a full backup import, ids may be identical even though the
     // underlying page objects (including attachment keys) have changed.
     if(!force&&key===lastKey&&page===lastPageRef)return;
-    if(key!==lastKey){noteZoom=1;zoomViewport.scrollLeft=0;updateZoomControls();}
+    if(key!==lastKey){noteZoom=1;zoomViewport.scrollLeft=0;zoomViewport.scrollTop=0;pencilViewportGesture=null;updateZoomControls();}
     lastKey=key;lastPageRef=page;selectedText=null;selectedItemId=null;
     pageSelect.replaceChildren();
     p.notePages.forEach(pg=>{
@@ -1462,7 +1503,8 @@
   // Narrow bridge for optional workspace enhancements; all edits still use
   // the original page records, SVG rendering, undo control and verified save.
   window.BlueprintNotesBridge={current,persist,strokesView,growPage,growPageWidth,
-    setMode:applyMode,getMode:()=>mode,inkPosition,getZoom:()=>noteZoom,pushInkUndo,
+    setMode:applyMode,getMode:()=>mode,inkPosition,getZoom:()=>noteZoom,
+    handlePencilViewportGesture,pushInkUndo,
     root,surface,ink,zoomViewport};
   applyMode('select');
   if(v6Project())renderPage(v6Project(),true);

@@ -7,6 +7,19 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.41 PencilKit viewport pinch/pan (web bridge implemented; native wiring/device QA pending)
+
+**Owner request and iPad screenshots:** Native PencilKit tool picker and drawing are working, but while PencilKit is enabled the user cannot pinch zoom or move the Notes sheet with fingers; web-mode zoom and +/- buttons already exist. Preserve the native handwriting tool picker and existing strokes.
+
+**Implemented on feature branch `feature/pencilkit-viewport-gestures-v941`:**
+- `v76.js` exposes a dedicated `handlePencilViewportGesture` bridge on `BlueprintNotesBridge`. The native events `start/change/end/cancel` move the existing bounded sheet zoom and scroll (50%–500%); zoom is centered on the previous finger midpoint, then moved to the latest midpoint, and the page-level scroll position is preserved. Stale events after page changes are ignored by the bridge. Touch interaction does not rewrite any note/drawing data.
+- `pencilkit-inline-v936.js` listens for `blueprint:pencil-navigation` only while native drawing is active and rejects mismatching project/page identifiers. It schedules native `showInline` geometry refresh after viewport motion; web SVG mode and older native plugins are unaffected.
+- `native-pencilkit/BlueprintPencilNavigation.swift` adds a **separate, optional native helper** that attaches finger-only recognizers to the existing native PKCanvasView, keeps the Pencil for ink, and sends JSON-encoded navigation events to the WKWebView. Uses associated-object retention to avoid adding stored state to the existing native plugin. `native-pencilkit/README.md` documents the required minimal hook and QA.
+- `tests/pencilkit-navigation-v941.spec.cjs` adds browser tests for simulated native pinch, pan, zoom limits, drawing-data preservation, and inactive/stale events. `sw.js` cache revision bumped.
+
+**Important limitations:** The actual current native `ios/App/BlueprintPencilPlugin.swift` resides on the owner's Mac and is **not in this GitHub repository**, so it could not be modified or compiled through GitHub. The helper will **not run** until the owner integrates it into the Xcode app target and adds `BlueprintPencilNavigation.install` from the existing `showInline` native canvas path. Native content alignment, gesture recognizer priority, touch behavior, and PKToolPicker availability require physical iPad verification. Native drawings remain separately stored and outside the complete Blueprint backup/sync flow.
+
+**Verification:** Pending GitHub Actions browser tests; no Swift/Xcode compilation or device installation has been performed.
 ## 2026-11-18 — v9.40 Area context menus (merged on main; browser verified; iPad QA pending)
 
 **Owner request and screenshot:** Remove the redundant Manage Areas panel and header control. A normal tap on an Area card should still open it, while pressing and holding on the card should open a small menu with Rename and Delete. Preserve the current compact iPad Plan layout.
