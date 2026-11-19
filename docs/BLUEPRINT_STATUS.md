@@ -7,17 +7,17 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-18 — v9.45 Area Add popover (feature branch; browser/device QA pending)
+## 2026-11-18 — v9.45 Area Add popover (merged; browser verified; iOS device QA pending)
 
 **Owner screenshot and request:** On an individual Area dashboard (e.g. Research), `+ Add` currently injects a rectangular inline list of `+ Task / + Habit / + Goal / + Project`, shifting Goal/Task cards downward abruptly. Replace this with a compact Apple-like animated popover, without changing any item creation or storage behavior.
 
-**Implemented on `feature/area-add-popover-v945`:**
+**Implemented and merged from `feature/area-add-popover-v945`:**
 - `areas-v939.js`: creates a single fixed-layer accessible action popover anchored to `+ Add` on iPad/desktop, as a bottom sheet on narrower phones. Row options Task, Habit, Goal, Project retain their original delegated `data-bpa-add-kind` creation handlers and default Area context. Dynamic placement avoids screen edges, and the original content cards do not reflow. Includes outside-tap, close-button, Escape dismissal, restored button focus, keyboard Tab containment and `aria-expanded` state. Closing during a render, resize or scroll cleans up the overlay.
 - `areas-v939.css`: compact card design, icon rows, restrained ~170ms entrance motion, safe-area-aware mobile sheet, 44px+ touch-friendly hit targets, light/dark theme variables, and Reduced Motion support. Removes superseded inline `bp-area-add-menu` rules.
 - `tests/area-add-popover-v945.spec.cjs`: covers iPad stable card position, menu choices and clipping, dismissal/accessibility, Area inheritance in Task/Habit/Goal creation, narrow phone sheet, and Reduced Motion. Existing Area and long-press action tests still apply.
 - `sw.js`: offline cache revision. **No changes to saved Areas, goals, tasks, habits, projects, backups, PencilKit, or native Swift.**
 
-**Verification:** GitHub Actions/browser run and physical iPhone/iPad Safari/Capacitor QA pending. GitHub publication is separate from Xcode installation.
+**Verification:** [GitHub Actions browser run #400](https://github.com/jgoldslice/dc_64_33/actions/runs/44470545343) passed **314/314 Playwright tests**, including six new UI interactions and iPad/iPhone responsive popover checks; JavaScript syntax validation passed. [PR #73](https://github.com/jgoldslice/dc_64_33/pull/73) merged to main as `f19a8ebcf0091ab8abbd5e243f661c6eb3ed8917`. The native iOS app has **not** been rebuilt or installed; iPhone/iPad physical-device behavior and GitHub Pages propagation remain unverified.
 
 ## 2026-11-18 — v9.44 compact Design Week action (merged; browser verified; native app QA pending)
 
