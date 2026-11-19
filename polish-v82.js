@@ -65,15 +65,7 @@
     toggle.setAttribute('aria-expanded',String(opening));
     if(opening)rename.focus();
   });
-  menu.addEventListener('keydown',e=>{
-    if(!['ArrowUp','ArrowDown','Home','End'].includes(e.key))return;
-    e.preventDefault();
-    const items=[...menu.querySelectorAll('button:not([disabled])')];
-    const index=items.indexOf(document.activeElement);
-    let next=e.key==='Home'?0:e.key==='End'?items.length-1:
-      (index+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;
-    items[next]?.focus();
-  });
+  BlueprintSheet.menuKeyboard(menu,()=>closeMenu({restoreFocus:true}));
   menu.addEventListener('click',e=>{
     if(!(e.target instanceof Element))return;
     if(e.target.closest('#v82ExportBackup')){

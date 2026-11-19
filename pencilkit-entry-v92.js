@@ -87,7 +87,7 @@
         throw Error('This PencilKit plugin is outdated or incompatible. Install the newer Swift files and rebuild.');
       }
       if(!acknowledged){
-        const ok=confirm('Native PencilKit drawings save separately on this device. They are NOT visible alongside Blueprint text/images, included in the complete backup, or synced. Use a disposable test page. Continue?');
+        const ok=await window.BlueprintSheet.allowInk(capabilities.drawingArchiveVersion===1);
         if(!ok)return;
         acknowledged=true;
       }
@@ -98,7 +98,7 @@
       if(result?.opened!==true){
         throw Error('Native editor did not confirm its presentation. Update both Swift files in Xcode.');
       }
-      status('PencilKit editor opened. Drawings autosave locally; native drawings are not in Blueprint backups.');
+      status(capabilities.drawingArchiveVersion===1?'PencilKit editor opened. Drawings autosave locally.':'PencilKit editor opened. Drawings autosave locally; native drawings are not in Blueprint backups.');
     }catch(error){
       const message='Unable to open PencilKit: '+(error?.message||String(error));
       status(message);alert(message);

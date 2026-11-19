@@ -1,0 +1,29 @@
+#bpSheet {
+  box-sizing:border-box; width:min(25rem,calc(100% - 2rem)); max-height:85dvh;
+  padding:0; border:1px solid var(--line,#8885); border-radius:20px;
+  background:var(--surface,Canvas); color:var(--ink,CanvasText); box-shadow:0 16px 64px #0003;
+}
+#bpSheet::backdrop {background:#10182755}
+#bpSheet form {display:grid; gap:14px; padding:20px}
+#bpSheet h2,#bpSheet p {margin:0}
+#bpSheet label {display:grid; gap:5px}
+#bpSheet input,#bpSheet textarea {width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:9px}
+#bpSheet footer {display:flex;justify-content:flex-end;gap:8px}
+#bpSheet button {min-height:44px;padding-inline:16px}
+#bpSheet .bp-danger {background:#ab2626;color:white}
+@media(max-width:560px){#bpSheet {margin:auto auto max(8px,env(safe-area-inset-bottom));max-height:78dvh}}
+@media(prefers-reduced-motion:no-preference){#bpSheet[open]{animation:bpSheetIn 170ms ease-out} @keyframes bpSheetIn{from{opacity:0;transform:translateY(8px)}}}
+#projectWorkspace:has(#projectNotes:not([hidden]):not(.hidden)) #projectTitle {display:none}
+
+/* Reserve actual layout space above the native overlay for Focus controls. */
+body.v937-pencilkit-native #v76Editor.v928-focus-mode #v928FocusBar {
+  position:static; order:-1; align-self:flex-end; flex:none;
+  margin:calc(env(safe-area-inset-top) + 4px) max(8px,env(safe-area-inset-right)) 4px;
+}
+body.v937-pencilkit-native #v76Editor.v928-focus-mode .v811-note-body {height:auto!important}
+#projectNotes .v76-toolbar {row-gap:3px}
+@media(min-width:561px){#bpSheet.bp-anchored {position:fixed;margin:0}}
+
+#bpToast {position:fixed;z-index:10000;pointer-events:none;bottom:calc(env(safe-area-inset-bottom) + 72px);left:50%;transform:translateX(-50%);width:max-content;max-width:90vw;padding:8px 14px;border-radius:12px;background:var(--ink);color:var(--surface);font-size:.9rem}
+
+.v811-page-link {-webkit-touch-callout:none;user-select:none}

@@ -1,4 +1,5 @@
 'use strict';
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 
@@ -60,8 +61,8 @@ test('Project Overview columns respond to its content width rather than full scr
   await page.goto(base);
   await page.addStyleTag({content:'.shell,.bottom-nav{transition:none!important}'});
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Layout project'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Layout project');
   await expect(page.locator('#projectOverview')).toBeVisible();
   for(const [width,height] of [[320,700],[390,844],[740,1024],[768,1024],[834,1194],[900,850],[1194,834]]){
     await page.setViewportSize({width,height});
@@ -125,8 +126,8 @@ test('long project titles receive a roomy switcher across iPad, phone, and Split
   await page.addStyleTag({content:'.shell,.bottom-nav{transition:none!important}'});
   await page.locator('[data-tab="brainstorm"]').click();
   const name='Minecraft Crafting Hub and Storage Design With a Very Long Project Title';
-  page.once('dialog',d=>d.accept(name));
   await page.locator('#newProject').click();
+  await submitSheet(page, name);
   await expect(page.locator('#projectOverview')).toBeVisible();
   for(const [width,height] of [[320,700],[390,844],[650,850],[740,1024],[834,1194],[1024,768],[1194,834]]){
     await page.setViewportSize({width,height});
@@ -157,8 +158,8 @@ test('long project titles receive a roomy switcher across iPad, phone, and Split
 test('library image thumbnails show whole images, while lists and project cards stay accessible',async({page})=>{
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept('Library QA'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Library QA');
   await page.evaluate(async()=>{
     const p=v6Project();
     const png=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP+ZJRdGAAAAABJRU5ErkJggg=='),c=>c.charCodeAt(0));

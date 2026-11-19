@@ -59,6 +59,7 @@ function harness(nativePromise){
     getElementById:id=>id==='v92PencilKit'?null:id==='v81A11yStatus'?status:null,
     createElement:element
   };
+  view.BlueprintSheet={allowInk:async()=>true};
   vm.runInNewContext(source,{window:view,document:doc,confirm:()=>true,
     alert:message=>alerts.push(message),setTimeout,clearTimeout});
   const group=inserts[0]?.[0];

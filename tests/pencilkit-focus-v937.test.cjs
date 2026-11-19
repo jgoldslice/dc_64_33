@@ -62,6 +62,7 @@ function setup(embedded=true){
   };
   const document={body,getElementById:id=>nodes[id]||null,
     createElement:()=>element('button'),addEventListener(){}};
+  window.BlueprintSheet={allowInk:async()=>true};
   vm.runInNewContext(inline,{window,document,confirm:()=>true,
     alert:message=>alerts.push(message),setTimeout:()=>1,
     console:{error(){},warn(){}}});

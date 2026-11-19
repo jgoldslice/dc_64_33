@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const { test, expect } = require('@playwright/test');
 const fs=require('node:fs/promises');
 const url='http://127.0.0.1:8765/';
@@ -5,8 +6,8 @@ test.use({browserName:'chromium',viewport:{width:390,height:844},isMobile:true,h
 
 async function openNewProject(page,title) {
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept(title));
   await page.locator('#newProject').click();
+  await submitSheet(page, title);
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
 }
@@ -113,8 +114,9 @@ test('removing an image from Library does not delete a blob used by Notes',async
     save();v6Render();
     return id;
   },key);
-  page.once('dialog',d=>d.accept());
-  await page.evaluate(async id=>await v6DeleteResource(id),id);
+  const removed=page.evaluate(id=>v6DeleteResource(id),id);
+  await submitSheet(page);
+  await removed;
   const stillSaved=await page.evaluate(async key=>!!(await v6Blob('get',key)),key);
   expect(stillSaved).toBe(true);
   await expect(page.locator('.v76-photo')).toBeVisible();

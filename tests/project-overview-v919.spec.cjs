@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 
 'use strict';
 const {test,expect}=require('@playwright/test');
@@ -5,7 +6,8 @@ const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium'});
 async function create(page,name='QA Project'){
   await page.goto(base);await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept(name));await page.locator('#newProject').click();
+  await page.locator('#newProject').click();
+  await submitSheet(page, name);
   await expect(page.locator('#projectOverview')).toBeVisible();
 }
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP+ZJRdGAAAAABJRU5ErkJggg==','base64');

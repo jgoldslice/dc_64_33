@@ -257,7 +257,7 @@
     if(event.key==='Escape'&&createMenu){event.preventDefault();closeCreateMenu(true);return;}
     if(event.key==='Escape'&&areaMenu){event.preventDefault();closeAreaMenu(true);}
   });
-  document.addEventListener('click',event=>{
+  document.addEventListener('click',async event=>{
     const btn=event.target.closest('[data-bpa-open],[data-bpa-back],[data-bpa-new],[data-bpa-rename],[data-bpa-remove],[data-bpa-menu-close],[data-bpa-add-toggle],[data-bpa-add-kind],[data-bpa-add-close],[data-bpa-expand],[data-bpa-edit-goal],[data-bpa-project]');
     if(!btn)return;
     if(btn.hasAttribute('data-bpa-open')){
@@ -271,7 +271,7 @@
     if(btn.hasAttribute('data-bpa-add-close')){closeCreateMenu(true);return;}
     if(btn.hasAttribute('data-bpa-expand')){const key=selected+':'+btn.dataset.bpaExpand;expanded.has(key)?expanded.delete(key):expanded.add(key);render();return;}
     if(btn.hasAttribute('data-bpa-new')){
-      const next=prompt('New Area name');
+      const next=await BlueprintSheet.name('New Area');
       if(next===null)return;
       const name=normalizedCategory(next).slice(0,60);
       if(!name)return;
@@ -279,7 +279,7 @@
       return;
     }
     if(btn.hasAttribute('data-bpa-rename')){
-      const before=btn.dataset.bpaRename;closeAreaMenu();const next=prompt('Rename Area',before);
+      const before=btn.dataset.bpaRename;closeAreaMenu();const next=await BlueprintSheet.name('Rename Area',before,'area:'+before);
       if(next===null)return;
       const name=normalizedCategory(next).slice(0,60);
       if(!name||name===before)return;
@@ -296,7 +296,7 @@
       if(contents(state,area).goals.length||state.tasks.some(t=>t.area===area)||state.habits.some(h=>h.area===area)||state.projects.some(p=>p.area===area)){
         alert('Move the items out of this Area first.');return;
       }
-      if(!confirm('Delete empty Area "'+area+'"?'))return;
+      if(!await BlueprintSheet.confirm('Delete empty Area "'+area+'"?'))return;
       state.categories=state.categories.filter(a=>a!==area);
       if(!state.categories.length)state.categories=['Personal'];
       if(selectedCategory===area)selectedCategory='All';
@@ -309,7 +309,7 @@
       const kind=btn.dataset.bpaAddKind;closeCreateMenu();
       root.blueprintAreaCreationContext=selected===INBOX?'':selected;
       if(kind==='project'){
-        const name=prompt('Project name');
+        const name=await BlueprintSheet.name('New project','','project-in:'+selected);
         if(name?.trim()){tab('brainstorm');v6CreateProject(name);}
         root.blueprintAreaCreationContext='';
       }else{

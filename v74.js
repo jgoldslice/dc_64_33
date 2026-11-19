@@ -218,10 +218,12 @@
      validatePlannerShape(source);
      return {complete:false,data:source,media:new Map()};
    }
-   if(![1,2].includes(source.version))throw Error('Unsupported complete backup version');
+   if(![1,2,3].includes(source.version))throw Error('Unsupported complete backup version');
+   if(source.version<3 && ('drawings' in source || 'drawingsSha256' in source))
+     throw Error('Native drawing manifest requires backup version 3');
    validatePlannerShape(source.state);
    if(!Array.isArray(source.attachments))throw Error('Backup has no attachment manifest');
-   if(source.version===2){
+   if(source.version>=2){
      if(!/^[a-f0-9]{64}$/i.test(source.stateSha256||''))
        throw Error('Backup state checksum is missing');
      if(await hashState(source.state)!==source.stateSha256.toLowerCase())
@@ -237,7 +239,7 @@
        throw Error('Unreferenced attachment in backup: '+entry.key);
      const blob=base64ToBlob(entry.base64,entry.mime);
      if(blob.size>100*1024*1024)throw Error('Attachment exceeds safe import size: '+entry.key);
-     if(source.version===2){
+     if(source.version>=2){
        if(!Number.isSafeInteger(entry.size)||entry.size!==blob.size||
          !/^[a-f0-9]{64}$/i.test(entry.sha256||''))
          throw Error('Missing or incorrect attachment integrity data: '+entry.key);
@@ -250,7 +252,12 @@
    }
    for(const key of required)
      if(!media.has(key))throw Error('Backup is missing saved attachment: '+key);
-   return {complete:true,data:source.state,media};
+   if(source.version===3){
+     if(!Array.isArray(source.drawings)||await hashState(source.drawings)!==source.drawingsSha256)
+       throw Error('Drawing manifest checksum mismatch');
+     await BlueprintDrawingArchive.validate(source.state,source.drawings);
+   }
+   return {complete:true,data:source.state,media,drawings:source.version===3?source.drawings:null};
  }
  async function exportCompleteBackup(){
    if(canvasLoadError)throw Error('Saved planner data could not be loaded; export the untouched original using the recovery warning instead');
@@ -262,6 +269,12 @@
    const header={format:'canvas-complete-backup',version:2,
      exportedAt:new Date().toISOString(),state:snapshot,
      stateSha256:await hashState(snapshot)};
+   const drawings=await BlueprintDrawingArchive.collect(snapshot);
+   if(drawings){
+     header.version=3;
+     header.drawings=drawings;
+     header.drawingsSha256=await hashState(drawings);
+   }
    const pieces=[JSON.stringify(header).slice(0,-1)+',"attachments":['];
    let count=0;
    for(const key of new Set([...required,...drafts])){
@@ -282,6 +295,7 @@
    a.href=u;a.download='canvas-complete-'+new Date().toISOString().slice(0,10)+'.json';
    document.body.appendChild(a);a.click();a.remove();
    setTimeout(()=>URL.revokeObjectURL(u),30000);
+   return drawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
  }
  async function importCompleteBackup(file){
    const source=JSON.parse(await file.text());
@@ -295,6 +309,7 @@
    let next,committed=false;
    try{
      next=normalize(inspected.data);
+     if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings);
      const remap=new Map();
      // Stage newly imported media under unique keys, never overwriting existing keys.
      for(const [sourceKey,blob] of inspected.media){
@@ -355,8 +370,12 @@
    alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.'));
  }
  document.getElementById('exportData').onclick=async()=>{
-   try{await exportCompleteBackup();}
+   const button=document.getElementById('exportData');
+   if(button.disabled)return;
+   button.disabled=true;button.setAttribute('aria-busy','true');
+   try{BlueprintSheet.toast(await exportCompleteBackup());}
    catch(err){alert('Backup failed. No incomplete backup was downloaded. '+err.message);}
+   finally{button.disabled=false;button.removeAttribute('aria-busy');}
  };
  window.v74ImportBackup=importCompleteBackup;
 

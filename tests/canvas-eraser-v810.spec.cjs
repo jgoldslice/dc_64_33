@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:834,height:1194},isMobile:true,hasTouch:true});
@@ -7,8 +8,8 @@ async function openNotebook(page){
   page.on('pageerror',err=>errors.push(err.message));
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Eraser sweep test'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Eraser sweep test');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Editor')).toBeVisible();
   return errors;

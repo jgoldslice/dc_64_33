@@ -66,6 +66,7 @@ function makeApp(embeddedAvailable=true){
   };
   const document={body:element('body'),getElementById:id=>nodes[id]||null,
     createElement:()=>element('button'),addEventListener(){}};
+  window.BlueprintSheet={allowInk:async()=>true};
   vm.runInNewContext(src,{window,document,confirm:()=>true,
     alert:msg=>alerts.push(msg),setTimeout:()=>0,console});
   async function settle(){

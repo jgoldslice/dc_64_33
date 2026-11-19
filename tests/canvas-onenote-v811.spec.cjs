@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:1366,height:1024},isMobile:true,hasTouch:true});
@@ -6,8 +7,8 @@ async function notebook(page,title='OneNote Layout Test'){
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept(title));
   await page.locator('#newProject').click();
+  await submitSheet(page, title);
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Editor')).toBeVisible();
   return errors;
@@ -55,8 +56,8 @@ test('page list can create, rename, switch and restore notes across reload',asyn
   let names=await list.locator('.v811-page-labels strong').allTextContents();
   expect(names).toEqual(['Page 1','Page 2']);
   await list.locator('[data-v811-rename-id="'+active+'"]').click();
-  page.once('dialog',d=>d.accept('Ideas and Sketches'));
   await page.locator('#v76RenamePage').click();
+  await submitSheet(page, 'Ideas and Sketches');
   await expect(list.locator('.v811-page-labels strong').last()).toHaveText('Ideas and Sketches');
   // The new page starts with editable text, ready to type.
   const rich=page.locator('#v76Surface .v76-rich').first();

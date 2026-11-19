@@ -1,4 +1,5 @@
 'use strict';
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium'});
@@ -34,8 +35,8 @@ test('main views fit phone, iPad, compact Split View and landscape without page-
 test('two Library image cards use full row while list mode keeps one column',async({page})=>{
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept('Gallery columns QA'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Gallery columns QA');
   await page.evaluate(async()=>{
     const png=Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP+ZJRdGAAAAABJRU5ErkJggg=='),c=>c.charCodeAt(0));
     const p=v6Project();

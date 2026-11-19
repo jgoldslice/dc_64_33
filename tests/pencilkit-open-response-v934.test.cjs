@@ -21,7 +21,7 @@ function createApp(nativePromise,{web=false,missingPage=false}={}){
       if(id==='v81A11yStatus')return status;
       return null;
     },
-    querySelector(){return null;},
+    querySelector(selector){return selector==='#v76Editor .v76-toolbar'?toolbar:null;},
     createElement(){return button;}
   };
   const window={
@@ -31,6 +31,7 @@ function createApp(nativePromise,{web=false,missingPage=false}={}){
       nativePromise(plugin,method,args){calls.push({plugin,method,args});return nativePromise(method,args);}
     }
   };
+  window.BlueprintSheet={allowInk:async()=>true};
   vm.runInNewContext(source,{document,window,alert:s=>alerts.push(s),confirm:()=>true,
     setTimeout:(fn,ms)=>setTimeout(fn,Math.min(ms,10)),clearTimeout});
   return {button,alerts,calls,status,added};

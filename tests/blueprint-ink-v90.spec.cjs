@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:834,height:1194},isMobile:true,hasTouch:true,deviceScaleFactor:2});
@@ -5,8 +6,8 @@ test.use({browserName:'chromium',viewport:{width:834,height:1194},isMobile:true,
 async function openNotebook(page){
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Ink Quality A/B'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Ink Quality A/B');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v76Ink')).toBeVisible();
 }

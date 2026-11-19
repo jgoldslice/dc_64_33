@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium',viewport:{width:390,height:844},isMobile:true,hasTouch:true});
@@ -30,8 +31,8 @@ test('interrupted swipe restores the original tab and leaves no visual pane behi
 test('project opening does not animate the whole page or mutate existing planner records',async({page})=>{
   const errors=await boot(page);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Fluidity project'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Fluidity project');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await page.locator('#backProjects').click();
@@ -61,8 +62,8 @@ test('project opening does not animate the whole page or mutate existing planner
 test('Pencil surface and its pointer events cannot initiate top-level swipe motion',async({page})=>{
   const errors=await boot(page);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept('Pencil-safe'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Pencil-safe');
   await page.locator('[data-v919-project-open="notes"]').click();
   await page.locator('#v76Ink').scrollIntoViewIfNeeded();
   await page.locator('#v76Ink').evaluate(target=>{
@@ -95,8 +96,8 @@ test('Reduce Motion removes project/sheet entrances and preserves full controls'
   await page.emulateMedia({reducedMotion:'reduce'});
   await boot(page);
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',dialog=>dialog.accept('Reduced motion'));
   await page.locator('#newProject').click();
+  await submitSheet(page, 'Reduced motion');
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#projectWorkspace')).toBeVisible();
   await expect(page.locator('#projectWorkspace .v6-project-title')).toHaveCSS('animation-name','none');

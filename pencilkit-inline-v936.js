@@ -16,7 +16,7 @@
      !notes||!oldButton||!surface||!viewport||!pane||!root)return;
 
   const invoke=(method,args={})=>native.nativePromise('BlueprintPencil',method,args);
-  let supported=false,active=false,mounted=false,accepted=false;
+  let withArchive=false, supported=false,active=false,mounted=false,accepted=false;
   let lastPayload='',pending=false,running=null,scheduled=false;
   const button=document.createElement('button');
   button.type='button';
@@ -61,6 +61,7 @@
       width:Math.round(r.width*2)/2,height:Math.round(r.height*2)/2};
   }
   function geometry(){
+    if(document.getElementById('bpSheet'))return null;
     const ctx=notes.current?.();
     if(!ctx?.p||!ctx?.page||!surface.getClientRects().length)return null;
     const box=surface.getBoundingClientRect();
@@ -142,7 +143,7 @@
   async function setDrawingEnabled(next){
     if(button.disabled)return;
     if(!accepted){
-      if(!confirm('In-page PencilKit is experimental. Native drawings are saved locally but are not part of Blueprint complete backups or sync. Use a disposable test project. Continue?'))return;
+      if(!await window.BlueprintSheet.allowInk(withArchive))return;
       accepted=true;
     }
     const previous=active;
@@ -194,7 +195,7 @@
       if(detail.projectId&&String(detail.projectId)!==String(ctx?.p?.id))return;
       if(notes.handlePencilViewportGesture?.(detail))schedule();
     });
-    document.addEventListener('scroll',schedule,true);
+    window.addEventListener('blueprint:sheet-change',schedule);
     window.addEventListener('resize',schedule);
     window.addEventListener('orientationchange',schedule);
     // Explicitly refresh after Notes is reparented in/out of Focus, even
@@ -209,7 +210,7 @@
     // Page controls and nav are DOM-driven; update after their click handlers.
     document.addEventListener('click',event=>{
       const target=event.target?.closest?.(
-        '[data-v76-mode="text"],#v76AddImage,#v92LegacyInkTools');
+        '[data-v76-mode="text"],[data-v76-format],#v76AddImage,#v92LegacyInkTools');
       if(target&&active){
         active=false;
         label();
@@ -240,6 +241,7 @@
   invoke('capabilities').then(capabilities=>{
     if(capabilities?.available!==true||capabilities?.schemaVersion!==1||
        capabilities?.embeddedAvailable!==true)return;
+    withArchive=capabilities.drawingArchiveVersion===1;
     supported=true;
     const group=oldButton.parentElement;
     group.insertBefore(button,oldButton);

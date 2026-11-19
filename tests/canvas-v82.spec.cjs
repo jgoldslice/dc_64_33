@@ -1,3 +1,4 @@
+const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
 const fs=require('node:fs/promises');
 test.use({browserName:'chromium',viewport:{width:390,height:844},isMobile:true,hasTouch:true});
@@ -5,8 +6,8 @@ const base='http://127.0.0.1:8765/';
 
 async function createProject(page,name){
   await page.locator('[data-tab="brainstorm"]').click();
-  page.once('dialog',d=>d.accept(name));
   await page.locator('#newProject').click();
+  await submitSheet(page, name);
   await expect(page.locator('#projectTitle')).toHaveText(name);
 }
 test('Project settings replaces exposed destructive controls and preserves Develop',async({page})=>{
@@ -25,8 +26,8 @@ test('Project settings replaces exposed destructive controls and preserves Devel
   await expect(page.locator('#v82ProjectMenu')).toBeHidden();
   await expect(more).toBeFocused();
   await more.click();
-  page.once('dialog',d=>d.accept('Renamed Project'));
   await page.locator('#v82RenameProject').click();
+  await submitSheet(page, 'Renamed Project');
   await expect(page.locator('#projectTitle')).toHaveText('Renamed Project');
   await more.click();
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#v82ExportBackup').click()]);
@@ -94,8 +95,8 @@ test('Deleting one project keeps cross-project media, and removes orphaned files
     state.projects.push(survivor);save();
   });
   await page.locator('#renameProject').click();
-  page.once('dialog',d=>d.accept());
   await page.locator('#deleteProject').click();
+  await submitSheet(page);
   await expect(page.locator('#projectHome')).toBeVisible();
   const result=await page.evaluate(async()=>({
     shared:!!(await v6Blob('get','v82-test-shared')),
