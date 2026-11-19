@@ -7,6 +7,22 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-18 — v9.38 compact Notes toolbar: Textbox size menu and PencilKit label (web committed; iPad QA pending)
+
+**Latest owner request:** Clean the Notes toolbar by combining font size into the T/Textbox tool, remove the visible Web tools switch, and use the constant label **PencilKit** rather than alternating "Draw on page" and "Edit content".
+
+**Implemented on main:**
+- In `v76.js`, the original Textbox action stays one tap to place a text box. A small chevron in the same compact split control opens the existing `#v80TextSize` selector in an accessible, viewport-positioned popover (Small/Medium/Large). This reuses all current page defaults, selected-box font-size updates, caret/data-saving logic and backup format. Escape, outside tap, selecting a size, primary T action, scroll and resize dismiss the popover. `v76.css` styles the combined control and uses 16px in the size selector to avoid iOS input zoom.
+- In `pencilkit-entry-v92.js`, the **Web tools** switch is removed from the UI, while older SVG code/data are fully preserved. The redundant web pen/eraser/lasso/colors/ink undo and Save sketch group collapse **only** when the native Swift plugin reports `embeddedAvailable:true`; browsers and older unsupported native versions retain the original controls as a fallback.
+- `pencilkit-inline-v936.js` uses the stable **PencilKit** label in regular Notes and Focus regardless of active/inactive state; `aria-pressed`, styling and descriptive accessibility labels indicate drawing state. Native `PKToolPicker` remains the ink toolbar, while Blueprint's text/image/page tools remain available.
+- Updated regression tests `tests/pencilkit-toolbar-v934.test.cjs`, `tests/pencilkit-inline-v936.test.cjs`, and `tests/pencilkit-focus-v937.test.cjs`; added `tests/notes-text-size-popover-v938.test.cjs`. Refreshed the offline cache key in `sw.js`. No Swift code, native drawing file format, note schema, saved SVG strokes, images, IndexedDB attachments, or backup format was changed.
+
+**Verification actually performed:** All modified JavaScript files parsed with a V8 function parser. Thirteen focused test cases (font-size menu open/apply/dismiss; PencilKit-only toolbar and older fallback; native drawing/Focus state) passed when their committed test scripts were evaluated in an isolated V8 harness using mocked Node modules and simulated DOM/native bridge. This is **not** a full Node/Playwright or GitHub Actions test run, and there is no updated Xcode compilation or physical iPad verification in this session. The previously user-verified native drawing persistence is unaffected by source edits but was not retested. No local iPad deployment is claimed.
+
+**Install:** From a current `~/Documents/dc_64_33` checkout `git pull --ff-only origin main` and run `python3 scripts/stage-ios-web.py ~/Documents/ChatGPT/dc6433/canvas-ios/www`; then in `~/Documents/ChatGPT/dc6433/canvas-ios` run `npx cap copy ios`, build/install with the existing Xcode App target. No new Swift installer needed for v9.38.
+
+**Known limitation:** Native `PKDrawing` sidecars remain outside complete Blueprint backups and cross-device sync. Never delete/clear legacy ink or local app data as a shortcut; native PencilKit drawing and Focus presentation need real-device QA.
+
 ## 2026-11-18 — v9.37 native PencilKit in Focus mode (web committed; Mac/iPad installation pending)
 
 **Owner-reported device finding:** In-page native PencilKit now works in normal Notes on iPad, but entering Focus loses the native tool picker and the old web Pen tools are unavailable. This is **not** evidence that the native drawing files were lost.
