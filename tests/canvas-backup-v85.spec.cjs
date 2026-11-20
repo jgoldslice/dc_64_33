@@ -96,7 +96,7 @@ test('complete backup imports into clean storage, remaps shared images and retai
       const photo=await v6Blob('get',shared);
       const note=await v6Blob('get',pA.contentBlocks[0].key);
       const sketch=await v6Blob('get',pB.library[0].key);
-      const draft=await v6Blob('get','v6-draft-p-backup-b');
+      const draft=await v6Blob('get',v6SketchDraftKey(pB));
       return {
         count:state.projects.length,
         shared,sharedAcrossPage:pA.notePages[0].objects[0].key===shared,
@@ -124,11 +124,15 @@ test('complete backup imports into clean storage, remaps shared images and retai
     expect(result.note).toEqual(result.photo);
     expect(result.sketch).toEqual([137,80,78,71,13,10,26,10,9,8,7,6]);
     expect(result.draft).toEqual(result.sketch);
+    const reexported=await exportData(restored);
+    expect(reexported.state.projects.every(p=>!('sketchDraftId' in p))).toBe(true);
+    const draftEntry=a=>a.attachments.find(entry=>entry.key==='v6-draft-p-backup-b');
+    expect(draftEntry(reexported)).toEqual(draftEntry(archive));
     await restored.reload();
     const persists=await restored.evaluate(async()=>({
       projects:state.projects.length,
       found:!!(await v6Blob('get',state.projects[0].library[0].key)),
-      draft:!!(await v6Blob('get','v6-draft-p-backup-b')),
+      draft:!!(await v6Blob('get',v6SketchDraftKey(state.projects[1]))),
       event:state.events.some(e=>e.id==='event-a'),
       ink:state.projects[0].notePages[0].strokes.length
     }));
@@ -267,4 +271,36 @@ test('native archive round trip stages fresh drawings and rejects corrupt ink be
   const pageRecord=await page.evaluate(()=>state.projects[0].notePages[0]);
   expect(pageRecord.id).not.toBe('page-a');
   expect(pageRecord.strokes).toEqual(archive.state.projects[0].notePages[0].strokes);
+});
+
+test('reloading while a restored draft is staged keeps the old planner and draft together',async({page})=>{
+  await seed(page);
+  const archive=await exportData(page);
+  await page.evaluate(async()=>{
+    const project=state.projects[1];
+    project.title='Local version';
+    await v6Blob('put',v6SketchDraftKey(project),new Blob(['local ink']));
+    if(!save(true))throw Error('Could not save test planner');
+    const write=v6Blob;
+    v6Blob=async(mode,key,blob)=>{
+      const result=await write(mode,key,blob);
+      if(mode==='put'&&key.startsWith('v6-imported-draft-')){
+        window.draftStaged=true;
+        await new Promise(()=>{});
+      }
+      return result;
+    };
+  });
+  page.on('dialog',dialog=>dialog.accept());
+  await page.locator('#importFile').setInputFiles({
+    name:'restore.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(archive))
+  });
+  await page.waitForFunction(()=>window.draftStaged);
+  await page.reload();
+  const reopened=await page.evaluate(async()=>{
+    const project=state.projects[1];
+    const draft=await v6Blob('get',v6SketchDraftKey(project));
+    return [project.title,await draft.text()];
+  });
+  expect(reopened).toEqual(['Local version','local ink']);
 });
