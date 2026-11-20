@@ -311,9 +311,9 @@
    if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return;
 
    const originalState=state,created=[];
-   let attemptedCommit=false;
+   let attemptedCommit=false,previousManifest,next;
    try{
-     const next=normalize(inspected.data);
+     next=normalize(inspected.data);
      if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings);
      const remap=new Map();
      const {required}=attachmentKeys(next);
@@ -341,6 +341,8 @@
        await v6Blob('put',key,draft);
        created.push(key);
      }
+     if(canvasUnsaved)throw Error('Save your current edits before importing');
+     previousManifest=canvasLastManifest;
      attemptedCommit=true;
      state=next;
      if(!save(true))throw Error('Planner storage is full or unavailable');
@@ -349,8 +351,18 @@
      state=originalState;
      // If rollback cannot be verified, the persisted planner might still
      // reference staged bytes. Retain them for recovery.
-     if(attemptedCommit&&!save(true))
-       throw Error('Could not verify planner recovery. Staged files were preserved. '+error.message);
+     if(attemptedCommit){
+       let recorded;
+       try{recorded=localStorage.getItem(STORAGE_KEY);}catch{/* Keep staged bytes if storage is unreadable. */}
+       if(recorded===previousManifest){
+         canvasLastManifest=previousManifest;
+         canvasExternalChange=false;
+         canvasUnsaved=canvasLoadError!==null||JSON.stringify(originalState)!==previousManifest;
+         canvasSaveStatus(canvasUnsaved);
+       }else if(recorded!==JSON.stringify(next)||!save(true)){
+         throw Error('Could not verify planner recovery. Staged files were preserved. '+error.message);
+       }
+     }
      for(const key of created){
        try{await v6Blob('delete',key);}catch(e){recoveryErrors.push('Temporary attachment: '+key);}
      }
