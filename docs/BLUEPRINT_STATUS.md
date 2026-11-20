@@ -1,11 +1,18 @@
 # Blueprint — Development Status
 
-**Last documentation update:** 2026-11-19
+**Last documentation update:** 2026-11-20
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
 **Verification scope:** Fetched root README and index.html; checked that AGENTS.md and this status file were absent; inspected recent commit identifiers. This is **not** a full source-code audit, automated test run, or iOS device test.
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
+
+## 2026-11-20 — Interrupted sketch draft restore
+
+- [PR #75](https://github.com/jgoldslice/dc_64_33/pull/75), implementation `4b31103` and cleanup fix `4d0baeb`, based on `cc879ab`. Restore stages imported sketch drafts in IndexedDB under fresh keys before committing their references in the planner. Previously saved projects still read their original draft keys. Complete exports keep the existing draft names and omit device-local identifiers. To take restored drafts back to an older build, export a complete backup with the updated build first and import it in the compatible older build.
+- A reload before the planner commit retains the previous planner and its drafts. Abrupt termination can leave unused staged files on disk. Clean rollback removes newly staged web files when the original planner is verified. Uncertain storage state preserves staged bytes.
+- Local standalone Node suite passed 29/29. Added a browser reload during draft staging and checked draft bytes after restore and re-export. First CI run passed the interruption test and exposed the failed-write cleanup case corrected in `4d0baeb`. See the PR checks for the full browser suite result.
+- Physical iOS restore and PencilKit lifecycle testing are pending. After integration, stage web assets from the merged revision, copy them with Capacitor, and rebuild using the [existing wrapper instructions](../native-pencilkit/README.md). Test restore with disposable app data.
 
 ## 2026-11-19 — Area picker for weekly priority tasks
 
