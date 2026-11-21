@@ -92,7 +92,7 @@ test('bullet-list formatting and text size without an active editor never insert
   await page.locator('[data-v76-format="insertUnorderedList"]').click();
   await expect(boxes).toHaveCount(before);
   await page.locator('#v938TextSizeTrigger').click();
-  await page.locator('#v80TextSize').selectOption('large');
+  await page.locator('[data-v938-size="large"]').click();
   await expect(boxes).toHaveCount(before);
   await page.locator('#v76Surface').click({position:{x:88,y:350}});
   await expect(boxes).toHaveCount(before);
