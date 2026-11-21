@@ -1,11 +1,24 @@
 # Blueprint — Development Status
 
-**Last documentation update:** 2026-11-19
+**Last documentation update:** 2026-11-21
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
 **Verification scope:** Fetched root README and index.html; checked that AGENTS.md and this status file were absent; inspected recent commit identifiers. This is **not** a full source-code audit, automated test run, or iOS device test.
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
+
+## 2026-11-21 — Notes font selector, Pages menu and page-to-Library image (feature branch)
+
+**Owner-reported defects (iPad screenshots):** The Textbox font-size split control shows both a custom popover and the native iOS select picker; the page-row `•••` menu is clipped by the Pages rail; the menu lacks Save image to Library. The owner requested a capital `A` size control and exactly one font menu.
+
+**Implemented on `fix/notes-size-page-menu-library-20261121`, PR review/CI pending at time of authoring:**
+- `v76.js` and `v76.css`: The `A` half of Textbox opens three real buttons (Small/Medium/Large) in a single viewport-positioned popover. The original hidden `#v80TextSize` select and its change handler still store the page/default text size and update selected boxes. There is no second iOS-native select presentation.
+- `v76.js`, `v76.css`, `blueprint-notes-v93.css`: The one shared Pages menu is portaled to `document.body` and positioned adjacent to its trigger within the visual viewport. Long-press/context-menu, Escape, dismiss, rename, delete and focus return preserve their existing logic. Scrolling and resize dismiss the menu.
+- `v76.js`: Add **Save image to Library** to that menu. A PNG renderer includes placed page photos, rendered text, existing SVG strokes and, on a compatible iOS wrapper, native PencilKit drawing. Save the PNG via the established IndexedDB attachment store and a `type:file, mime:image/png` project Library record. A failed manifest verification retains the bytes and permits retry without producing a phantom gallery row. The note's editable objects, SVG strokes and PKDrawing data are not replaced.
+- `native-pencilkit/current/BlueprintPencilPlugin.swift`: Add an `exportImage` bridge which flushes pending live strokes and draws `PKDrawing.image(from:scale:)` with a transparent background in logical page coordinates, with a 12-MP cap. Existing native `exportDrawing`, backup manifests and sidecar paths are unchanged. Older plugin builds with embedded PencilKit refuse page-image export rather than silently omit strokes; Swift source must be copied into the actual compiled App target on the owner's Mac.
+- Tests updated: `tests/notes-text-size-popover-v938.test.cjs`, `tests/blueprint-notes-v93.spec.cjs`; new `tests/notes-page-image-v947.spec.cjs` for one chooser, unclipped page menu, PNG signature, Library record and editable-page preservation. `sw.js` cache key revised. Native staging instructions updated in `native-pencilkit/README.md`.
+
+**Verification status:** JavaScript syntax was checked for edited JS/test sources with a V8 function parser before GitHub writes. At documentation time, browser/Node tests, GitHub Actions and Swift/Xcode compilation had **not** yet been executed; browser and iOS device verification remain **pending**. The new PNG renderer should be tested on real iPad PencilKit, with text/images, zoom, rotation, graph paper and interrupted storage before calling it device verified. This branch does not update the owner's installed iOS app. See `native-pencilkit/README.md` for confirmed Mac staging commands; the compiled Swift source requires a separate copy/build and must not overwrite local-only additions without comparison.
 
 ## 2026-11-19 — Area picker for weekly priority tasks
 
