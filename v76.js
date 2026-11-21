@@ -10,7 +10,8 @@
     '<button type="button" id="v76NewPage" class="secondary-button">+ Page</button>'+
     '<button type="button" id="v76PageMore" class="v76-icon" aria-label="Page options" aria-expanded="false" aria-controls="v76PageMenu" title="Page options">•••</button>'+
     '<div id="v76PageMenu" class="v76-page-menu" hidden><button type="button" id="v76RenamePage">Rename page</button>'+
-    '<button type="button" id="v76DeletePage">Delete page</button></div></div>'+
+    '<button type="button" id="v76DeletePage">Delete page</button>'+ 
+    '<button type="button" id="v947SavePageImage">Save image to Library</button></div></div>'+
     '<div class="v76-toolbar" role="toolbar" aria-label="Notebook tools">'+
       '<div class="v93-layout-tools"><button type="button" id="v93TogglePageRail" aria-label="Expand notes, hide Pages panel" title="Expand notes" aria-pressed="false">'+
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/><path d="M9 9h6v6H9z"/></svg></button></div>'+
@@ -70,7 +71,7 @@
   textSizeTrigger.setAttribute('aria-controls','v938TextSizeMenu');
   textSizeTrigger.setAttribute('aria-expanded','false');
   textSizeTrigger.title='Text size';
-  textSizeTrigger.textContent='⌄';
+  textSizeTrigger.textContent='A';
   textTool.append(textSizeTrigger);
   const textSizeMenu=document.createElement('div');
   textSizeMenu.id='v938TextSizeMenu';
@@ -78,10 +79,33 @@
   textSizeMenu.setAttribute('role','dialog');
   textSizeMenu.setAttribute('aria-label','Text box size');
   textSizeMenu.hidden=true;
-  const textSizeLabel=document.createElement('label');
-  textSizeLabel.htmlFor='v80TextSize';
+  const textSizeLabel=document.createElement('span');
+  textSizeLabel.className='v938-text-size-caption';
   textSizeLabel.textContent='Font size';
-  textSizeMenu.append(textSizeLabel,textSizeSelect);
+  // Do not focus a native <select> inside a custom popover: iPadOS opens
+  // its own picker over ours. Keep the select as the existing save/model API.
+  textSizeSelect.hidden=true;
+  textSizeSelect.tabIndex=-1;
+  textSizeSelect.setAttribute('aria-hidden','true');
+  const textSizeChoices=document.createElement('div');
+  textSizeChoices.className='v938-text-size-choices';
+  textSizeChoices.setAttribute('role','group');
+  textSizeChoices.setAttribute('aria-label','Font size');
+  const sizeButtons=['small','medium','large'].map(size=>{
+    const button=document.createElement('button');
+    button.type='button';
+    button.textContent=size.charAt(0).toUpperCase()+size.slice(1);
+    button.dataset.v938Size=size;
+    button.setAttribute('aria-pressed','false');
+    button.addEventListener('click',()=>{
+      textSizeSelect.value=size;
+      textSizeSelect.dispatchEvent(new Event('change',{bubbles:true}));
+      hideTextSizeMenu(true);
+    });
+    textSizeChoices.append(button);
+    return button;
+  });
+  textSizeMenu.append(textSizeLabel,textSizeChoices,textSizeSelect);
   document.body.append(textSizeMenu);
   function hideTextSizeMenu(restoreFocus=false){
     if(textSizeMenu.hidden)return;
@@ -92,7 +116,7 @@
   function toggleTextSizeMenu(){
     if(!textSizeMenu.hidden){hideTextSizeMenu(true);return;}
     const rect=textSizeTrigger.getBoundingClientRect();
-    const width=184,estimatedHeight=99;
+    const width=184,estimatedHeight=171;
     const left=Math.max(8,Math.min(innerWidth-width-8,rect.left-125));
     const top=rect.bottom+8+estimatedHeight>innerHeight
       ?Math.max(8,rect.top-estimatedHeight-8):rect.bottom+8;
@@ -100,7 +124,10 @@
     textSizeMenu.style.top=Math.round(top)+'px';
     textSizeMenu.hidden=false;
     textSizeTrigger.setAttribute('aria-expanded','true');
-    textSizeSelect.focus({preventScroll:true});
+    sizeButtons.forEach(button=>button.setAttribute('aria-pressed',
+      String(button.dataset.v938Size===textSizeSelect.value)));
+    (sizeButtons.find(button=>button.dataset.v938Size===textSizeSelect.value)||sizeButtons[1])
+      .focus({preventScroll:true});
   }
   textSizeTrigger.addEventListener('click',toggleTextSizeMenu);
   // The primary T action must still select text placement in one tap.
@@ -886,7 +913,9 @@
   });
   const pageMore=document.getElementById('v76PageMore');
   const pageMenu=document.getElementById('v76PageMenu');
-  const pageMenuHome=document.querySelector('.v76-page-controls');
+  // The Pages rail scrolls. Portaling its menu to the body prevents clipping
+  // at the rail/card boundary while keeping one menu for every page.
+  document.body.append(pageMenu);
   let pageMenuTarget=null,pageMenuTrigger=null;
   BlueprintSheet.menuKeyboard(pageMenu,()=>{
     const trigger=pageMenuTrigger;
@@ -896,16 +925,34 @@
   function closePageMenu(){
     pageMenu.hidden=true;pageMore.setAttribute('aria-expanded','false');
     pageList.querySelectorAll('.v811-page-rename').forEach(button=>button.setAttribute('aria-expanded','false'));
-    pageMenuHome.append(pageMenu);
     pageMenuTarget=null;pageMenuTrigger=null;
+  }
+  function positionPageMenu(button){
+    const rect=button.getBoundingClientRect();
+    const margin=8;
+    pageMenu.style.left='0px';pageMenu.style.top='0px';
+    const width=pageMenu.offsetWidth,height=pageMenu.offsetHeight;
+    const viewportWidth=window.visualViewport?.width||window.innerWidth;
+    const viewportHeight=window.visualViewport?.height||window.innerHeight;
+    const offsetLeft=window.visualViewport?.offsetLeft||0;
+    const offsetTop=window.visualViewport?.offsetTop||0;
+    const left=Math.max(offsetLeft+margin,Math.min(
+      rect.right-width,offsetLeft+viewportWidth-width-margin));
+    const below=rect.bottom+6;
+    const above=rect.top-height-6;
+    const top=below+height<=offsetTop+viewportHeight-margin?below:
+      above>=offsetTop+margin?above:
+      Math.max(offsetTop+margin,offsetTop+viewportHeight-height-margin);
+    pageMenu.style.left=Math.round(left)+'px';
+    pageMenu.style.top=Math.round(top)+'px';
   }
   function showPageMenu(button,id){
     const repeat=!pageMenu.hidden&&pageMenuTarget===String(id);
     closePageMenu();
     if(repeat)return;
     pageMenuTarget=String(id);pageMenuTrigger=button;
-    button.closest('.v811-page-row').append(pageMenu);
     pageMenu.hidden=false;
+    positionPageMenu(button);
     button.setAttribute('aria-expanded','true');
     pageMenu.firstElementChild.focus({preventScroll:true});
   }
@@ -950,13 +997,16 @@
     closePageMenu();
     if(wasOpen)return;
     pageMenuTarget=String(current()?.page.id||'');pageMenuTrigger=pageMore;
-    pageMenu.hidden=false;pageMore.setAttribute('aria-expanded','true');
+    pageMenu.hidden=false;positionPageMenu(pageMore);
+    pageMore.setAttribute('aria-expanded','true');
     pageMenu.firstElementChild.focus({preventScroll:true});
   });
   document.addEventListener('click',e=>{
     if(!(e.target instanceof Element))return;
     if(!e.target.closest('.v76-page-controls,.v811-page-rename,.v76-page-menu'))closePageMenu();
   });
+  document.addEventListener('scroll',()=>{if(!pageMenu.hidden)closePageMenu();},true);
+  window.addEventListener('resize',()=>{if(!pageMenu.hidden)closePageMenu();});
   document.getElementById('v76RenamePage').addEventListener('click',async()=>{
     const target=pageMenuTarget,trigger=pageMenuTrigger;closePageMenu();
     const ctx=current();if(!ctx)return;
@@ -978,6 +1028,174 @@
       ctx.p.activeNotePageId=ctx.p.notePages[Math.min(index,ctx.p.notePages.length-1)].id;
     }
     persist();renderPage(ctx.p,true);
+  });
+
+  // Export a flattened page image without altering its editable text, photos,
+  // SVG strokes, or native PencilKit sidecar. Use the same verified IndexedDB
+  // blob + project-library manifest transaction as Save sketch.
+  let pendingPageImage=null,pageImageBusy=false;
+  const pageImageButton=document.getElementById('v947SavePageImage');
+  function updatePageImageButton(){
+    pageImageButton.disabled=pageImageBusy;
+    pageImageButton.textContent=pendingPageImage?'Retry image save':'Save image to Library';
+  }
+  function loadImage(src){
+    return new Promise((resolve,reject)=>{
+      const image=new Image();
+      image.onload=()=>resolve(image);
+      image.onerror=()=>reject(Error('Could not render a note image'));
+      image.src=src;
+    });
+  }
+  async function drawBlobImage(ctx,blob,x,y,width,height){
+    const url=URL.createObjectURL(blob);
+    try{ctx.drawImage(await loadImage(url),x,y,width,height);}
+    finally{URL.revokeObjectURL(url);}
+  }
+  async function notePagePNG(project,page){
+    const width=Math.max(1,Math.round(surface.clientWidth));
+    const height=Math.max(1,Math.round(surface.clientHeight));
+    const scale=Math.min(2,Math.sqrt(12000000/(width*height)));
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.max(1,Math.round(width*scale));
+    canvas.height=Math.max(1,Math.round(height*scale));
+    const ctx=canvas.getContext('2d');
+    if(!ctx)throw Error('Image export is unavailable in this browser');
+    ctx.scale(canvas.width/width,canvas.height/height);
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);
+    if(surface.dataset.paper==='graph'){
+      for(const [step,color] of [[24,'#dce6f1'],[120,'#b5c8e1']]){
+        ctx.strokeStyle=color;ctx.lineWidth=.6;ctx.beginPath();
+        for(let x=0;x<=width;x+=step){ctx.moveTo(x,0);ctx.lineTo(x,height);}
+        for(let y=0;y<=height;y+=step){ctx.moveTo(0,y);ctx.lineTo(width,y);}
+        ctx.stroke();
+      }
+    }
+    const rect=surface.getBoundingClientRect();
+    const sx=rect.width/width,sy=rect.height/height;
+    if(!sx||!sy)throw Error('Open the note page before exporting it');
+    const coordinate=box=>({
+      x:(box.left-rect.left)/sx,y:(box.top-rect.top)/sy,
+      width:box.width/sx,height:box.height/sy
+    });
+    const boxes=new Map([...surface.querySelectorAll('[data-v76-item]')]
+      .map(box=>[String(box.dataset.v76Item),box]));
+    // Draw placed photographs first and text over them, as on the page.
+    for(const item of page.objects||[]){
+      if(item.type!=='image')continue;
+      const box=boxes.get(String(item.id));
+      const image=box?.querySelector('.v76-photo');
+      if(!image||!item.key)throw Error('A page image could not be located');
+      const blob=await v6Blob('get',item.key);
+      if(!blob)throw Error('A page image attachment is missing');
+      const bounds=coordinate(image.getBoundingClientRect());
+      await drawBlobImage(ctx,blob,bounds.x,bounds.y,bounds.width,bounds.height);
+    }
+    // DOM Range measurements preserve the current line wraps and per-span
+    // bold/italic styling without rendering editing handles into the PNG.
+    const range=document.createRange();
+    ctx.textBaseline='top';
+    for(const item of page.objects||[]){
+      if(item.type!=='text')continue;
+      const rich=boxes.get(String(item.id))?.querySelector('.v76-rich');
+      if(!rich)throw Error('A text object could not be located');
+      const walker=document.createTreeWalker(rich,NodeFilter.SHOW_TEXT);
+      let node;
+      while((node=walker.nextNode())){
+        const value=node.textContent||'';
+        const style=getComputedStyle(node.parentElement);
+        ctx.font=style.fontStyle+' '+style.fontWeight+' '+style.fontSize+' '+style.fontFamily;
+        ctx.fillStyle=style.color||'#222';
+        for(let i=0;i<value.length;){
+          const character=String.fromCodePoint(value.codePointAt(i));
+          const length=character.length;
+          range.setStart(node,i);range.setEnd(node,i+length);i+=length;
+          if(!character.trim())continue;
+          const bounds=range.getBoundingClientRect();
+          if(!bounds.width||!bounds.height)continue;
+          const p=coordinate(bounds);
+          ctx.fillText(character,p.x,p.y);
+        }
+      }
+    }
+    // Include legacy web ink. Native PKCanvasView is a separate UIKit view,
+    // so a web screenshot would omit its strokes unless requested explicitly.
+    const clone=ink.cloneNode(true);
+    clone.setAttribute('xmlns','http://www.w3.org/2000/svg');
+    clone.setAttribute('width',String(width));
+    clone.setAttribute('height',String(height));
+    clone.setAttribute('viewBox','0 0 '+width+' '+height);
+    const inkURL=URL.createObjectURL(new Blob(
+      [new XMLSerializer().serializeToString(clone)],{type:'image/svg+xml'}));
+    try{ctx.drawImage(await loadImage(inkURL),0,0,width,height);}
+    finally{URL.revokeObjectURL(inkURL);}
+    const native=window.Capacitor;
+    if(native?.isNativePlatform?.()&&typeof native.nativePromise==='function'){
+      let capabilities=null;
+      try{capabilities=await native.nativePromise('BlueprintPencil','capabilities',{});}
+      catch(_){} // Web-only/older wrappers have no native PencilKit data.
+      if(capabilities?.embeddedAvailable===true){
+        if(capabilities.imageExportVersion!==1)
+          throw Error('Update the iOS PencilKit plugin to include native handwriting in page images.');
+        const result=await native.nativePromise('BlueprintPencil','exportImage',{
+          projectId:String(project.id),pageId:String(page.id),width,height
+        });
+        if(!result?.missing){
+          if(!result?.base64)throw Error('PencilKit returned an empty image');
+          ctx.drawImage(await loadImage('data:image/png;base64,'+result.base64),0,0,width,height);
+        }
+      }
+    }
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if(!blob)throw Error('Could not encode page image');
+    return blob;
+  }
+  pageImageButton.addEventListener('click',async()=>{
+    if(pageImageBusy)return;
+    const target=pageMenuTarget;
+    const ctx=current();
+    closePageMenu();
+    if(!ctx)return;
+    if(pendingPageImage&&pendingPageImage.project!==ctx.p){
+      alert('Return to '+pendingPageImage.project.title+' and retry that image save first.');
+      return;
+    }
+    pageImageBusy=true;updatePageImageButton();
+    try{
+      if(!pendingPageImage){
+        const page=ctx.p.notePages.find(pg=>String(pg.id)===target)||ctx.page;
+        if(String(page.id)!==String(ctx.page.id)){
+          ctx.p.activeNotePageId=page.id;
+          persist();renderPage(ctx.p,true);
+          await new Promise(resolve=>requestAnimationFrame(resolve));
+        }
+        if(activeStroke){flushInkRender();activeStroke=null;persist();}
+        const blob=await notePagePNG(ctx.p,page);
+        if(!state.projects?.includes(ctx.p)||current()?.page!==page)
+          throw Error('The note page changed during export. Reopen it and try again.');
+        const id=newId(),key='v6-'+id;
+        await v6Blob('put',key,blob);
+        pendingPageImage={project:ctx.p,record:{
+          id,type:'image',title:(page.title||'Note page')+' image',
+          key,mime:'image/png',created:Date.now()
+        }};
+      }
+      const {project,record}=pendingPageImage;
+      if(!state.projects?.includes(project))
+        throw Error('The project was removed; image bytes were retained on this device.');
+      if(!Array.isArray(project.library))project.library=[];
+      const existed=project.library.some(entry=>String(entry.id)===String(record.id));
+      if(!existed)project.library.push(record);
+      if(!save(true)){
+        if(!existed)project.library=project.library.filter(entry=>String(entry.id)!==String(record.id));
+        throw Error('Planner storage could not be verified. The image is retained for retry.');
+      }
+      pendingPageImage=null;
+      v6RenderLibrary(project);
+      const status=document.getElementById('v81A11yStatus');
+      if(status)status.textContent='Page image saved to this project Library.';
+    }catch(error){alert('Could not save page image: '+error.message);}
+    finally{pageImageBusy=false;updatePageImageButton();}
   });
   textSizeSelect.addEventListener('change',()=>{
     const next=sizeName(textSizeSelect.value),ctx=current();
