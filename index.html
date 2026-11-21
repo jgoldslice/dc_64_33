@@ -1573,10 +1573,15 @@ function v6RenderSketchView(){
   $('sketchEditor').hidden=!v6SketchEditing;
 }
 let v6DraftCheckSeq=0;
+// Existing projects keep their original key. Restored projects switch drafts
+// with the same planner write that makes their other imported media visible.
+function v6SketchDraftKey(project){
+  return project.sketchDraftId ? 'v6-imported-draft-'+project.sketchDraftId : 'v6-draft-'+project.id;
+}
 function v6CheckDraft(p){
   const seq=++v6DraftCheckSeq,projectId=String(p.id);
   $('continueSketchDraft').hidden=true;
-  v6Blob('get','v6-draft-'+projectId).then(blob=>{
+  v6Blob('get',v6SketchDraftKey(p)).then(blob=>{
     if(seq!==v6DraftCheckSeq||v6SketchEditing||v6ProjectTab!=='sketch'||String(v6Project()?.id)!==projectId)return;
     $('continueSketchDraft').hidden=!blob;
   }).catch(()=>{});
@@ -1592,15 +1597,15 @@ function v6SketchGallery(){
 }
 async function v6NewSketch(){
   const p=v6Project();if(!p)return;
-  const existing=await v6Blob('get','v6-draft-'+p.id).catch(()=>null);
+  const existing=await v6Blob('get',v6SketchDraftKey(p)).catch(()=>null);
   if(existing&&!confirm('Start a new sketch? The unfinished sketch will be discarded.'))return;
   ++v6DraftGeneration;await v6DraftWrite.catch(()=>{});
-  await v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
+  await v6Blob('delete',v6SketchDraftKey(p)).catch(()=>{});
   v6SketchId=null;v6OpenSketchEditor();
 }
 async function v6ContinueSketch(){
   const p=v6Project();if(!p)return;
-  const projectId=String(p.id),blob=await v6Blob('get','v6-draft-'+projectId).catch(()=>null);
+  const projectId=String(p.id),blob=await v6Blob('get',v6SketchDraftKey(p)).catch(()=>null);
   if(!blob||String(v6Project()?.id)!==projectId)return;
   v6SketchId=null;v6OpenSketchEditor();v6DrawBlob(blob);
 }
@@ -1773,12 +1778,12 @@ function v6Move(e){
 let v6DraftGeneration=0,v6DraftWrite=Promise.resolve();
 function v6AutosaveSketch(){
   const p=v6Project();if(!p||!v6SketchEditing)return;
-  const projectId=String(p.id),generation=++v6DraftGeneration;
+  const draftKey=v6SketchDraftKey(p),generation=++v6DraftGeneration;
   v6Canvas.toBlob(blob=>{
     if(!blob||generation!==v6DraftGeneration)return;
     v6DraftWrite=v6DraftWrite.catch(()=>{}).then(()=>{
       if(generation!==v6DraftGeneration)return;
-      return v6Blob('put','v6-draft-'+projectId,blob);
+      return v6Blob('put',draftKey,blob);
     }).catch(()=>{});
   },'image/png');
 }
@@ -1811,7 +1816,7 @@ async function v6SaveSketch(){
     // Only after the manifest is durable may the draft and old, now orphaned
     // sketch attachment be reclaimed.
     ++v6DraftGeneration;await v6DraftWrite.catch(()=>{});
-    await v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
+    await v6Blob('delete',v6SketchDraftKey(p)).catch(()=>{});
     const referenced=oldKey&&state.projects.some(other=>
       (other.library||[]).some(r=>r.key===oldKey)||
       (other.contentBlocks||[]).some(b=>b.key===oldKey)||
@@ -1862,7 +1867,7 @@ document.addEventListener('click',async e=>{
       (other.notePages||[]).some(pg=>(pg.objects||[]).some(o=>o.key===key))
     );
     for(const key of keys)if(!referencedElsewhere(key))v6Blob('delete',key).catch(()=>{});
-    v6Blob('delete','v6-draft-'+p.id).catch(()=>{});
+    v6Blob('delete',v6SketchDraftKey(p)).catch(()=>{});
     window.v6ActiveProjectId=null;v6Canvas.dataset.project='';v6Render();renderIdeas();return;
   }
   const tabButton=match('[data-project-tab]');

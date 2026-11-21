@@ -29,6 +29,8 @@ async function createFromGoal(page){
   return goal;
 }
 test('create a habit from a goal and show it in the goal and Habits without duplicates',async({page})=>{
+  // Four eligible days must remain in the creation week for the displayed target of four.
+  await page.clock.setFixedTime(new Date('2026-11-16T12:00:00'));
   const goal=await createFromGoal(page);
   await expect(goal.locator('.bp-goal-habit-row')).toHaveCount(1);
   await expect(goal.locator('.bp-goal-habit-row')).toContainText('Practice piano');

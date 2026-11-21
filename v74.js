@@ -266,6 +266,11 @@
    // (and an all-attachments array) in addition to the base64 media.
    const snapshot=structuredClone(state);
    const {required,drafts}=attachmentKeys(snapshot);
+   const draftKeys=new Map();
+   for(const project of snapshot.projects||[]){
+     draftKeys.set('v6-draft-'+project.id,v6SketchDraftKey(project));
+     delete project.sketchDraftId;
+   }
    const header={format:'canvas-complete-backup',version:2,
      exportedAt:new Date().toISOString(),state:snapshot,
      stateSha256:await hashState(snapshot)};
@@ -278,7 +283,7 @@
    const pieces=[JSON.stringify(header).slice(0,-1)+',"attachments":['];
    let count=0;
    for(const key of new Set([...required,...drafts])){
-     const blob=await v6Blob('get',key);
+     const blob=await v6Blob('get',draftKeys.get(key)??key);
      if(!blob){if(required.has(key))throw Error('Missing saved attachment: '+key);continue;}
      const entry={key,mime:blob.type||'application/octet-stream',
        size:blob.size,sha256:await hashBlob(blob),base64:await blobToBase64(blob)};
@@ -305,15 +310,16 @@
      !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return;
    if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return;
 
-   const originalState=state,created=[],draftChanges=[];
-   let next,committed=false;
+   const originalState=state,created=[];
+   let attemptedCommit=false,previousManifest,next;
    try{
      next=normalize(inspected.data);
      if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings);
      const remap=new Map();
+     const {required}=attachmentKeys(next);
      // Stage newly imported media under unique keys, never overwriting existing keys.
      for(const [sourceKey,blob] of inspected.media){
-       if(sourceKey.startsWith('v6-draft-'))continue;
+       if(!required.has(sourceKey))continue;
        const key='v85-import-'+crypto.randomUUID();
        await v6Blob('put',key,blob);
        created.push(key);remap.set(sourceKey,key);
@@ -325,35 +331,38 @@
          for(const item of page.objects||[])
            if(item.type==='image'&&item.key)item.key=remap.get(String(item.key))||item.key;
      }
-     // Sketch drafts have fixed project-scoped keys. Snapshot them so both
-     // replacement and deletion can be reversed if the import fails.
-     const projectIds=new Set([...(originalState.projects||[]),...(next.projects||[])].map(p=>String(p.id)));
-     for(const id of projectIds){
-       const key='v6-draft-'+id;
-       const before=await v6Blob('get',key);
-       const after=inspected.media.get(key)||null;
-       draftChanges.push({key,before,after,applied:false});
+     // Stage drafts before publishing their keys. Give empty drafts a fresh
+     // identity too, so an old draft cannot reappear under a reused project ID.
+     for(const project of next.projects||[]){
+       project.sketchDraftId=crypto.randomUUID();
+       const draft=inspected.media.get('v6-draft-'+project.id);
+       if(!draft)continue;
+       const key=v6SketchDraftKey(project);
+       await v6Blob('put',key,draft);
+       created.push(key);
      }
+     if(canvasUnsaved)throw Error('Save your current edits before importing');
+     previousManifest=canvasLastManifest;
+     attemptedCommit=true;
      state=next;
-     if(!save()||localStorage.getItem(STORAGE_KEY)!==JSON.stringify(next))
-       throw Error('Planner storage is full or unavailable; existing data will be restored');
-     committed=true;
-     for(const change of draftChanges){
-       if(change.after)await v6Blob('put',change.key,change.after);
-       else await v6Blob('delete',change.key);
-       change.applied=true;
-     }
+     if(!save(true))throw Error('Planner storage is full or unavailable');
    }catch(error){
      const recoveryErrors=[];
-     for(const change of [...draftChanges].reverse()){
-       if(!change.applied)continue;
-       try{
-         if(change.before)await v6Blob('put',change.key,change.before);
-         else await v6Blob('delete',change.key);
-       }catch(e){recoveryErrors.push('Sketch draft: '+change.key);}
-     }
      state=originalState;
-     if(!save())recoveryErrors.push('Planner storage');
+     // If rollback cannot be verified, the persisted planner might still
+     // reference staged bytes. Retain them for recovery.
+     if(attemptedCommit){
+       let recorded;
+       try{recorded=localStorage.getItem(STORAGE_KEY);}catch{/* Keep staged bytes if storage is unreadable. */}
+       if(recorded===previousManifest){
+         canvasLastManifest=previousManifest;
+         canvasExternalChange=false;
+         canvasUnsaved=canvasLoadError!==null||JSON.stringify(originalState)!==previousManifest;
+         canvasSaveStatus(canvasUnsaved);
+       }else if(recorded!==JSON.stringify(next)||!save(true)){
+         throw Error('Could not verify planner recovery. Staged files were preserved. '+error.message);
+       }
+     }
      for(const key of created){
        try{await v6Blob('delete',key);}catch(e){recoveryErrors.push('Temporary attachment: '+key);}
      }
