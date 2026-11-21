@@ -116,7 +116,7 @@
   function toggleTextSizeMenu(){
     if(!textSizeMenu.hidden){hideTextSizeMenu(true);return;}
     const rect=textSizeTrigger.getBoundingClientRect();
-    const width=184,estimatedHeight=171;
+    const width=184,estimatedHeight=195;
     const left=Math.max(8,Math.min(innerWidth-width-8,rect.left-125));
     const top=rect.bottom+8+estimatedHeight>innerHeight
       ?Math.max(8,rect.top-estimatedHeight-8):rect.bottom+8;
@@ -132,7 +132,7 @@
   textSizeTrigger.addEventListener('click',toggleTextSizeMenu);
   // The primary T action must still select text placement in one tap.
   textboxButton.addEventListener('click',()=>hideTextSizeMenu());
-  textSizeSelect.addEventListener('change',()=>hideTextSizeMenu());
+  // Size buttons close the custom menu after the original change/persist handler.
   document.addEventListener('pointerdown',event=>{
     if(!textSizeMenu.hidden&&!textSizeMenu.contains(event.target)&&
        !textTool.contains(event.target))hideTextSizeMenu();
