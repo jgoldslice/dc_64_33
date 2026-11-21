@@ -9,6 +9,8 @@
 
 ## 2026-11-20 — Interrupted sketch draft restore
 
+- Commit `864a576` extends the complete-backup test to import the re-export in a fresh browser context, reload, and compare the project title and exact sketch draft bytes. [Chromium CI passed](https://github.com/jgoldslice/dc_64_33/actions/runs/44841943129). `node --test tests/*.test.cjs` passed 29/29 locally. Physical iOS restore remains pending. Successful restores can also leave superseded draft blobs in IndexedDB. Assess reclamation with storage-health work.
+
 - [PR #75](https://github.com/jgoldslice/dc_64_33/pull/75), implementation `4b31103` and cleanup fix `4d0baeb`, based on `cc879ab`. Restore stages imported sketch drafts in IndexedDB under fresh keys before committing their references in the planner. Previously saved projects still read their original draft keys. Complete exports keep the existing draft names and omit device-local identifiers. To take restored drafts back to an older build, export a complete backup with the updated build first and import it in the compatible older build.
 - A reload before the planner commit retains the previous planner and its drafts. Abrupt termination can leave unused staged files on disk. Clean rollback removes newly staged web files when the original planner is verified. Uncertain storage state preserves staged bytes.
 - Local standalone Node suite passed 29/29. Added a browser reload during draft staging and checked draft bytes after restore and re-export. First CI run passed the interruption test and exposed the failed-write cleanup case corrected in `4d0baeb`. See the PR checks for the full browser suite result.
