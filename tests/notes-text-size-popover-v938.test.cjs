@@ -13,12 +13,13 @@ const fragment=js.slice(first,last);
 function node(tag='div'){
   const listeners={};const children=[];
   const n={
-    tag,id:'',hidden:false,style:{},attributes:{},children,listeners,
+    tag,id:'',hidden:false,style:{},attributes:{},children,listeners,dataset:{},value:'medium',
     textContent:'',htmlFor:'',title:'',className:'',
     setAttribute(k,v){this.attributes[k]=v;},
     append(...nodes){children.push(...nodes);for(const node of nodes)node.parent=n;},
     before(child){this.previousSibling=child;},
     focus(){this.focusCount=(this.focusCount||0)+1;},
+    dispatchEvent(event){listeners[event.type]?.(event);},
     addEventListener(name,fn){listeners[name]=fn;},
     contains(target){return target===n||children.some(c=>c.contains?.(target));},
     getBoundingClientRect(){return {left:250,right:287,top:60,bottom:100};},
@@ -37,8 +38,8 @@ function setup(){
   const window={addEventListener(name,fn){winListeners[name]=fn;}};
   const render=vm.runInNewContext(
     '(function(root,document,window,textSizeSelect,innerWidth,innerHeight){\n'+fragment+
-      '\nreturn {textTool,textSizeTrigger,textSizeMenu,hideTextSizeMenu};})',
-    {}
+      '\nreturn {textTool,textSizeTrigger,textSizeMenu,textSizeChoices,sizeButtons,hideTextSizeMenu};})',
+    {Event:class Event{constructor(type){this.type=type;}}}
   );
   return {...render(root,document,window,select,1024,768),
     button,select,body,docListeners,winListeners};
@@ -52,14 +53,20 @@ test('Textbox icon retains its original mode action and owns a compact size drop
   assert.equal(x.textSizeTrigger.attributes['aria-expanded'],'false');
   assert.equal(x.textSizeMenu.hidden,true);
   assert.equal(x.body.children.includes(x.textSizeMenu),true);
+  assert.equal(x.textSizeTrigger.textContent,'A');
+  assert.equal(x.select.hidden,true);
+  assert.equal(x.select.attributes['aria-hidden'],'true');
+  assert.equal(x.sizeButtons.length,3);
 });
 test('size chooser opens, closes on change, and preserves original select',()=>{
   const x=setup();
   x.textSizeTrigger.click();
   assert.equal(x.textSizeMenu.hidden,false);
   assert.equal(x.textSizeTrigger.attributes['aria-expanded'],'true');
-  assert.equal(x.select.focusCount,1);
-  x.select.listeners.change();
+  assert.equal(x.sizeButtons[1].focusCount,1);
+  assert.equal(x.select.focusCount||0,0);
+  x.sizeButtons[2].click();
+  assert.equal(x.select.value,'large');
   assert.equal(x.textSizeMenu.hidden,true);
   assert.equal(x.textSizeTrigger.attributes['aria-expanded'],'false');
   x.textSizeTrigger.click();

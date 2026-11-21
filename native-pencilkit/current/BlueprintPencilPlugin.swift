@@ -11,6 +11,7 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "capabilities", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "exportDrawing", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "exportImage", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stageDrawing", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openEditor", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showInline", returnType: CAPPluginReturnPromise),
@@ -21,7 +22,7 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
     private var inlineSession: BlueprintPencilInlineSession?
 
     @objc public func capabilities(_ call: CAPPluginCall) {
-        call.resolve(["available": true, "schemaVersion": 1, "embeddedAvailable": true, "drawingArchiveVersion": 1])
+        call.resolve(["available": true, "schemaVersion": 1, "embeddedAvailable": true, "drawingArchiveVersion": 1, "imageExportVersion": 1])
     }
 
     @objc public func exportDrawing(_ call: CAPPluginCall) {
@@ -39,6 +40,52 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                 _ = try PKDrawing(data: bytes)
                 call.resolve(["base64": bytes.base64EncodedString()])
             } catch { call.reject("Drawing export failed: " + error.localizedDescription) }
+        }
+    }
+
+    // Render the actual PencilKit strokes as a transparent PNG in logical
+    // notebook coordinates. Flush pending strokes first; do not replace or
+    // migrate the underlying editable PKDrawing bytes.
+    @objc public func exportImage(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            do {
+                guard let project = call.getString("projectId"),
+                      let page = call.getString("pageId"),
+                      !project.isEmpty, !page.isEmpty,
+                      project.count <= 256, page.count <= 256,
+                      let width = call.options["width"] as? NSNumber,
+                      let height = call.options["height"] as? NSNumber else {
+                    call.reject("Missing page image dimensions or identity")
+                    return
+                }
+                let w = width.doubleValue, h = height.doubleValue
+                guard w.isFinite, h.isFinite, w > 0, h > 0,
+                      w <= 20000, h <= 20000 else {
+                    call.reject("Invalid page image dimensions")
+                    return
+                }
+                let drawing: PKDrawing
+                if let session = self.inlineSession,
+                   session.projectId == project, session.pageId == page {
+                    try session.saveNow()
+                }
+                drawing = try BlueprintPencilStore.load(projectId: project, pageId: page)
+                if drawing.strokes.isEmpty {
+                    call.resolve(["missing": true])
+                    return
+                }
+                let scale = min(2.0, sqrt(12_000_000 / (w * h)))
+                let image = drawing.image(
+                    from: CGRect(x: 0, y: 0, width: w, height: h),
+                    scale: CGFloat(scale))
+                guard let png = image.pngData(), !png.isEmpty else {
+                    call.reject("PencilKit image encoding failed")
+                    return
+                }
+                call.resolve(["base64": png.base64EncodedString(), "mime": "image/png"])
+            } catch {
+                call.reject("PencilKit image export failed: " + error.localizedDescription)
+            }
         }
     }
 

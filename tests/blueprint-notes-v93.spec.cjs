@@ -17,7 +17,7 @@ test('new page is created immediately; options menu lives next to its name',asyn
   await expect(page.locator('#v811PageList .v811-page-row')).toHaveCount(2);
   await expect(page.locator('#v811PageList .v811-current .v811-page-labels strong')).toHaveText('Page 2');
   await page.locator('#v811PageList .v811-current .v811-page-rename').click();
-  await expect(page.locator('#v811PageList .v811-current #v76PageMenu')).toBeVisible();
+  await expect(page.locator('body > #v76PageMenu')).toBeVisible();
   await page.locator('#v76RenamePage').click();
   await submitSheet(page, 'Experiments');
   await expect(page.locator('#v811PageList .v811-current .v811-page-labels strong')).toHaveText('Experiments');
