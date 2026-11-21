@@ -128,6 +128,18 @@ test('complete backup imports into clean storage, remaps shared images and retai
     expect(reexported.state.projects.every(p=>!('sketchDraftId' in p))).toBe(true);
     const draftEntry=a=>a.attachments.find(entry=>entry.key==='v6-draft-p-backup-b');
     expect(draftEntry(reexported)).toEqual(draftEntry(archive));
+    const second=await browser.newPage();
+    try{
+      await second.goto(base);
+      await restore(second,reexported);
+      await second.reload();
+      const reopened=await second.evaluate(async()=>{
+        const project=state.projects.find(p=>p.id==='p-backup-b');
+        const draft=await v6Blob('get',v6SketchDraftKey(project));
+        return {title:project.title,draft:[...new Uint8Array(await draft.arrayBuffer())]};
+      });
+      expect(reopened).toEqual({title:'Second Project',draft:result.draft});
+    }finally{await second.close();}
     await restored.reload();
     const persists=await restored.evaluate(async()=>({
       projects:state.projects.length,
