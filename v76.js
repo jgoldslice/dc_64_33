@@ -1049,8 +1049,13 @@
   }
   async function drawBlobImage(ctx,blob,x,y,width,height){
     const url=URL.createObjectURL(blob);
-    try{ctx.drawImage(await loadImage(url),x,y,width,height);}
-    finally{URL.revokeObjectURL(url);}
+    try{
+      const image=await loadImage(url);
+      // CSS uses object-fit:contain, so retain the same aspect ratio in PNGs.
+      const ratio=Math.min(width/image.naturalWidth,height/image.naturalHeight);
+      const w=image.naturalWidth*ratio,h=image.naturalHeight*ratio;
+      ctx.drawImage(image,x+(width-w)/2,y+(height-h)/2,w,h);
+    }finally{URL.revokeObjectURL(url);}
   }
   async function notePagePNG(project,page){
     const width=Math.max(1,Math.round(surface.clientWidth));
@@ -1062,7 +1067,10 @@
     const ctx=canvas.getContext('2d');
     if(!ctx)throw Error('Image export is unavailable in this browser');
     ctx.scale(canvas.width/width,canvas.height/height);
-    ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);
+    const paperColor=surface.dataset.paper==='graph'?'#fff':
+      getComputedStyle(surface).backgroundColor;
+    ctx.fillStyle=paperColor&&paperColor!=='rgba(0, 0, 0, 0)'?paperColor:'#fff';
+    ctx.fillRect(0,0,width,height);
     if(surface.dataset.paper==='graph'){
       for(const [step,color] of [[24,'#dce6f1'],[120,'#b5c8e1']]){
         ctx.strokeStyle=color;ctx.lineWidth=.6;ctx.beginPath();
@@ -1177,7 +1185,7 @@
         await v6Blob('put',key,blob);
         pendingPageImage={project:ctx.p,record:{
           id,type:'file',title:(page.title||'Note page')+' image',
-          key,mime:'image/png',created:Date.now()
+          key,mime:'image/png',size:blob.size,created:Date.now()
         }};
       }
       const {project,record}=pendingPageImage;
