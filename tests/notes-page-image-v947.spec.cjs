@@ -60,7 +60,7 @@ test('Save image to Library stores a real PNG without changing editable notes or
       points:[{x:100,y:120},{x:150,y:140},{x:195,y:175}]}];
     ctx.page.objects[0].html='Export this page';
     api.persist();
-    api.renderPage?.(ctx.p,true);
+    document.querySelector('#v76Surface .v76-rich').textContent='Export this page';
     api.strokesView(ctx.page);
   });
   const before=await page.evaluate(()=>JSON.stringify(window.BlueprintNotesBridge.current().page));
