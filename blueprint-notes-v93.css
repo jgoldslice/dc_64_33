@@ -18,7 +18,7 @@
 #v76Editor.v93-notes-expanded .v811-note-body{grid-template-columns:minmax(0,1fr)!important}
 #v76Editor.v93-notes-expanded .v811-page-rail{display:none!important}
 .v811-page-row{position:relative;overflow:visible}
-.v811-page-row .v76-page-menu{right:0;top:calc(100% + 3px);z-index:60}
+/* The shared Pages menu is positioned at the body level, outside rail clipping. */
 .v811-page-rename[aria-expanded="true"]{background:var(--wash);color:var(--ink)}
 @container (min-width:680px){
   /* The … now belongs to each page in the left column. */
