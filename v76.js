@@ -1176,7 +1176,7 @@
         const id=newId(),key='v6-'+id;
         await v6Blob('put',key,blob);
         pendingPageImage={project:ctx.p,record:{
-          id,type:'image',title:(page.title||'Note page')+' image',
+          id,type:'file',title:(page.title||'Note page')+' image',
           key,mime:'image/png',created:Date.now()
         }};
       }
