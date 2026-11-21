@@ -36,8 +36,9 @@
 /* v7.8: Six dots resize; press-and-hold the content moves without reflowing widths. */
 .v76-page-controls{position:relative}
 .v76-page-menu{
-  position:absolute;right:0;top:calc(100% + 5px);display:grid;gap:3px;
-  padding:6px;min-width:145px;z-index:15;background:var(--surface);
+  position:fixed;left:0;top:0;display:grid;gap:3px;
+  padding:6px;min-width:190px;max-width:calc(100vw - 16px);
+  z-index:2147483500;background:var(--surface);
   border:1px solid var(--line);border-radius:11px;box-shadow:0 10px 26px #0004;
 }
 .v76-page-menu[hidden]{display:none!important}
@@ -397,7 +398,7 @@
 }
 #v76Editor .v92-pencil-entry-group #v936InlineInk[hidden]{display:none!important}
 
-/* v9.38 — compact Textbox split action: T inserts text, chevron opens size. */
+/* v9.47 — compact Textbox split action: T inserts text, A opens one size menu. */
 #v76Editor .v938-text-tool{
   display:inline-flex;align-items:stretch;flex:none;height:40px;
   overflow:hidden;border:1px solid var(--line);border-radius:10px;
@@ -412,8 +413,8 @@
 }
 #v76Editor .v79-tool-buttons .v938-text-tool > .v938-text-size-trigger{
   width:27px;min-width:27px;padding:4px;
-  border-left:1px solid var(--line);font-size:19px;
-  font-weight:700;line-height:1;color:var(--secondary-ui);
+  border-left:1px solid var(--line);font-size:17px;
+  font-family:Georgia,serif;font-weight:700;line-height:1;color:var(--secondary-ui);
 }
 #v76Editor .v938-text-tool:has(.v812-textbox-button.v76-on){
   background:var(--wash);border-color:var(--secondary-ui);
@@ -426,8 +427,17 @@
   box-shadow:0 9px 25px #0003;
 }
 .v938-text-size-menu[hidden]{display:none!important}
-.v938-text-size-menu label{font-size:12px;font-weight:700;color:var(--muted)}
-.v938-text-size-menu .v80-text-size{
-  display:block;width:100%;min-height:44px;font-size:16px;
-  background:var(--surface);color:var(--ink);
+.v938-text-size-caption{font-size:12px;font-weight:700;color:var(--muted)}
+.v938-text-size-choices{display:grid;gap:2px}
+.v938-text-size-choices button{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;min-height:42px;border:0;border-radius:8px;
+  padding:8px 10px;background:transparent;color:var(--ink);
+  font-size:15px;text-align:left;cursor:pointer
 }
+.v938-text-size-choices button[aria-pressed="true"]{
+  background:var(--wash);color:var(--secondary-ui);font-weight:750
+}
+.v938-text-size-choices button[aria-pressed="true"]::after{content:'✓';font-weight:750}
+.v938-text-size-choices button:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:-2px}
+.v938-text-size-menu .v80-text-size[hidden]{display:none!important}
