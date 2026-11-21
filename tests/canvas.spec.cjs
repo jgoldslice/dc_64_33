@@ -240,11 +240,11 @@ test('Text stays transparent over images and size choices persist independently'
   const size=page.locator('#v80TextSize');
   await expect(size).toHaveValue('medium');
   await page.locator('#v938TextSizeTrigger').click();
-  await size.selectOption('small');
+  await page.locator('[data-v938-size="small"]').click();
   await expect(rich).toHaveAttribute('data-font-size','small');
   const savedText=await rich.textContent();
   await page.locator('#v938TextSizeTrigger').click();
-  await size.selectOption('large');
+  await page.locator('[data-v938-size="large"]').click();
   await expect(rich).toHaveAttribute('data-font-size','large');
   const color=await text.evaluate(el=>({
     box:getComputedStyle(el).backgroundColor,
