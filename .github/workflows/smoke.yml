@@ -24,6 +24,8 @@ jobs:
           for file in *.js tests/*.spec.cjs; do
             node --check "$file"
           done
+      - name: Run standalone Node regression tests (native archive and Notes logic)
+        run: node --test tests/*.test.cjs
       - name: Install Chromium
         run: npx playwright install chromium
       - name: Run Canvas smoke tests
