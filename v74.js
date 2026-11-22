@@ -44,7 +44,7 @@
      return '<section class="v74-lane"><h3>'+label+' <small>'+actions.length+'</small></h3>'+
        (actions.map(a=>'<div class="v74-action-card"><span>'+escapeHtml(a.title)+'</span><select data-v74-status="'+escapeHtml(a.id)+'" aria-label="Status of '+escapeHtml(a.title)+'">'+
          ['todo','progress','done'].map(s=>'<option value="'+s+'" '+(status===s?'selected':'')+'>'+({todo:'To Do',progress:'In Progress',done:'Done'}[s])+'</option>').join('')+
-         '</select><div class="v74-action-tools"><button class="text-button" type="button" data-v6-task="'+escapeHtml(a.id)+'">→ Task</button><button class="text-button" type="button" data-v6-remove-action="'+escapeHtml(a.id)+'">Remove</button></div></div>').join('')||'<p class="muted small">No actions</p>')+
+         '</select><div class="v74-action-tools"><button class="bp-project-priority" type="button" data-v6-priority="'+escapeHtml(a.id)+'" aria-pressed="'+!!v6LinkedTask(p,a)?.priority+'" aria-label="'+(v6LinkedTask(p,a)?.priority?'Remove priority from ':'Make priority: ')+escapeHtml(a.title)+'">'+(v6LinkedTask(p,a)?.priority?'★':'☆')+'</button><button class="text-button" type="button" data-v6-task="'+escapeHtml(a.id)+'">Edit task</button><button class="text-button" type="button" data-v6-remove-action="'+escapeHtml(a.id)+'">Remove</button></div></div>').join('')||'<p class="muted small">No actions</p>')+
        '</section>';
    }).join('');
  };

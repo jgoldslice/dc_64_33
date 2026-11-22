@@ -7,6 +7,18 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-21 — Unified Project To-Dos and Plan Tasks (feature branch; device QA pending)
+
+**Requested:** Creating a To-Do within any Project should automatically produce the same task in Plan → Tasks; project tasks must be eligible for Top Priorities. Tasks and habits created through other Areas already use shared Plan collections and should keep doing so.
+
+**Implemented in `feature/unified-project-tasks-v948` (starting at `b6f5813`):**
+- `index.html` links each Project action to one existing `state.tasks` record through `projectId`, `projectActionId` and the legacy `taskId` pointer. Both the Project Overview quick-add and full To-Do form now create this link immediately, so Plan, Today, and Area dashboards use the same underlying task. Existing Project actions without tasks are reconciled once, preserving completed status, historical action metadata, project Area, original storage keys, and backup shape.
+- Editing a linked task's name/completion in Plan updates its Project action. Project completion and board/list status continue updating the same Plan task. Removing a To-Do from a Project retains its task as standalone; deleting the underlying Plan task removes its linked Project To-Do so an old action cannot accidentally resurrect it. Deleting a Project retains its tasks and Area attribution.
+- A compact star in Project Overview, To-Do list and board toggles the shared Task's priority/rank. The existing Plan task editor also supports changing priority. Existing Area-created tasks/habits continue feeding the same Plan cards; no second habit model was introduced.
+- `project-overview-v919.js`, `v74.js`, `project-overview-v919.css`, and `sw.js` updated. Four new browser regression scenarios added in `tests/project-unified-tasks-v948.spec.cjs` covering both project creation routes, priority, completion, legacy reconciliation/idempotence, edit, and delete.
+
+**Verification:** Changes committed on the feature branch through `f5468ad9c4441537feb9824e8460a338231e544a`. Browser regression/CI results have **not yet been confirmed** for this feature; physical iPhone/iPad testing and Apple Pencil interaction are also **pending**. The local Xcode/Capacitor wrapper was not accessed; GitHub commits do **not** update the installed iOS app. Test with a disposable project and export an existing backup before first device upgrade. Ensure no duplicates after reload and that deleting/editing a project task is reflected across views.
+
 ## 2026-11-21 — Notes font selector, Pages menu and page-to-Library image (merged, iOS device QA pending)
 
 **Owner-reported defects (iPad screenshots):** The Textbox font-size split control shows both a custom popover and the native iOS select picker; the page-row `•••` menu is clipped by the Pages rail; the menu lacks Save image to Library. The owner requested a capital `A` size control and exactly one font menu.
