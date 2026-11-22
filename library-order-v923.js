@@ -67,11 +67,19 @@
     announce('Image renamed to '+title+'.');
   }
 
-  function clearGesture(){
-    if(gesture){
-      clearTimeout(gesture.timer);
-      gesture.node?.classList.remove('v923-dragging');
-      gesture=null;
+  function clearGesture(keepOrder=false){
+    if(!gesture)return;
+    const old=gesture;
+    gesture=null;
+    clearTimeout(old.timer);
+    old.preview?.remove();
+    old.node?.classList.remove('v923-dragging');
+    if(!keepOrder&&old.active&&old.before){
+      const container=list();
+      if(container)for(const id of old.before){
+        const item=[...container.children].find(node=>node.dataset.v923Item===id);
+        if(item)container.append(item);
+      }
     }
   }
   function announce(message){
@@ -90,10 +98,15 @@
     // Preserve the existing objects and every attachment key. The array
     // order itself is the source of truth for Library and Overview.
     p.library=ids.map(id=>records.get(id));
-    const saved=save(true);
+    if(!save(true)){
+      p.library=previous;
+      v6RenderLibrary(p);
+      announce('The Library order could not be saved. The earlier order was restored.');
+      return;
+    }
     v6RenderLibrary(p);
     window.v919RenderProjectOverview?.(p);
-    announce(saved?'Library order saved.':'Order changed but not saved. Use the Blueprint save recovery notice to retry.');
+    announce('Library order saved.');
   }
 
   function buildOrderedLibrary(p){
@@ -140,15 +153,12 @@
       }else wrapper.append(source);
       grid.append(wrapper);
     }
-    const hint=document.createElement('p');
-    hint.className='v923-reorder-hint';
-    hint.textContent='Press and hold an item to rearrange · Alt + arrow keys also work';
     const status=document.createElement('p');
     status.className='v923-reorder-status';
     status.id='v923OrderStatus';
     status.setAttribute('role','status');
     status.setAttribute('aria-live','polite');
-    root.replaceChildren(hint,grid,status);
+    root.replaceChildren(grid,status);
   }
 
   v6RenderLibrary=function(p){
@@ -161,13 +171,16 @@
     clearGesture();
     const p=project();
     if(!node||!current(p)||!list()?.contains(node))return;
-    gesture={node,p,kind,x,y,active:false,moved:false,timer:setTimeout(()=>{
-      if(!gesture||gesture.node!==node||!root.contains(node))return;
-      gesture.active=true;
-      // Clear any selection already begun by iOS before the hold timer fired.
+    const before=[...list().children].map(item=>item.dataset.v923Item);
+    gesture={node,p,kind,x,y,active:false,moved:false,before,preview:null,timer:setTimeout(()=>{
+      const g=gesture;
+      if(!g||g.node!==node||!root.contains(node))return;
+      g.active=true;
+      // Lift a visual copy without moving the actual interactive resource.
       window.getSelection()?.removeAllRanges();
+      g.preview=window.BlueprintDragPreview?.create(node,g.x,g.y)||null;
       node.classList.add('v923-dragging');
-      announce('Reordering '+(p.library.find(r=>String(r.id)===node.dataset.v923Item)?.title||'item')+'. Drag to the desired position.');
+      announce('Reordering '+(p.library.find(r=>String(r.id)===node.dataset.v923Item)?.title||'item')+'.');
     },HOLD_MS)};
   }
   function move(x,y){
@@ -176,6 +189,7 @@
       if(Math.hypot(x-gesture.x,y-gesture.y)>THRESHOLD)clearGesture();
       return;
     }
+    gesture.preview?.move(x,y);
     const container=list(),node=gesture.node;
     if(!container||!container.contains(node)){clearGesture();return;}
     const target=itemFrom(document.elementFromPoint(x,y));
@@ -196,11 +210,11 @@
   function end(kind){
     if(!gesture||gesture.kind!==kind)return;
     const old=gesture;
-    clearGesture();
+    clearGesture(true);
     if(old.active){
       suppressClickUntil=Date.now()+700;
       if(old.moved)recordOrder(old.p);
-      else announce('Release an item over another position to rearrange it.');
+      else announce('');
     }
   }
   root.addEventListener('touchstart',event=>{
