@@ -7,6 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-21 — Interrupted sketch restore hardening (v9.49, review branch; native QA pending)
+
+**Finding on current main:** Restoring a full archive committed the planner before updating fixed project-scoped sketch draft entries. A crash/reload between the two writes could show newly restored Projects with the preceding on-device sketch draft. Current native v3 archives already validate drawing sidecars but do not make the legacy sketch-draft transaction atomic.
+
+**Implementation in `feature/recovery-atomic-drafts-v949`:** Adapt the older unmerged PR #75 to current main. Stage imported sketch drafts at fresh IndexedDB keys before committing the planner manifest; persist a temporary `sketchDraftId` pointer to select the correct key. Projects without a draft still receive a fresh namespace, preventing old drafts from appearing under reused Project IDs. Exports strip the local pointer and map the staged bytes to historical `v6-draft-<projectId>` attachment names; v1/v2/v3 archive shape and existing legacy installations remain compatible. A failed import leaves the old manifest in place and retains staged bytes if recovery cannot be verified. Do not merge the old PR #75 patch directly because its base is stale.
+
+**Verification:** Inline JS, `v74.js`, and modified Playwright test passed JavaScript syntax parsing when authored. Browser CI and device verification **pending** at branch creation. Added restore/re-export/reload checks, including interruption during draft staging. Physical iOS QA and independent backup restore on disposable storage are required before calling this device-verified. No actual user backup or Xcode installation was touched.
+
 ## 2026-11-21 — Unified Project To-Dos and Plan Tasks (merged, browser verified; device QA pending)
 
 **Requested:** Creating a To-Do within any Project should automatically produce the same task in Plan → Tasks; project tasks must be eligible for Top Priorities. Tasks and habits created through other Areas already use shared Plan collections and should keep doing so.
