@@ -86,11 +86,13 @@ window.BlueprintCardReorder=function({
     return [...new Set([...chosen,...names])];
   };
   const domOrder=()=>[...board.children].map(keyFor).filter(id=>cards.has(id));
+  const sameOrder=(a,b)=>a.length===b.length&&a.every((id,i)=>id===b[i]);
   const syncClass=()=>board.classList.toggle(customClass,
     !sameOrder(domOrder(),names));
-  const sameOrder=(a,b)=>a.every((id,i)=>id===b[i]);
   const setOrder=order=>{
-    for(const id of validOrder(order))board.append(cards.get(id));
+    const next=validOrder(order);
+    if(!sameOrder(domOrder(),next))
+      for(const id of next)board.append(cards.get(id));
     syncClass();
   };
   function announce(text){status.textContent=text;}

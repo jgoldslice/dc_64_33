@@ -167,7 +167,7 @@
     });
     document.body.append(layer);
     areaMenu=layer;
-    layer.querySelector('[data-bpa-rename]')?.focus({preventScroll:true});
+    layer.querySelector('[data-bpa-appearance]')?.focus({preventScroll:true});
   }
 
   // A single anchored popover replaces the layout-shifting inline add row.

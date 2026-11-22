@@ -1,5 +1,6 @@
 'use strict';
 const {test,expect}=require('@playwright/test');
+const fs=require('node:fs/promises');
 const {submitSheet}=require('./sheet-helper.cjs');
 
 const original=['notes','todo','stats','connections','library'];
@@ -138,6 +139,7 @@ test('New aligns with iPad navigation in both sidebar sizes and docks in the iPh
   };
   await compare();
   await expect(quick.locator('.bp-quick-label')).toBeVisible();
+  expect(await quick.evaluate(node=>getComputedStyle(node).flexDirection)).toBe('row');
   await page.locator('.canvas-ipad-collapse').click();
   await expect(quick.locator('.bp-quick-label')).toBeHidden();
   await compare();
@@ -146,4 +148,33 @@ test('New aligns with iPad navigation in both sidebar sizes and docks in the iPh
   await page.setViewportSize({width:390,height:844});
   await expect(page.locator('.app-header #bpQuickAdd')).toBeVisible();
   await expect(page.locator('#bpQuickAddMenu')).toBeHidden();
+});
+
+test('Complete backup restores Area appearance and individual Project card order',async({page})=>{
+  await projects(page);
+  const customized=['library','notes','todo','stats','connections'];
+  const style={area:'Research',icon:'globe',color:'sky'};
+  await page.evaluate(({customized,style})=>{
+    v6Project().overviewCardOrder=customized;
+    state.areaAppearance=[style];
+    if(!save(true))throw Error('Could not seed preferences');
+  },{customized,style});
+  const [download]=await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#exportData').evaluate(button=>button.click())
+  ]);
+  const backup=JSON.parse(await fs.readFile(await download.path(),'utf8'));
+  await page.evaluate(()=>{
+    delete v6Project().overviewCardOrder;
+    delete state.areaAppearance;
+    if(!save(true))throw Error('Could not reset preferences');
+  });
+  page.on('dialog',dialog=>dialog.accept());
+  await page.evaluate(data=>v74ImportBackup(new Blob([JSON.stringify(data)])),backup);
+  await page.locator('[data-v6-project="first"]').click();
+  expect(await order(page)).toEqual(customized);
+  await showAreas(page);
+  await expect(page.locator('[data-bpa-open="Research"] .bp-area-badge')).toHaveClass(/bp-area-color-sky/);
+  await page.getByRole('button',{name:'Customize Research'}).click();
+  await expect(page.locator('#bpSheet [data-area-icon="globe"]')).toHaveAttribute('aria-pressed','true');
 });

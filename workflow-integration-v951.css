@@ -98,7 +98,7 @@
 .app-header #bpQuickAdd .bp-quick-label{display:none}
 #bpQuickAdd .icon{width:22px;height:22px;stroke:currentColor;flex:none}
 .bottom-nav #bpQuickAdd.bp-quick-add{
- justify-content:flex-start;gap:13px;width:100%;min-width:0;
+ flex-direction:row;justify-content:flex-start;gap:13px;width:100%;min-width:0;max-width:none;
  min-height:51px;height:auto;padding:12px 13px;margin:0;
  border:0;border-radius:13px;background:transparent;color:var(--muted);
  font-size:14px;font-weight:600;letter-spacing:-.1px;text-align:left;
