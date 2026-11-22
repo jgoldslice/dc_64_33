@@ -855,7 +855,8 @@ function taskRow(t,rankMap=null){
         ${planned?'<small class="bp-task-planned">'+esc(planned)+'</small>':''}</div>
       <button type="button" class="bp-task-star" data-bp-task-star="${id}" aria-label="${t.priority?'Remove priority from':'Prioritize'} ${title}" aria-pressed="${!!t.priority}">${t.priority?'★':'☆'}</button>
       <button type="button" class="bp-task-due" data-bp-task-date="${id}" aria-label="Change deadline for ${title}">${due?'Due '+esc(due):'Set date'}</button>
-      ${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':''}
+      <span class="task-row-actions"><button type="button" class="edit-small" data-edit-task="${id}" aria-label="Edit ${title}">Edit</button>
+        ${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':''}</span>
     </div>
     <div class="bp-task-swipe-actions" aria-label="Quick task actions">
       <button type="button" data-bp-swipe-done="${id}">${t.done?'Undo':'Done'}</button>
@@ -876,8 +877,8 @@ function dayLines(date){
   const due=state.tasks.filter(t=>!t.done&&t.dueDate===date&&t.scheduledDate!==date);
   return [
     ...events.map(e=>`<p class="day-line bp-cal-event"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),
-    ...scheduled.slice(0,4).map(t=>`<p class="day-line bp-cal-task"><span class="when">${timeText(t.scheduledTime)}</span><button type="button" data-edit-task="${esc(t.id)}" aria-label="Edit scheduled task ${esc(t.title)}">${esc(t.title)}</button><span class="bp-cal-type">Task</span></p>`),
-    ...due.slice(0,3).map(t=>`<p class="day-line bp-cal-due"><button type="button" data-edit-task="${esc(t.id)}" aria-label="Edit task ${esc(t.title)}">${esc(t.title)}</button><span class="due-mark">DUE</span></p>`)
+    ...scheduled.slice(0,4).map(t=>`<p class="day-line bp-cal-task"><span class="when">${timeText(t.scheduledTime)}</span><span>${esc(t.title)}</span><span class="bp-cal-type">Task</span><button type="button" data-edit-task="${esc(t.id)}" aria-label="Edit scheduled task ${esc(t.title)}">↗</button></p>`),
+    ...due.slice(0,3).map(t=>`<p class="day-line bp-cal-due"><span>${esc(t.title)}</span><span class="due-mark">DUE</span><button type="button" data-edit-task="${esc(t.id)}" aria-label="Edit task ${esc(t.title)}">↗</button></p>`)
   ].join('')||'<p class="day-empty">—</p>';
 }
 function dayCard(date){const d=new Date(date+'T12:00:00');return `<div class="day-card ${date===localToday()?'today':''}" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}
@@ -1173,7 +1174,10 @@ function openModal(type,id=null,parent=null){
   const selectedProject=state.projects.find(p=>String(p.id)===selectedProjectId);
   const currentArea=linkedGoal?.category||selectedProject?.area||item?.area||window.blueprintAreaCreationContext||'';
   const areaField=formLine('Area',`<select name="area"><option value="">Unassigned</option>${state.categories.map(area=>`<option value="${esc(area)}" ${area===currentArea?'selected':''}>${esc(area)}</option>`).join('')}</select>`);
-  const projectField=formLine('Project',`<select name="projectId"><option value="">None</option>${state.projects.map(p=>`<option value="${esc(p.id)}" ${String(p.id)===selectedProjectId?'selected':''}>${esc(p.title)}</option>`).join('')}</select>`);
+  // Preserve a link to a Project that is temporarily absent from this
+  // planner snapshot. A normal title edit must never silently erase it.
+  const missingProject=selectedProjectId&&!selectedProject;
+  const projectField=formLine('Project',`<select name="projectId"><option value="">None</option>${missingProject?'<option value="'+esc(selectedProjectId)+'" selected>Previously linked Project (unavailable)</option>':''}${state.projects.map(p=>`<option value="${esc(p.id)}" ${String(p.id)===selectedProjectId?'selected':''}>${esc(p.title)}</option>`).join('')}</select>`);
   if(type==='task')fields=name(item?.title)
     +formLine('Deadline',`<input type="date" name="dueDate" value="${esc(item?.dueDate??($('today').classList.contains('active')?localToday():''))}">`)
     +formLine('On calendar',`<input type="date" name="scheduledDate" value="${esc(item?.scheduledDate||'')}">`)
@@ -1313,8 +1317,9 @@ function handleSave(event){
     const targetGoal=state.goals.find(g=>String(g.id)===goalId);
     const chosen=state.projects.find(p=>String(p.id)===String(fd.get('projectId')||''));
     const project=targetGoal?.projectId?state.projects.find(p=>String(p.id)===String(targetGoal.projectId))||chosen:chosen;
-    const projectId=project?.id||'';
-    const area=targetGoal?.category||project?.area||state.categories.find(a=>a===String(fd.get('area')||''))||'';
+    const selectedProjectValue=String(fd.get('projectId')||'');
+    const projectId=project?.id||((t&&selectedProjectValue===String(t.projectId||''))?t.projectId||'':'');
+    const area=targetGoal?.category||project?.area||state.categories.find(a=>a===String(fd.get('area')||''))||t?.area||'';
     const fields={title,date:dueDate,dueDate,scheduledDate:String(fd.get('scheduledDate')||''),
       scheduledTime:String(fd.get('scheduledDate')||'')?String(fd.get('scheduledTime')||''):'',
       priority,priorityRank,goalId,actionIndex,area,projectId};
@@ -1337,7 +1342,8 @@ function handleSave(event){
         project.actions.push(action);
         record.projectActionId=action.id;
       }
-    }else record.projectActionId='';
+    }else if(!projectId)record.projectActionId='';
+    // An unresolved historic project pointer is intentionally retained.
     v6SyncTaskAction(record);
   }
   else if(modalMode==='event'){const e=existing('events');const fields={title,date,time:String(fd.get('time')||'09:00')};if(e)Object.assign(e,fields);else state.events.push({id:uid(),...fields});}
