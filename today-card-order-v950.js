@@ -20,14 +20,17 @@
   status.setAttribute('aria-live','polite');
   board.after(status);
   const HOLD_MS=420,DEAD_ZONE=12;
-  let gesture=null,suppressClickUntil=0;
+  let gesture=null,suppressClickUntil=0,suppressNode=null;
   const validOrder=order=>{
     const chosen=Array.isArray(order)?order.filter(id=>names.includes(id)):[];
     return [...new Set([...chosen,...names])];
   };
   const domOrder=()=>[...board.children].map(keyFor).filter(id=>cards.has(id));
+  const syncClass=()=>board.classList.toggle('bp-today-custom-order',
+    domOrder().join('|')!==names.join('|'));
   const setOrder=order=>{
     for(const id of validOrder(order))board.append(cards.get(id));
+    syncClass();
   };
   function announce(text){status.textContent=text;}
   function persist(previous){
@@ -69,6 +72,7 @@
     board.classList.remove('bp-today-reordering');
     if(commit)persist(old.before);
     else setOrder(old.before);
+    syncClass();
   }
   function autoScroll(){
     if(!gesture?.active)return;
@@ -92,6 +96,7 @@
       g.active=true;
       window.getSelection()?.removeAllRanges();
       g.preview=window.BlueprintDragPreview.create(node,g.lastX,g.lastY);
+      board.classList.add('bp-today-custom-order');
       node.classList.add('bp-today-placeholder');
       board.classList.add('bp-today-reordering');
       if(g.preview)g.preview.move(g.lastX,g.lastY);
@@ -134,6 +139,8 @@
     if(gesture?.kind!=='touch')return;
     if(gesture.active&&event.changedTouches.length){
       const p=event.changedTouches[0];move(p.clientX,p.clientY);
+      suppressNode=gesture.node;
+      suppressNode=gesture.node;
       suppressClickUntil=Date.now()+650;
     }
     reset(true);
@@ -174,12 +181,14 @@
     if(index<0||next<0||next>=order.length)return;
     event.preventDefault();
     const old=order.slice(),target=cards.get(order[next]);
+    board.classList.add('bp-today-custom-order');
     board.insertBefore(node,next>index?target.nextSibling:target);
     persist(old);
+    syncClass();
     node.focus({preventScroll:true});
   });
   document.addEventListener('click',event=>{
-    if(Date.now()>suppressClickUntil||!find(event.target))return;
+    if(Date.now()>suppressClickUntil||!suppressNode?.contains(event.target))return;
     event.preventDefault();event.stopImmediatePropagation();
   },true);
   window.addEventListener('pagehide',()=>reset());
