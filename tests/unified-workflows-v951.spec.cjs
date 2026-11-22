@@ -56,11 +56,11 @@ test('Project quick creation reuses Task, Habit and Goal forms with inherited Pr
   await expect(page.locator('#v951ProjectConnections')).toContainText('Run GC every day');
   await expect(page.locator('#v951ProjectPulse')).toContainText('Tasks done');
   await page.locator('[data-tab="myplan"]').click();
-  await page.locator('[data-plan-tab="goals"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="goals"]').click();
   await expect(page.locator('#goalsList')).toContainText('Publish catalyst report');
-  await page.locator('[data-plan-tab="habits"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="habits"]').click();
   await expect(page.locator('#habitManager')).toContainText('Run GC every day');
-  await page.locator('[data-plan-tab="tasks"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
   await expect(page.locator('#allTasks')).toContainText('Prepare vials');
 });
 
@@ -89,7 +89,7 @@ test('Today Task title edits, star prioritizes, and quick date picker sets sched
   await page.locator('[data-bp-date-preset="tomorrow"]').click();
   const tomorrow=await page.evaluate(()=>iso(plusDays(new Date(),1)));
   expect(await page.evaluate(()=>state.tasks[0].dueDate)).toBe(tomorrow);
-  await page.locator('#allTasks [data-edit-task="unified-task"]').click();
+  await page.locator('#v917TodayTasks [data-edit-task="unified-task"]').first().click();
   await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
   await expect(page.locator('#modalForm input[name="scheduledDate"]')).toHaveValue('2026-12-09');
   await page.locator('#cancelModal').click();
@@ -160,6 +160,8 @@ test('Project removal detaches but does not delete linked Tasks, Habits, or Goal
     save(true);render();
   },id);
   // The established Project delete flow uses a native-style confirmation sheet.
+  await page.locator('#renameProject').click();
+  await expect(page.locator('#deleteProject')).toBeVisible();
   await page.locator('#deleteProject').click();
   await submitSheet(page);
   await expect.poll(()=>page.evaluate(()=>state.projects.some(p=>p.title==='Shared Workflow QA'))).toBe(false);
@@ -225,7 +227,7 @@ test('Goal step conversion inherits a Project and avoids duplicate Task/Habit re
     save(true);render();
   },projectId);
   await page.locator('[data-tab="myplan"]').click();
-  await page.locator('[data-plan-tab="goals"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="goals"]').click();
   const goal=page.locator('#goalsList [data-goal="linked-goal"]');
   await goal.locator('summary').click();
   await goal.locator('[data-v77-step-action]').click();
@@ -237,7 +239,7 @@ test('Goal step conversion inherits a Project and avoids duplicate Task/Habit re
   });
   expect(afterTask).toEqual({count:1,projectId,projectAction:true});
 
-  await page.locator('[data-plan-tab="goals"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="goals"]').click();
   const sameGoal=page.locator('#goalsList [data-goal="linked-goal"]');
   await sameGoal.locator('[data-v77-step-action]').click();
   await sameGoal.locator('[data-action-to-habit]').click();
