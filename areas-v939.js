@@ -109,7 +109,8 @@
     const content=document.createElement('div');
     content.className='bp-area-picker';
     const choice=(kind,key,label,visual)=>'<button type="button" data-area-'+kind+'="'+key+
-      '" aria-label="'+label+'" title="'+label+'" aria-pressed="'+(style[kind]===key)+'">'+visual+'</button>';
+      '" aria-label="'+label+'"'+(kind==='color'?' title="'+label+'"':'')+
+      ' aria-pressed="'+(style[kind]===key)+'">'+visual+'</button>';
     content.innerHTML='<div class="bp-area-picker-preview" aria-hidden="true">'+badge(style)+'</div>'+
       '<fieldset><legend>Color</legend><div class="bp-area-picker-grid bp-area-color-grid">'+
       [...areaColors].map(([key,{name,value}])=>choice('color',key,name,
