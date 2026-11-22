@@ -7,6 +7,19 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-21 — v9.50 Today card reordering, finger-following Library drag, compact helper copy (review branch)
+
+**Owner request and iPad screenshot:** Reorder cards across tabs (at least Today), with a card following the finger during a long press rather than instantly jumping at a position threshold. Remove repetitive visible helpers in Library and similar areas, including the local-files disclaimer. Keep real storage safety notices.
+
+**Implementation in `feature/card-follow-reorder-v950`:**
+- All five Today cards (Schedule, Habits, Tasks, Top Priorities, Projects) are reorderable by 420ms long press with a floating, inert copy that follows touch, Pencil pointer, or mouse continuously. The original card remains a translucent placeholder; the grid rearranges only underneath. Escape/cancel restores its prior order; Alt+arrow keys provide a keyboard route. Controls inside the cards remain clickable and cannot initiate the drag.
+- Today uses DOM order with responsive 1-column iPhone / 2-column iPad layout. The Projects card keeps its two-column span where applicable, and a saved optional `state.todayCardOrder` array persists through the existing planner manifest and complete backups without introducing a separate storage key. A failed save reverts the UI and preference; an imported backup reapplies saved order immediately.
+- The same shared drag preview is applied to existing Project Library tiles in Gallery/List mode while keeping the established record order, asset bytes, rename/delete menus, keyboard shortcut and save verification. A canceled drag rolls back DOM order and a failed save restores the saved Library order.
+- Removed the Library reorder instruction line and visible reorder-progress status, Library's repeated local-files paragraph, Today's five scrolling hints and the Week's decorative eyebrow subtitle. Safety-critical failure warnings and the Customize → Your Data backup explanation remain. The accessibility labels / live status remain available without visible instructional clutter.
+- Files: `drag-preview-v950.js`, `today-card-order-v950.js`, `card-reorder-v950.css`, existing Library controller, `index.html`, `sw.js` and dedicated browser regression tests. No IndexedDB key, user attachment, backup schema or native Swift changes.
+
+**Verification status:** The new JS and inline application code passed author-time syntax parsing. Playwright CI and on-device testing are pending; do not claim touch or Apple Pencil behavior was physically verified until tested on the owner's iPad. Include scenarios for continuous drag preview, mouse/touch/keyboard, persistence, backup import, failure rollback, layout pairing and previously working Library actions. GitHub merge is not a native Xcode deployment.
+
 ## 2026-11-21 — Share deployment owner-reported working on device
 
 **Owner feedback:** The installed Blueprint sharing workflow / Share deployment is working well on the owner's device. Treat successful everyday sharing as **owner-reported device-tested**, rather than describing native sharing categorically as absent or unusable. The owner did not specify which exact file types, target devices, queue/failure cases, or current compiled Swift revision were exercised; those are **not independently device-verified** here.

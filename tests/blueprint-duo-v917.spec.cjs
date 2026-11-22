@@ -50,7 +50,7 @@ test('Duo viewport transition preserves content and switches from one to two col
   expect(errors).toEqual([]);
 });
 
-test('scroll hints appear when dense schedule and tasks need internal scrolling',async({page})=>{
+test('dense Today cards remain scrollable without visual instruction captions',async({page})=>{
   await page.setViewportSize({width:834,height:1194});
   await page.goto(base);
   await page.evaluate(()=>{
@@ -63,7 +63,7 @@ test('scroll hints appear when dense schedule and tasks need internal scrolling'
     const card=page.locator('.'+cardName);
     await expect.poll(()=>body.evaluate(el=>el.scrollHeight-el.clientHeight)).toBeGreaterThan(60);
     await expect(card).toHaveClass(/v917-has-overflow/);
-    await expect(card.locator('.v917-overflow-hint')).toBeVisible();
+    await expect(card.locator('.v917-overflow-hint')).toHaveCount(0);
     const original=await card.locator('.card-heading').boundingBox();
     await body.evaluate(el=>{el.scrollTop=el.scrollHeight-el.clientHeight;});
     await expect.poll(()=>card.evaluate(el=>el.classList.contains('v917-has-overflow'))).toBe(false);
