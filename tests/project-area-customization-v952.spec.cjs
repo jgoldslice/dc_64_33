@@ -93,7 +93,10 @@ test('Area icon and color persist, travel with rename, and can be set on creatio
   expect((await research.locator('.bp-area-badge').boundingBox()).width).toBeGreaterThanOrEqual(52);
   await page.getByRole('button',{name:'Customize Research'}).click();
   const sheet=page.locator('#bpSheet');
-  expect(await sheet.locator('[data-area-icon]').count()).toBeGreaterThanOrEqual(25);
+  const icons=sheet.locator('button[data-area-icon]');
+  await expect(icons).toHaveCount(30);
+  await expect(sheet.locator('button[data-area-icon][title]')).toHaveCount(0);
+  expect((await icons.allTextContents()).every(text=>text.trim()==='')).toBe(true);
   expect(await sheet.locator('[data-area-color]').count()).toBeGreaterThanOrEqual(12);
   await sheet.getByRole('button',{name:'Compass',exact:true}).click();
   await sheet.getByRole('button',{name:'Rose',exact:true}).click();
