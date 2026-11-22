@@ -1,15 +1,17 @@
 /* v9.50: Reorder actual Today cards; original card stays in its grid slot
    while a separate inert visual copy tracks the finger above all scroll panes. */
-#today > .stack.v917-today-grid{
+/* Keep the familiar named-area layout until a person actually customizes
+   it. This preserves balanced default iPad rows and older responsive rules. */
+#today > .stack.v917-today-grid.bp-today-custom-order{
   grid-template-areas:none!important;
   grid-auto-flow:row!important;
 }
-#today > .stack.v917-today-grid > :is(.v917-schedule,.v917-habits,.v917-tasks,.v917-priorities,.v917-projects){
+#today > .stack.v917-today-grid.bp-today-custom-order > :is(.v917-schedule,.v917-habits,.v917-tasks,.v917-priorities,.v917-projects){
   grid-area:auto!important;
 }
 @media (min-height:600px){
   @container blueprint-today (min-width:520px){
-    #today > .stack.v917-today-grid > .v917-projects{grid-column:1 / -1!important}
+    #today > .stack.v917-today-grid.bp-today-custom-order > .v917-projects{grid-column:1 / -1!important}
   }
 }
 #today > .stack.v917-today-grid > .card:not([hidden]){
