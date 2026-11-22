@@ -102,6 +102,8 @@
   });
   document.addEventListener('click',e=>{
     if(!(e.target instanceof Element))return;
+    const edit=e.target.closest('[data-bp-edit-task]');
+    if(edit){e.preventDefault();openModal('task',edit.dataset.bpEditTask);return;}
     const date=e.target.closest('[data-bp-task-date]');
     if(date){e.preventDefault();openMenu(date,date.dataset.bpTaskDate);return;}
     const star=e.target.closest('[data-bp-task-star]');
