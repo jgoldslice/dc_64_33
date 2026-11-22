@@ -129,3 +129,20 @@ test('Two legacy To-Dos that refer to one task retain separate, stable links',as
   await page.reload();
   expect(await snapshot()).toEqual(first);
 });
+
+test('Removing a Project To-Do keeps the Plan task in the Project’s current Area',async({page})=>{
+  await project(page);
+  await page.evaluate(()=>{v6Project().area='Research';save();});
+  await addTodo(page,'Keep in Plan');
+  await page.evaluate(()=>{v6Project().area='Personal';save();});
+  await page.locator('[data-v919-project-open="actions"]').click();
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#projectActionsList [data-v6-remove-action]').click();
+  expect(await page.evaluate(()=>{
+    const p=v6Project(),t=state.tasks.find(t=>t.title==='Keep in Plan');
+    return {actions:p.actions.length,count:state.tasks.filter(t=>t.title==='Keep in Plan').length,
+      area:t?.area,projectId:t?.projectId,actionId:t?.projectActionId};
+  })).toEqual({actions:0,count:1,area:'Personal',projectId:'',actionId:''});
+  await page.reload();
+  await expect(page.locator('#allTasks')).toContainText('Keep in Plan');
+});
