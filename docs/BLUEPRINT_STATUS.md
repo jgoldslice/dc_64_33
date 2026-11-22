@@ -1,11 +1,30 @@
 # Blueprint — Development Status
 
-**Last documentation update:** 2026-11-21
+**Last documentation update:** 2026-11-22
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
 **Verification scope:** Fetched root README and index.html; checked that AGENTS.md and this status file were absent; inspected recent commit identifiers. This is **not** a full source-code audit, automated test run, or iOS device test.
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
+
+## 2026-11-22 — v9.51 Shared workflow and Project dashboard integration (merged; browser verified; iOS QA pending)
+
+**Owner request:** Make Tasks tap-editable, swipeable, prioritizable and quick-reschedulable; connect Project Goals and Habits through the same Plan collections; add cross-tab creation, calendar-visible scheduled Tasks, and a compact Project progress/linked-items dashboard. Polish and inspect native PencilKit persistence, Focus, gesture and Library export integration.
+
+**Merged:** [PR #80](https://github.com/jgoldslice/dc_64_33/pull/80), squash commit `ad64ed61e85bcd8bbd13782d71c0edbaeaa2e512`; tested feature head `dbb7e0da838d014a59d7709f3e33855ecaf9634d`.
+
+- **Task row / one Task model:** Existing `state.tasks` entries render title tap-to-edit, an adjacent accessible Edit/Delete pair, small inherited Area/Project labels, a star linked to existing priority rank, a compact deadline/scheduled-date popover, and a horizontal touch swipe revealing Done/Tomorrow actions. The swipe is marked `data-no-swipe` so main-tab navigation cannot claim it. All Task quick edits use guarded `save(true)`, with rollback of Task and Project action completion on failure. Project To-Do records remain linked, rather than duplicating Plan tasks.
+- **Shared contextual creation:** One Quick Add opens the existing Task/Event/Habit/Goal modals, automatically supplying the active Project (Brainstorm) or Area (Plan Areas). The single button docks inside the existing iPhone header or iPad sidebar; it no longer overlaps Plan's existing Add buttons. Project Overview offers + Task/+ Habit/+ Goal using those same forms. Goals, Habits and Tasks save optional `projectId`; Goal-step conversions to Tasks/Habits inherit the Goal's Project. The older Project link and action metadata survive ordinary edits even when the referenced Project is temporarily unavailable. Deleting a Project detaches linked Tasks, Goals and Habits rather than deleting shared Plan records.
+- **Schedule / Week:** A Task can have an independent `scheduledDate` and `scheduledTime` as well as its deadline. Calendar cells distinguish planned Tasks from Events and due-only Tasks; the small explicit Task edit button opens the Task form rather than the Event creation sheet. Existing Design Week and Event creation remain intact. No new calendar data store was introduced.
+- **Project Overview:** The established Notes, To-Do, and Library cards remain the primary responsive layout; a supplementary compact pulse reports Task completion, linked Habits/Goals, page/Library counts and an upcoming Task. A linked Goals/Habits panel supplies direct edit actions. Latest-added note pages display ahead of older snippets without rearranging saved notebook pages. Previews refresh immediately after shared item changes.
+- **PencilKit:** The checked-in `native-pencilkit/current/BlueprintPencilPlugin.swift` now flushes dirty `PKDrawing` bytes before disabling inline ink in favor of text/image selection. Existing Apple PKToolPicker, lasso/eraser, native finger navigation, Focus integration and page PNG-to-Library export were inspected and retained. **This Swift change was not Xcode-compiled or device-tested in this session.** No native drawing format, saved media key, backup format or Share Extension source was migrated or deleted.
+- **Bug sweep / regression fixes:** Iterated after CI surfaced legacy Edit/Delete row incompatibility, loss of Project IDs/action pointers on Task edits, Week date-cell tap interception, an overly crowded Project card hierarchy, iPad layout pairing, conflicting tab vs Task swipes, stale To-Do previews, and a floating Quick Add that intercepted Plan Add buttons. Older browser tests remain intact and pass.
+
+**Automated verification:** Final [Actions run #44999884236](https://github.com/jgoldslice/dc_64_33/actions/runs/44999884236) on `dbb7e0da`: **346/346 Chromium Playwright tests**, **29/29 standalone Node tests**, plus JavaScript syntax checks all passed. Covers Project creation context, Goal/Habit/Task links, calendar behavior, Task controls, backup persistence, failed save rollback, responsive layouts, swipe gesture ownership and existing core workflows.
+
+**Outstanding release gates:** This GitHub merge changes web code and a checked-in Swift source, **not the installed iPhone/iPad binary**. Before native deployment, stage verified web assets without overwriting local changes, reconcile the updated `BlueprintPencilPlugin.swift` with the *compiled* App target, build/sign in Xcode, and run disposable iPad QA for PencilKit pen/eraser/lasso, finger pan/pinch, Focus transitions, image export to Library, page switch/relaunch, share importing, and complete backup/restore. Project reassignment of a Goal with already-linked Tasks/Habits needs additional device/behavioral QA for the desired child-project policy. Never uninstall Blueprint or clear device storage as an update shortcut.
+
+
 
 ## 2026-11-21 — v9.50 Today card reordering, finger-following Library drag, compact helper copy (merged; browser verified)
 
