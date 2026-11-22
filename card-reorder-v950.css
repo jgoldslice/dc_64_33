@@ -1,0 +1,59 @@
+/* v9.50: Reorder actual Today cards; original card stays in its grid slot
+   while a separate inert visual copy tracks the finger above all scroll panes. */
+#today > .stack.v917-today-grid{
+  grid-template-areas:none!important;
+  grid-auto-flow:row!important;
+}
+#today > .stack.v917-today-grid > :is(.v917-schedule,.v917-habits,.v917-tasks,.v917-priorities,.v917-projects){
+  grid-area:auto!important;
+}
+@media (min-height:600px){
+  @container blueprint-today (min-width:520px){
+    #today > .stack.v917-today-grid > .v917-projects{grid-column:1 / -1!important}
+  }
+}
+#today > .stack.v917-today-grid > .card:not([hidden]){
+  -webkit-touch-callout:none;
+}
+#today > .stack.v917-today-grid > .card:focus-visible{
+  outline:2px solid var(--secondary-ui);
+  outline-offset:2px;
+}
+#today > .stack.v917-today-grid > .bp-today-placeholder,
+#projectLibraryList .v923-library-item.v923-dragging{
+  opacity:.18!important;
+  border-style:dashed!important;
+  box-shadow:none!important;
+}
+#today > .stack.v917-today-grid.bp-today-reordering > .card{
+  transition:none!important;
+}
+.bp-follow-ghost{
+  position:fixed!important;
+  pointer-events:none!important;
+  -webkit-user-select:none!important;
+  user-select:none!important;
+  touch-action:none!important;
+  transform-origin:center center!important;
+  filter:brightness(1.035);
+  border-color:var(--secondary-ui)!important;
+  border-style:solid!important;
+  outline:1px solid var(--secondary-ui)!important;
+  border-radius:15px!important;
+}
+#projectLibraryList .v923-reorder-hint{display:none!important}
+#projectLibraryList .v923-reorder-status{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  clip-path:inset(50%)!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .bp-follow-ghost{filter:none}
+  #today > .stack.v917-today-grid > .card{transition:none!important}
+}
