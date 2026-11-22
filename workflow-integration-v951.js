@@ -195,7 +195,7 @@
       quick.style.top=Math.max(12,Math.min(top,innerHeight-quick.getBoundingClientRect().height-12))+'px';
       quick.querySelector('[data-bp-quick-kind]')?.focus({preventScroll:true});
     };
-    railMode.addEventListener?.('change',()=>hideQuick());
+    window.addEventListener('resize',()=>hideQuick());
     quickTrigger.addEventListener('click',()=>{if(quick.hidden)showQuick();else hideQuick(true);});
     quick.addEventListener('click',event=>{
       const option=event.target.closest('[data-bp-quick-kind]');
@@ -203,7 +203,7 @@
       const kind=option.dataset.bpQuickKind;
       const view=document.querySelector('.view.active')?.id;
       const project=view==='brainstorm'?v6Project():null;
-      const area=view==='myplan'?window.blueprintAreas?.currentArea?.():'';
+      const area=view==='myplan'&&activePlanTab==='overview'?window.blueprintAreas?.currentArea?.():'';
       if(project)window.blueprintProjectCreationContext=project.id;
       else if(state.categories.includes(area))window.blueprintAreaCreationContext=area;
       hideQuick();

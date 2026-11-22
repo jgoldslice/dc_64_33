@@ -7,6 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-22 — v9.53 Shared Area palette and interaction fixes
+
+- Area swatches use Customize’s 15 named presets and exact values from the existing palette, plus Theme, which follows the current secondary color. Older v9.52 Area color names resolve to their corresponding Customize presets. The stored icon and area link are preserved when reading old backups.
+- Renaming a built-in Area retains its original icon and accent. The Folder option now uses a folder glyph.
+- New inherits Area context only from the active Areas panel and dismisses its menu when the viewport resizes. Releasing a press outside a card cancels the pending options menu.
+- Local JavaScript syntax, patch checks and 29 standalone Node tests passed. Browser regressions cover palette parity, theme accent, legacy backup colors, default Area appearance after rename, resize, Area context and release outside a card. iOS installation still uses the existing Capacitor staging, copy and Xcode build steps. Physical device QA is pending.
+
 ## 2026-11-22 — v9.52 Project dashboard arrangement and Area appearance (merged, browser verified, iOS QA pending)
 
 - The Project overview calls its summary **Project Stats**. All five overview cards use Today’s finger-following long press and keyboard reordering. Each Project stores its own optional `overviewCardOrder` array. Canceled gestures and failed writes restore the previous visual order. Projects without a preference use the original layout.
