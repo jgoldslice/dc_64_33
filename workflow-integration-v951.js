@@ -140,6 +140,58 @@
     if(e.key==='Escape'&&!menu.hidden){e.preventDefault();closeMenu();}
   },true);
 
+  // One Quick Add for every tab. It opens the existing forms rather than
+  // creating competing task/goal/habit/event entry paths or storage models.
+  const quickTrigger=document.getElementById('bpQuickAdd');
+  if(quickTrigger){
+    const quick=document.createElement('div');
+    quick.id='bpQuickAddMenu';quick.className='bp-quick-menu';
+    quick.setAttribute('role','dialog');
+    quick.setAttribute('aria-label','Create in Blueprint');
+    quick.hidden=true;
+    quick.innerHTML='<p>Create</p>'+
+      '<button type="button" data-bp-quick-kind="task"><span aria-hidden="true">☑</span>Task</button>'+
+      '<button type="button" data-bp-quick-kind="event"><span aria-hidden="true">▦</span>Event</button>'+
+      '<button type="button" data-bp-quick-kind="habit"><span aria-hidden="true">◎</span>Habit</button>'+
+      '<button type="button" data-bp-quick-kind="goal"><span aria-hidden="true">☆</span>Goal</button>';
+    document.body.append(quick);
+    const hideQuick=(focus=false)=>{
+      if(quick.hidden)return;
+      quick.hidden=true;
+      quickTrigger.setAttribute('aria-expanded','false');
+      if(focus)quickTrigger.focus({preventScroll:true});
+    };
+    const showQuick=()=>{
+      quick.hidden=false;
+      quickTrigger.setAttribute('aria-expanded','true');
+      const r=quickTrigger.getBoundingClientRect(),width=Math.min(240,innerWidth-24);
+      quick.style.width=width+'px';
+      quick.style.left=Math.max(12,Math.min(r.right-width,innerWidth-width-12))+'px';
+      quick.style.top=Math.max(12,Math.min(r.bottom+7,innerHeight-quick.getBoundingClientRect().height-12))+'px';
+      quick.querySelector('[data-bp-quick-kind]')?.focus({preventScroll:true});
+    };
+    quickTrigger.addEventListener('click',()=>{if(quick.hidden)showQuick();else hideQuick(true);});
+    quick.addEventListener('click',event=>{
+      const option=event.target.closest('[data-bp-quick-kind]');
+      if(!option)return;
+      const kind=option.dataset.bpQuickKind;
+      const view=document.querySelector('.view.active')?.id;
+      const project=view==='brainstorm'?v6Project():null;
+      const area=view==='myplan'?window.blueprintAreas?.currentArea?.():'';
+      if(project)window.blueprintProjectCreationContext=project.id;
+      else if(state.categories.includes(area))window.blueprintAreaCreationContext=area;
+      hideQuick();
+      openModal(kind);
+    });
+    document.addEventListener('click',event=>{
+      if(!quick.hidden&&!quick.contains(event.target)&&!quickTrigger.contains(event.target))hideQuick();
+    });
+    document.addEventListener('keydown',event=>{
+      if(!quick.hidden&&event.key==='Escape'){event.preventDefault();hideQuick(true);}
+    },true);
+    window.addEventListener('resize',()=>hideQuick(),{passive:true});
+  }
+
   // Native-feeling horizontal reveal. Vertical gestures remain ordinary
   // scrolling; system edges and other tab navigation are unaffected.
   let gesture=null,openedRow=null,suppressClickUntil=0;
