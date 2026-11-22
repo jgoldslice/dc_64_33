@@ -7,17 +7,17 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-21 — Unified Project To-Dos and Plan Tasks (feature branch; device QA pending)
+## 2026-11-21 — Unified Project To-Dos and Plan Tasks (merged, browser verified; device QA pending)
 
 **Requested:** Creating a To-Do within any Project should automatically produce the same task in Plan → Tasks; project tasks must be eligible for Top Priorities. Tasks and habits created through other Areas already use shared Plan collections and should keep doing so.
 
-**Implemented in `feature/unified-project-tasks-v948` (starting at `b6f5813`):**
+**Merged in [PR #77](https://github.com/jgoldslice/dc_64_33/pull/77):** squash commit `03f9322cc86cc984d0273eb8ae7ac42b1f2bd0b3` to `main` (feature branch based on `b6f5813`).
 - `index.html` links each Project action to one existing `state.tasks` record through `projectId`, `projectActionId` and the legacy `taskId` pointer. Both the Project Overview quick-add and full To-Do form now create this link immediately, so Plan, Today, and Area dashboards use the same underlying task. Existing Project actions without tasks are reconciled once, preserving completed status, historical action metadata, project Area, original storage keys, and backup shape.
 - Editing a linked task's name/completion in Plan updates its Project action. Project completion and board/list status continue updating the same Plan task. Removing a To-Do from a Project retains its task as standalone; deleting the underlying Plan task removes its linked Project To-Do so an old action cannot accidentally resurrect it. Deleting a Project retains its tasks and Area attribution.
 - A compact star in Project Overview, To-Do list and board toggles the shared Task's priority/rank. The existing Plan task editor also supports changing priority. Existing Area-created tasks/habits continue feeding the same Plan cards; no second habit model was introduced.
-- `project-overview-v919.js`, `v74.js`, `project-overview-v919.css`, and `sw.js` updated. Four new browser regression scenarios added in `tests/project-unified-tasks-v948.spec.cjs` covering both project creation routes, priority, completion, legacy reconciliation/idempotence, edit, and delete.
+- `project-overview-v919.js`, `v74.js`, `project-overview-v919.css`, and `sw.js` updated. Six browser regression scenarios added in `tests/project-unified-tasks-v948.spec.cjs` covering both project creation routes, priority, completion, legacy reconciliation/idempotence, edit, and delete.
 
-**Verification:** Changes committed on the feature branch through `f5468ad9c4441537feb9824e8460a338231e544a`. Browser regression/CI results have **not yet been confirmed** for this feature; physical iPhone/iPad testing and Apple Pencil interaction are also **pending**. The local Xcode/Capacitor wrapper was not accessed; GitHub commits do **not** update the installed iOS app. Test with a disposable project and export an existing backup before first device upgrade. Ensure no duplicates after reload and that deleting/editing a project task is reflected across views.
+**Verification:** Final feature head `9a5f730c251b3a20f3ba250bf41e1cbf12e9a11e`; [GitHub Actions browser run #44994638988](https://github.com/jgoldslice/dc_64_33/actions/runs/44994638988) passed **330/330 Chromium Playwright tests** and JavaScript syntax checks, including the six new feature scenarios. An earlier run exposed a test setup problem (Project view hidden because the test started on Today), corrected before the successful run. Physical iPhone/iPad interaction and native iOS build **remain pending**. No Xcode/Capacitor wrapper was accessed; merging to GitHub does **not** update installed iOS apps. Before first device upgrade, preserve a current backup and use a disposable project to test no duplicates after reload, priority edits, completing/unchecking, delete/detach and Area inheritance.
 
 ## 2026-11-21 — Notes font selector, Pages menu and page-to-Library image (merged, iOS device QA pending)
 
