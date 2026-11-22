@@ -128,11 +128,14 @@ window.BlueprintCardReorder=function({
       y>limit-edge?Math.min(16,(y-(limit-edge))*.35):0;
     if(!isActive()){reset();return;}
     if(velocity){
-      const scroller=board.closest('.shell main');
-      if(scroller&&scroller.scrollHeight>scroller.clientHeight+1&&
-          /^(auto|scroll)$/.test(getComputedStyle(scroller).overflowY))scroller.scrollBy(0,velocity);
-      else window.scrollBy(0,velocity);
-      move(gesture.lastX,y);
+      const main=board.closest('.shell main');
+      const scroller=main&&main.scrollHeight>main.clientHeight+1&&
+        /^(auto|scroll)$/.test(getComputedStyle(main).overflowY)?main:document.scrollingElement;
+      if(scroller){
+        const previous=scroller.scrollTop;
+        scroller.scrollBy(0,velocity);
+        if(scroller.scrollTop!==previous)move(gesture.lastX,y,true);
+      }
     }
     gesture.scrollFrame=requestAnimationFrame(autoScroll);
   }
@@ -156,9 +159,9 @@ window.BlueprintCardReorder=function({
       g.scrollFrame=requestAnimationFrame(autoScroll);
     },HOLD_MS);
   }
-  function move(x,y){
+  function move(x,y,scrolled=false){
     const g=gesture;
-    if(!g)return;
+    if(!g||(!scrolled&&x===g.lastX&&y===g.lastY))return;
     g.lastX=x;g.lastY=y;
     if(!g.active){
       if(Math.hypot(x-g.x,y-g.y)>DEAD_ZONE)reset();
@@ -173,6 +176,10 @@ window.BlueprintCardReorder=function({
       const rect=card.getBoundingClientRect();
       return x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom;
     });
+    // Unequal heights can leave a moved target under the same finger.
+    // Require the finger to leave that target before it can swap back.
+    if(target===g.lastTarget)return;
+    g.lastTarget=target;
     if(!target)return;
     const nodes=domOrder(),from=nodes.indexOf(keyFor(g.node)),to=nodes.indexOf(keyFor(target));
     if(from<0||to<0||from===to)return;

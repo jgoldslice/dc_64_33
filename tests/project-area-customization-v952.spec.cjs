@@ -43,6 +43,7 @@ test('Project card lift follows a touch and saves order only for the current pro
     const owned=send('touchmove',start.x+30,start.y+24);
     const after=ghost.getBoundingClientRect();
     send('touchmove',end.x+10,end.y+10);
+    send('touchmove',end.x+11,end.y+11);
     send('touchend',end.x+10,end.y+10);
     return {x:after.left-before.left,y:after.top-before.top,owned};
   });
