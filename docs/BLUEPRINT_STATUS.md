@@ -10,7 +10,7 @@
 ## 2026-11-22 — v9.53 Shared Area palette and interaction fixes (merged, browser verified, iOS QA pending)
 
 - Area swatches use Customize’s 15 named presets and exact values from the existing palette, plus Theme, which follows the current secondary color. Older v9.52 Area color names resolve to their corresponding Customize presets. The stored icon and area link are preserved when reading old backups.
-- Renaming a built-in Area retains its original icon and accent. The Folder option now uses a folder glyph.
+- Renaming a built-in Area retains its original icon and accent. The Folder option now uses a folder glyph. A follow-up removes visible titles and hover tooltips from the icon choices while preserving screen-reader names.
 - New inherits Area context only from the active Areas panel and dismisses its menu when the viewport resizes. Releasing a press outside a card cancels the pending options menu.
 - Merged [PR #83](https://github.com/jgoldslice/dc_64_33/pull/83) to main as `aa579ba`. Tested feature head `6547b28`.
 - [GitHub Actions run #486](https://github.com/jgoldslice/dc_64_33/actions/runs/45065779241) passed **355 Chromium Playwright tests**, **29 standalone Node tests**, and JavaScript syntax checks. Coverage includes palette parity, theme accent, legacy backup colors, default Area appearance after rename, resize, Area context and release outside a card. Local syntax, patch checks, standalone tests and temporary iOS web staging also passed.
