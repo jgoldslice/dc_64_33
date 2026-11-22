@@ -11,9 +11,14 @@
   function updateTask(task,fields){
     if(!task)return false;
     const before=Object.fromEntries(Object.keys(fields).map(k=>[k,task[k]]));
+    const project=state.projects.find(p=>String(p.id)===String(task.projectId||''));
+    const action=project?.actions?.find(a=>String(a.id)===String(task.projectActionId||''));
+    const previousAction=action?{...action}:null;
     Object.assign(task,fields);
+    if('done' in fields)v6SyncTaskAction(task);
     if(!save(true)){
       Object.assign(task,before);
+      if(action&&previousAction)Object.assign(action,previousAction);
       render('tasks');
       return false;
     }
@@ -110,7 +115,7 @@
     const done=e.target.closest('[data-bp-swipe-done]');
     if(done){
       const t=findTask(done.dataset.bpSwipeDone);
-      if(t){updateTask(t,{done:!t.done});v6SyncTaskAction(t);}
+      if(t)updateTask(t,{done:!t.done});
       return;
     }
     const tomorrow=e.target.closest('[data-bp-swipe-tomorrow]');
@@ -227,4 +232,5 @@
     if(v6ProjectTab==='overview'&&v6Project())projectPulse(v6Project());
     return result;
   };
+  if(v6ProjectTab==='overview'&&v6Project())projectPulse(v6Project());
 })();
