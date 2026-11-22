@@ -1907,7 +1907,7 @@ document.addEventListener('click',async e=>{
       ...(p.notePages||[]).flatMap(page=>(page.objects||[]).map(o=>o.key))
     ].filter(Boolean));
     for(const task of state.tasks)if(String(task.projectId||'')===String(p.id)){
-      task.area=task.area||p.area||'';
+      task.area=p.area||task.area||'';
       task.projectId='';task.projectActionId='';
     }
     state.projects=state.projects.filter(x=>String(x.id)!==String(p.id));
@@ -1946,7 +1946,7 @@ document.addEventListener('click',async e=>{
     if(!action||!confirm('Remove this project action? Linked Blueprint tasks will be kept.'))return;
     // Preserve any linked Blueprint task rather than silently deleting it.
     const task=state.tasks.find(t=>String(t.id)===String(action.taskId));
-    if(task){task.area=task.area||p.area||'';task.projectId='';task.projectActionId='';}
+    if(task){task.area=p.area||task.area||'';task.projectId='';task.projectActionId='';}
     p.actions=p.actions.filter(a=>String(a.id)!==id);
     save();v6RenderActions(p);return;
   }
