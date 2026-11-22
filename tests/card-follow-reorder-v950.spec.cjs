@@ -125,7 +125,7 @@ test('complete backup round-trip restores the custom Today card order immediatel
   ]);
   const backup=JSON.parse(await fs.readFile(await download.path(),'utf8'));
   expect(backup.state.todayCardOrder).toEqual(['projects','priorities','tasks','habits','schedule']);
-  await page.evaluate(()=>{state.todayCardOrder=defaults;if(!save(true))throw Error('Could not reset');});
+  await page.evaluate(()=>{state.todayCardOrder=['schedule','habits','tasks','priorities','projects'];if(!save(true))throw Error('Could not reset');});
   page.on('dialog',dialog=>dialog.accept());
   await page.evaluate(data=>v74ImportBackup(new Blob([JSON.stringify(data)])),backup);
   expect(await todayOrder(page)).toEqual(['projects','priorities','tasks','habits','schedule']);
