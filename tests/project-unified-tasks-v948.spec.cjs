@@ -5,6 +5,7 @@ const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium'});
 async function project(page,name='Research Project'){
   await page.goto(base);
+  await page.locator('.bottom-nav button[data-tab="brainstorm"]').click();
   await page.evaluate(name=>v6CreateProject(name),name);
   await expect(page.locator('#projectOverview')).toBeVisible();
 }
