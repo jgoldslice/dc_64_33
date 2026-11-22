@@ -1432,7 +1432,8 @@ const v6Now=()=>new Date().toISOString();
 // for old backups and link both representations using persistent IDs.
 function v6LinkedTask(p,a){
   return state.tasks.find(t=>String(t.projectId||'')===String(p.id)&&String(t.projectActionId||'')===String(a.id))
-    ||state.tasks.find(t=>String(t.id)===String(a.taskId)&&(!t.projectId||String(t.projectId)===String(p.id)));
+    ||state.tasks.find(t=>String(t.id)===String(a.taskId)&&(!t.projectId||String(t.projectId)===String(p.id))&&
+      (!t.projectActionId||String(t.projectActionId)===String(a.id)));
 }
 function v6EnsureProjectTask(p,a){
   if(!a||typeof a!=='object'||!String(a.title||'').trim())return false;
