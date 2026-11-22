@@ -257,7 +257,15 @@
   document.addEventListener('touchmove',moving,{passive:false});
   document.addEventListener('touchend',finish,{passive:true});
   document.addEventListener('touchcancel',()=>{
-    if(gesture)closeRow(gesture.row);
+    // An interrupted gesture must restore the row's previous reveal state.
+    // iOS may cancel a touch when the system claims it; cancellation is not a swipe decision.
+    if(gesture){
+      if(gesture.wasOpen){
+        gesture.row.classList.add('bp-task-revealed');
+        slide(gesture.row,-112);
+        openedRow=gesture.row;
+      }else closeRow(gesture.row);
+    }
     gesture=null;
   },{passive:true});
   document.addEventListener('click',e=>{
