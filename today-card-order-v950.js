@@ -47,6 +47,16 @@
   // All existing state and complete-backup readers preserve optional planner
   // fields. Never create or write the setting merely by opening Today.
   setOrder(validOrder(state.todayCardOrder));
+  // A complete-backup restore replaces the planner object in place without
+  // reloading the web view. Reflect an imported order immediately after the
+  // existing verified restore completes; decline/failure keeps the old order.
+  const importBackup=window.v74ImportBackup;
+  if(typeof importBackup==='function'){
+    window.v74ImportBackup=async function(...args){
+      try{return await importBackup(...args);}
+      finally{if(!gesture)setOrder(validOrder(state.todayCardOrder));}
+    };
+  }
 
   function reset(commit=false){
     if(!gesture)return;
