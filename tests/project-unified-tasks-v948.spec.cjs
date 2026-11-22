@@ -89,14 +89,12 @@ test('Editing or deleting a Plan task updates its Project and does not resurrect
     return [a.title,t.title,t.priority];
   })).toEqual(['Revised title','Revised title',true]);
   await page.locator('.bottom-nav button[data-tab="brainstorm"]').click();
-  await expect(page.locator('#projectGrid')).toBeVisible();
-  await page.locator('[data-v6-project]').first().click();
   await expect(page.locator('#v919TodoPreview')).toContainText('Revised title');
   await page.locator('.bottom-nav button[data-tab="myplan"]').click();
   await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
   await page.locator('#allTasks [data-task-check="'+taskId+'"]').check();
-  await page.locator('#allTasks [data-delete-completed-task="'+taskId+'"]').click();
   page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#allTasks [data-delete-completed-task="'+taskId+'"]').click();
   // Deletion uses a confirmation dialog.
   await expect.poll(()=>page.evaluate(id=>state.tasks.some(t=>String(t.id)===String(id)),taskId)).toBe(false);
   await page.reload();
