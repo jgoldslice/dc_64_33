@@ -7,6 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-21 — Share deployment owner-reported working on device
+
+**Owner feedback:** The installed Blueprint sharing workflow / Share deployment is working well on the owner's device. Treat successful everyday sharing as **owner-reported device-tested**, rather than describing native sharing categorically as absent or unusable. The owner did not specify which exact file types, target devices, queue/failure cases, or current compiled Swift revision were exercised; those are **not independently device-verified** here.
+
+**Historical PR clarification:** Closing [draft PR #41](https://github.com/jgoldslice/dc_64_33/pull/41) removed only an outdated, unverified proposal from the open PR queue. It did not remove or roll back the user's existing, working installed sharing implementation. Do not reopen or merge that old draft merely to enable sharing.
+
+**Remaining targeted QA (not a blocker to acknowledging working sharing):** Large photos/PDFs, offline shares, cancellation/retry, duplicate imports, wrong-project routing, preservation across relaunch and backups, as applicable to the installed workflow. No code or native app deployment performed in this status correction.
+
 ## 2026-11-21 — Pending PR inventory resolved (GitHub Pages published; native iOS not installed)
 
 **Owner direction:** Review all outstanding PRs; merge tested work or close obsolete/unverified proposals instead of leaving stale drafts open. At the start of the audit, open PRs were **#78, #75, #43, #41, #40, #11, and #8**. All seven are now resolved; a follow-up GitHub REST query returned **zero open PRs**.
