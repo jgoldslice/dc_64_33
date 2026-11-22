@@ -7,12 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-22 — v9.53 Shared Area palette and interaction fixes
+## 2026-11-22 — v9.53 Shared Area palette and interaction fixes (merged, browser verified, iOS QA pending)
 
 - Area swatches use Customize’s 15 named presets and exact values from the existing palette, plus Theme, which follows the current secondary color. Older v9.52 Area color names resolve to their corresponding Customize presets. The stored icon and area link are preserved when reading old backups.
 - Renaming a built-in Area retains its original icon and accent. The Folder option now uses a folder glyph.
 - New inherits Area context only from the active Areas panel and dismisses its menu when the viewport resizes. Releasing a press outside a card cancels the pending options menu.
-- Local JavaScript syntax, patch checks and 29 standalone Node tests passed. Browser regressions cover palette parity, theme accent, legacy backup colors, default Area appearance after rename, resize, Area context and release outside a card. iOS installation still uses the existing Capacitor staging, copy and Xcode build steps. Physical device QA is pending.
+- Merged [PR #83](https://github.com/jgoldslice/dc_64_33/pull/83) to main as `aa579ba`. Tested feature head `6547b28`.
+- [GitHub Actions run #486](https://github.com/jgoldslice/dc_64_33/actions/runs/45065779241) passed **355 Chromium Playwright tests**, **29 standalone Node tests**, and JavaScript syntax checks. Coverage includes palette parity, theme accent, legacy backup colors, default Area appearance after rename, resize, Area context and release outside a card. Local syntax, patch checks, standalone tests and temporary iOS web staging also passed.
+- Device deployment requires staging the merged bundle, running `npx cap copy ios`, and running the existing Xcode **App** scheme with the same signing team and bundle identifier. No signed build or physical device test was performed.
 
 ## 2026-11-22 — v9.52 Project dashboard arrangement and Area appearance (merged, browser verified, iOS QA pending)
 
