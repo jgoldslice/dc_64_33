@@ -283,6 +283,9 @@
   }
   add.addEventListener('click',()=>open('',false,add));
   grid.addEventListener('click',e=>{
+    // A scheduled Task inside a calendar cell must open its shared Task
+    // editor, not also open the Add Event sheet underneath it.
+    if(e.target instanceof Element&&e.target.closest('[data-edit-task]'))return;
     const item=e.target instanceof Element?e.target.closest('[data-week-event-date]'):null;
     if(item&&grid.contains(item))open(item.dataset.weekEventDate,true,item);
   });
