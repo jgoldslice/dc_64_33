@@ -14,20 +14,24 @@
     #today > .stack.v917-today-grid.bp-today-custom-order > .v917-projects{grid-column:1 / -1!important}
   }
 }
-#today > .stack.v917-today-grid > .card:not([hidden]){
+#today > .stack.v917-today-grid > .card:not([hidden]),
+#projectOverview [data-bp-project-card]{
   -webkit-touch-callout:none;
 }
-#today > .stack.v917-today-grid > .card:focus-visible{
+#today > .stack.v917-today-grid > .card:focus-visible,
+#projectOverview [data-bp-project-card]:focus-visible{
   outline:2px solid var(--secondary-ui);
   outline-offset:2px;
 }
 #today > .stack.v917-today-grid > .bp-today-placeholder,
+#projectOverview .bp-project-placeholder,
 #projectLibraryList .v923-library-item.v923-dragging{
   opacity:.18!important;
   border-style:dashed!important;
   box-shadow:none!important;
 }
-#today > .stack.v917-today-grid.bp-today-reordering > .card{
+#today > .stack.v917-today-grid.bp-today-reordering > .card,
+#projectOverview .bp-project-reordering > [data-bp-project-card]{
   transition:none!important;
 }
 .bp-follow-ghost{

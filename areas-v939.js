@@ -28,6 +28,104 @@
   if(!mount)return;
   const escapeHtml=text=>String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const icon=name=>'<svg class="icon" aria-hidden="true"><use href="#i-'+name+'"></use></svg>';
+  const areaIcons={
+    plan:['Folder'],check:['Checkmark'],goal:['Target'],calendar:['Calendar'],clock:['Clock'],
+    home:['Home','M3 11l9-8 9 8M5 10v11h14V10M10 21v-7h4v7'],
+    briefcase:['Work','M3 7h18v13H3zM8 7V4h8v3M3 12h18M10 12v3h4v-3'],
+    book:['Book','M12 5v16M12 5C9 3 6 3 3 4v15c3-1 6-1 9 2 3-3 6-3 9-2V4c-3-1-6-1-9 1z'],
+    cap:['Education','M2 9l10-5 10 5-10 5-10-5zM6 11v6c4 3 8 3 12 0v-6M22 9v7'],
+    flask:['Research','M9 3h6M10 3v7L4 19a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2l-6-9V3M7 15h10'],
+    atom:['Science','M12 12h.01M12 3a4 9 0 1 0 0 18 4 9 0 0 0 0-18zM4.2 7.5a9 4 30 1 0 15.6 9 9 4 30 0 0-15.6-9zM4.2 16.5a9 4-30 1 0 15.6-9 9 4-30 0 0-15.6 9z'],
+    fitness:['Fitness','M2 10v4m3-7v10m3-12v14m0-7h8m0-7v14m3-12v10m3-7v4'],
+    heart:['Heart','M12 21S3 16 3 9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 7-9 12-9 12z'],
+    pulse:['Health','M2 12h5l3-7 4 14 3-7h5'],
+    leaf:['Leaf','M20 4C8 3 4 8 4 14a6 6 0 0 0 6 6c6 0 11-4 10-16zM3 21l11-11'],
+    sun:['Sun','M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z'],
+    star:['Star','m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9z'],
+    spark:['Sparkles','m11 3 2.2 6.8L20 12l-6.8 2.2L11 21l-2.2-6.8L2 12l6.8-2.2zM19 3v5m-2.5-2.5h5'],
+    people:['People','M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4m-3-12a4 4 0 0 1 0 8M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8z'],
+    wallet:['Finances','M20 8V5H5a2 2 0 0 0 0 4h16v11H5a2 2 0 0 1-2-2V7m18 6h-5v3h5'],
+    music:['Music','M9 18V5l12-2v12M9 18a3 2 0 1 1-6 0 3 2 0 0 1 6 0zm12-3a3 2 0 1 1-6 0 3 2 0 0 1 6 0z'],
+    palette:['Art'],brainstorm:['Ideas'],
+    camera:['Camera','M3 7h4l2-3h6l2 3h4v13H3zM12 10a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'],
+    code:['Code','m8 6-6 6 6 6m8-12 6 6-6 6m-2-15-4 18'],
+    compass:['Compass','M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm4 5-2 6-6 2 2-6z'],
+    mountain:['Outdoors','m2 20 7-12 4 6 2-4 7 10z'],
+    globe:['Globe','M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3a4 9 0 1 0 0 18 4 9 0 0 0 0-18z'],
+    gift:['Gift','M4 10h16v11H4zM3 6h18v4H3zm9 0v15m0-15C11 1 6 1 7 4c0 2 5 2 5 2zm0 0c1-5 6-5 5-2 0 2-5 2-5 2z'],
+    utensils:['Food','M4 3v6a3 3 0 0 0 6 0V3M7 3v18M17 3c-3 3-3 8-3 10h5m0-10v18']
+  };
+  const areaColors={
+    theme:'Theme',slate:'Slate',red:'Red',coral:'Coral',orange:'Orange',gold:'Gold',
+    lime:'Lime',green:'Green',mint:'Mint',teal:'Teal',sky:'Sky',blue:'Blue',
+    indigo:'Indigo',purple:'Purple',pink:'Pink'
+  };
+  const areaDefaults=new Map([
+    [INBOX,['check','slate']],['Personal',['home','teal']],['Physical',['fitness','orange']],
+    ['Research',['flask','blue']],['Spiritual',['sun','purple']]
+  ]);
+  function areaIcon(key){
+    const [,path]=areaIcons[key];
+    return path?'<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="'+path+'"/></svg>':icon(key);
+  }
+  const appearanceList=()=>Array.isArray(state.areaAppearance)?state.areaAppearance:[];
+  function appearance(area){
+    const stored=appearanceList().find(entry=>entry?.area===area);
+    const [symbol,color]=areaDefaults.get(area)||['plan','theme'];
+    return {
+      icon:Object.hasOwn(areaIcons,stored?.icon)?stored.icon:symbol,
+      color:Object.hasOwn(areaColors,stored?.color)?stored.color:color
+    };
+  }
+  function updateAppearance(area,style){
+    state.areaAppearance=appearanceList().filter(entry=>entry?.area!==area);
+    if(style)state.areaAppearance.push({area,...style});
+  }
+  function restoreAppearance(before){
+    if(before===undefined)delete state.areaAppearance;
+    else state.areaAppearance=before;
+  }
+  function moveAppearance(before,after){
+    if(before===after||!appearanceList().some(entry=>entry?.area===before))return;
+    const style=appearance(before);
+    updateAppearance(before,null);
+    if(after)updateAppearance(after,style);
+  }
+  function badge(style){
+    return '<span class="bp-area-badge bp-area-color-'+style.color+'">'+areaIcon(style.icon)+'</span>';
+  }
+  async function chooseAppearance(area,anchor){
+    const initial=appearance(area);
+    const style={...initial};
+    const content=document.createElement('div');
+    content.className='bp-area-picker';
+    const choices=(kind,options,label,draw)=>'<fieldset><legend>'+label+'</legend><div class="bp-area-picker-grid">'+
+      Object.entries(options).map(([key,option])=>'<button type="button" data-area-'+kind+'="'+key+
+        '" aria-label="'+(Array.isArray(option)?option[0]:option)+'" aria-pressed="'+(style[kind]===key)+'">'+draw(key)+'</button>').join('')+
+      '</div></fieldset>';
+    content.innerHTML='<div class="bp-area-picker-preview" aria-hidden="true">'+badge(style)+'</div>'+
+      choices('color',areaColors,'Color',key=>'<span class="bp-area-swatch bp-area-color-'+key+'"></span>')+
+      choices('icon',areaIcons,'Icon',areaIcon);
+    content.addEventListener('click',event=>{
+      const button=event.target.closest('button');
+      if(!button)return;
+      const kind=button.hasAttribute('data-area-icon')?'icon':'color';
+      const attribute='data-area-'+kind;
+      content.querySelector('['+attribute+'][aria-pressed="true"]')?.setAttribute('aria-pressed','false');
+      style[kind]=button.getAttribute(attribute);
+      button.setAttribute('aria-pressed','true');
+      content.firstElementChild.innerHTML=badge(style);
+    });
+    const fields=area===null?[{label:'Name'}]:[];
+    const result=await BlueprintSheet.open({title:area===null?'New Area':'Icon & color',fields,content,anchor});
+    if(!result)return null;
+    const changed=style.icon!==initial.icon||style.color!==initial.color;
+    return {name:result[0],style:changed?style:null};
+  }
+  function focusAreaControl(area){
+    const button=[...mount.querySelectorAll('[data-bpa-appearance]')].find(el=>el.dataset.bpaAppearance===area);
+    button?.focus({preventScroll:true});
+  }
   let selected=null,pending=false;
   let createMenu=null,createTrigger=null;
   const expanded=new Set(),openGoals=new Set();
@@ -56,9 +154,10 @@
     const rect=tile.getBoundingClientRect();
     const menuWidth=Math.min(240,window.innerWidth-24);
     const left=Math.min(Math.max(12,rect.right-menuWidth),window.innerWidth-menuWidth-12);
-    const top=Math.max(12,Math.min(rect.top,window.innerHeight-210));
+    const top=Math.max(12,Math.min(rect.top,window.innerHeight-254));
     layer.innerHTML='<div class="bp-area-context-menu" role="dialog" aria-modal="true" aria-label="Options for '+escapeHtml(area)+'" style="left:'+Math.round(left)+'px;top:'+Math.round(top)+'px;width:'+menuWidth+'px">'+
       '<div class="bp-area-context-title">'+escapeHtml(area)+'</div>'+
+      '<button type="button" data-bpa-appearance="'+escapeHtml(area)+'">Icon &amp; color</button>'+
       '<button type="button" data-bpa-rename="'+escapeHtml(area)+'">Rename</button>'+
       '<button type="button" class="bp-area-danger" data-bpa-remove="'+escapeHtml(area)+'">Delete</button>'+
       '<button type="button" data-bpa-menu-close>Cancel</button></div>';
@@ -68,7 +167,7 @@
     });
     document.body.append(layer);
     areaMenu=layer;
-    layer.querySelector('[data-bpa-rename]')?.focus({preventScroll:true});
+    layer.querySelector('[data-bpa-appearance]')?.focus({preventScroll:true});
   }
 
   // A single anchored popover replaces the layout-shifting inline add row.
@@ -176,14 +275,18 @@
   }
   function renderOverview(){
     mount.dataset.detail='false';
-    const keys=state.categories.concat([]);
+    const keys=state.categories.slice();
     const orphan=contents(state,INBOX);
     if(Object.values(orphan).some(list=>list.length))keys.push(INBOX);
     const tiles=keys.map(a=>{
       const data=contents(state,a);
       const count=Object.values(data).reduce((n,items)=>n+items.length,0);
-      return '<button type="button" class="card bp-area-tile" data-bpa-open="'+escapeHtml(a)+'" '+(a===INBOX?'':'aria-haspopup="dialog" title="Press and hold for options"')+'><span class="bp-area-tile-title">'+icon(a===INBOX?'check':'plan')+'<strong>'+escapeHtml(display(a))+'</strong><span class="bp-area-chevron">›</span></span>'+
-        '<span class="bp-area-tile-sub">'+(count?counts(data):'No items yet')+'</span></button>';
+      const name=escapeHtml(display(a));
+      return '<div class="bp-area-tile-wrap"><button type="button" class="card bp-area-tile" data-bpa-open="'+escapeHtml(a)+'" '+(a===INBOX?'':'title="Press and hold for options"')+'>'+
+        badge(appearance(a))+'<span class="bp-area-tile-title"><strong>'+name+'</strong><span class="bp-area-chevron" aria-hidden="true">›</span></span>'+
+        '<span class="bp-area-tile-sub">'+(count?counts(data):'No items yet')+'</span></button>'+
+        (a===INBOX?'':'<button type="button" class="bp-area-appearance-button" data-bpa-appearance="'+escapeHtml(a)+'" aria-label="Customize '+name+'" aria-haspopup="dialog" title="Icon &amp; color">'+
+          '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19v1h1l12-12-1-1L4 19zm11-11 3 3m0-8v4m-2-2h4"/></svg></button>')+'</div>';
     }).join('');
     mount.innerHTML='<div class="bp-area-grid">'+tiles+'</div>'+
       '<div class="bp-areas-header" aria-label="Area actions"><div class="bp-area-heading-actions">'+
@@ -200,7 +303,7 @@
     const standaloneTasks=data.tasks.filter(t=>!data.goals.some(g=>String(g.id)===String(t.goalId||'')));
     const standaloneHabits=data.habits.filter(h=>!data.goals.some(g=>String(g.id)===String(h.goalId||'')));
     const hasContent=Object.values(data).some(list=>list.length);
-    mount.innerHTML='<header class="bp-area-detail-head"><button type="button" class="bp-area-back" data-bpa-back>‹ Areas</button><div class="bp-area-detail-title"><h1>'+escapeHtml(display(selected))+'</h1><button class="primary-button" type="button" data-bpa-add-toggle aria-haspopup="dialog" aria-expanded="false">+ Add</button></div></header>'+
+    mount.innerHTML='<header class="bp-area-detail-head"><button type="button" class="bp-area-back" data-bpa-back>‹ Areas</button><div class="bp-area-detail-title"><div class="bp-area-detail-name">'+(selected===INBOX?badge(appearance(selected)):'<button type="button" class="bp-area-detail-icon" data-bpa-appearance="'+escapeHtml(selected)+'" aria-label="Customize '+escapeHtml(selected)+'" aria-haspopup="dialog">'+badge(appearance(selected))+'</button>')+'<h1>'+escapeHtml(display(selected))+'</h1></div><button class="primary-button" type="button" data-bpa-add-toggle aria-haspopup="dialog" aria-expanded="false">+ Add</button></div></header>'+
       (hasContent?'<div class="bp-area-sections">'+
         section('Goals','goals',data.goals,g=>goalRow(g,data))+
         section('Tasks','tasks',standaloneTasks,taskRow)+
@@ -210,7 +313,7 @@
   }
   function render(){if(!mount)return;closeCreateMenu();closeAreaMenu();cancelPress();if(selected===null)renderOverview();else renderDetail();}
   function refresh(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render();});}
-  root.blueprintAreas={refresh,model,currentArea:()=>selected};
+  root.blueprintAreas={refresh,model,moveAppearance,currentArea:()=>selected};
   const trySave=()=>{save(true);refresh();};
   // Native-feeling long press for touch/Pencil; cancel when scrolling or dragging.
   mount.addEventListener('pointerdown',event=>{
@@ -258,7 +361,7 @@
     if(event.key==='Escape'&&areaMenu){event.preventDefault();closeAreaMenu(true);}
   });
   document.addEventListener('click',async event=>{
-    const btn=event.target.closest('[data-bpa-open],[data-bpa-back],[data-bpa-new],[data-bpa-rename],[data-bpa-remove],[data-bpa-menu-close],[data-bpa-add-toggle],[data-bpa-add-kind],[data-bpa-add-close],[data-bpa-expand],[data-bpa-edit-goal],[data-bpa-project]');
+    const btn=event.target.closest('[data-bpa-open],[data-bpa-back],[data-bpa-new],[data-bpa-appearance],[data-bpa-rename],[data-bpa-remove],[data-bpa-menu-close],[data-bpa-add-toggle],[data-bpa-add-kind],[data-bpa-add-close],[data-bpa-expand],[data-bpa-edit-goal],[data-bpa-project]');
     if(!btn)return;
     if(btn.hasAttribute('data-bpa-open')){
       if(suppressCardTap===btn){suppressCardTap=null;event.preventDefault();return;}
@@ -271,11 +374,36 @@
     if(btn.hasAttribute('data-bpa-add-close')){closeCreateMenu(true);return;}
     if(btn.hasAttribute('data-bpa-expand')){const key=selected+':'+btn.dataset.bpaExpand;expanded.has(key)?expanded.delete(key):expanded.add(key);render();return;}
     if(btn.hasAttribute('data-bpa-new')){
-      const next=await BlueprintSheet.name('New Area');
-      if(next===null)return;
-      const name=normalizedCategory(next).slice(0,60);
+      const choice=await chooseAppearance(null,btn);
+      if(!choice)return;
+      const name=normalizedCategory(choice.name).slice(0,60);
       if(!name)return;
-      if(addCategory(name)){selected=name;render();}
+      if(state.categories.some(a=>a.toLocaleLowerCase()===name.toLocaleLowerCase())){
+        alert('That Area already exists.');return;
+      }
+      const oldAppearance=state.areaAppearance;
+      state.categories.push(name);
+      if(choice.style)updateAppearance(name,choice.style);
+      if(!save(true)){
+        state.categories.pop();
+        restoreAppearance(oldAppearance);
+        return;
+      }
+      selected=selectedCategory=name;
+      render();
+      return;
+    }
+    if(btn.hasAttribute('data-bpa-appearance')){
+      const area=btn.dataset.bpaAppearance;
+      const trigger=[...mount.querySelectorAll('[data-bpa-appearance]')].find(el=>el.dataset.bpaAppearance===area);
+      closeAreaMenu();
+      const choice=await chooseAppearance(area,trigger);
+      if(!choice?.style||!state.categories.includes(area))return;
+      const before=state.areaAppearance;
+      updateAppearance(area,choice.style);
+      if(!save(true)){restoreAppearance(before);return;}
+      render();
+      requestAnimationFrame(()=>focusAreaControl(area));
       return;
     }
     if(btn.hasAttribute('data-bpa-rename')){
@@ -284,12 +412,24 @@
       const name=normalizedCategory(next).slice(0,60);
       if(!name||name===before)return;
       if(state.categories.some(a=>a.toLowerCase()===name.toLowerCase())){alert('That Area already exists.');return;}
+      if(!state.categories.includes(before))return;
+      const oldCategories=state.categories,oldAppearance=state.areaAppearance;
+      const goals=state.goals.filter(goal=>goal.category===before);
+      const items=['tasks','habits','projects'].flatMap(type=>state[type]||[]).filter(item=>item.area===before);
       state.categories=state.categories.map(a=>a===before?name:a);
-      state.goals.forEach(g=>{if(g.category===before)g.category=name;});
-      for(const type of ['tasks','habits','projects'])for(const x of state[type]||[])if(x.area===before)x.area=name;
+      moveAppearance(before,name);
+      goals.forEach(goal=>{goal.category=name;});
+      items.forEach(item=>{item.area=name;});
+      if(!save(true)){
+        goals.forEach(goal=>{goal.category=before;});
+        items.forEach(item=>{item.area=before;});
+        state.categories=oldCategories;
+        restoreAppearance(oldAppearance);
+        return;
+      }
       if(selected===before)selected=name;
       if(selectedCategory===before)selectedCategory=name;
-      trySave();render();return;
+      render();return;
     }
     if(btn.hasAttribute('data-bpa-remove')){
       const area=btn.dataset.bpaRemove;closeAreaMenu();
@@ -297,11 +437,19 @@
         alert('Move the items out of this Area first.');return;
       }
       if(!await BlueprintSheet.confirm('Delete empty Area "'+area+'"?'))return;
+      if(!state.categories.includes(area))return;
+      const oldCategories=state.categories,oldAppearance=state.areaAppearance;
       state.categories=state.categories.filter(a=>a!==area);
+      moveAppearance(area,null);
       if(!state.categories.length)state.categories=['Personal'];
+      if(!save(true)){
+        state.categories=oldCategories;
+        restoreAppearance(oldAppearance);
+        return;
+      }
       if(selectedCategory===area)selectedCategory='All';
       if(selected===area)selected=null;
-      trySave();render();return;
+      render();return;
     }
     if(btn.hasAttribute('data-bpa-edit-goal')){openModal('goal',btn.dataset.bpaEditGoal);return;}
     if(btn.hasAttribute('data-bpa-project')){tab('brainstorm');v6OpenProject(btn.dataset.bpaProject);return;}

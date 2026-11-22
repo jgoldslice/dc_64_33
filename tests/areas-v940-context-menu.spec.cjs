@@ -14,7 +14,7 @@ test('Area cards open normally, but right-click opens a rename/delete context me
   await tile.click({button:'right'});
   const menu=page.getByRole('dialog',{name:'Options for Personal'});
   await expect(menu).toBeVisible();
-  await expect(menu.getByRole('button')).toHaveText(['Rename','Delete','Cancel']);
+  await expect(menu.getByRole('button')).toHaveText(['Icon & color','Rename','Delete','Cancel']);
   await expect(page.locator('.bp-area-detail-title h1')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(menu).toHaveCount(0);
