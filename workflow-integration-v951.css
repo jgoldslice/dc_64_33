@@ -58,3 +58,13 @@
   .v951-connections{grid-template-columns:minmax(0,1fr)}
 }
 @media(prefers-reduced-motion:reduce){.bp-task-main{transition:none}}
+
+/* Lightweight cross-tab creation, anchored like an iPad popover. */
+.app-header .bp-quick-add{display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--wash);color:var(--secondary-ui);font-size:24px;font-weight:500;margin-left:auto}
+.app-header .bp-quick-add:focus-visible,.bp-quick-menu button:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:2px}
+.bp-quick-menu{position:fixed;z-index:22010;display:grid;gap:3px;padding:8px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 15px 34px #0003;max-width:calc(100vw - 24px)}
+.bp-quick-menu[hidden]{display:none!important}
+.bp-quick-menu p{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:4px 9px 5px}
+.bp-quick-menu button{display:flex;align-items:center;gap:10px;text-align:left;min-height:44px;border:0;border-radius:9px;padding:7px 10px;background:transparent;color:var(--ink);font-size:14px;font-weight:600}
+.bp-quick-menu button:hover,.bp-quick-menu button:focus-visible{background:var(--wash)}
+.bp-quick-menu button>span{display:inline-grid;place-items:center;width:23px;font-size:19px;color:var(--secondary-ui)}
