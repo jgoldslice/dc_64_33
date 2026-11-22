@@ -147,6 +147,12 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                 self.inlineSession?.update(surface: surface, clip: clip,
                     logicalSize: CGSize(width: logicalWidth, height: logicalHeight),
                     from: webView)
+                // Switching to text/image editing must durably flush the last
+                // native Pencil stroke before disabling the canvas/tool picker.
+                // On failure leave the inline session alive for recovery.
+                if !editing {
+                    try self.inlineSession?.saveNow()
+                }
                 self.inlineSession?.setEditing(editing)
                 call.resolve(["visible": true, "embedded": true, "pageId": pageId])
             } catch {
