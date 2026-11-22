@@ -100,3 +100,32 @@ test('Editing or deleting a Plan task updates its Project and does not resurrect
   await page.reload();
   expect(await page.evaluate(()=>[state.projects[0].actions.length,state.tasks.filter(t=>t.projectActionId).length])).toEqual([0,0]);
 });
+
+test('Two legacy To-Dos that refer to one task retain separate, stable links',async({page})=>{
+  await project(page);
+  await page.evaluate(()=>{
+    const p=v6Project();
+    state.tasks.push({id:'old-task',title:'First work item',done:false,priority:false,priorityRank:0,
+      projectId:p.id,projectActionId:'old-action-1'});
+    p.actions.push(
+      {id:'old-action-1',title:'First work item',done:false,taskId:'old-task'},
+      {id:'old-action-2',title:'Second work item',done:false,taskId:'old-task'}
+    );
+    save();
+  });
+  await page.reload();
+  const snapshot=()=>page.evaluate(()=>{
+    const p=state.projects[0];
+    return p.actions.map(a=>({
+      action:a.id,
+      taskId:String(a.taskId),
+      matching:state.tasks.filter(t=>String(t.projectId)===String(p.id)&&String(t.projectActionId)===String(a.id)).length
+    }));
+  });
+  const first=await snapshot();
+  expect(first).toHaveLength(2);
+  expect(first.map(x=>x.matching)).toEqual([1,1]);
+  expect(first[0].taskId).not.toBe(first[1].taskId);
+  await page.reload();
+  expect(await snapshot()).toEqual(first);
+});
