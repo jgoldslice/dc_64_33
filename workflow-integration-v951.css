@@ -68,3 +68,17 @@
 .bp-quick-menu button{display:flex;align-items:center;gap:10px;text-align:left;min-height:44px;border:0;border-radius:9px;padding:7px 10px;background:transparent;color:var(--ink);font-size:14px;font-weight:600}
 .bp-quick-menu button:hover,.bp-quick-menu button:focus-visible{background:var(--wash)}
 .bp-quick-menu button>span{display:inline-grid;place-items:center;width:23px;font-size:19px;color:var(--secondary-ui)}
+
+/* Keep the established adjacent Edit/Delete controls while the title itself
+   is also an edit target. Smaller screens wrap the actions below the title. */
+.bp-task-row .task-row-actions{display:inline-flex;align-items:center;gap:5px;flex:none}
+.bp-task-row .task-row-actions .edit-small{min-height:32px;min-width:34px;border:0;background:transparent;color:var(--secondary-ui);font-size:11px;padding:3px 5px}
+.v951-project-pulse,.v951-project-connections{border:1px solid var(--line);background:var(--surface);border-radius:16px;min-width:0;padding:14px 17px;box-shadow:var(--shadow)}
+.v951-project-pulse .card-heading,.v951-project-connections .card-heading{margin-bottom:11px}
+.v951-project-pulse .card-heading h3,.v951-project-connections .card-heading h3{font:normal 21px/1.2 Georgia,serif;color:var(--ink);margin:0}
+.bp-cal-task>span:not(.bp-cal-type),.bp-cal-due>span:first-child{min-width:0;overflow-wrap:anywhere}
+.bp-cal-task button[data-edit-task],.bp-cal-due button[data-edit-task]{margin-left:auto;flex:none;font-weight:700;min-width:24px;min-height:26px;font-size:13px;text-align:center}
+@media(max-width:620px){
+ .bp-task-row .task-row-actions{margin-left:auto}
+ .bp-task-main .bp-task-detail{min-width:0}
+}
