@@ -39,7 +39,7 @@
     const actions=Array.isArray(project.actions)?project.actions:[];
     const shown=[...actions.filter(a=>!a.done),...actions.filter(a=>a.done)].slice(0,4);
     tasks.innerHTML=shown.length
-      ?shown.map(a=>'<div class="v919-todo-row '+(a.done?'is-done':'')+'"><input type="checkbox" data-v919-check="'+xss(a.id)+'" id="v919Task-'+xss(a.id)+'" aria-label="Complete '+xss(a.title)+'" '+(a.done?'checked':'')+'><label for="v919Task-'+xss(a.id)+'">'+xss(a.title)+'</label></div>').join('')
+      ?shown.map(a=>{const task=v6LinkedTask(project,a);return '<div class="v919-todo-row '+(a.done?'is-done':'')+'"><input type="checkbox" data-v919-check="'+xss(a.id)+'" id="v919Task-'+xss(a.id)+'" aria-label="Complete '+xss(a.title)+'" '+(a.done?'checked':'')+'><label for="v919Task-'+xss(a.id)+'">'+xss(a.title)+'</label><button type="button" class="bp-project-priority" data-v6-priority="'+xss(a.id)+'" aria-pressed="'+!!task?.priority+'" aria-label="'+(task?.priority?'Remove priority from ':'Make priority: ')+xss(a.title)+'">'+(task?.priority?'★':'☆')+'</button></div>';}).join('')
         +'<p class="v919-todo-count">'+actions.filter(a=>!a.done).length+' remaining · '+actions.filter(a=>a.done).length+' completed</p>'
       :'<p class="muted small">No to-dos yet. Add one below.</p>';
     // The preview is a window onto the actual Library order, not an
@@ -270,13 +270,13 @@
     const title=input.value.trim().slice(0,160);
     if(!p||!title)return;
     const action={id:v6Id(),title,done:false,taskId:''};
-    p.actions.push(action);
+    p.actions.push(action);v6EnsureProjectTask(p,action);
     if(!save(true)){
       // Retain the new action in memory so the save-warning Retry or a
       // recovery export can rescue it; never discard a user's typed to-do.
-      input.value='';v6RenderActions(p);renderPreview(p);return;
+      input.value='';v6RenderActions(p);renderPreview(p);render('tasks');return;
     }
-    input.value='';v6RenderActions(p);renderPreview(p);
+    input.value='';v6RenderActions(p);renderPreview(p);render('tasks');
   });
   byId('v919CaptureSave').addEventListener('click',saveCapture);
   for(const name of ['v919CaptureClose','v919CaptureCancel'])
