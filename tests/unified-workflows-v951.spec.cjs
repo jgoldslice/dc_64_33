@@ -191,3 +191,60 @@ test('Quick priority save failure restores the prior task and on-screen star',as
     await expect(page.locator('#v917TodayTasks [data-bp-task-star="save-guard"]')).toHaveAttribute('aria-pressed','false');
   }finally{await page.evaluate(()=>window.restoreWrite());}
 });
+
+test('Quick Add opens the existing shared form and inherits the active Project or Area',async({page})=>{
+  const projectId=await newProject(page);
+  await page.locator('#bpQuickAdd').click();
+  await expect(page.locator('#bpQuickAddMenu')).toBeVisible();
+  await page.locator('[data-bp-quick-kind="habit"]').click();
+  await expect(page.locator('#modalTitle')).toHaveText('Add Habit');
+  await expect(page.locator('#modalForm select[name="projectId"]')).toHaveValue(String(projectId));
+  await setTitle(page,'Shared quick habit');
+  await page.locator('#modalForm button[type="submit"]').click();
+  expect(await page.evaluate(()=>state.habits.find(h=>h.title==='Shared quick habit')?.projectId)).toBe(projectId);
+
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('#bpAreasRoot [data-bpa-open="Research"]').click();
+  await page.locator('#bpQuickAdd').click();
+  await page.locator('[data-bp-quick-kind="task"]').click();
+  await expect(page.locator('#modalForm select[name="area"]')).toHaveValue('Research');
+  await expect(page.locator('#modalForm select[name="projectId"]')).toHaveValue('');
+  await setTitle(page,'Area quick task');
+  await page.locator('#modalForm button[type="submit"]').click();
+  const task=await page.evaluate(()=>state.tasks.find(t=>t.title==='Area quick task'));
+  expect(task.area).toBe('Research');
+  expect(task.projectId).toBe('');
+});
+
+test('Goal step conversion inherits a Project and avoids duplicate Task/Habit records',async({page})=>{
+  const projectId=await newProject(page);
+  await page.evaluate(id=>{
+    const p=v6Project();p.area='Research';
+    state.goals.push({id:'linked-goal',title:'Linked goal',projectId:id,category:'Research',
+      actions:[{id:'step-1',title:'Analyze spectra',done:false}]});
+    save(true);render();
+  },projectId);
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-plan-tab="goals"]').click();
+  const goal=page.locator('#goalsList [data-goal="linked-goal"]');
+  await goal.locator('summary').click();
+  await goal.locator('[data-v77-step-action]').click();
+  await goal.locator('[data-action-to-task]').click();
+  const afterTask=await page.evaluate(()=>{
+    const t=state.tasks.find(t=>t.title==='Analyze spectra');
+    return {count:state.tasks.filter(t=>t.title==='Analyze spectra').length,
+      projectId:t?.projectId,projectAction:state.projects[0].actions.some(a=>String(a.taskId)===String(t?.id))};
+  });
+  expect(afterTask).toEqual({count:1,projectId,projectAction:true});
+
+  await page.locator('[data-plan-tab="goals"]').click();
+  const sameGoal=page.locator('#goalsList [data-goal="linked-goal"]');
+  await sameGoal.locator('[data-v77-step-action]').click();
+  await sameGoal.locator('[data-action-to-habit]').click();
+  await expect(page.locator('#modalTitle')).toHaveText('Edit Habit');
+  await page.locator('#cancelModal').click();
+  expect(await page.evaluate(()=>({
+    count:state.habits.filter(h=>h.title==='Analyze spectra').length,
+    projectId:state.habits.find(h=>h.title==='Analyze spectra')?.projectId
+  }))).toEqual({count:1,projectId});
+});
