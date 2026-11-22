@@ -822,14 +822,49 @@ function applyTheme(){
 }
 const roman=n=>{const symbols=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];let out='';for(const [v,a] of symbols)while(n>=v){out+=a;n-=v;}return out;};
 const ranked=()=>state.tasks.filter(t=>t.priority&&!t.done).sort((a,b)=>(a.priorityRank||9999)-(b.priorityRank||9999)||String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
-function taskRow(t,rankMap=null){const rank=rankMap instanceof Map?rankMap.get(String(t.id))||0:ranked().findIndex(x=>String(x.id)===String(t.id))+1;const detail=t.dueDate?'Deadline '+new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';return `<div class="entry ${t.done?'done':''}"><input type="checkbox" aria-label="Complete ${esc(t.title)}" data-task-check="${t.id}" ${t.done?'checked':''}>${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}<span class="entry-text">${esc(t.title)}${detail?'<small class="task-due">'+esc(detail)+'</small>':''}</span><span class="task-row-actions"><button type="button" class="edit-small" data-edit-task="${t.id}" aria-label="Edit ${esc(t.title)}">Edit</button>${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+esc(t.id)+'" aria-label="Delete completed task '+esc(t.title)+'">Delete</button>':''}</span></div>`;}
+function taskRow(t,rankMap=null){
+  const rank=rankMap instanceof Map?rankMap.get(String(t.id))||0:ranked().findIndex(x=>String(x.id)===String(t.id))+1;
+  const goal=state.goals.find(g=>String(g.id)===String(t.goalId||'')&&t.goalId);
+  const project=state.projects.find(p=>String(p.id)===String(t.projectId||'')&&t.projectId);
+  const area=goal?.category||project?.area||t.area||'';
+  const context=[area,project?.title].filter(Boolean).join(' · ');
+  const due=t.dueDate?new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  const planned=t.scheduledDate?'Scheduled '+new Date(t.scheduledDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})+(t.scheduledTime?' '+timeText(t.scheduledTime):''):'';
+  const id=esc(t.id),title=esc(t.title);
+  return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-bp-task-row="${id}">
+    <div class="bp-task-main">
+      <input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}>
+      ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}
+      <div class="bp-task-detail"><button type="button" class="entry-text bp-task-title" data-edit-task="${id}" aria-label="Edit ${title}">${title}</button>
+        ${context?'<small class="bp-task-context">'+esc(context)+'</small>':''}
+        ${planned?'<small class="bp-task-planned">'+esc(planned)+'</small>':''}</div>
+      <button type="button" class="bp-task-star" data-bp-task-star="${id}" aria-label="${t.priority?'Remove priority from':'Prioritize'} ${title}" aria-pressed="${!!t.priority}">${t.priority?'★':'☆'}</button>
+      <button type="button" class="bp-task-due" data-bp-task-date="${id}" aria-label="Change deadline for ${title}">${due?'Due '+esc(due):'Set date'}</button>
+      ${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':''}
+    </div>
+    <div class="bp-task-swipe-actions" aria-label="Quick task actions">
+      <button type="button" data-bp-swipe-done="${id}">${t.done?'Undo':'Done'}</button>
+      <button type="button" data-bp-swipe-tomorrow="${id}">Tomorrow</button>
+    </div>
+  </div>`;
+}
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}
 function habitGoal(h){return state.goals.find(g=>String(g.id)===String(h.goalId||''));}
 function habitCaption(h){const goal=habitGoal(h);return `<span class="bp-habit-label"><span>${esc(h.title)}</span>${goal?`<small class="bp-habit-goal">${esc(goal.title)}</small>`:''}</span>`;}
 function habitWeekSummary(h){const monday=iso(startOfWeek(new Date()));let done=0,scheduled=0;for(let i=0;i<7;i++){const date=iso(plusDays(new Date(monday+'T12:00:00'),i));if(isScheduled(h,date)){scheduled++;if(h.days?.[date])done++;}}const requested=Number(h.weeklyTarget),target=h.weeklyTarget!=null&&Number.isInteger(requested)&&requested>=1&&requested<=scheduled?requested:scheduled;return target?done+' / '+target+' this week':'No days scheduled';}
 function habitToggle(h,date){return `<input type="checkbox" data-habit-check="${h.id}" data-date="${date}" aria-label="${esc(h.title)} ${date}" ${h.days[date]?'checked':''}>`;}
 function habitTable(week){const dates=Array.from({length:7},(_,i)=>iso(plusDays(week,i)));return `<div class="week-table"><span></span>${['M','T','W','T','F','S','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${state.habits.map(h=>`<span class="habit-name" title="${esc(h.title)}">${habitCaption(h)}</span>${dates.map(date=>isScheduled(h,date)?`<label>${habitToggle(h,date)}</label>`:'<span class="off">·</span>').join('')}`).join('')}</div>`;}
-function dayLines(date){ const events=state.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));const tasks=state.tasks.filter(t=>t.dueDate===date&&!t.done);return [...events.map(e=>`<p class="day-line"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),...tasks.slice(0,3).map(t=>`<p class="day-line">□ ${esc(t.title)} <span class="due-mark">DUE</span></p>`)].join('')||'<p class="day-empty">—</p>';}
+function dayLines(date){
+  const events=state.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const scheduled=state.tasks.filter(t=>!t.done&&t.scheduledDate===date)
+    .sort((a,b)=>(a.scheduledTime||'').localeCompare(b.scheduledTime||''));
+  const due=state.tasks.filter(t=>!t.done&&t.dueDate===date&&t.scheduledDate!==date);
+  return [
+    ...events.map(e=>`<p class="day-line bp-cal-event"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),
+    ...scheduled.slice(0,4).map(t=>`<p class="day-line bp-cal-task"><span class="when">${timeText(t.scheduledTime)}</span><button type="button" data-edit-task="${esc(t.id)}" aria-label="Edit scheduled task ${esc(t.title)}">${esc(t.title)}</button><span class="bp-cal-type">Task</span></p>`),
+    ...due.slice(0,3).map(t=>`<p class="day-line bp-cal-due"><button type="button" data-edit-task="${esc(t.id)}" aria-label="Edit task ${esc(t.title)}">${esc(t.title)}</button><span class="due-mark">DUE</span></p>`)
+  ].join('')||'<p class="day-empty">—</p>';
+}
 function dayCard(date){const d=new Date(date+'T12:00:00');return `<div class="day-card ${date===localToday()?'today':''}" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}
 
 function closeOpening(){
@@ -1119,29 +1154,40 @@ function openModal(type,id=null,parent=null){
   const name=(value='')=>formLine('Title',`<input name="title" required maxlength="160" value="${esc(value)}" placeholder="Enter a title">`);
   const selectedGoalId=String(item?.goalId??parent??'');
   const linkedGoal=state.goals.find(g=>String(g.id)===selectedGoalId);
-  const currentArea=linkedGoal?.category||item?.area||window.blueprintAreaCreationContext||'';
+  const selectedProjectId=String(item?.projectId||linkedGoal?.projectId||window.blueprintProjectCreationContext||'');
+  const selectedProject=state.projects.find(p=>String(p.id)===selectedProjectId);
+  const currentArea=linkedGoal?.category||selectedProject?.area||item?.area||window.blueprintAreaCreationContext||'';
   const areaField=formLine('Area',`<select name="area"><option value="">Unassigned</option>${state.categories.map(area=>`<option value="${esc(area)}" ${area===currentArea?'selected':''}>${esc(area)}</option>`).join('')}</select>`);
+  const projectField=formLine('Project',`<select name="projectId"><option value="">None</option>${state.projects.map(p=>`<option value="${esc(p.id)}" ${String(p.id)===selectedProjectId?'selected':''}>${esc(p.title)}</option>`).join('')}</select>`);
   if(type==='task')fields=name(item?.title)
     +formLine('Deadline',`<input type="date" name="dueDate" value="${esc(item?.dueDate??($('today').classList.contains('active')?localToday():''))}">`)
+    +formLine('On calendar',`<input type="date" name="scheduledDate" value="${esc(item?.scheduledDate||'')}">`)
+    +formLine('Scheduled time',`<input type="time" name="scheduledTime" value="${esc(item?.scheduledTime||'')}">`)
     +`<label class="inline-check"><input type="checkbox" name="priority" ${item?.priority?'checked':''}>Priority</label>`
-    +formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${g.id}" ${selectedGoalId===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`)+areaField;
+    +formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${g.id}" ${selectedGoalId===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`)+areaField+projectField;
   else if(type==='event')fields=name(item?.title)+formLine('Date',`<input type="date" name="date" value="${esc(item?.date||localToday())}" required>`)+formLine('Start time',`<input type="time" name="time" value="${esc(item?.time||'09:00')}" required>`);
-  else if(type==='habit')fields=name(item?.title)+areaField+formLine('Repeat on',`<div class="days-picker">${['S','M','T','W','T','F','S'].map((day,i)=>`<label><span>${day}</span><input type="checkbox" name="schedule" value="${i}" ${(item?.schedule||[0,1,2,3,4,5,6]).includes(i)?'checked':''}></label>`).join('')}</div>`)+formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${esc(g.id)}" ${selectedGoalId===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`)+formLine('Weekly target (optional)',`<input name="weeklyTarget" type="number" min="1" max="7" inputmode="numeric" placeholder="All selected days" value="${esc(item?.weeklyTarget??'')}"><small>For a flexible goal such as four days per week, leave all seven days selected above.</small>`);
+  else if(type==='habit')fields=name(item?.title)+areaField+projectField+formLine('Repeat on',`<div class="days-picker">${['S','M','T','W','T','F','S'].map((day,i)=>`<label><span>${day}</span><input type="checkbox" name="schedule" value="${i}" ${(item?.schedule||[0,1,2,3,4,5,6]).includes(i)?'checked':''}></label>`).join('')}</div>`)+formLine('Connected Goal',`<select name="goalId"><option value="">None</option>${state.goals.map(g=>`<option value="${esc(g.id)}" ${selectedGoalId===String(g.id)?'selected':''}>${esc(g.title)}</option>`).join('')}</select>`)+formLine('Weekly target (optional)',`<input name="weeklyTarget" type="number" min="1" max="7" inputmode="numeric" placeholder="All selected days" value="${esc(item?.weeklyTarget??'')}"><small>For a flexible goal such as four days per week, leave all seven days selected above.</small>`);
   else if(type==='goal')fields=name(item?.title)
     +formLine('Area',`<select name="category" required>${state.categories.map(cat=>`<option value="${esc(cat)}" ${(item?.category||window.blueprintAreaCreationContext||state.categories[0])===cat?'selected':''}>${esc(cat)}</option>`).join('')}</select>`)
-    +formLine('Motivation',`<textarea name="motivation" rows="3" maxlength="3000" placeholder="Why does this goal matter to you?">${esc(item?.motivation||'')}</textarea>`)
+    +projectField+formLine('Motivation',`<textarea name="motivation" rows="3" maxlength="3000" placeholder="Why does this goal matter to you?">${esc(item?.motivation||'')}</textarea>`)
     +`<div class="goal-step-header"><svg class="icon"><use href="#i-stairs"/></svg><span>Steps</span></div><div id="goalStepsEditor"></div><button type="button" class="goal-step-add" data-step-add>+ Add Step</button>`;
   else if(type==='todayFocus'||type==='weeklyFocus')fields=formLine('Your focus',`<textarea name="title" maxlength="180" placeholder="Write your focus here…">${esc(state[type])}</textarea>`);
   else fields=name(item?.title);
   $('modalFields').innerHTML=fields;
   const goalPicker=$('modalFields').querySelector('select[name="goalId"]');
   const areaPicker=$('modalFields').querySelector('select[name="area"]');
+  const projectPicker=$('modalFields').querySelector('select[name="projectId"]');
   if(goalPicker&&areaPicker&&goalPicker.value)areaPicker.disabled=true;
+  else if(projectPicker&&areaPicker&&projectPicker.value&&selectedProject?.area)areaPicker.disabled=true;
+  if(projectPicker&&type==='goal'&&projectPicker.value&&selectedProject?.area){
+    const category=$('modalFields').querySelector('select[name="category"]');
+    if(category)category.value=selectedProject.area;
+  }
   if(type==='goal')renderGoalStepRows((item?.actions||[]).map(a=>({id:a.id,title:a.title})));
   $('modalBack').classList.add('open');
   // Keep the keyboard closed on open; text fields focus only after a user taps them.
 }
-function closeModal(){$('modalBack').classList.remove('open');modalMode=null;modalId=null;modalParent=null;window.blueprintAreaCreationContext='';}
+function closeModal(){$('modalBack').classList.remove('open');modalMode=null;modalId=null;modalParent=null;window.blueprintAreaCreationContext='';window.blueprintProjectCreationContext='';}
 function uid(){return Date.now()+Math.floor(Math.random()*100000);}
 let lastMainTab='today';
 let activePlanTab='overview';
@@ -1250,20 +1296,63 @@ function handleSave(event){
     const priorityRank=priority?(wasRanked?t.priorityRank:nextRank):0;
     const actionIndex=t&&String(t.goalId)===goalId?t.actionIndex??'':'';
     const targetGoal=state.goals.find(g=>String(g.id)===goalId);
-    const area=targetGoal?.category||state.categories.find(a=>a===String(fd.get('area')||''))||'';
-    const fields={title,date:dueDate,dueDate,scheduledDate:t?.scheduledDate??'',scheduledTime:t?.scheduledTime??'',priority,priorityRank,goalId,actionIndex,area};
-    if(t){if(String(t.goalId||'')!==goalId){t.actionId='';t.actionIndex='';}Object.assign(t,fields);}else state.tasks.push({id:uid(),...fields,done:false});
-    v6SyncTaskAction(t||state.tasks.at(-1));
+    const chosen=state.projects.find(p=>String(p.id)===String(fd.get('projectId')||''));
+    const project=targetGoal?.projectId?state.projects.find(p=>String(p.id)===String(targetGoal.projectId))||chosen:chosen;
+    const projectId=project?.id||'';
+    const area=targetGoal?.category||project?.area||state.categories.find(a=>a===String(fd.get('area')||''))||'';
+    const fields={title,date:dueDate,dueDate,scheduledDate:String(fd.get('scheduledDate')||''),
+      scheduledTime:String(fd.get('scheduledDate')||'')?String(fd.get('scheduledTime')||''):'',
+      priority,priorityRank,goalId,actionIndex,area,projectId};
+    const record=t||{id:uid(),done:false};
+    const previousProjectId=String(record.projectId||'');
+    if(t&&previousProjectId!==String(projectId)){
+      for(const other of state.projects||[])
+        other.actions=other.actions.filter(a=>String(a.taskId||'')!==String(t.id));
+      record.projectActionId='';
+    }
+    if(t&&String(t.goalId||'')!==goalId){t.actionId='';t.actionIndex='';}
+    Object.assign(record,fields);
+    if(!t)state.tasks.push(record);
+    if(project){
+      if(!Array.isArray(project.actions))project.actions=[];
+      let action=project.actions.find(a=>String(a.id)===String(record.projectActionId||'')&&
+        String(a.taskId||'')===String(record.id));
+      if(!action){
+        action={id:v6Id(),taskId:record.id,title:record.title,done:!!record.done,status:record.done?'done':'todo'};
+        project.actions.push(action);
+        record.projectActionId=action.id;
+      }
+    }else record.projectActionId='';
+    v6SyncTaskAction(record);
   }
   else if(modalMode==='event'){const e=existing('events');const fields={title,date,time:String(fd.get('time')||'09:00')};if(e)Object.assign(e,fields);else state.events.push({id:uid(),...fields});}
-  else if(modalMode==='habit'){const h=existing('habits'),schedule=fd.getAll('schedule').map(Number),target=state.goals.find(g=>String(g.id)===String(fd.get('goalId')||'')),goalId=target?String(target.id):'',rawTarget=String(fd.get('weeklyTarget')||'').trim(),weeklyTarget=rawTarget?Number(rawTarget):null;if(weeklyTarget!==null&&(!Number.isInteger(weeklyTarget)||weeklyTarget<1||weeklyTarget>schedule.length)){alert('The weekly target must be between 1 and the number of selected days.');return;}if(h){const previousGoalId=String(h.goalId||'');Object.assign(h,{title,schedule,goalId,area:target?.category||state.categories.find(a=>a===String(fd.get('area')||''))||'',weeklyTarget,actionId:previousGoalId===goalId?(h.actionId||''):''});}else state.habits.push({id:uid(),title,schedule,days:{},createdOn:localToday(),goalId,area:target?.category||state.categories.find(a=>a===String(fd.get('area')||''))||'',actionId:'',weeklyTarget});}
+  else if(modalMode==='habit'){
+    const h=existing('habits'),schedule=fd.getAll('schedule').map(Number);
+    const target=state.goals.find(g=>String(g.id)===String(fd.get('goalId')||''));
+    const goalId=target?String(target.id):'';
+    const chosen=state.projects.find(p=>String(p.id)===String(fd.get('projectId')||''));
+    const project=target?.projectId?state.projects.find(p=>String(p.id)===String(target.projectId))||chosen:chosen;
+    const projectId=project?.id||'';
+    const rawTarget=String(fd.get('weeklyTarget')||'').trim(),weeklyTarget=rawTarget?Number(rawTarget):null;
+    if(weeklyTarget!==null&&(!Number.isInteger(weeklyTarget)||weeklyTarget<1||weeklyTarget>schedule.length)){
+      alert('The weekly target must be between 1 and the number of selected days.');return;
+    }
+    const fields={title,schedule,goalId,projectId,area:target?.category||project?.area||
+      state.categories.find(a=>a===String(fd.get('area')||''))||'',weeklyTarget};
+    if(h){
+      const previousGoalId=String(h.goalId||'');
+      Object.assign(h,{...fields,actionId:previousGoalId===goalId?(h.actionId||''):''});
+    }else state.habits.push({id:uid(),...fields,days:{},createdOn:localToday(),actionId:''});
+  }
   else if(modalMode==='goal'){
-    const g=existing('goals'),category=state.categories.find(c=>c===String(fd.get('category')||''))||state.categories[0],motivation=String(fd.get('motivation')||'').trim().slice(0,3000);
+    const g=existing('goals'),project=state.projects.find(p=>String(p.id)===String(fd.get('projectId')||'')),projectId=project?.id||'';
+    const category=state.categories.find(c=>c===String(project?.area||fd.get('category')||''))||state.categories[0],
+      motivation=String(fd.get('motivation')||'').trim().slice(0,3000);
     const raw=readGoalStepRows().filter(a=>a.title.trim());
     const old=g?.actions||[];
     const actions=raw.map(a=>{const original=old.find(o=>String(o.id)===String(a.id));return {...(original||{}),id:a.id||'a-'+uid(),title:a.title.trim(),done:!!original?.done};});
-    if(g){g.title=title;g.category=category;g.motivation=motivation;saveGoalSteps(g,actions);}
-    else {state.goals.push({id:uid(),title,category,motivation,actions});}
+    if(g){g.title=title;g.category=category;g.projectId=projectId;g.motivation=motivation;saveGoalSteps(g,actions);}
+    else {state.goals.push({id:uid(),title,category,projectId,motivation,actions});}
     selectedCategory='All';
   }
   else if(modalMode==='weeklyGoal')state.weeklyGoals.push({id:uid(),title,done:false});
@@ -1375,10 +1464,21 @@ $('v916HabitPrev').onclick=()=>{$('prevWeek').click();};
 $('v916HabitNext').onclick=()=>{$('nextWeek').click();};
 $('modalForm').addEventListener('submit',handleSave);
 $('modalForm').addEventListener('change',e=>{
-  if(e.target.name!=='goalId')return;
-  const picker=$('modalFields').querySelector('select[name="area"]');if(!picker)return;
-  const goal=state.goals.find(g=>String(g.id)===e.target.value);
-  picker.disabled=!!goal;if(goal)picker.value=goal.category;
+  if(!['goalId','projectId'].includes(e.target.name))return;
+  const fields=$('modalFields'),area=fields.querySelector('select[name="area"]');
+  const projectPicker=fields.querySelector('select[name="projectId"]');
+  const category=fields.querySelector('select[name="category"]');
+  const goalPicker=fields.querySelector('select[name="goalId"]');
+  const goal=state.goals.find(g=>String(g.id)===String(goalPicker?.value||''));
+  if(e.target.name==='goalId'&&goal?.projectId&&projectPicker)
+    projectPicker.value=String(goal.projectId);
+  const project=state.projects.find(p=>String(p.id)===String(projectPicker?.value||''));
+  if(area){
+    area.disabled=!!goal||!!project?.area;
+    if(goal)area.value=goal.category;
+    else if(project?.area)area.value=project.area;
+  }
+  if(category&&project?.area)category.value=project.area;
 });
 $('cancelModal').onclick=closeModal;
 $('modalBack').onclick=e=>{if(e.target===$('modalBack'))closeModal();};
