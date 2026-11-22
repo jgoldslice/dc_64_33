@@ -82,3 +82,18 @@
  .bp-task-row .task-row-actions{margin-left:auto}
  .bp-task-main .bp-task-detail{min-width:0}
 }
+
+/* Header collapses into a sidebar on iPad; Quick Add must remain visible.
+   Anchor the single control above the native bottom tab area instead. */
+#bpQuickAdd.bp-quick-add{
+ position:fixed;z-index:900;right:max(18px,env(safe-area-inset-right));
+ bottom:calc(91px + env(safe-area-inset-bottom));
+ display:grid!important;place-items:center;width:48px;height:48px;min-width:48px;
+ background:var(--wash);border:1px solid var(--secondary-ui);color:var(--secondary-ui);
+ border-radius:15px;box-shadow:0 5px 17px #0002;font-size:26px;font-weight:500;
+ margin:0;cursor:pointer;touch-action:manipulation;
+}
+body.v928-notes-focus #bpQuickAdd{display:none!important}
+@media(min-width:740px){
+ #bpQuickAdd.bp-quick-add{bottom:calc(24px + env(safe-area-inset-bottom))}
+}
