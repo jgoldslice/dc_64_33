@@ -253,3 +253,50 @@ test('Goal step conversion inherits a Project and avoids duplicate Task/Habit re
     projectId:state.habits.find(h=>h.title==='Analyze spectra')?.projectId
   }))).toEqual({count:1,projectId});
 });
+
+
+test('Cancelled Task swipe restores its previous reveal state',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.tasks=[{id:'cancel-swipe',title:'Preserve swipe state',done:false,dueDate:localToday(),date:localToday()}];
+    if(!save(true))throw Error('Could not save test task');
+    render();
+  });
+  const row=page.locator('#v917TodayTasks [data-bp-task-row="cancel-swipe"]');
+  await expect(row).toBeVisible();
+  const result=await row.evaluate(source=>{
+    const r=source.getBoundingClientRect(),x=r.left+r.width*.65,y=r.top+r.height*.5;
+    const dispatch=(type,xx)=>{
+      const touch=new Touch({identifier:73,target:source,clientX:xx,clientY:y});
+      source.dispatchEvent(new TouchEvent(type,{bubbles:true,cancelable:true,
+        touches:type==='touchcancel'?[]:[touch],
+        targetTouches:type==='touchcancel'?[]:[touch],changedTouches:[touch]}));
+    };
+    const state=()=>({
+      revealed:source.classList.contains('bp-task-revealed'),
+      transform:source.querySelector('.bp-task-main').style.transform
+    });
+    // Cancel a new swipe: the row must remain closed.
+    dispatch('touchstart',x);
+    dispatch('touchmove',x-85);
+    dispatch('touchcancel',x-85);
+    const closed=state();
+    // Complete a swipe to open the row.
+    dispatch('touchstart',x);
+    dispatch('touchmove',x-115);
+    source.dispatchEvent(new TouchEvent('touchend',{bubbles:true,cancelable:true,
+      touches:[],targetTouches:[],changedTouches:[
+        new Touch({identifier:73,target:source,clientX:x-115,clientY:y})]}));
+    const opened=state();
+    // Cancel a swipe towards closing: preserve the open state.
+    dispatch('touchstart',x);
+    dispatch('touchmove',x+85);
+    dispatch('touchcancel',x+85);
+    return {closed,opened,afterCancel:state()};
+  });
+  expect(result.closed.revealed).toBe(false);
+  expect(result.closed.transform).toContain('translate3d(0px');
+  expect(result.opened.revealed).toBe(true);
+  expect(result.afterCancel.revealed).toBe(true);
+  expect(result.afterCancel.transform).toContain('translate3d(-112px');
+});
