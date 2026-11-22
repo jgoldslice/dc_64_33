@@ -848,7 +848,7 @@ function taskRow(t,rankMap=null){
   const due=t.dueDate?new Date(t.dueDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
   const planned=t.scheduledDate?'Scheduled '+new Date(t.scheduledDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})+(t.scheduledTime?' '+timeText(t.scheduledTime):''):'';
   const id=esc(t.id),title=esc(t.title);
-  return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-bp-task-row="${id}">
+  return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}">
     <div class="bp-task-main">
       <input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}>
       ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}
