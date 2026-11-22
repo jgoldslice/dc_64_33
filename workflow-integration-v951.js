@@ -283,7 +283,8 @@
   const previousRender=render;
   render=function(...args){
     const result=previousRender(...args);
-    if(v6ProjectTab==='overview'&&v6Project())projectPulse(v6Project());
+    if(v6ProjectTab==='overview'&&v6Project())
+      window.v919RenderProjectOverview?.(v6Project());
     return result;
   };
   if(v6ProjectTab==='overview'&&v6Project())projectPulse(v6Project());
