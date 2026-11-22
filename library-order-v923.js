@@ -7,7 +7,7 @@
   if(!root||typeof v6RenderLibrary!=='function')return;
   const oldRender=v6RenderLibrary;
   const HOLD_MS=420,THRESHOLD=12;
-  let gesture=null,suppressClickUntil=0,suppressNode=null;
+  let gesture=null,suppressClickUntil=0,suppressItemId=null;
 
   const project=()=>v6Project();
   const list=()=>root.querySelector('.v923-library-items');
@@ -219,7 +219,7 @@
     const old=gesture;
     clearGesture(true);
     if(old.active){
-      suppressNode=old.node;
+      suppressItemId=old.node.dataset.v923Item;
       suppressClickUntil=Date.now()+700;
       if(old.moved)recordOrder(old.p);
       else announce('');
@@ -290,7 +290,7 @@
   // The synthetic click following a completed touch hold must not open an
   // image or external URL. Ordinary short taps still work unmodified.
   document.addEventListener('click',event=>{
-    if(Date.now()>suppressClickUntil||!suppressNode?.contains(event.target))return;
+    if(Date.now()>suppressClickUntil||itemFrom(event.target)?.dataset.v923Item!==suppressItemId)return;
     event.preventDefault();
     event.stopImmediatePropagation();
   },true);
