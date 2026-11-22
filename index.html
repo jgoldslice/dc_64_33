@@ -1320,7 +1320,9 @@ function handleSave(event){
     const chosen=state.projects.find(p=>String(p.id)===String(fd.get('projectId')||''));
     const project=targetGoal?.projectId?state.projects.find(p=>String(p.id)===String(targetGoal.projectId))||chosen:chosen;
     const selectedProjectValue=String(fd.get('projectId')||'');
-    const projectId=project?.id||((t&&selectedProjectValue===String(t.projectId||''))?t.projectId||'':'');
+    const projectId=project?.id||(
+      (t&&selectedProjectValue===String(t.projectId||''))?t.projectId||'':
+      (targetGoal?.projectId&&selectedProjectValue===String(targetGoal.projectId))?targetGoal.projectId:'');
     const area=targetGoal?.category||project?.area||state.categories.find(a=>a===String(fd.get('area')||''))||t?.area||'';
     const fields={title,date:dueDate,dueDate,scheduledDate:String(fd.get('scheduledDate')||''),
       scheduledTime:String(fd.get('scheduledDate')||'')?String(fd.get('scheduledTime')||''):'',
@@ -1355,7 +1357,10 @@ function handleSave(event){
     const goalId=target?String(target.id):'';
     const chosen=state.projects.find(p=>String(p.id)===String(fd.get('projectId')||''));
     const project=target?.projectId?state.projects.find(p=>String(p.id)===String(target.projectId))||chosen:chosen;
-    const projectId=project?.id||'';
+    const projectChoice=String(fd.get('projectId')||'');
+    const projectId=project?.id||(
+      (h&&projectChoice===String(h.projectId||''))?h.projectId||'':
+      (target?.projectId&&projectChoice===String(target.projectId))?target.projectId:'');
     const rawTarget=String(fd.get('weeklyTarget')||'').trim(),weeklyTarget=rawTarget?Number(rawTarget):null;
     if(weeklyTarget!==null&&(!Number.isInteger(weeklyTarget)||weeklyTarget<1||weeklyTarget>schedule.length)){
       alert('The weekly target must be between 1 and the number of selected days.');return;
@@ -1368,7 +1373,9 @@ function handleSave(event){
     }else state.habits.push({id:uid(),...fields,days:{},createdOn:localToday(),actionId:''});
   }
   else if(modalMode==='goal'){
-    const g=existing('goals'),project=state.projects.find(p=>String(p.id)===String(fd.get('projectId')||'')),projectId=project?.id||'';
+    const g=existing('goals'),projectChoice=String(fd.get('projectId')||''),
+      project=state.projects.find(p=>String(p.id)===projectChoice),
+      projectId=project?.id||(g&&projectChoice===String(g.projectId||'')?g.projectId||'':'');
     const category=state.categories.find(c=>c===String(project?.area||fd.get('category')||''))||state.categories[0],
       motivation=String(fd.get('motivation')||'').trim().slice(0,3000);
     const raw=readGoalStepRows().filter(a=>a.title.trim());
