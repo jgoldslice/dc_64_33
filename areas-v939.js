@@ -210,7 +210,7 @@
   }
   function render(){if(!mount)return;closeCreateMenu();closeAreaMenu();cancelPress();if(selected===null)renderOverview();else renderDetail();}
   function refresh(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render();});}
-  root.blueprintAreas={refresh,model};
+  root.blueprintAreas={refresh,model,currentArea:()=>selected};
   const trySave=()=>{save(true);refresh();};
   // Native-feeling long press for touch/Pencil; cancel when scrolling or dragging.
   mount.addEventListener('pointerdown',event=>{
@@ -330,6 +330,10 @@
     const p=state.projects.find(p=>String(p.id)===select.dataset.bpaProjectArea);
     if(!p)return;
     p.area=validArea(select.value,state.categories);
+    // A linked Goal follows its Project's Area, and its Tasks/Habits in turn
+    // inherit that Goal category from the existing shared Area model.
+    for(const goal of state.goals||[])
+      if(String(goal.projectId||'')===String(p.id))goal.category=p.area||goal.category;
     trySave();
   });
   render();
