@@ -1,5 +1,14 @@
 # Blueprint — Development Status
 
+## 2026-11-22 — Task swipe cancellation state restoration (isolated review branch; unmerged)
+
+**Code audit finding (P1, source-confirmed):** In `workflow-integration-v951.js`, the `touchcancel` handler called `closeRow` unconditionally. A system-interrupted gesture on an already revealed Task row therefore closed that row, even though no completed swipe requested closure. The issue was identified by tracing the existing `start`/`moving`/`finish`/`touchcancel` handlers; physical iOS reproduction is pending.
+
+**Proposed fix branch:** `fix/task-swipe-cancel-preserve-v952`, based on main `86910035b1ef2f4401378d5ff11663fd1906e3d9`. The cancel handler now restores the row's pre-gesture reveal state and transform. The existing completed-swipe and vertical-scroll behavior is unchanged.
+
+**Regression test added:** `tests/unified-workflows-v951.spec.cjs` checks cancellation of a partially opened row leaves it closed, and cancellation of a partially closed, previously revealed row leaves it revealed at -112px. **Test written but not yet run**; GitHub Actions status must be checked on the draft PR. No iPhone/iPad or Xcode test was performed. Existing user data, storage schema, backup format, native PencilKit and installed app were not changed. Do not merge before review and green tests.
+
+
 **Last documentation update:** 2026-11-22
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
