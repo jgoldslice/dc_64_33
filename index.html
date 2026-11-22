@@ -348,6 +348,7 @@
 <link rel="stylesheet" href="project-overview-v919.css">
 <link rel="stylesheet" href="library-order-v923.css">
   <link rel="stylesheet" href="card-reorder-v950.css">
+<link rel="stylesheet" href="workflow-integration-v951.css">
 <link rel="stylesheet" href="goal-habits-v927.css">
 <link rel="stylesheet" href="areas-v939.css">
 <link rel="stylesheet" href="notes-workspace-v928.css">
@@ -452,6 +453,16 @@
         <h2 id="projectTitle" class="v6-project-title"></h2>
         <section id="projectOverview" class="v919-project-overview" aria-label="Project overview">
           <div class="v919-project-grid">
+            <section class="card v951-project-pulse" aria-labelledby="v951PulseHeading">
+              <div class="card-heading v951-project-pulse-header"><h3 id="v951PulseHeading">Project pulse</h3>
+                <div class="v951-project-quick" aria-label="Add to this project">
+                  <button type="button" data-bp-project-add="task">+ Task</button>
+                  <button type="button" data-bp-project-add="habit">+ Habit</button>
+                  <button type="button" data-bp-project-add="goal">+ Goal</button>
+                </div>
+              </div>
+              <div id="v951ProjectPulse" class="v951-pulse" aria-live="polite"></div>
+            </section>
             <section class="card v919-summary-card" aria-labelledby="v919NotesHeading">
               <div class="card-heading"><h3 id="v919NotesHeading">Notes</h3><button type="button" class="text-button" data-v919-project-open="notes">Open notes</button></div>
               <div id="v919NotesPreview" class="v919-note-preview"></div>
@@ -460,6 +471,10 @@
               <div class="card-heading"><h3 id="v919TodoHeading">To-Do</h3><button type="button" class="text-button" data-v919-project-open="actions">View all</button></div>
               <div id="v919TodoPreview" class="v919-todo-preview"></div>
               <form id="v919QuickTodo" class="v919-inline-add"><input name="title" maxlength="160" required aria-label="New project to-do" placeholder="Add a to-do…"><button type="submit" aria-label="Add to-do">+</button></form>
+            </section>
+            <section class="card v951-project-connections" aria-labelledby="v951ConnectionsHeading">
+              <div class="card-heading"><h3 id="v951ConnectionsHeading">Goals &amp; Habits</h3></div>
+              <div id="v951ProjectConnections" class="v951-connections"></div>
             </section>
             <section class="card v919-library-card" aria-labelledby="v919LibraryHeading">
               <div class="card-heading"><h3 id="v919LibraryHeading">Library</h3><div class="v919-library-actions"><button type="button" class="text-button" data-v919-capture-open>+ Add</button><button type="button" class="text-button" data-v919-project-open="library">View all</button></div></div>
@@ -2016,6 +2031,15 @@ document.addEventListener('click',async e=>{
       task.area=p.area||task.area||'';
       task.projectId='';task.projectActionId='';
     }
+    // Goal and Habit records remain in Plan when their Project is removed.
+    for(const goal of state.goals)if(String(goal.projectId||'')===String(p.id)){
+      goal.category=p.area||goal.category;
+      goal.projectId='';
+    }
+    for(const habit of state.habits)if(String(habit.projectId||'')===String(p.id)){
+      habit.area=p.area||habit.area||'';
+      habit.projectId='';
+    }
     state.projects=state.projects.filter(x=>String(x.id)!==String(p.id));
     // Persist before deleting binary attachments. On a storage failure,
     // return to the original project instead of destroying the user's files.
@@ -2142,4 +2166,5 @@ v6Normalize();v6Render();
 <script src="library-order-v923.js"></script>
 <script src="local-storage-health-v926.js"></script>
 <script src="areas-v939.js"></script>
+<script src="workflow-integration-v951.js"></script>
 </body></html>
