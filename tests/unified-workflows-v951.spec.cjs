@@ -89,7 +89,9 @@ test('Today Task title edits, star prioritizes, and quick date picker sets sched
   await page.locator('[data-bp-date-preset="tomorrow"]').click();
   const tomorrow=await page.evaluate(()=>iso(plusDays(new Date(),1)));
   expect(await page.evaluate(()=>state.tasks[0].dueDate)).toBe(tomorrow);
-  await page.locator('#v917TodayTasks [data-edit-task="unified-task"]').first().click();
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
+  await page.locator('#allTasks [data-edit-task="unified-task"]').click();
   await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
   await expect(page.locator('#modalForm input[name="scheduledDate"]')).toHaveValue('2026-12-09');
   await page.locator('#cancelModal').click();
