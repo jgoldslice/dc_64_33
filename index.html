@@ -1154,6 +1154,7 @@ function tab(name){
   if(changing)canvasScrollPositions.set(previous,window.scrollY);
   if(name!=='customize')lastMainTab=name;
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===name));
+  if(name==='brainstorm'&&typeof v6Render==='function')v6Render();
   document.querySelectorAll('.bottom-nav button').forEach(b=>{
     const active=b.dataset.tab===lastMainTab;
     b.classList.toggle('active',active);
@@ -1387,9 +1388,11 @@ function deletePlannerItem(type,id,fromModal=false){
   if(!item)return false;
   const message=type==='goal'
     ?'Delete goal "'+item.title+'"? This cannot be undone. Connected tasks and habits will stay, but will no longer be linked to this goal.'
-    :type==='task'&&item.done
-      ?'Delete completed task "'+item.title+'"? This also removes its linked project To-Do, if any.'
-      :'Delete this item? This cannot be undone.';
+    :type==='task'&&item.projectId
+      ?'Delete task "'+item.title+'" from Plan and its linked project To-Do? This cannot be undone.'
+      :type==='task'&&item.done
+        ?'Delete completed task "'+item.title+'"? This cannot be undone.'
+        :'Delete this item? This cannot be undone.';
   if(!confirm(message))return false;
   if(type==='goal'){
     for(const t of state.tasks.filter(t=>String(t.goalId)===String(id))){t.area=item.category;t.goalId='';t.actionId='';t.actionIndex='';}
