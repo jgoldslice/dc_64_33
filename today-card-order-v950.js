@@ -113,11 +113,15 @@
       return;
     }
     g.preview?.move(x,y);
-    // The preview has pointer-events:none, so hit testing still sees the
-    // original grid. Use the target card, not a fixed crossing threshold for
-    // the floating preview: it keeps tracking the finger continuously.
-    const target=document.elementFromPoint(x,y)?.closest('[data-bp-today-card]');
-    if(!target||target===g.node||target.parentElement!==board)return;
+    // Rect-based hit testing remains reliable even as the active card
+    // changes grid positions underneath the floating visual preview.
+    // The preview itself tracks every movement independently.
+    const target=[...board.children].find(card=>{
+      if(card===g.node||!keyFor(card))return false;
+      const rect=card.getBoundingClientRect();
+      return x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom;
+    });
+    if(!target)return;
     const nodes=domOrder(),from=nodes.indexOf(keyFor(g.node)),to=nodes.indexOf(keyFor(target));
     if(from<0||to<0||from===to)return;
     board.insertBefore(g.node,to>from?target.nextSibling:target);
