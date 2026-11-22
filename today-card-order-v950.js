@@ -140,7 +140,6 @@
     if(gesture.active&&event.changedTouches.length){
       const p=event.changedTouches[0];move(p.clientX,p.clientY);
       suppressNode=gesture.node;
-      suppressNode=gesture.node;
       suppressClickUntil=Date.now()+650;
     }
     reset(true);
@@ -157,6 +156,7 @@
     if(gesture?.kind!=='pointer')return;
     if(gesture.active){
       move(event.clientX,event.clientY);
+      suppressNode=gesture.node;
       suppressClickUntil=Date.now()+650;
     }
     reset(true);
