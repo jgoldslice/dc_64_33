@@ -7,13 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-22 — v9.52 Project dashboard arrangement and Area appearance
+## 2026-11-22 — v9.52 Project dashboard arrangement and Area appearance (merged, browser verified, iOS QA pending)
 
 - The Project overview calls its summary **Project Stats**. All five overview cards use Today’s finger-following long press and keyboard reordering. Each Project stores its own optional `overviewCardOrder` array. Canceled gestures and failed writes restore the previous visual order. Projects without a preference use the original layout.
 - The **New** action uses the iPad sidebar’s row dimensions and a centered plus when the rail is collapsed. The iPhone header retains a compact plus. The existing contextual creation forms still open from the same action.
 - Plan → Areas now has larger cards and icon badges. The appearance button, long-press menu and Area detail badge open the shared sheet with 30 icon options, 14 colors plus the app theme, and a live preview. New Areas can be styled at creation. Area appearance follows rename and is removed on deletion. Existing Areas have default appearances without a migration.
 - Optional appearance and order preferences are covered by the existing planner and backup data. This change adds no storage keys or native Swift changes.
-- Local verification: all JavaScript and browser test files passed syntax checks, `git diff --check` passed, and all 29 standalone Node tests passed. The local sandbox blocked the Playwright HTTP server from binding, so browser verification runs through GitHub Actions.
+- Merged [PR #82](https://github.com/jgoldslice/dc_64_33/pull/82) to main as `2b6f4ca`. Tested feature head `227a55f`.
+- [GitHub Actions run #483](https://github.com/jgoldslice/dc_64_33/actions/runs/45064913538) passed all **351 Chromium Playwright tests**, **29 standalone Node tests**, and JavaScript syntax checks. Coverage includes the finger-following drop, per-Project order isolation and reload, failed saves, both iPad sidebar sizes and iPhone docking, Area appearance on create and rename, and complete backup export and restore. Local JavaScript syntax checks, `git diff --check`, and all 29 standalone Node tests also passed.
 - iOS rollout still requires staging the merged web bundle, running `npx cap copy ios`, and running the existing **App** scheme over the installed app using the same signing team and bundle ID. Verify the drag gesture and sidebar in iPad portrait, landscape and Split View. No device build or install was performed for this change.
 
 ## 2026-11-22 — v9.51 Shared workflow and Project dashboard integration (merged; browser verified; iOS QA pending)
