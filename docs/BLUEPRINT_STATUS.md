@@ -7,6 +7,17 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-21 — Pending PR inventory resolved (GitHub Pages published; native iOS not installed)
+
+**Owner direction:** Review all outstanding PRs; merge tested work or close obsolete/unverified proposals instead of leaving stale drafts open. At the start of the audit, open PRs were **#78, #75, #43, #41, #40, #11, and #8**. All seven are now resolved; a follow-up GitHub REST query returned **zero open PRs**.
+
+- **Merged:** [#78](https://github.com/jgoldslice/dc_64_33/pull/78), interruption-safe complete-backup sketch draft restoration, squash commit `278758912c4cb062d9409d49f0af947edcc4f836`. Final PR head `8f44b64a36568eed85735e38740a458ab81c5967`: [browser CI #44995608677](https://github.com/jgoldslice/dc_64_33/actions/runs/44995608677) passed 332/332 Playwright tests, 29/29 standalone Node tests, and syntax checks. [GitHub Pages #44995792746](https://github.com/jgoldslice/dc_64_33/actions/runs/44995792746) published the merged code successfully. The separate main smoke run was in progress when this entry was written.
+- **Closed as superseded:** [#75](https://github.com/jgoldslice/dc_64_33/pull/75) (older version of #78), [#43](https://github.com/jgoldslice/dc_64_33/pull/43) (unreadable local-storage guards and read-only attachment health check already on `main`), and [#40](https://github.com/jgoldslice/dc_64_33/pull/40) (old standalone native ink backup prototype superseded by the shipping v3 drawing archive from PR #74).
+- **Closed as proposal-only:** [#11](https://github.com/jgoldslice/dc_64_33/pull/11) and [#8](https://github.com/jgoldslice/dc_64_33/pull/8). Their prior recommendations remain visible in GitHub history but their unlinked prototypes are not production code.
+- **Closed as unsafe to deploy:** [#41](https://github.com/jgoldslice/dc_64_33/pull/41), an independent native Share Extension staging prototype that was neither compiled into the currently inspected GitHub source nor verified against the owner's current Xcode wrapper. Its source branch is preserved for any later native integration. This closure does **not** cancel the owner's desired native sharing feature or establish device functionality.
+
+**Release boundaries:** Only the merged web source is GitHub Pages published. No iPhone/iPad Capacitor copy, Xcode signing/build, or installed-app device QA was performed. Current local data, backup archives, IndexedDB, and PencilKit sidecar files were not touched. Before native rollout, verify backup export/restore in disposable storage and PencilKit handwriting survival on a real iPad; never uninstall the existing app or overwrite local-only Swift changes. Historical docs may still describe earlier draft PRs as open; the present entry supersedes that status.
+
 ## 2026-11-21 — Interrupted sketch restore hardening (v9.49, review branch; native QA pending)
 
 **Finding on current main:** Restoring a full archive committed the planner before updating fixed project-scoped sketch draft entries. A crash/reload between the two writes could show newly restored Projects with the preceding on-device sketch draft. Current native v3 archives already validate drawing sidecars but do not make the legacy sketch-draft transaction atomic.
