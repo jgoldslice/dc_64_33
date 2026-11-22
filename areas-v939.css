@@ -24,6 +24,12 @@
   color:color-mix(in srgb,var(--area-accent) 72%,var(--ink));
 }
 .bp-area-badge .icon{width:30px;height:30px;stroke:currentColor}
+.bp-area-badge:is([data-area-color="white"],[data-area-color="black"]){
+  color:color-mix(in srgb,var(--area-accent) 32%,var(--ink));
+}
+.bp-area-badge[data-area-color="theme"]{
+  color:color-mix(in srgb,var(--secondary-ui) 45%,var(--ink));
+}
 .bp-area-appearance-button,.bp-area-detail-icon{
   display:grid;place-items:center;border:0;border-radius:11px;background:transparent;color:var(--muted);padding:0;
 }
@@ -36,20 +42,6 @@
 .bp-area-detail-icon:focus-visible,.bp-area-appearance-button:focus-visible{
   outline:2px solid var(--secondary-ui);outline-offset:1px;
 }
-.bp-area-color-slate{--area-accent:#7c8ba4}
-.bp-area-color-red{--area-accent:#df504d}
-.bp-area-color-coral{--area-accent:#e47661}
-.bp-area-color-orange{--area-accent:#e58b2c}
-.bp-area-color-gold{--area-accent:#d8ae27}
-.bp-area-color-lime{--area-accent:#91ad30}
-.bp-area-color-green{--area-accent:#43975d}
-.bp-area-color-mint{--area-accent:#46ac8b}
-.bp-area-color-teal{--area-accent:#339c9c}
-.bp-area-color-sky{--area-accent:#498fca}
-.bp-area-color-blue{--area-accent:#4a78d8}
-.bp-area-color-indigo{--area-accent:#676de1}
-.bp-area-color-purple{--area-accent:#9c65d7}
-.bp-area-color-pink{--area-accent:#d262a1}
 .bp-area-picker{display:grid;gap:11px;min-width:0;}
 .bp-area-picker-preview{display:flex;justify-content:center;}
 .bp-area-picker fieldset{margin:0;padding:0;min-inline-size:0;border:0;}
@@ -62,6 +54,8 @@
 #bpSheet .bp-area-picker-grid button[aria-pressed="true"]{
   background:var(--wash);box-shadow:inset 0 0 0 1px var(--secondary-ui);border-color:var(--secondary-ui);
 }
+.bp-area-color-grid{grid-template-columns:repeat(auto-fit,minmax(56px,1fr));}
+#bpSheet .bp-area-color-grid button{gap:3px;min-height:50px;padding:4px 1px;font-size:11px;}
 .bp-area-picker-grid .icon{width:22px;height:22px;stroke:currentColor;}
 .bp-area-swatch{
   display:block;width:23px;height:23px;border-radius:50%;

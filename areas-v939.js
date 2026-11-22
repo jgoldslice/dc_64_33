@@ -29,7 +29,7 @@
   const escapeHtml=text=>String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const icon=name=>'<svg class="icon" aria-hidden="true"><use href="#i-'+name+'"></use></svg>';
   const areaIcons={
-    plan:['Folder'],check:['Checkmark'],goal:['Target'],calendar:['Calendar'],clock:['Clock'],
+    plan:['Folder','M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],check:['Checkmark'],goal:['Target'],calendar:['Calendar'],clock:['Clock'],
     home:['Home','M3 11l9-8 9 8M5 10v11h14V10M10 21v-7h4v7'],
     briefcase:['Work','M3 7h18v13H3zM8 7V4h8v3M3 12h18M10 12v3h4v-3'],
     book:['Book','M12 5v16M12 5C9 3 6 3 3 4v15c3-1 6-1 9 2 3-3 6-3 9-2V4c-3-1-6-1-9 1z'],
@@ -55,14 +55,20 @@
     gift:['Gift','M4 10h16v11H4zM3 6h18v4H3zm9 0v15m0-15C11 1 6 1 7 4c0 2 5 2 5 2zm0 0c1-5 6-5 5-2 0 2-5 2-5 2z'],
     utensils:['Food','M4 3v6a3 3 0 0 0 6 0V3M7 3v18M17 3c-3 3-3 8-3 10h5m0-10v18']
   };
-  const areaColors={
-    theme:'Theme',slate:'Slate',red:'Red',coral:'Coral',orange:'Orange',gold:'Gold',
-    lime:'Lime',green:'Green',mint:'Mint',teal:'Teal',sky:'Sky',blue:'Blue',
-    indigo:'Indigo',purple:'Purple',pink:'Pink'
-  };
+  // Match the names, values and order shown in Customize.
+  const areaColors=new Map([
+    ['theme',{name:'Theme',value:'var(--secondary)'}],
+    ...palettes.map(([name,value])=>[name.toLowerCase(),{name,value}])
+  ]);
+  // Read v9.52 color names from the existing planner and older backups.
+  const legacyColors=new Map(Object.entries({
+    red:'terracotta',coral:'terracotta',orange:'copper',lime:'sage',
+    green:'forest',mint:'sage',teal:'ocean',sky:'ocean',blue:'ocean',
+    indigo:'lavender',purple:'lavender',pink:'rose'
+  }));
   const areaDefaults=new Map([
-    [INBOX,['check','slate']],['Personal',['home','teal']],['Physical',['fitness','orange']],
-    ['Research',['flask','blue']],['Spiritual',['sun','purple']]
+    [INBOX,['check','slate']],['Personal',['home','sage']],['Physical',['fitness','copper']],
+    ['Research',['flask','ocean']],['Spiritual',['sun','lavender']]
   ]);
   function areaIcon(key){
     const [,path]=areaIcons[key];
@@ -72,9 +78,10 @@
   function appearance(area){
     const stored=appearanceList().find(entry=>entry?.area===area);
     const [symbol,color]=areaDefaults.get(area)||['plan','theme'];
+    const savedColor=legacyColors.get(stored?.color)??stored?.color;
     return {
       icon:Object.hasOwn(areaIcons,stored?.icon)?stored.icon:symbol,
-      color:Object.hasOwn(areaColors,stored?.color)?stored.color:color
+      color:areaColors.has(savedColor)?savedColor:color
     };
   }
   function updateAppearance(area,style){
@@ -86,32 +93,36 @@
     else state.areaAppearance=before;
   }
   function moveAppearance(before,after){
-    if(before===after||!appearanceList().some(entry=>entry?.area===before))return;
+    if(before===after)return;
+    const hasStyle=appearanceList().some(entry=>entry?.area===before);
+    if(!hasStyle&&!(after&&areaDefaults.has(before)))return;
     const style=appearance(before);
-    updateAppearance(before,null);
+    if(hasStyle)updateAppearance(before,null);
     if(after)updateAppearance(after,style);
   }
   function badge(style){
-    return '<span class="bp-area-badge bp-area-color-'+style.color+'">'+areaIcon(style.icon)+'</span>';
+    return '<span class="bp-area-badge" data-area-color="'+style.color+'" style="--area-accent:'+areaColors.get(style.color).value+'">'+areaIcon(style.icon)+'</span>';
   }
   async function chooseAppearance(area,anchor){
     const initial=appearance(area);
     const style={...initial};
     const content=document.createElement('div');
     content.className='bp-area-picker';
-    const choices=(kind,options,label,draw)=>'<fieldset><legend>'+label+'</legend><div class="bp-area-picker-grid">'+
-      Object.entries(options).map(([key,option])=>'<button type="button" data-area-'+kind+'="'+key+
-        '" aria-label="'+(Array.isArray(option)?option[0]:option)+'" aria-pressed="'+(style[kind]===key)+'">'+draw(key)+'</button>').join('')+
-      '</div></fieldset>';
+    const choice=(kind,key,label,visual)=>'<button type="button" data-area-'+kind+'="'+key+
+      '" aria-label="'+label+'" title="'+label+'" aria-pressed="'+(style[kind]===key)+'">'+visual+'</button>';
     content.innerHTML='<div class="bp-area-picker-preview" aria-hidden="true">'+badge(style)+'</div>'+
-      choices('color',areaColors,'Color',key=>'<span class="bp-area-swatch bp-area-color-'+key+'"></span>')+
-      choices('icon',areaIcons,'Icon',areaIcon);
+      '<fieldset><legend>Color</legend><div class="bp-area-picker-grid bp-area-color-grid">'+
+      [...areaColors].map(([key,{name,value}])=>choice('color',key,name,
+        '<span class="bp-area-swatch" style="--area-accent:'+value+'"></span><span>'+name+'</span>')).join('')+
+      '</div></fieldset><fieldset><legend>Icon</legend><div class="bp-area-picker-grid">'+
+      Object.entries(areaIcons).map(([key,[label]])=>choice('icon',key,label,areaIcon(key))).join('')+
+      '</div></fieldset>';
     content.addEventListener('click',event=>{
       const button=event.target.closest('button');
       if(!button)return;
       const kind=button.hasAttribute('data-area-icon')?'icon':'color';
       const attribute='data-area-'+kind;
-      content.querySelector('['+attribute+'][aria-pressed="true"]')?.setAttribute('aria-pressed','false');
+      content.querySelector('button['+attribute+'][aria-pressed="true"]')?.setAttribute('aria-pressed','false');
       style[kind]=button.getAttribute(attribute);
       button.setAttribute('aria-pressed','true');
       content.firstElementChild.innerHTML=badge(style);
@@ -327,15 +338,17 @@
       showAreaMenu(tile.dataset.bpaOpen,tile);
     },HOLD_MS);
   });
-  mount.addEventListener('pointermove',event=>{
+  document.addEventListener('pointermove',event=>{
     if(press&&event.pointerId===press.id&&
        Math.hypot(event.clientX-press.x,event.clientY-press.y)>MOVE_LIMIT)cancelPress();
   });
-  mount.addEventListener('pointerup',()=>{
-    cancelPress();
+  document.addEventListener('pointerup',event=>{
+    if(press&&event.pointerId===press.id)cancelPress();
     setTimeout(()=>{suppressCardTap=null;},0);
   });
-  mount.addEventListener('pointercancel',cancelPress);
+  document.addEventListener('pointercancel',event=>{
+    if(press&&event.pointerId===press.id)cancelPress();
+  });
   document.addEventListener('scroll',event=>{
     cancelPress();
     if(createMenu&&!createMenu.contains(event.target))closeCreateMenu();
