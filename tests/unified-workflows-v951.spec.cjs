@@ -35,6 +35,7 @@ test('Project quick creation reuses Task, Habit and Goal forms with inherited Pr
   await expect(page.locator('#modalForm select[name="projectId"]')).toHaveValue(String(projectId));
   await setTitle(page,'Prepare vials');
   await page.locator('#modalForm button[type="submit"]').click();
+  await expect(page.locator('#v919TodoPreview')).toContainText('Prepare vials');
 
   const result=await page.evaluate(()=>{
     const p=v6Project(),goal=state.goals.find(g=>g.title==='Publish catalyst report');
