@@ -7,7 +7,7 @@
   if(!root||typeof v6RenderLibrary!=='function')return;
   const oldRender=v6RenderLibrary;
   const HOLD_MS=420,THRESHOLD=12;
-  let gesture=null,suppressClickUntil=0;
+  let gesture=null,suppressClickUntil=0,suppressNode=null;
 
   const project=()=>v6Project();
   const list=()=>root.querySelector('.v923-library-items');
@@ -179,6 +179,7 @@
       // Lift a visual copy without moving the actual interactive resource.
       window.getSelection()?.removeAllRanges();
       g.preview=window.BlueprintDragPreview?.create(node,g.x,g.y)||null;
+      g.preview?.move(g.x,g.y);
       node.classList.add('v923-dragging');
       announce('Reordering '+(p.library.find(r=>String(r.id)===node.dataset.v923Item)?.title||'item')+'.');
     },HOLD_MS)};
@@ -192,8 +193,14 @@
     gesture.preview?.move(x,y);
     const container=list(),node=gesture.node;
     if(!container||!container.contains(node)){clearGesture();return;}
-    const target=itemFrom(document.elementFromPoint(x,y));
-    if(!target||target===node||target.parentElement!==container)return;
+    // Geometry hit-testing also works with synthetic WebKit touches and
+    // unobstructed preview copies; do not depend on elementFromPoint().
+    const target=[...container.children].find(item=>{
+      if(item===node)return false;
+      const rect=item.getBoundingClientRect();
+      return x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom;
+    });
+    if(!target)return;
     const bounds=target.getBoundingClientRect();
     const cy=bounds.top+bounds.height/2;
     const after=root.classList.contains('v74-library-list')
@@ -212,6 +219,7 @@
     const old=gesture;
     clearGesture(true);
     if(old.active){
+      suppressNode=old.node;
       suppressClickUntil=Date.now()+700;
       if(old.moved)recordOrder(old.p);
       else announce('');
@@ -282,7 +290,7 @@
   // The synthetic click following a completed touch hold must not open an
   // image or external URL. Ordinary short taps still work unmodified.
   document.addEventListener('click',event=>{
-    if(Date.now()>suppressClickUntil||!itemFrom(event.target))return;
+    if(Date.now()>suppressClickUntil||!suppressNode?.contains(event.target))return;
     event.preventDefault();
     event.stopImmediatePropagation();
   },true);
