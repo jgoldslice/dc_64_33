@@ -330,6 +330,10 @@
     const p=state.projects.find(p=>String(p.id)===select.dataset.bpaProjectArea);
     if(!p)return;
     p.area=validArea(select.value,state.categories);
+    // A linked Goal follows its Project's Area, and its Tasks/Habits in turn
+    // inherit that Goal category from the existing shared Area model.
+    for(const goal of state.goals||[])
+      if(String(goal.projectId||'')===String(p.id))goal.category=p.area||goal.category;
     trySave();
   });
   render();
