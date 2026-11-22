@@ -25,7 +25,8 @@
     const notes=byId('v919NotesPreview'),tasks=byId('v919TodoPreview'),library=byId('v919LibraryPreview');
     if(!notes||!tasks||!library)return;
     const pages=Array.isArray(project.notePages)?project.notePages:[];
-    const snippets=pages.map(p=>{
+    // Most recently added pages first; never rearrange saved notebook data.
+    const snippets=pages.slice().reverse().map(p=>{
       const content=(p.objects||[]).filter(o=>o.type==='text')
         .map(o=>textPreview(o.html)).filter(Boolean).join(' ');
       return {title:p.title||'Notes',content};
