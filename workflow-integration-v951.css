@@ -96,15 +96,17 @@
 }
 .app-header #bpQuickAdd.bp-quick-add{margin-left:auto}
 .app-header #bpQuickAdd .bp-quick-label{display:none}
+#bpQuickAdd .icon{width:22px;height:22px;stroke:currentColor;flex:none}
 .bottom-nav #bpQuickAdd.bp-quick-add{
- display:flex!important;align-items:center;justify-content:flex-start;
- gap:12px;width:100%;min-width:0;min-height:48px;height:48px;
- padding:9px 14px;margin:10px 0 0;
- border-radius:12px;font-size:17px;font-weight:700;
+ justify-content:flex-start;gap:13px;width:100%;min-width:0;
+ min-height:51px;height:auto;padding:12px 13px;margin:0;
+ border:0;border-radius:13px;background:transparent;color:var(--muted);
+ font-size:14px;font-weight:600;letter-spacing:-.1px;text-align:left;
 }
-.bottom-nav #bpQuickAdd .bp-quick-label{font-size:13px;font-weight:650}
+.bottom-nav #bpQuickAdd:is(:hover,[aria-expanded="true"]){background:var(--wash);color:var(--ink)}
+#bpQuickAdd:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:-2px}
 body.canvas-ipad-sidebar-collapsed .bottom-nav #bpQuickAdd.bp-quick-add{
- width:100%;padding:8px 0;justify-content:center;
+ padding:10px 0;gap:0;justify-content:center;
 }
 body.canvas-ipad-sidebar-collapsed .bottom-nav #bpQuickAdd .bp-quick-label{display:none}
 body.v928-notes-focus #bpQuickAdd{display:none!important}

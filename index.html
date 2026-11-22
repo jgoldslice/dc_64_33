@@ -455,17 +455,17 @@
         <section id="projectOverview" class="v919-project-overview" aria-label="Project overview">
           <div class="v919-project-grid">
             
-            <section class="card v919-summary-card" aria-labelledby="v919NotesHeading">
+            <section class="card v919-summary-card" data-bp-project-card="notes" data-no-swipe aria-labelledby="v919NotesHeading">
               <div class="card-heading"><h3 id="v919NotesHeading">Notes</h3><button type="button" class="text-button" data-v919-project-open="notes">Open notes</button></div>
               <div id="v919NotesPreview" class="v919-note-preview"></div>
             </section>
-            <section class="card v919-summary-card" aria-labelledby="v919TodoHeading">
+            <section class="card v919-summary-card" data-bp-project-card="todo" data-no-swipe aria-labelledby="v919TodoHeading">
               <div class="card-heading"><h3 id="v919TodoHeading">To-Do</h3><button type="button" class="text-button" data-v919-project-open="actions">View all</button></div>
               <div id="v919TodoPreview" class="v919-todo-preview"></div>
               <form id="v919QuickTodo" class="v919-inline-add"><input name="title" maxlength="160" required aria-label="New project to-do" placeholder="Add a to-do…"><button type="submit" aria-label="Add to-do">+</button></form>
             </section>
-            <section class="v951-project-pulse" aria-labelledby="v951PulseHeading">
-              <div class="card-heading v951-project-pulse-header"><h3 id="v951PulseHeading">Project pulse</h3>
+            <section class="v951-project-pulse" data-bp-project-card="stats" data-no-swipe aria-labelledby="v951PulseHeading">
+              <div class="card-heading v951-project-pulse-header"><h3 id="v951PulseHeading">Project Stats</h3>
                 <div class="v951-project-quick" aria-label="Add to this project">
                   <button type="button" data-bp-project-add="task">+ Task</button>
                   <button type="button" data-bp-project-add="habit">+ Habit</button>
@@ -474,11 +474,11 @@
               </div>
               <div id="v951ProjectPulse" class="v951-pulse" aria-live="polite"></div>
             </section>
-            <section class="v951-project-connections" aria-labelledby="v951ConnectionsHeading">
+            <section class="v951-project-connections" data-bp-project-card="connections" data-no-swipe aria-labelledby="v951ConnectionsHeading">
               <div class="card-heading"><h3 id="v951ConnectionsHeading">Goals &amp; Habits</h3></div>
               <div id="v951ProjectConnections" class="v951-connections"></div>
             </section>
-            <section class="card v919-library-card" aria-labelledby="v919LibraryHeading">
+            <section class="card v919-library-card" data-bp-project-card="library" data-no-swipe aria-labelledby="v919LibraryHeading">
               <div class="card-heading"><h3 id="v919LibraryHeading">Library</h3><div class="v919-library-actions"><button type="button" class="text-button" data-v919-capture-open>+ Add</button><button type="button" class="text-button" data-v919-project-open="library">View all</button></div></div>
               <div id="v919LibraryPreview" class="v919-gallery"></div>
             </section>
@@ -1426,6 +1426,7 @@ document.addEventListener('click',(e)=>{
     const duplicate=state.categories.find(c=>c.toLocaleLowerCase()===cleaned.toLocaleLowerCase()&&c!==old);
     if(duplicate){alert('That category already exists.');return;}
     state.categories=state.categories.map(c=>c===old?cleaned:c);
+    window.blueprintAreas?.moveAppearance(old,cleaned);
     for(const g of state.goals)if(g.category===old)g.category=cleaned;
     for(const type of ['tasks','habits','projects'])for(const item of state[type]||[])if(item.area===old)item.area=cleaned;
     if(selectedCategory===old)selectedCategory=cleaned;save();render();return;
@@ -1434,6 +1435,7 @@ document.addEventListener('click',(e)=>{
   if(remove){const cat=remove.dataset.catRemove;if(state.goals.some(g=>g.category===cat)||['tasks','habits','projects'].some(type=>state[type]?.some(item=>item.area===cat))){alert('Move the items out of this Area first.');return;}
     if(!confirm('Delete category "'+cat+'"?'))return;
     state.categories=state.categories.filter(c=>c!==cat);if(!state.categories.length)state.categories=['Personal'];
+    window.blueprintAreas?.moveAppearance(cat,null);
     if(selectedCategory===cat)selectedCategory='All';save();render();return;
   }
   const convert=e.target.closest('[data-action-to-task]');if(convert){e.preventDefault();const goal=state.goals.find(g=>String(g.id)===convert.dataset.actionToTask),index=goal?.actions.findIndex(a=>String(a.id)===convert.dataset.actionId)??-1,action=index>=0?goal.actions[index]:null;if(goal&&action){const exists=state.tasks.some(t=>String(t.goalId)===String(goal.id)&&String(t.actionId||'')===String(action.id));if(exists){alert('A task is already linked to this action.');return;}const project=state.projects.find(p=>String(p.id)===String(goal.projectId||''));

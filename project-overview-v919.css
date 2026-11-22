@@ -10,6 +10,15 @@
 .v919-project-grid .card-heading h3{font:normal 23px/1.2 Georgia,serif;color:var(--ink);margin:0}
 .v919-project-grid .card-heading .text-button{white-space:nowrap;font-size:12px}
 .v919-project-grid .v919-library-card{grid-column:1/-1}
+/* When Notes and To-Do are separated, each gets its own complete row.
+   Consecutive summary cards can share a row without changing reading order. */
+.v919-project-grid.bp-project-custom-order > .v919-summary-card{
+  grid-column:1/-1;
+}
+.v919-project-grid.bp-project-custom-order > .v919-summary-card:has(+ .v919-summary-card),
+.v919-project-grid.bp-project-custom-order > .v919-summary-card + .v919-summary-card{
+  grid-column:auto;
+}
 .v919-note-preview{display:grid;align-content:start;gap:9px;min-height:100px;max-height:214px;overflow:hidden}
 .v919-note-snippet{border-left:2px solid var(--secondary);padding-left:10px;min-width:0}
 .v919-note-snippet strong{display:block;font-size:13px;margin-bottom:4px;overflow-wrap:anywhere}

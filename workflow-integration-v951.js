@@ -152,7 +152,7 @@
     const phoneHeader=document.querySelector('.app-header');
     const rail=document.querySelector('.bottom-nav');
     const railMode=matchMedia('(min-width:740px) and (min-height:600px)');
-    quickTrigger.innerHTML='<span aria-hidden="true">+</span><span class="bp-quick-label"> New</span>';
+    quickTrigger.innerHTML='<svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg><span class="bp-quick-label">New</span>';
     function mountQuick(){
       const inRail=railMode.matches;
       const destination=inRail?rail:phoneHeader;
@@ -191,9 +191,11 @@
       quick.style.width=width+'px';
       const preferred=quickTrigger.classList.contains('bp-quick-in-rail')?r.right+8:r.right-width;
       quick.style.left=Math.max(12,Math.min(preferred,innerWidth-width-12))+'px';
-      quick.style.top=Math.max(12,Math.min(r.bottom+7,innerHeight-quick.getBoundingClientRect().height-12))+'px';
+      const top=quickTrigger.classList.contains('bp-quick-in-rail')?r.top:r.bottom+7;
+      quick.style.top=Math.max(12,Math.min(top,innerHeight-quick.getBoundingClientRect().height-12))+'px';
       quick.querySelector('[data-bp-quick-kind]')?.focus({preventScroll:true});
     };
+    railMode.addEventListener?.('change',()=>hideQuick());
     quickTrigger.addEventListener('click',()=>{if(quick.hidden)showQuick();else hideQuick(true);});
     quick.addEventListener('click',event=>{
       const option=event.target.closest('[data-bp-quick-kind]');
@@ -295,11 +297,38 @@
     linked.innerHTML=goalRows.concat(habitRows).slice(0,6).join('')||
       '<span class="v951-no-links">Connect a goal or habit to keep it in this project.</span>';
   }
+  const projectBoard=document.querySelector('#projectOverview .v919-project-grid');
+  let orderedProject;
+  const projectOrder=projectBoard&&window.BlueprintCardReorder?.({
+    board:projectBoard,
+    names:['notes','todo','stats','connections','library'],
+    dataset:'bpProjectCard',
+    selector:id=>'[data-bp-project-card="'+id+'"]',
+    cardSelector:'[data-bp-project-card]',
+    classPrefix:'bp-project',
+    isActive:()=>document.getElementById('brainstorm').classList.contains('active')&&
+      !document.getElementById('projectWorkspace').hidden&&v6ProjectTab==='overview',
+    savedMessage:'Project card order saved.',
+    saveOrder(order){
+      const project=v6Project();
+      if(!project||project!==orderedProject)return false;
+      const previous=project.overviewCardOrder;
+      project.overviewCardOrder=order;
+      if(save(true))return true;
+      if(previous===undefined)delete project.overviewCardOrder;
+      else project.overviewCardOrder=previous;
+      return false;
+    }
+  });
   const previousOverview=window.v919RenderProjectOverview;
   if(typeof previousOverview==='function'){
     window.v919RenderProjectOverview=function(p){
       previousOverview(p);
       projectPulse(p);
+      if(p!==orderedProject){
+        orderedProject=p;
+        projectOrder?.sync(p.overviewCardOrder);
+      }
     };
   }
   const previousRender=render;
@@ -309,5 +338,5 @@
       window.v919RenderProjectOverview?.(v6Project());
     return result;
   };
-  if(v6ProjectTab==='overview'&&v6Project())projectPulse(v6Project());
+  if(v6ProjectTab==='overview'&&v6Project())window.v919RenderProjectOverview?.(v6Project());
 })();

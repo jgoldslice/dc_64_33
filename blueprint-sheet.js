@@ -1,7 +1,7 @@
 'use strict';
 window.BlueprintSheet = (() => {
   const drafts = new Map();
-  function open({title, message, fields = [], action = 'Save', danger = false, key = '', anchor = document.activeElement}) {
+  function open({title, message, fields = [], content, action = 'Save', danger = false, key = '', anchor = document.activeElement}) {
     if (document.querySelector('#bpSheet')) return Promise.resolve(null);
     const dialog = document.createElement('dialog');
     dialog.id = 'bpSheet';
@@ -30,6 +30,7 @@ window.BlueprintSheet = (() => {
       form.append(row);
       return input;
     });
+    if (content) form.append(content);
     const footer = document.createElement('footer');
     const cancel = document.createElement('button');
     cancel.type = 'button';
@@ -72,7 +73,7 @@ window.BlueprintSheet = (() => {
       place();
       window.addEventListener('resize', place);
       dialog.addEventListener('close', () => window.removeEventListener('resize', place), {once:true});
-      (inputs[0] || cancel).focus({preventScroll:true});
+      (inputs[0] || content?.querySelector('[aria-pressed="true"]') || cancel).focus({preventScroll:true});
       window.dispatchEvent(new Event('blueprint:sheet-change'));
     });
   }
