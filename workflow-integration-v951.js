@@ -146,6 +146,27 @@
   // creating competing task/goal/habit/event entry paths or storage models.
   const quickTrigger=document.getElementById('bpQuickAdd');
   if(quickTrigger){
+    // The iPad uses a sidebar and deliberately hides .app-header; iPhones
+    // retain the header. Reparent one actual button rather than floating
+    // another control over existing Add Task/Habit actions.
+    const phoneHeader=document.querySelector('.app-header');
+    const rail=document.querySelector('.bottom-nav');
+    const railMode=matchMedia('(min-width:740px) and (min-height:600px)');
+    quickTrigger.innerHTML='<span aria-hidden="true">+</span><span class="bp-quick-label"> New</span>';
+    function mountQuick(){
+      const inRail=railMode.matches;
+      const destination=inRail?rail:phoneHeader;
+      if(!destination)return;
+      if(inRail){
+        const footer=rail.querySelector('.canvas-ipad-nav-footer');
+        if(footer)footer.before(quickTrigger);
+        else rail.append(quickTrigger);
+      }else destination.append(quickTrigger);
+      quickTrigger.classList.toggle('bp-quick-in-rail',inRail);
+    }
+    mountQuick();
+    if(typeof railMode.addEventListener==='function')
+      railMode.addEventListener('change',mountQuick);
     const quick=document.createElement('div');
     quick.id='bpQuickAddMenu';quick.className='bp-quick-menu';
     quick.setAttribute('role','dialog');
@@ -168,7 +189,8 @@
       quickTrigger.setAttribute('aria-expanded','true');
       const r=quickTrigger.getBoundingClientRect(),width=Math.min(240,innerWidth-24);
       quick.style.width=width+'px';
-      quick.style.left=Math.max(12,Math.min(r.right-width,innerWidth-width-12))+'px';
+      const preferred=quickTrigger.classList.contains('bp-quick-in-rail')?r.right+8:r.right-width;
+      quick.style.left=Math.max(12,Math.min(preferred,innerWidth-width-12))+'px';
       quick.style.top=Math.max(12,Math.min(r.bottom+7,innerHeight-quick.getBoundingClientRect().height-12))+'px';
       quick.querySelector('[data-bp-quick-kind]')?.focus({preventScroll:true});
     };
