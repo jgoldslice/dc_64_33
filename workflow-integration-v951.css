@@ -10,7 +10,8 @@
 .bp-task-star{font-size:22px;min-width:34px;padding:4px}
 .bp-task-star[aria-pressed=true]{color:var(--secondary-ui)}
 .bp-task-due{font-size:11px;max-width:98px;min-width:59px;padding:3px 4px;text-align:center;border:1px solid var(--line);background:var(--wash);line-height:1.25}
-.bp-task-swipe-actions{position:absolute;inset:0 0 0 auto;display:flex;justify-content:flex-end;align-items:stretch;width:112px;z-index:1}
+.bp-task-swipe-actions{position:absolute;inset:0 0 0 auto;display:none;justify-content:flex-end;align-items:stretch;width:112px;z-index:3}
+.bp-task-row.bp-task-revealed .bp-task-swipe-actions{display:flex;pointer-events:auto}
 .bp-task-swipe-actions button{width:56px;min-width:56px;border:0;color:var(--ink);background:var(--wash);font-size:11px;padding:4px}
 .bp-task-swipe-actions button:first-child{color:var(--surface);background:var(--primary-ui)}
 .bp-task-row.bp-task-revealed .bp-task-main{transform:translate3d(-112px,0,0)}
