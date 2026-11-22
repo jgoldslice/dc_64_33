@@ -1486,7 +1486,7 @@ function v6Normalize(){
       migrated=true;
     }
   }
-  if(migrated)save();
+  if(migrated){save();render('tasks');}
 }
 function v6OpenProject(id){
   const project=state.projects.find(p=>String(p.id)===String(id));
