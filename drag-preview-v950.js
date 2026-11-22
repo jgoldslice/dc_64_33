@@ -19,6 +19,10 @@ window.BlueprintDragPreview=Object.freeze({
         if(prop==='animation'||prop.startsWith('transition'))continue;
         to.style.setProperty(prop,style.getPropertyValue(prop));
       }
+      // The drag copy is presentation only; delegated actions and test
+      // selectors must never mistake it for a real Today/Library record.
+      for(const attr of [...to.attributes])
+        if(attr.name.startsWith('data-'))to.removeAttribute(attr.name);
       to.removeAttribute('id');
       to.removeAttribute('aria-live');
       to.removeAttribute('aria-describedby');
