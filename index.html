@@ -1421,7 +1421,15 @@ document.addEventListener('click',(e)=>{
     state.categories=state.categories.filter(c=>c!==cat);if(!state.categories.length)state.categories=['Personal'];
     if(selectedCategory===cat)selectedCategory='All';save();render();return;
   }
-  const convert=e.target.closest('[data-action-to-task]');if(convert){e.preventDefault();const goal=state.goals.find(g=>String(g.id)===convert.dataset.actionToTask),index=goal?.actions.findIndex(a=>String(a.id)===convert.dataset.actionId)??-1,action=index>=0?goal.actions[index]:null;if(goal&&action){const exists=state.tasks.some(t=>String(t.goalId)===String(goal.id)&&String(t.actionId||'')===String(action.id));if(exists){alert('A task is already linked to this action.');return;}state.tasks.push({id:uid(),title:action.title,date:'',dueDate:'',scheduledDate:'',scheduledTime:'',goalId:String(goal.id),actionIndex:index,actionId:action.id,priority:false,priorityRank:0,done:!!action.done});save();render();planTab('tasks');}return;}
+  const convert=e.target.closest('[data-action-to-task]');if(convert){e.preventDefault();const goal=state.goals.find(g=>String(g.id)===convert.dataset.actionToTask),index=goal?.actions.findIndex(a=>String(a.id)===convert.dataset.actionId)??-1,action=index>=0?goal.actions[index]:null;if(goal&&action){const exists=state.tasks.some(t=>String(t.goalId)===String(goal.id)&&String(t.actionId||'')===String(action.id));if(exists){alert('A task is already linked to this action.');return;}const project=state.projects.find(p=>String(p.id)===String(goal.projectId||''));
+    const newTask={id:uid(),title:action.title,date:'',dueDate:'',scheduledDate:'',scheduledTime:'',
+      goalId:String(goal.id),actionIndex:index,actionId:action.id,priority:false,priorityRank:0,done:!!action.done,
+      projectId:project?.id||'',projectActionId:'',area:goal.category};
+    if(project){
+      const linked={id:v6Id(),title:newTask.title,taskId:newTask.id,done:newTask.done,status:newTask.done?'done':'todo'};
+      project.actions.push(linked);newTask.projectActionId=linked.id;
+    }
+    state.tasks.push(newTask);save();render();planTab('tasks');}return;}
   const habitConvert=e.target.closest('[data-action-to-habit]');
   if(habitConvert){
     e.preventDefault();
@@ -1430,7 +1438,8 @@ document.addEventListener('click',(e)=>{
     if(!g||!a)return;
     let h=state.habits.find(h=>String(h.goalId)===String(g.id)&&String(h.actionId)===String(a.id));
     if(!h){
-      h={id:uid(),title:a.title,days:{},schedule:[0,1,2,3,4,5,6],goalId:String(g.id),actionId:String(a.id)};
+      h={id:uid(),title:a.title,days:{},schedule:[0,1,2,3,4,5,6],goalId:String(g.id),actionId:String(a.id),
+        projectId:g.projectId||'',area:g.category,createdOn:localToday()};
       state.habits.push(h);save();
     }
     render();planTab('habits');openModal('habit',h.id);return;
