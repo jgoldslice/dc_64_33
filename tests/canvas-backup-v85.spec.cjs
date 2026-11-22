@@ -285,6 +285,33 @@ test('native archive round trip stages fresh drawings and rejects corrupt ink be
   expect(pageRecord.strokes).toEqual(archive.state.projects[0].notePages[0].strokes);
 });
 
+test('a restored project without draft cannot inherit an older local draft with the same ID',async({page})=>{
+  await seed(page);
+  const archive=await exportData(page);
+  archive.attachments=archive.attachments.filter(item=>item.key!=='v6-draft-p-backup-b');
+  await page.evaluate(async()=>{
+    await v6Blob('put','v6-draft-p-backup-b',new Blob(['abandoned local draft']));
+    state.projects[1].title='Old local version';
+    if(!save(true))throw Error('Could not save previous local project');
+  });
+  page.on('dialog',dialog=>dialog.accept());
+  await page.evaluate(data=>v74ImportBackup(new Blob([JSON.stringify(data)])),archive);
+  const result=await page.evaluate(async()=>{
+    const p=state.projects.find(p=>p.id==='p-backup-b');
+    return {
+      title:p.title,
+      importedDraftPresent:!!(await v6Blob('get',v6SketchDraftKey(p))),
+      oldDraftKeptForRecovery:await (await v6Blob('get','v6-draft-p-backup-b')).text()
+    };
+  });
+  expect(result).toEqual({
+    title:'Second Project',importedDraftPresent:false,
+    oldDraftKeptForRecovery:'abandoned local draft'
+  });
+  const reexport=await exportData(page);
+  expect(reexport.attachments.some(item=>item.key==='v6-draft-p-backup-b')).toBe(false);
+});
+
 test('reloading while a restored draft is staged keeps the old planner and draft together',async({page})=>{
   await seed(page);
   const archive=await exportData(page);
