@@ -84,17 +84,18 @@ test('Today reads and checks Tasks while Plan handles priority, date, and editin
   expect(await page.evaluate(()=>state.tasks[0].priority)).toBe(true);
   await expect(page.locator('#v77TodayPriorities')).toContainText('Design reactor');
   await expect(page.locator('#v77TodayPriorities :is([data-bp-task-star],[data-bp-task-date],[data-edit-task])')).toHaveCount(0);
-  await row.locator('[data-bp-task-date]').click();
-  await expect(page.locator('#bpTaskDates')).toBeVisible();
-  await page.locator('[data-bp-plan-input]').fill('2026-12-09');
-  await page.locator('[data-bp-time-input]').fill('14:15');
-  await page.locator('[data-bp-plan-apply]').click();
-  expect(await page.evaluate(()=>({count:state.tasks.length,day:state.tasks[0].scheduledDate,time:state.tasks[0].scheduledTime})))
-    .toEqual({count:1,day:'2026-12-09',time:'14:15'});
-  await row.locator('[data-bp-task-date]').click();
-  await page.locator('[data-bp-date-preset="tomorrow"]').click();
+  await expect(row.locator('[data-bp-task-date]')).toHaveCount(0);
+  await expect(page.locator('#bpTaskDates')).toHaveCount(0);
+  await row.locator('[data-bp-edit-task]').click();
+  await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
   const tomorrow=await page.evaluate(()=>iso(plusDays(new Date(),1)));
-  expect(await page.evaluate(()=>state.tasks[0].dueDate)).toBe(tomorrow);
+  await page.locator('#modalForm input[name="dueDate"]').fill(tomorrow);
+  await page.locator('#modalForm input[name="scheduledDate"]').fill('2026-12-09');
+  await page.locator('#modalForm input[name="scheduledTime"]').fill('14:15');
+  await page.locator('#modalForm button[type="submit"]').click();
+  expect(await page.evaluate(()=>({count:state.tasks.length,day:state.tasks[0].scheduledDate,
+    time:state.tasks[0].scheduledTime,due:state.tasks[0].dueDate})))
+    .toEqual({count:1,day:'2026-12-09',time:'14:15',due:tomorrow});
   await page.locator('#allTasks [data-edit-task="unified-task"]').click();
   await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
   await expect(page.locator('#modalForm input[name="scheduledDate"]')).toHaveValue('2026-12-09');
