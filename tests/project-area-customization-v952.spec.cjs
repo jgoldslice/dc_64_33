@@ -135,11 +135,14 @@ test('New aligns with iPad navigation in both sidebar sizes and docks in the iPh
   await page.goto('/');
   const quick=page.locator('#bpQuickAdd');
   const tab=page.locator('.bottom-nav [data-tab="today"]');
+  // Sidebar collapse animates width; compare both buttons after layout settles.
+  // This still fails if New and Today remain misaligned after the transition.
   const compare=async()=>{
-    const a=await quick.boundingBox(),b=await tab.boundingBox();
-    expect(a.x).toBeCloseTo(b.x,0);
-    expect(a.width).toBeCloseTo(b.width,0);
-    expect(a.height).toBeCloseTo(b.height,0);
+    await expect.poll(async()=>{
+      const a=await quick.boundingBox(),b=await tab.boundingBox();
+      if(!a||!b)return Infinity;
+      return Math.max(Math.abs(a.x-b.x),Math.abs(a.width-b.width),Math.abs(a.height-b.height));
+    },{timeout:3000}).toBeLessThanOrEqual(0.5);
   };
   await compare();
   await expect(quick.locator('.bp-quick-label')).toBeVisible();
