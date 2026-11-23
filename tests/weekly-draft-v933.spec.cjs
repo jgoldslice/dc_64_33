@@ -9,7 +9,7 @@ async function openSchedule(page){
   await page.locator('[data-tab="myplan"]').click();
   await page.locator('[data-wb-launch]').click();
   await page.locator('[data-wb-step="2"]').click();
-  await page.locator('.wb-calendar [data-wb-select-day]').first().click();
+  await page.locator('.wb-days-strip [data-wb-select-day]').first().click();
   await expect(page.locator('#wbEventForm input[name="title"]')).toBeVisible();
 }
 
@@ -229,6 +229,7 @@ test('weekly tasks inherit the goal Area and legacy drafts still apply as unassi
   await page.locator('[data-wb-goal-details="area-goal"] summary').click();
   await page.locator('[data-wb-goal-field="category"]').selectOption('School');
   await page.locator('[data-wb-step="3"]').click();
+  await page.locator('[data-wb-task-toggle]').click();
   await expect(area).toHaveValue('School');
   await page.locator('[data-wb-close]').click();
   await page.evaluate(()=>{
@@ -241,6 +242,7 @@ test('weekly tasks inherit the goal Area and legacy drafts still apply as unassi
   await page.reload();
   await page.locator('[data-tab="myplan"]').click();
   await page.locator('[data-wb-launch]').click();
+  await page.locator('[data-wb-task-toggle]').click();
   await expect(area).toHaveValue('School');
   await page.locator('[data-wb-step="4"]').click();
   await expect(page.locator('#wbMain')).toContainText(/Write abstract.*School/);
