@@ -3,7 +3,7 @@ const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium'});
 
-test('Task stars, dates, Edit and optional Delete stay in columns across iPhone and iPad widths',async({page})=>{
+test('Plan Task stars, Edit and optional Delete align without Set Date on phone and iPad',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[
@@ -17,31 +17,30 @@ test('Task stars, dates, Edit and optional Delete stay in columns across iPhone 
   });
   await page.locator('[data-tab="myplan"]').click();
   await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
-
   const rows=page.locator('#allTasks [data-bp-task-row]');
   await expect(rows).toHaveCount(4);
   await expect(page.locator('#allTasks [data-bp-task-row="align-ranked"] .rank-badge')).toBeVisible();
   await expect(page.locator('#allTasks [data-bp-task-row="align-done"] .task-row-actions button')).toHaveText(['Edit','Delete']);
   await expect(page.locator('#allTasks [data-bp-task-row="align-open-short"] .task-row-actions button')).toHaveText(['Edit']);
+  await expect(rows.locator('[data-bp-task-date]')).toHaveCount(0);
+  await expect(page.locator('#bpTaskDates')).toHaveCount(0);
 
   for(const width of [320,375,390,620,768,1024]){
     await page.setViewportSize({width,height:850});
     const geometry=await rows.evaluateAll(list=>list.map(row=>{
       const rect=sel=>{const r=row.querySelector(sel).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
       return {row:row.getBoundingClientRect().toJSON(),
-        star:rect('.bp-task-star'),date:rect('.bp-task-due'),
-        edit:rect('[data-bp-edit-task]'),actions:rect('.task-row-actions')};
+        star:rect('.bp-task-star'),edit:rect('[data-bp-edit-task]'),actions:rect('.task-row-actions')};
     }));
-    for(const field of ['star','date','edit']){
+    for(const field of ['star','edit']){
       const left=geometry.map(g=>g[field].left);
       expect(Math.max(...left)-Math.min(...left),width+' '+field+' left alignment').toBeLessThanOrEqual(2);
     }
     for(const g of geometry){
-      expect(g.date.width,width+' deadline button width').toBeGreaterThanOrEqual(88);
       expect(g.edit.height,width+' Edit touch height').toBeGreaterThanOrEqual(44);
-      expect(g.date.right,width+' deadline vs actions').toBeLessThanOrEqual(g.actions.left+1);
       expect(g.actions.right,width+' actions vs row edge').toBeLessThanOrEqual(g.row.right+1);
       expect(g.star.left,width+' star vs row edge').toBeGreaterThanOrEqual(g.row.left-1);
+      expect(g.star.right,width+' star vs action').toBeLessThanOrEqual(g.actions.left+1);
       expect(g.edit.right,width+' Edit within action area').toBeLessThanOrEqual(g.actions.right+1);
     }
     const over=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
@@ -49,26 +48,39 @@ test('Task stars, dates, Edit and optional Delete stay in columns across iPhone 
   }
 });
 
-test('Aligned Task date, star, Edit and Delete remain interactive',async({page})=>{
+test('Task editor in Plan still updates deadlines and scheduling; Today is clean',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
+    const today=localToday();
     state.tasks=[
-      {id:'alignment-interactive',title:'Inspect columns',done:false,priority:false,priorityRank:0,dueDate:''},
+      {id:'alignment-interactive',title:'Inspect columns',done:false,priority:false,priorityRank:0,dueDate:today,date:today},
       {id:'alignment-completed',title:'Finished report',done:true,priority:false,priorityRank:0,dueDate:'2026-11-20'}
     ];
-    save(true);render();
+    if(!save(true))throw Error('Fixture not persisted');
+    render();
   });
+  const today=page.locator('#v917TodayTasks [data-bp-task-row="alignment-interactive"]');
+  await expect(today).toBeVisible();
+  await expect(today.locator('[data-bp-task-date]')).toHaveCount(0);
+  await expect(today.locator('[data-bp-swipe-done]')).toHaveCount(0);
+  await expect(today.locator('[data-bp-swipe-tomorrow]')).toHaveCount(1);
   await page.locator('[data-tab="myplan"]').click();
   await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
   const row=page.locator('#allTasks [data-bp-task-row="alignment-interactive"]');
   await row.locator('[data-bp-task-star]').click();
   await expect(row.locator('[data-bp-task-star]')).toHaveAttribute('aria-pressed','true');
-  await row.locator('[data-bp-task-date]').click();
-  await expect(page.locator('#bpTaskDates')).toBeVisible();
-  await page.locator('#bpTaskDates [data-bp-date-preset="tomorrow"]').click();
   await row.locator('[data-bp-edit-task]').click();
   await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
-  await page.locator('#cancelModal').click();
+  await page.locator('#modalForm input[name="dueDate"]').fill('2026-12-05');
+  await page.locator('#modalForm input[name="scheduledDate"]').fill('2026-12-06');
+  await page.locator('#modalForm input[name="scheduledTime"]').fill('09:30');
+  await page.locator('#modalForm button[type="submit"]').click();
+  await expect(page.locator('#modalBack')).not.toHaveClass(/open/);
+  const result=await page.evaluate(()=>{
+    const t=state.tasks.find(t=>t.id==='alignment-interactive');
+    return {dueDate:t.dueDate,scheduledDate:t.scheduledDate,scheduledTime:t.scheduledTime};
+  });
+  expect(result).toEqual({dueDate:'2026-12-05',scheduledDate:'2026-12-06',scheduledTime:'09:30'});
   const done=page.locator('#allTasks [data-bp-task-row="alignment-completed"]');
   await expect(done.locator('[data-delete-completed-task]')).toBeVisible();
 });
