@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-22 — v9.58 Today/Week Task card simplification (PR #90; device QA pending)
+
+**Owner-reported iPad bug and clarified request:** In Week → Top Priorities, a swiped row showed both Done and Tomorrow, squashing the task name. The Week sidebar card is approximately 320px wide even on a large iPad, but Task editing controls were sized using the full viewport. The owner requested: remove swipe Done; keep Tomorrow; remove Set date, star editing, Edit, and + Add from Week Top Priorities, and apply the same simplified read/check behavior to Today’s Tasks and Top Priorities. Plan remains the Task creation and editing workspace. The checkbox remains how users mark these Tasks completed.
+
+- **Implemented on feature branch** `fix/compact-week-priority-swipe-v958`: the shared task renderer now has a compact read/check variant for Week Top Priorities and both Today task cards, with a checkbox, long wrapping Task name, static Roman priority badge, read-only due-date caption when a deadline exists, and optional Area/Project context. These cards have no inline title editor, star action, deadline picker, Edit/Delete actions, or + Add. Plan → Tasks keeps the original full Task controls, and Today’s View all links to Plan.
+- **Swipe behavior:** all Task rows now have only the 96px **Tomorrow** action; it sets deadline to the next local calendar day without completing the Task. The checkbox remains a separate completion path. This replaces the old 112px two-action Done/Tomorrow reveal and does not alter Task or backup schema.
+- **Regression coverage added/updated:** verify Week and Today read/check controls, Plan editing remains accessible, 320/375/390/768/1024/1366px Week/Today task geometry, check-to-complete persistence, Tomorrow swipe deadline and linked Project completion, plus existing Task workflows. Tests not yet completed at this status writing. Device check required for iPad narrow sidebar, finger-swiping, Week task checkbox, and screen-reader affordances. **Deployed:** no; GitHub merge alone does not update the Capacitor/Xcode installation.
+- After merge, stage the reviewed web bundle to the existing wrapper with `scripts/stage-ios-web.py`, use `npx cap copy ios` and the existing App scheme to install **over** the installed iOS app without uninstalling or clearing user data.
+
 ## 2026-11-22 — v9.57 Completed Task one-tap deletion (merged; targeted browser tests passed; device QA pending)
 
 **Owner-reported iPad friction:** Plan → Tasks showed a native confirmation popup after tapping Delete on an already-checked task.

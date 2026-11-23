@@ -65,7 +65,7 @@ test('open Event form does not lose unsaved edits when the week changes',async({
   expect(output.time).toBe('14:30');
 });
 
-test('Today Schedule adds an event directly and Tasks opens the task form',async({page})=>{
+test('Today Schedule adds an event directly while Plan owns Task creation',async({page})=>{
   await page.goto(base);
   const schedule=page.locator('#today .v917-schedule');
   await schedule.getByRole('button',{name:'Add event',exact:true}).click();
@@ -78,7 +78,10 @@ test('Today Schedule adds an event directly and Tasks opens the task form',async
   await page.reload();
   await expect(schedule.getByText('Reactor lab meeting')).toBeVisible();
 
-  await page.locator('#today .v917-tasks').getByRole('button',{name:'+ Add',exact:true}).click();
+  await expect(page.locator('#today .v917-tasks [data-open="task"]')).toHaveCount(0);
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
+  await page.locator('#tasks > .plan-toolbar [data-open="task"]').click();
   const taskForm=page.getByRole('dialog',{name:'Add Task',exact:true});
   await expect(taskForm.getByLabel('Deadline')).toBeVisible();
 });

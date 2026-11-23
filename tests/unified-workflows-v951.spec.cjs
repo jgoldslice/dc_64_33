@@ -65,7 +65,7 @@ test('Project quick creation reuses Task, Habit and Goal forms with inherited Pr
   await expect(page.locator('#allTasks')).toContainText('Prepare vials');
 });
 
-test('Today Task title edits, star prioritizes, and quick date picker sets schedule without duplicate Task',async({page})=>{
+test('Today reads and checks Tasks while Plan handles priority, date, and editing',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[{id:'unified-task',title:'Design reactor',done:false,dueDate:localToday(),
@@ -74,11 +74,16 @@ test('Today Task title edits, star prioritizes, and quick date picker sets sched
     if(!save(true))throw Error('Could not save test task');
     render();
   });
-  const row=page.locator('#v917TodayTasks [data-bp-task-row="unified-task"]');
-  await expect(row).toContainText('Design reactor');
+  const today=page.locator('#v917TodayTasks [data-bp-task-row="unified-task"]');
+  await expect(today).toContainText('Design reactor');
+  await expect(today.locator('[data-bp-task-star],[data-bp-task-date],[data-edit-task],[data-bp-edit-task]')).toHaveCount(0);
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
+  const row=page.locator('#allTasks [data-bp-task-row="unified-task"]');
   await row.locator('[data-bp-task-star]').click();
   expect(await page.evaluate(()=>state.tasks[0].priority)).toBe(true);
   await expect(page.locator('#v77TodayPriorities')).toContainText('Design reactor');
+  await expect(page.locator('#v77TodayPriorities :is([data-bp-task-star],[data-bp-task-date],[data-edit-task])')).toHaveCount(0);
   await row.locator('[data-bp-task-date]').click();
   await expect(page.locator('#bpTaskDates')).toBeVisible();
   await page.locator('[data-bp-plan-input]').fill('2026-12-09');
@@ -90,8 +95,6 @@ test('Today Task title edits, star prioritizes, and quick date picker sets sched
   await page.locator('[data-bp-date-preset="tomorrow"]').click();
   const tomorrow=await page.evaluate(()=>iso(plusDays(new Date(),1)));
   expect(await page.evaluate(()=>state.tasks[0].dueDate)).toBe(tomorrow);
-  await page.locator('[data-tab="myplan"]').click();
-  await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
   await page.locator('#allTasks [data-edit-task="unified-task"]').click();
   await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
   await expect(page.locator('#modalForm input[name="scheduledDate"]')).toHaveValue('2026-12-09');
@@ -117,31 +120,46 @@ test('Calendar distinguishes scheduled Tasks from Events and opens the Task edit
   await expect(page.locator('#v87EventBack')).toBeHidden();
 });
 
-test('Task swipe reveals Done and Tomorrow, and linked Project action completion persists',async({page})=>{
+test('Week swipe exposes only Tomorrow and checkbox completion persists with its Project',async({page})=>{
   await newProject(page);
   await page.locator('[data-bp-project-add="task"]').click();
   await setTitle(page,'Inspect catalyst');
   await page.locator('#modalForm button[type="submit"]').click();
   const task=await page.evaluate(()=>state.tasks.find(t=>t.title==='Inspect catalyst')?.id);
   await page.evaluate(id=>{
-    const t=state.tasks.find(t=>String(t.id)===String(id));t.dueDate=localToday();t.date=t.dueDate;
-    save(true);render();
+    const t=state.tasks.find(t=>String(t.id)===String(id));
+    t.dueDate=localToday();t.date=t.dueDate;t.priority=true;t.priorityRank=1;
+    if(!save(true))throw Error('Unable to prepare week priority');
+    render();
   },task);
-  await page.locator('[data-tab="today"]').click();
-  const row=page.locator('#v917TodayTasks [data-bp-task-row="'+task+'"]');
+  await page.locator('[data-tab="week"]').click();
+  const row=page.locator('#priorities [data-bp-task-row="'+task+'"]');
   await expect(row).toBeVisible();
-  await row.evaluate(async source=>{
-    const rect=source.getBoundingClientRect(),x=rect.left+rect.width*.62,y=rect.top+rect.height*.5;
+  await expect(row.locator('[data-bp-swipe-done]')).toHaveCount(0);
+  await expect(row.locator('[data-bp-swipe-tomorrow]')).toHaveCount(1);
+  await row.evaluate(source=>{
+    const rect=source.getBoundingClientRect(),x=rect.left+rect.width*.72,y=rect.top+rect.height*.5;
     const touch=(xx,yy)=>new Touch({identifier:42,target:source,clientX:xx,clientY:yy});
     const evt=(type,xx,yy)=>new TouchEvent(type,{bubbles:true,cancelable:true,
       touches:type==='touchend'?[]:[touch(xx,yy)],
       targetTouches:type==='touchend'?[]:[touch(xx,yy)],changedTouches:[touch(xx,yy)]});
     source.dispatchEvent(evt('touchstart',x,y));
-    source.dispatchEvent(evt('touchmove',x-115,y+1));
-    source.dispatchEvent(evt('touchend',x-115,y+1));
+    source.dispatchEvent(evt('touchmove',x-118,y+1));
+    source.dispatchEvent(evt('touchend',x-118,y+1));
   });
   await expect(row).toHaveClass(/bp-task-revealed/);
-  await row.locator('[data-bp-swipe-done]').click();
+  await row.locator('[data-bp-swipe-tomorrow]').click();
+  const tomorrow=await page.evaluate(()=>iso(plusDays(new Date(),1)));
+  expect(await page.evaluate(id=>{
+    const t=state.tasks.find(t=>String(t.id)===String(id));
+    const disk=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const stored=disk.tasks.find(x=>String(x.id)===String(id));
+    return {dueDate:t.dueDate,date:t.date,done:t.done,priority:t.priority,storedDate:stored.dueDate};
+  },task)).toEqual({dueDate:tomorrow,date:tomorrow,done:false,priority:true,storedDate:tomorrow});
+  // Completion removes a ranked Task from this list; click does not require
+  // its discarded DOM checkbox to remain checked after rerender.
+  await row.locator('[data-task-check]').click();
+  await expect(row).toHaveCount(0);
   const changed=await page.evaluate(id=>{
     const t=state.tasks.find(t=>String(t.id)===String(id));
     const p=state.projects.find(p=>String(p.id)===String(t.projectId));
@@ -178,7 +196,7 @@ test('Project removal detaches but does not delete linked Tasks, Habits, or Goal
   expect(result.habit.area).toBe('Research');
 });
 
-test('Quick priority save failure restores the prior task and on-screen star',async({page})=>{
+test('Plan priority save failure restores the prior task and on-screen star',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[{id:'save-guard',title:'Safe Task',done:false,dueDate:localToday(),priority:false,priorityRank:0}];
@@ -191,9 +209,11 @@ test('Quick priority save failure restores the prior task and on-screen star',as
     window.restoreWrite=()=>Storage.prototype.setItem=original;
   });
   try{
-    await page.locator('#v917TodayTasks [data-bp-task-star="save-guard"]').click();
+    await page.locator('[data-tab="myplan"]').click();
+    await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
+    await page.locator('#allTasks [data-bp-task-star="save-guard"]').click();
     expect(await page.evaluate(()=>state.tasks[0].priority)).toBe(false);
-    await expect(page.locator('#v917TodayTasks [data-bp-task-star="save-guard"]')).toHaveAttribute('aria-pressed','false');
+    await expect(page.locator('#allTasks [data-bp-task-star="save-guard"]')).toHaveAttribute('aria-pressed','false');
   }finally{await page.evaluate(()=>window.restoreWrite());}
 });
 

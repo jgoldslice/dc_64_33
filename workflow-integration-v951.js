@@ -114,14 +114,10 @@
       const priorityRank=priority?Math.max(0,...state.tasks.filter(t=>t.priority).map(t=>t.priorityRank||0))+1:0;
       updateTask(t,{priority,priorityRank});return;
     }
-    const done=e.target.closest('[data-bp-swipe-done]');
-    if(done){
-      const t=findTask(done.dataset.bpSwipeDone);
-      if(t)updateTask(t,{done:!t.done});
-      return;
-    }
     const tomorrow=e.target.closest('[data-bp-swipe-tomorrow]');
     if(tomorrow){
+      // An explicit quick action completes the swipe. Do not swallow the next tap.
+      suppressClickUntil=0;suppressClickRow=null;
       const t=findTask(tomorrow.dataset.bpSwipeTomorrow);
       if(t)updateTask(t,{dueDate:addDays(1),date:addDays(1)});
       return;
@@ -220,7 +216,8 @@
 
   // Native-feeling horizontal reveal. Vertical gestures remain ordinary
   // scrolling; system edges and other tab navigation are unaffected.
-  let gesture=null,openedRow=null,suppressClickUntil=0;
+  const SWIPE_WIDTH=96; // One swipe action: postpone the deadline.
+  let gesture=null,openedRow=null,suppressClickUntil=0,suppressClickRow=null;
   const rowOf=target=>target instanceof Element?target.closest('[data-bp-task-row]'):null;
   function slide(row,offset){
     const main=row?.querySelector('.bp-task-main');
@@ -242,18 +239,19 @@
       gesture.horizontal=true;
     }
     gesture.dx=dx;
-    slide(gesture.row,Math.max(-112,Math.min(0,dx+(gesture.wasOpen?-112:0))));
+    slide(gesture.row,Math.max(-SWIPE_WIDTH,Math.min(0,dx+(gesture.wasOpen?-SWIPE_WIDTH:0))));
     if(e.cancelable)e.preventDefault();
   }
   function finish(){
     if(!gesture)return;
     const g=gesture;gesture=null;
     if(!g.horizontal){return;}
-    const reveal=g.wasOpen?g.dx<52:g.dx<-52;
+    const reveal=g.wasOpen?g.dx<48:g.dx<-48;
     if(reveal){
-      g.row.classList.add('bp-task-revealed');slide(g.row,-112);openedRow=g.row;
+      g.row.classList.add('bp-task-revealed');slide(g.row,-SWIPE_WIDTH);openedRow=g.row;
     }else closeRow(g.row);
-    suppressClickUntil=Date.now()+400;
+    // Only discard the touch-generated click on the row that was swiped.
+    suppressClickUntil=Date.now()+400;suppressClickRow=g.row;
   }
   document.addEventListener('touchstart',start,{passive:true});
   document.addEventListener('touchmove',moving,{passive:false});
@@ -263,7 +261,9 @@
     gesture=null;
   },{passive:true});
   document.addEventListener('click',e=>{
-    if(Date.now()>suppressClickUntil||!rowOf(e.target)||e.target.closest('[data-bp-swipe-done],[data-bp-swipe-tomorrow]'))return;
+    if(Date.now()>suppressClickUntil||rowOf(e.target)!==suppressClickRow||
+       e.target.closest('[data-bp-swipe-tomorrow]'))return;
+    suppressClickUntil=0;suppressClickRow=null;
     e.preventDefault();e.stopImmediatePropagation();
   },true);
 

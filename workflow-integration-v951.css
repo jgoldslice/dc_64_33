@@ -13,11 +13,10 @@
 .bp-task-star{grid-column:3;grid-row:1;justify-self:center;font-size:22px;width:44px;min-width:44px;padding:4px}
 .bp-task-star[aria-pressed=true]{color:var(--secondary-ui)}
 .bp-task-due{grid-column:4;grid-row:1;width:98px;min-width:98px;max-width:98px;font-size:11px;padding:3px 4px;text-align:center;border:1px solid var(--line);background:var(--wash);line-height:1.25;white-space:nowrap;font-variant-numeric:tabular-nums}
-.bp-task-swipe-actions{position:absolute;inset:0 0 0 auto;display:none;justify-content:flex-end;align-items:stretch;width:112px;z-index:3}
+.bp-task-swipe-actions{position:absolute;inset:0 0 0 auto;display:none;justify-content:flex-end;align-items:stretch;width:96px;z-index:3}
 .bp-task-row.bp-task-revealed .bp-task-swipe-actions{display:flex;pointer-events:auto}
-.bp-task-swipe-actions button{width:56px;min-width:56px;border:0;color:var(--ink);background:var(--wash);font-size:11px;padding:4px}
-.bp-task-swipe-actions button:first-child{color:var(--surface);background:var(--primary-ui)}
-.bp-task-row.bp-task-revealed .bp-task-main{transform:translate3d(-112px,0,0)}
+.bp-task-swipe-actions button{width:96px;min-width:96px;min-height:44px;border:0;color:var(--surface);background:var(--primary-ui);font-size:12px;font-weight:650;padding:6px;white-space:nowrap}
+.bp-task-row.bp-task-revealed .bp-task-main{transform:translate3d(-96px,0,0)}
 .bp-task-row.done .bp-task-title{text-decoration:line-through;color:var(--muted)}
 .bp-task-row .delete-completed-task{font-size:10px;flex:none;min-height:35px}
 .bp-task-date-menu{position:fixed;z-index:22005;display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:14px;box-shadow:0 12px 36px #0003;color:var(--ink);max-height:calc(100dvh - 24px);overflow:auto}
@@ -118,4 +117,23 @@ body.v928-notes-focus #bpQuickAdd{display:none!important}
 /* Narrow task rows: actions stay in the same columns on each card. */
 @media(max-width:620px){
   .bp-task-row .task-row-actions{grid-column:5;grid-row:2;width:88px;grid-template-columns:44px 44px;margin:0}
+}
+
+/* Today and Week show read/check-only Tasks. Unlike Plan task rows,
+   the compact cards must fit inside a narrow column even on an iPad. */
+.bp-task-preview-row .bp-task-main{
+  grid-template-columns:22px minmax(0,1fr);
+  column-gap:9px;row-gap:0;
+  min-width:0;align-items:center;padding:7px 2px
+}
+.bp-task-preview-row .bp-task-detail{
+  grid-column:2;grid-row:1;min-width:0
+}
+.bp-task-preview-row .bp-task-title-line{align-items:baseline;gap:7px}
+.bp-task-preview-row .bp-task-title{
+  min-width:0;overflow-wrap:anywhere;line-height:1.45;padding:1px 0
+}
+.bp-task-preview-row .bp-task-preview-due{
+  display:block;font-size:10px;line-height:1.4;color:var(--muted);
+  font-variant-numeric:tabular-nums
 }
