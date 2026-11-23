@@ -8,6 +8,7 @@
   const UNDO_KEY='blueprint-weekly-v918-undo';
   const STEPS=['Report','Goals','Schedule','Prioritize','Review'];
   const FIELDS=['tasks','habits','goals','events','ideas'];
+  const GOAL_FIELDS={title:'Name',category:'Area',motivation:'Motivation',actions:'Steps'};
   const E=id=>document.getElementById(id);
   const clone=value=>structuredClone(value);
   const dateObject=s=>new Date(String(s)+'T12:00:00');
@@ -21,7 +22,7 @@
   const read=key=>{try{return JSON.parse(localStorage.getItem(key)||'null');}catch{return null;}};
   const newDraft=(start)=>({
     version:1,weekStart:start,step:0,selectedDay:start,
-    taskDone:{},habitDays:{},carry:{},carryToCalendar:{},taskSchedule:{},goals:{},newGoals:[],
+    taskDone:{},habitDays:{},carry:{},carryToCalendar:{},taskSchedule:{},goals:{},goalBases:{},newGoals:[],
     newEvents:[],eventEdits:{},eventForm:{title:'',date:start,time:'09:00'},
     editingEvent:null,priority:null,priorityTouched:false,
     newTasks:[],taskForm:{title:'',dueDate:start,goalId:'',area:''},
@@ -124,9 +125,55 @@
     if(!draft.goals[key]){
       const existing=state.goals.find(g=>idString(g.id)===key);
       if(!existing)return null;
+      (draft.goalBases||(draft.goalBases={}))[key]=clone(Object.fromEntries(
+        Object.keys(GOAL_FIELDS).map(field=>[field,goalValue(existing,field)])));
       draft.goals[key]=clone(existing);
     }
     return draft.goals[key];
+  }
+  function goalValue(goal,field){
+    return goal[field]??(field==='actions'?[]:'');
+  }
+  const sameGoalValue=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  function goalEdits(id,update,saved){
+    const base=draft.goalBases?.[id];
+    return Object.keys(GOAL_FIELDS).flatMap(field=>{
+      const value=goalValue(update,field),current=goalValue(saved,field);
+      if(sameGoalValue(value,current))return [];
+      const tracked=base&&Object.hasOwn(base,field);
+      if(tracked&&sameGoalValue(value,goalValue(base,field)))return [];
+      return [{field,value,conflict:!tracked||!sameGoalValue(current,goalValue(base,field))}];
+    });
+  }
+  function goalConflicts(){
+    return Object.entries(draft.goals).flatMap(([id,update])=>{
+      const saved=state.goals.find(g=>idString(g.id)===id);
+      return saved?goalEdits(id,update,saved).filter(edit=>edit.conflict)
+        .map(({field,value})=>({id,title:saved.title,field,value,saved:goalValue(saved,field)})):[];
+    });
+  }
+  function describeGoalValue(field,value){
+    if(field==='actions')return value.map(step=>(step.done?'✓ ':'○ ')+(step.title||'Untitled step')).join(' · ')||'No steps';
+    return value||'Blank';
+  }
+  function unfinishedEvent(){
+    const form=draft.eventForm;
+    if(!form)return false;
+    if(!draft.editingEvent)return !!clean(form.title)||form.time!=='09:00';
+    const event=effectiveEvents().find(item=>item.wbKey===draft.editingEvent);
+    return !event||['title','date','time'].some(field=>form[field]!==(event[field]||(field==='time'?'09:00':'')));
+  }
+  function unfinishedForms(){
+    return [unfinishedEvent()&&['event',2],clean(draft.taskForm?.title)&&['task',3]].filter(Boolean);
+  }
+  function discardForm(kind){
+    if(kind==='event'){
+      draft.editingEvent=null;showEventForm=false;
+      draft.eventForm={title:'',date:draft.selectedDay,time:'09:00'};
+    }else{
+      showTaskForm=false;
+      draft.taskForm={title:'',dueDate:draft.weekStart,goalId:'',area:''};
+    }
   }
   function priorityIds(tasks=allAvailableTasks()){
     const eligible=new Set(tasks.filter(t=>!doneTask(t)).map(t=>idString(t.id)));
@@ -167,7 +214,7 @@
     }
     for(const [id,g] of Object.entries(draft.goals)){
       const old=state.goals.find(x=>idString(x.id)===id);
-      if(old&&JSON.stringify(old)!==JSON.stringify(g))n++;
+      if(old&&goalEdits(id,g,old).length)n++;
     }
     for(const [id,ed] of Object.entries(draft.eventEdits)){
       const old=state.events.find(e=>idString(e.id)===id);
@@ -192,11 +239,11 @@
   function open(fromWeek){
     returnFocus=document.activeElement;
     const targetStart=draftStart();
-    showEventForm=!!draft?.editingEvent||!!clean(draft?.eventForm?.title);
+    showEventForm=!!draft&&(!!draft.editingEvent||unfinishedEvent());
     showTaskForm=!!clean(draft?.taskForm?.title);
     if(!draft&&!draftLoadError)draft=newDraft(targetStart);
     else if(draft&&draft.weekStart!==targetStart&&!meaningfulChanges()&&!Object.keys(draft.carry).length&&
-      !clean(draft.eventForm?.title)&&!clean(draft.taskForm?.title)){
+      !unfinishedForms().length){
       // A blank, previously browsed draft must not override the intended week
       // on the next launch. Preserve the current stage, not an obsolete date.
       const step=draft.step;
@@ -420,7 +467,7 @@
     }
     const goalChanges=Object.entries(draft.goals).filter(([id,g])=>{
       const orig=state.goals.find(x=>idString(x.id)===id);
-      return orig&&JSON.stringify(orig)!==JSON.stringify(g);
+      return orig&&goalEdits(id,g,orig).length;
     }).map(([,g])=>g.title+' · '+g.actions.filter(a=>a.done).length+'/'+g.actions.length+' steps');
     const eventChanges=draft.newEvents.map(e=>'+ '+e.title+' · '+niceDate(e.date)+' '+timeText(e.time));
     for(const [id,e] of Object.entries(draft.eventEdits)){
@@ -453,6 +500,21 @@
     if(draft.priorityTouched)groups.push(['Priority order',3,priorityRows.length?priorityRows:['Clear the priority order']]);
     let markup='<h3 class="wb-section-heading">Review your weekly blueprint</h3>'+
       '<p class="wb-subtext">'+dateRange(draft.weekStart)+' · Changes go into your planner when you apply.</p>';
+    for(const [kind,stage] of unfinishedForms()){
+      markup+='<section class="wb-review-group"><h3>Unfinished '+kind+'</h3>'+
+        '<p>Finish adding it to the draft or discard the entry before applying.</p>'+
+        '<button type="button" class="wb-inline-action" data-wb-stage="'+stage+'">Finish '+kind+'</button>'+
+        '<button type="button" class="wb-inline-action" data-wb-discard-form="'+kind+'">Discard '+kind+' entry</button></section>';
+    }
+    for(const {id,title,field,value,saved} of goalConflicts()){
+      markup+='<section class="wb-review-group"><h3>'+attr(title+' · '+GOAL_FIELDS[field])+'</h3>'+
+        '<p>Saved: '+attr(describeGoalValue(field,saved))+'</p>'+
+        '<p>Draft: '+attr(describeGoalValue(field,value))+'</p>'+
+        '<button type="button" class="wb-inline-action" data-wb-goal-resolve="saved" data-wb-goal-id="'+attr(id)+
+        '" data-wb-field="'+field+'">Keep saved '+GOAL_FIELDS[field].toLowerCase()+'</button>'+
+        '<button type="button" class="wb-inline-action" data-wb-goal-resolve="draft" data-wb-goal-id="'+attr(id)+
+        '" data-wb-field="'+field+'">Use draft '+GOAL_FIELDS[field].toLowerCase()+'</button></section>';
+    }
     for(const [name,stage,items] of groups){
       markup+='<section class="wb-review-group"><div class="wb-block-title"><h3>'+attr(name)+
         ' <span class="wb-hint">('+items.length+')</span></h3><button type="button" class="wb-inline-action" data-wb-stage="'+stage+
@@ -486,19 +548,14 @@
     main.scrollTop=top;
     E('wbBackButton').disabled=draft.step===0;
     E('wbNextButton').textContent=draft.step===4?'Apply Weekly Blueprint':'Continue';
-    E('wbNextButton').disabled=draft.step===4&&!meaningfulChanges();
+    E('wbNextButton').disabled=draft.step===4&&(!meaningfulChanges()||unfinishedForms().length>0||goalConflicts().length>0);
     E('wbStatus').textContent='';
   }
   function editEvent(key){
     const e=effectiveEvents().find(e=>e.wbKey===key);
     if(!e)return;
     if(showEventForm&&draft.editingEvent===key)return;
-    const currentEdit=effectiveEvents().find(item=>item.wbKey===draft.editingEvent);
-    const pending=draft.eventForm||{};
-    const hasUnsaved=currentEdit
-      ? ['title','date','time'].some(field=>String(pending[field]||'')!==String(currentEdit[field]||(field==='time'?'09:00':'')))
-      : !!clean(pending.title);
-    if(showEventForm&&hasUnsaved&&!confirm('Discard the event changes you are editing?'))return;
+    if(showEventForm&&unfinishedEvent()&&!confirm('Discard the event changes you are editing?'))return;
     draft.editingEvent=key;
     showEventForm=true;
     draft.selectedDay=e.date;
@@ -534,8 +591,9 @@
   }
   function apply(){
     if(draftLoadError)return;
-    if(!draft||draft.step!==4||!meaningfulChanges())return;
-    const before={};for(const key of FIELDS)before[key]=clone(state[key]);
+    if(!draft||draft.step!==4||!meaningfulChanges()||unfinishedForms().length||goalConflicts().length)return;
+    const fields=[...FIELDS];
+    const before={};for(const key of fields)before[key]=clone(state[key]);
     const next=clone(before),find=(key,id)=>next[key].find(x=>idString(x.id)===idString(id));
     const fail=message=>{E('wbStatus').textContent=message;return false;};
     try{
@@ -551,10 +609,13 @@
       // Apply goal edits, keeping task and habit links to unchanged step IDs.
       for(const [id,update] of Object.entries(draft.goals)){
         const g=find('goals',id),oldActions=g.actions||[];
-        g.title=clean(update.title).slice(0,160)||g.title;
-        g.category=state.categories.includes(update.category)?update.category:g.category;
-        g.motivation=String(update.motivation||'').slice(0,3000);
-        g.actions=clone(update.actions||[]).filter(a=>clean(a.title)).map(a=>({...a,id:a.id,title:clean(a.title).slice(0,160),done:!!a.done}));
+        const edits=new Map(goalEdits(id,update,g).map(({field,value})=>[field,value]));
+        if(edits.has('title'))g.title=clean(edits.get('title')).slice(0,160)||g.title;
+        if(state.categories.includes(edits.get('category')))g.category=edits.get('category');
+        if(edits.has('motivation'))g.motivation=String(edits.get('motivation')).slice(0,3000);
+        if(!edits.has('actions'))continue;
+        g.actions=clone(edits.get('actions')).filter(a=>clean(a.title))
+          .map(a=>({...a,title:clean(a.title).slice(0,160),done:!!a.done}));
         const retained=new Set(g.actions.map(a=>idString(a.id)));
         for(const t of next.tasks){
           if(idString(t.goalId||'')!==id)continue;
@@ -631,14 +692,26 @@
           if(t&&!t.done){t.priority=true;t.priorityRank=++count;}
         }
       }
+      // Use the same project completion update as the main task checkbox.
+      for(const task of next.tasks){
+        if(!task.projectId||!task.projectActionId||current(task.id)?.done===task.done)continue;
+        const project=state.projects.find(p=>idString(p.id)===idString(task.projectId));
+        if(!project?.actions.some(a=>idString(a.id)===idString(task.projectActionId)))continue;
+        if(!next.projects){
+          fields.push('projects');
+          before.projects=clone(state.projects);
+          next.projects=clone(before.projects);
+        }
+        v6SyncTaskAction(task,next.projects);
+      }
       // Persist a precise undo snapshot, then commit all affected collections
       // together through the app's verified, existing storage writer.
       const snapshot={version:1,before,after:clone(next),weekStart:draft.weekStart,created:Date.now()};
       try{localStorage.setItem(UNDO_KEY,JSON.stringify(snapshot));}
       catch{throw Error('Not enough space to prepare an undo. Nothing has been applied.');}
-      for(const key of FIELDS)state[key]=next[key];
+      for(const key of fields)state[key]=next[key];
       if(!save(true)){
-        for(const key of FIELDS)state[key]=before[key];
+        for(const key of fields)state[key]=before[key];
         localStorage.removeItem(UNDO_KEY);
         throw Error('Unable to save the plan. Your draft is still available.');
       }
@@ -658,17 +731,18 @@
   function undo(){
     const snapshot=read(UNDO_KEY);
     if(!snapshot||snapshot.version!==1)return;
-    for(const key of FIELDS){
+    const fields=Array.isArray(snapshot.before?.projects)?[...FIELDS,'projects']:FIELDS;
+    for(const key of fields){
       if(JSON.stringify(state[key])!==JSON.stringify(snapshot.after[key])){
         alert('Other planner changes were made after Weekly Blueprint. Undo is unavailable to protect newer edits.');
         return;
       }
     }
     if(!confirm('Undo the last Weekly Blueprint? This restores your previous tasks, goals, habits and events.'))return;
-    const now={};for(const key of FIELDS)now[key]=state[key];
-    for(const key of FIELDS)state[key]=snapshot.before[key];
+    const now={};for(const key of fields)now[key]=state[key];
+    for(const key of fields)state[key]=snapshot.before[key];
     if(!save(true)){
-      for(const key of FIELDS)state[key]=now[key];
+      for(const key of fields)state[key]=now[key];
       alert('Unable to save the undo. Your current planner is unchanged.');
       return;
     }
@@ -677,7 +751,7 @@
   }
   function refreshLaunchButtons(){
     const canResume=draft&&(meaningfulChanges()||Object.keys(draft.carry).length||draft.editingEvent||
-      clean(draft.eventForm?.title)||clean(draft.taskForm?.title));
+      unfinishedForms().length);
     const label=canResume?'Continue planning':'Design Next Week';
     const range=canResume?dateRange(draft.weekStart):'';
     E('wbDraftStatus').textContent=canResume?'Unfinished plan · '+range:'Five short steps · Changes stay in draft until applied';
@@ -810,6 +884,20 @@
     const button=e.target.closest('button');
     if(!button)return;
     if(button.hasAttribute('data-wb-close')){close();return;}
+    if(button.dataset.wbDiscardForm){
+      discardForm(button.dataset.wbDiscardForm);storeDraft();renderSheet(false);return;
+    }
+    if(button.dataset.wbGoalResolve){
+      const id=button.dataset.wbGoalId,field=button.dataset.wbField;
+      const saved=state.goals.find(g=>idString(g.id)===id),update=draft.goals[id];
+      if(!saved||!update||!Object.hasOwn(GOAL_FIELDS,field))return;
+      const bases=draft.goalBases||(draft.goalBases={});
+      const base=bases[id]||(bases[id]={});
+      base[field]=clone(goalValue(saved,field));
+      if(button.dataset.wbGoalResolve==='saved')update[field]=clone(base[field]);
+      storeDraft();renderSheet(false);return;
+    }
+
     if(button.dataset.wbStage!==undefined){setStep(Number(button.dataset.wbStage));return;}
     if(button.hasAttribute('data-wb-back')){setStep(draft.step-1);return;}
     if(button.hasAttribute('data-wb-next')){if(draft.step===4)apply();else setStep(draft.step+1);return;}
@@ -835,7 +923,7 @@
     }
     if(button.dataset.wbEditEvent){editEvent(button.dataset.wbEditEvent);return;}
     if(button.hasAttribute('data-wb-event-cancel')){
-      draft.editingEvent=null;showEventForm=false;draft.eventForm={title:'',date:draft.selectedDay,time:'09:00'};storeDraft();renderSheet(false);return;
+      discardForm('event');storeDraft();renderSheet(false);return;
     }
     if(button.dataset.wbStepTask){
       const g=goalFor(button.dataset.wbStepTask);

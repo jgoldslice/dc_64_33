@@ -1786,8 +1786,8 @@ function v6EnsureProjectTask(p,a){
   if(String(a.taskId||'')!==String(task.id)){a.taskId=task.id;changed=true;}
   return changed;
 }
-function v6SyncTaskAction(task){
-  const p=state.projects.find(p=>String(p.id)===String(task.projectId||''));
+function v6SyncTaskAction(task,projects=state.projects){
+  const p=projects.find(p=>String(p.id)===String(task.projectId||''));
   const a=p?.actions.find(a=>String(a.id)===String(task.projectActionId||''));
   if(!a)return;
   a.taskId=task.id;
