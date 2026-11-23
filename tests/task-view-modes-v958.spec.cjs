@@ -74,3 +74,32 @@ test('Week shows completed scheduled tasks for unchecking without opening event 
   await expect(page.locator('#v87EventBack')).toBeHidden();
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).tasks[0].done)).toBe(false);
 });
+
+test('a Task checkbox remains usable immediately after revealing Tomorrow by swipe',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.tasks=[{id:'swipe-then-check',title:'Check sample results',done:false,
+      priority:false,priorityRank:0,dueDate:localToday(),date:localToday()}];
+    if(!save(true))throw Error('Could not create Task');
+    render();
+  });
+  const row=page.locator('#v917TodayTasks [data-bp-task-row="swipe-then-check"]');
+  await row.evaluate(el=>{
+    const r=el.getBoundingClientRect(),x=r.left+r.width*.65,y=r.top+r.height*.5;
+    const touch=(xx,yy)=>new Touch({identifier:8,target:el,clientX:xx,clientY:yy});
+    const evt=(type,xx,yy)=>new TouchEvent(type,{bubbles:true,cancelable:true,
+      touches:type==='touchend'?[]:[touch(xx,yy)],
+      targetTouches:type==='touchend'?[]:[touch(xx,yy)],
+      changedTouches:[touch(xx,yy)]});
+    el.dispatchEvent(evt('touchstart',x,y));
+    el.dispatchEvent(evt('touchmove',x-115,y));
+    el.dispatchEvent(evt('touchend',x-115,y));
+  });
+  await expect(row).toHaveClass(/bp-task-revealed/);
+  await row.locator('[data-task-check]').click();
+  const result=await page.evaluate(()=>{
+    const disk=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return {live:state.tasks[0].done,disk:disk.tasks[0].done};
+  });
+  expect(result).toEqual({live:true,disk:true});
+});
