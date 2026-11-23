@@ -889,32 +889,32 @@ function taskRow(t,rankMap=null,compactPreview=false,todayPreview=false){
   // Today and Week are read/check views; Plan retains the full editor.
   if(compactPreview)return `<div class="entry bp-task-row bp-task-preview-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}" tabindex="-1">
     <div class="bp-task-main">
-      <input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}>
+      <label class="bp-task-check"><input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}></label>
       <div class="bp-task-detail">
         <div class="bp-task-title-line">
-          ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}
           <button type="button" class="entry-text bp-task-title bp-preview-link" data-bp-jump-task="${id}" aria-label="Find ${title} in Plan">${title}</button>
+          ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}
         </div>
         ${context?'<small class="bp-task-context">'+esc(context)+'</small>':''}
         ${previewCaption?'<small class="bp-task-preview-due">'+esc(previewCaption)+'</small>':''}
       </div>
     </div>
-    
   </div>`;
   return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}" tabindex="-1">
     <div class="bp-task-main">
-      <input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}>
+      <label class="bp-task-check"><input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}></label>
       <div class="bp-task-detail"><div class="bp-task-title-line">
-        ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}
-        <button type="button" class="entry-text bp-task-title" data-edit-task="${id}" aria-label="Edit ${title}">${title}</button></div>
+        <button type="button" class="entry-text bp-task-title" data-edit-task="${id}" aria-label="Edit ${title}">${title}</button>
+        ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}</div>
         ${context?'<small class="bp-task-context">'+esc(context)+'</small>':''}
+        ${due||planned?'<div class="bp-task-dates">':''}
         ${due?'<small class="bp-task-due-caption">Due '+esc(due)+'</small>':''}
-        ${planned?'<small class="bp-task-planned">'+esc(planned)+'</small>':''}</div>
+        ${planned?'<small class="bp-task-planned">'+esc(planned)+'</small>':''}
+        ${due||planned?'</div>':''}</div>
       <button type="button" class="bp-task-star" data-bp-task-star="${id}" aria-label="${t.priority?'Remove priority from':'Prioritize'} ${title}" aria-pressed="${!!t.priority}">${t.priority?'★':'☆'}</button>
       <span class="task-row-actions"><button type="button" class="edit-small" data-bp-edit-task="${id}" aria-label="Edit ${title}">Edit</button>
         ${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':''}</span>
     </div>
-    
   </div>`;
 }
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}

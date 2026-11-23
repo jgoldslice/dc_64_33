@@ -1,19 +1,17 @@
 /* Blueprint v9.51 — shared task actions and compact Project pulse. */
-.bp-task-row.entry{position:relative;display:block;min-width:0;overflow:hidden;padding:0;margin:0;border-radius:9px}
-.bp-task-main{display:grid;grid-template-columns:22px minmax(0,1fr) 44px 92px;gap:7px;align-items:center;min-width:0;min-height:48px;padding:6px 2px;position:relative;z-index:2;background:var(--surface);will-change:transform;transition:transform .18s ease}
-.bp-task-main>input[type=checkbox]{grid-column:1;grid-row:1;flex:none;width:20px;height:20px}
-.bp-task-detail{grid-column:2;grid-row:1;min-width:0;display:grid;gap:2px;overflow:hidden}
-.bp-task-title-line{display:flex;gap:6px;align-items:center;min-width:0}
-.bp-task-title-line>.rank-badge{flex:none}
-.bp-task-title-line>.bp-task-title{flex:1;min-width:0}
-.bp-task-title.entry-text{display:block;min-width:0;width:100%;background:transparent;border:0;text-align:left;color:var(--ink);font-size:13px;font-weight:600;line-height:1.4;padding:3px 0;white-space:normal;overflow-wrap:anywhere}
+.bp-task-row.entry{display:block;min-width:0;margin:0;padding:0;border-radius:0;background:transparent}
+.bp-task-main{display:grid;grid-template-columns:44px minmax(0,1fr) 44px 96px;column-gap:8px;align-items:center;min-height:52px;padding:4px 2px}
+.bp-task-check{grid-column:1;display:grid;place-items:center;min-height:44px;cursor:pointer}
+.bp-task-check>input[type=checkbox]{width:21px;height:21px}
+.bp-task-detail{grid-column:2;min-width:0;display:grid;gap:3px;padding-block:4px}
+.bp-task-title-line{display:flex;gap:6px;align-items:baseline;min-width:0}
+.bp-task-title-line>.rank-badge{flex:none;min-width:21px;height:20px;padding-inline:4px}
+.bp-task-title.entry-text{display:block;flex:1;min-width:0;background:transparent;border:0;text-align:left;color:var(--ink);font-size:.9375rem;font-weight:600;line-height:1.35;padding:1px 0;white-space:normal;overflow-wrap:anywhere}
 .bp-task-title:focus-visible,.bp-task-star:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:1px}
-.bp-task-context,.bp-task-planned,.bp-task-due-caption{display:block;font-size:10px;line-height:1.3;color:var(--muted);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bp-task-star{flex:none;border:0;background:transparent;color:var(--secondary-ui);min-height:44px;border-radius:9px}
-.bp-task-star{grid-column:3;grid-row:1;justify-self:center;font-size:22px;width:44px;min-width:44px;padding:4px}
-.bp-task-star[aria-pressed=true]{color:var(--secondary-ui)}
+.bp-task-dates{display:flex;flex-wrap:wrap;gap:2px 12px;min-width:0}
+.bp-task-context,.bp-task-planned,.bp-task-due-caption,.bp-task-preview-due{display:block;font-size:.75rem;line-height:1.4;color:var(--muted);font-weight:500;overflow-wrap:anywhere}
+.bp-task-star{grid-column:3;justify-self:center;border:0;background:transparent;color:var(--secondary-ui);min-height:44px;border-radius:9px;font-size:22px;width:44px;padding:4px}
 .bp-task-row.done .bp-task-title{text-decoration:line-through;color:var(--muted)}
-.bp-task-row .delete-completed-task{font-size:10px;flex:none;min-height:35px}
 .bp-cal-task,.bp-cal-due{display:flex;gap:3px;align-items:baseline;min-width:0;color:var(--secondary-ui)}
 .bp-cal-task button,.bp-cal-due button{border:0;background:transparent;color:inherit;text-align:left;font:inherit;padding:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
 .bp-cal-type{font-size:9px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
@@ -35,18 +33,10 @@
 .v951-connection>span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .v951-connection small{font-size:10px;color:var(--muted);white-space:nowrap}
 .v951-no-links{font-size:12px;color:var(--muted)}
-/* On a narrow phone or iPad Split View, keep title on its own line.
-   The fixed-width action columns stay aligned even when Delete is absent. */
-@media(max-width:620px){
-  .bp-task-main{grid-template-columns:22px minmax(0,1fr) 44px 88px;gap:4px;row-gap:2px}
-  .bp-task-detail{grid-column:2 / -1;grid-row:1}
-  .bp-task-star{grid-column:3;grid-row:2;margin:0}
-}
 @media(max-width:520px){
   .v951-pulse{grid-template-columns:repeat(2,minmax(0,1fr))}
   .v951-connections{grid-template-columns:minmax(0,1fr)}
 }
-@media(prefers-reduced-motion:reduce){.bp-task-main{transition:none}}
 
 /* Lightweight cross-tab creation, anchored like an iPad popover. */
 .app-header .bp-quick-add{display:grid;place-items:center;flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--wash);color:var(--secondary-ui);font-size:24px;font-weight:500;margin-left:auto}
@@ -58,11 +48,8 @@
 .bp-quick-menu button:hover,.bp-quick-menu button:focus-visible{background:var(--wash)}
 .bp-quick-menu button>span{display:inline-grid;place-items:center;width:23px;font-size:19px;color:var(--secondary-ui)}
 
-/* Keep the established adjacent Edit/Delete controls while the title itself
-   is also an edit target. Smaller screens wrap the actions below the title. */
-.bp-task-row .task-row-actions{grid-column:4;grid-row:1;display:grid;grid-template-columns:44px 48px;align-items:center;justify-items:center;gap:0;width:92px;min-width:0}
-.bp-task-row .task-row-actions .edit-small{min-height:44px;min-width:44px;width:100%;border:0;background:transparent;color:var(--secondary-ui);font-size:11px;padding:3px 1px;text-align:center}
-.bp-task-row .task-row-actions .delete-completed-task{min-height:44px}
+.bp-task-row .task-row-actions{grid-column:4;display:grid;grid-template-columns:44px 52px;align-items:center;gap:0;width:96px;min-width:0}
+.bp-task-row .task-row-actions .edit-small{min-height:44px;min-width:44px;border:0;background:transparent;color:var(--secondary-ui);font-size:.75rem;padding:3px 1px;text-align:center}
 .v951-project-pulse,.v951-project-connections{border:1px solid var(--line);background:var(--surface);border-radius:16px;min-width:0;padding:14px 17px;box-shadow:var(--shadow)}
 .v951-project-pulse .card-heading,.v951-project-connections .card-heading{margin-bottom:11px}
 .v951-project-pulse .card-heading h3,.v951-project-connections .card-heading h3{font:normal 21px/1.2 Georgia,serif;color:var(--ink);margin:0}
@@ -96,29 +83,18 @@ body.canvas-ipad-sidebar-collapsed .bottom-nav #bpQuickAdd.bp-quick-add{
 body.canvas-ipad-sidebar-collapsed .bottom-nav #bpQuickAdd .bp-quick-label{display:none}
 body.v928-notes-focus #bpQuickAdd{display:none!important}
 
-/* Narrow task rows: actions stay in the same columns on each card. */
+/* The title is the edit control in compact Plan rows. */
 @media(max-width:620px){
-  .bp-task-row .task-row-actions{grid-column:4;grid-row:2;width:88px;grid-template-columns:44px 44px;margin:0}
+  .bp-task-main{grid-template-columns:44px minmax(0,1fr) 44px auto;column-gap:0}
+  .bp-task-row .task-row-actions{grid-template-columns:52px;width:auto}
+  .bp-task-row .task-row-actions [data-bp-edit-task],
+  .bp-task-row:not(.done) .task-row-actions{display:none}
+  .bp-task-row:not(.bp-task-preview-row) .bp-task-title{min-height:44px}
 }
 
-/* Today and Week show read/check-only Tasks. Unlike Plan task rows,
-   the compact cards must fit inside a narrow column even on an iPad. */
-.bp-task-preview-row .bp-task-main{
-  grid-template-columns:22px minmax(0,1fr);
-  column-gap:9px;row-gap:0;
-  min-width:0;align-items:center;padding:7px 2px
-}
-.bp-task-preview-row .bp-task-detail{
-  grid-column:2;grid-row:1;min-width:0
-}
-.bp-task-preview-row .bp-task-title-line{align-items:baseline;gap:7px}
-.bp-task-preview-row .bp-task-title{
-  min-width:0;overflow-wrap:anywhere;line-height:1.45;padding:1px 0
-}
-.bp-task-preview-row .bp-task-preview-due{
-  display:block;font-size:10px;line-height:1.4;color:var(--muted);
-  font-variant-numeric:tabular-nums
-}
+/* Checkoff views use a single text column at any viewport width. */
+.bp-task-preview-row .bp-task-main{grid-template-columns:44px minmax(0,1fr);column-gap:6px}
+.bp-task-preview-due{font-variant-numeric:tabular-nums}
 
 /* v9.59 — Plan is the single editing destination; Today and Week are checkoff views. */
 .bp-plan-heading-link{display:inline-flex;align-items:center;gap:9px;min-height:44px;min-width:0;padding:4px 0;
