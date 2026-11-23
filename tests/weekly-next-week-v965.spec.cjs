@@ -123,14 +123,18 @@ test('only today is highlighted, including in adjacent weeks and on a Sunday',as
   await expect(page.locator('#weekGrid [data-week-event-date="2026-11-21"]')).not.toHaveClass(/today/);
   const backgrounds=await page.evaluate(()=>{
     const value=selector=>getComputedStyle(document.querySelector(selector)).backgroundColor;
+    const probe=document.createElement('div');
+    probe.style.background='var(--secondary-wash)';document.body.append(probe);
+    const secondary=getComputedStyle(probe).backgroundColor;probe.remove();
     return {
       currentWeekend:value('#weekGrid .day-card.weekend'),
       adjacentWeekend:value('#v817WeekNext .day-card.weekend'),
       ordinaryDay:value('#weekGrid .day-card:not(.weekend)'),
-      sunday:value('#weekGrid .weekend-half.today')
+      sunday:value('#weekGrid .weekend-half.today'),secondary
     };
   });
   expect(backgrounds.currentWeekend).toBe(backgrounds.ordinaryDay);
   expect(backgrounds.adjacentWeekend).toBe(backgrounds.ordinaryDay);
   expect(backgrounds.sunday).not.toBe(backgrounds.ordinaryDay);
+  expect(backgrounds.sunday).toBe(backgrounds.secondary);
 });

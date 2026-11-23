@@ -87,7 +87,7 @@
 .wb-add-goal{margin:0 0 14px}
 .wb-remove-goal{justify-self:start;min-height:44px;padding:8px 0;border:0;background:transparent;color:#b0524d;font-size:13px}
 .v817-week-panel .day-card.weekend{background:var(--surface);border-top:1px solid var(--line)}
-.v817-week-panel .day-card.today,.v817-week-panel .weekend-half.today{background:var(--wash);border:1px solid var(--secondary-ui);box-shadow:inset 0 0 0 1px var(--secondary-ui)}
+.v817-week-panel .day-card.today,.v817-week-panel .weekend-half.today{background:var(--secondary-wash);border:1px solid var(--secondary-ui);box-shadow:inset 0 0 0 1px var(--secondary-ui)}
 .v817-week-panel .day-card.today .day-top span:first-child,.v817-week-panel .weekend-half.today .day-top span:first-child{color:var(--secondary-ui)}
 .wb-event-editor .wb-event-actions{grid-column:1/-1;display:flex;gap:9px;justify-content:flex-end}
 .wb-input-button{border-radius:10px;border:1px solid var(--secondary-ui);background:var(--wash);color:var(--ink);padding:9px 12px;min-height:42px;font-weight:650}
