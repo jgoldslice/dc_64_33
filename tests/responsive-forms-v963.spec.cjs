@@ -25,6 +25,7 @@ test('task editor keeps its actions visible and all fields reachable across phon
     await assertFooterVisible(form,'.modal-actions');
     await expect(page.locator('#modalForm button[type="submit"]')).toBeVisible();
     expect(await page.locator('#modalForm button[type="submit"]').evaluate(e=>e.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+    await page.locator('#modalFields [name="projectId"]').scrollIntoViewIfNeeded();
     await page.locator('#modalFields [name="projectId"]').focus();
     const reachable=await page.locator('#modalFields [name="projectId"]').evaluate(el=>{
       const input=el.getBoundingClientRect(),fields=el.closest('.form-fields').getBoundingClientRect();
@@ -43,6 +44,7 @@ test('short weekly event form keeps actions visible while date and time controls
   const form=page.locator('#v87EventForm');
   await assertFooterVisible(form,'.v87-event-actions');
   await expect(page.locator('#v87EventDates')).toBeVisible();
+  await page.locator('#v87EventTime').scrollIntoViewIfNeeded();
   await page.locator('#v87EventTime').focus();
   const metric=await page.locator('#v87EventTime').evaluate(el=>{
     const a=el.getBoundingClientRect(),b=el.closest('.v87-event-content').getBoundingClientRect();

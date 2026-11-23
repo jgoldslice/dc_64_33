@@ -192,5 +192,5 @@
 .v87-event-content{display:grid;gap:17px;min-height:0}
 @media(max-height:820px){
   #v87EventForm.v87-event-sheet,.bp-day-sheet{grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
-  #v87EventForm .v87-event-content{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px 2px 6px;margin:0 -2px}
+  #v87EventForm .v87-event-content{grid-auto-rows:max-content;align-content:start;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px 2px 6px;margin:0 -2px}
 }
