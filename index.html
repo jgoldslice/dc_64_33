@@ -839,7 +839,8 @@ function applyTheme(){
 }
 const roman=n=>{const symbols=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];let out='';for(const [v,a] of symbols)while(n>=v){out+=a;n-=v;}return out;};
 const ranked=()=>state.tasks.filter(t=>t.priority&&!t.done).sort((a,b)=>(a.priorityRank||9999)-(b.priorityRank||9999)||String(a.dueDate||'').localeCompare(String(b.dueDate||'')));
-function taskRow(t,rankMap=null){
+function taskRow(t,rankMap=null,mode='plan'){
+  const editable=mode==='plan';
   const rank=rankMap instanceof Map?rankMap.get(String(t.id))||0:ranked().findIndex(x=>String(x.id)===String(t.id))+1;
   const goal=state.goals.find(g=>String(g.id)===String(t.goalId||'')&&t.goalId);
   const project=state.projects.find(p=>String(p.id)===String(t.projectId||'')&&t.projectId);
@@ -847,17 +848,17 @@ function taskRow(t,rankMap=null){
   const context=[area,project?.title].filter(Boolean).join(' · ');
   const planned=t.scheduledDate?'Scheduled '+new Date(t.scheduledDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})+(t.scheduledTime?' '+timeText(t.scheduledTime):''):'';
   const id=esc(t.id),title=esc(t.title);
-  return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}">
+  return `<div class="entry bp-task-row no-swipe ${t.done?'done':''} ${editable?'':'bp-task-readonly'}" data-no-swipe data-bp-task-row="${id}">
     <div class="bp-task-main">
       <input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}>
       <div class="bp-task-detail"><div class="bp-task-title-line">
         ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}
-        <button type="button" class="entry-text bp-task-title" data-edit-task="${id}" aria-label="Edit ${title}">${title}</button></div>
+        ${editable?'<button type="button" class="entry-text bp-task-title" data-edit-task="'+id+'" aria-label="Edit '+title+'">'+title+'</button>':'<span class="entry-text bp-task-title">'+title+'</span>'}</div>
         ${context?'<small class="bp-task-context">'+esc(context)+'</small>':''}
         ${planned?'<small class="bp-task-planned">'+esc(planned)+'</small>':''}</div>
-      <button type="button" class="bp-task-star" data-bp-task-star="${id}" aria-label="${t.priority?'Remove priority from':'Prioritize'} ${title}" aria-pressed="${!!t.priority}">${t.priority?'★':'☆'}</button>
-      <span class="task-row-actions"><button type="button" class="edit-small" data-bp-edit-task="${id}" aria-label="Edit ${title}">Edit</button>
-        ${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':''}</span>
+      ${editable?'<button type="button" class="bp-task-star" data-bp-task-star="'+id+'" aria-label="'+(t.priority?'Remove priority from':'Prioritize')+' '+title+'" aria-pressed="'+!!t.priority+'">'+(t.priority?'★':'☆')+'</button>':''}
+      ${editable?'<span class="task-row-actions"><button type="button" class="edit-small" data-bp-edit-task="'+id+'" aria-label="Edit '+title+'">Edit</button>'+
+        (t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':'')+'</span>':''}
     </div>
     <div class="bp-task-swipe-actions" aria-label="Task rescheduling">
       <button type="button" data-bp-swipe-tomorrow="${id}" aria-label="Push ${title} to tomorrow">Tomorrow</button>
@@ -913,14 +914,14 @@ function renderTaskSections(today=localToday()){
   const taskScroll=$('v917TodayTasks').scrollTop;
   $('v917TodayTasks').innerHTML=
     (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
-      overdue.slice(0,3).map(t=>taskRow(t,rankMap)).join('')+
+      overdue.slice(0,3).map(t=>taskRow(t,rankMap,'today')).join('')+
       (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
     (todaysTasks.length?(overdue.length?'<div class="section-label">Due today</div>':'')+
-      todaysTasks.map(t=>taskRow(t,rankMap)).join(''):'')+
+      todaysTasks.map(t=>taskRow(t,rankMap,'today')).join(''):'')+
     (!todaysTasks.length&&!overdue.length?'<p class="empty">No tasks due today.</p>':'');
   $('v917TodayTasks').scrollTop=taskScroll;
   const priorities=orderedPriorities;
-  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(t=>taskRow(t,rankMap)).join(''):'<p class="empty">Mark important tasks as priorities to rank them here.</p>';
+  $('priorities').innerHTML=priorities.length?priorities.slice(0,5).map(t=>taskRow(t,rankMap,'today')).join(''):'<p class="empty">Mark important tasks as priorities to rank them here.</p>';
   $('tasksPriority').innerHTML=priorities.length?priorities.map((t,i)=>`<div class="priority-edit-row"><span class="rank-badge">${roman(i+1)}</span><span class="entry-text">${esc(t.title)}</span><button data-priority-move="${t.id}" data-dir="-1" ${i===0?'disabled':''} aria-label="Move ${esc(t.title)} up">↑</button><button data-priority-move="${t.id}" data-dir="1" ${i===priorities.length-1?'disabled':''} aria-label="Move ${esc(t.title)} down">↓</button></div>`).join(''):'<p class="empty">No priorities yet. Mark any task as a priority.</p>';
   $('allTasks').innerHTML=state.tasks.slice().sort((a,b)=>Number(a.done)-Number(b.done)||String(a.dueDate||'9999').localeCompare(String(b.dueDate||'9999'))).map(t=>taskRow(t,rankMap)).join('')||'<p class="empty">Add your first task.</p>';
 }
