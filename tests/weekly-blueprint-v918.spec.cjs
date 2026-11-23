@@ -31,7 +31,7 @@ test('Sunday planning starts next Monday and week arrows stay on Schedule',async
   await page.locator('[data-wb-launch]').click();
   expect(await page.evaluate(()=>BlueprintWeekly.getDraft().weekStart)).toBe('2026-11-23');
   await page.locator('[data-wb-step="2"]').click();
-  await page.locator('[data-wb-select-day="2026-11-26"]').first().click();
+  await page.locator('.wb-calendar [data-wb-select-day="2026-11-26"]').click();
   await page.locator('#wbEventForm input[name=title]').fill('Planning meeting');
   await page.locator('#wbEventForm input[name=time]').fill('13:30');
   await page.locator('[data-wb-week="1"]').click();
