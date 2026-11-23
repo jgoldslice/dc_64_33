@@ -861,9 +861,8 @@ function taskRow(t,rankMap=null){
       <span class="task-row-actions"><button type="button" class="edit-small" data-bp-edit-task="${id}" aria-label="Edit ${title}">Edit</button>
         ${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':''}</span>
     </div>
-    <div class="bp-task-swipe-actions" aria-label="Quick task actions">
-      <button type="button" data-bp-swipe-done="${id}">${t.done?'Undo':'Done'}</button>
-      <button type="button" data-bp-swipe-tomorrow="${id}">Tomorrow</button>
+    <div class="bp-task-swipe-actions" aria-label="Task rescheduling">
+      <button type="button" data-bp-swipe-tomorrow="${id}" aria-label="Push ${title} to tomorrow">Tomorrow</button>
     </div>
   </div>`;
 }
