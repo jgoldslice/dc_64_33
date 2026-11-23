@@ -11,25 +11,26 @@ test('v9.17 Today uses paired rows on expanded screens and a single column on ph
     await expect(page.locator('#today > .v917-today-grid')).toBeVisible();
     const layout=await page.evaluate(()=>{
       const rect=id=>document.getElementById(id).closest('section.card').getBoundingClientRect();
-      const g=rect('todayGlance'),h=rect('todayHabits'),t=rect('v917TodayTasks'),p=rect('v77TodayPriorities'),r=rect('v77TodayProjects');
-      return {g:{left:g.left,right:g.right,top:g.top,bottom:g.bottom},h:{left:h.left,right:h.right,top:h.top,bottom:h.bottom},t:{left:t.left,right:t.right,top:t.top,bottom:t.bottom},p:{left:p.left,right:p.right,top:p.top,bottom:p.bottom},r:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},overflow:document.documentElement.scrollWidth-innerWidth};
+      const g=rect('todayGlance'),h=rect('todayHabits'),p=rect('v77TodayPriorities'),r=rect('v77TodayProjects');
+      return {g:{left:g.left,right:g.right,top:g.top,bottom:g.bottom},h:{left:h.left,right:h.right,top:h.top,bottom:h.bottom},p:{left:p.left,right:p.right,top:p.top,bottom:p.bottom},r:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},overflow:document.documentElement.scrollWidth-innerWidth};
     });
     expect(layout.g.right).toBeLessThan(layout.h.left+4);
-    expect(layout.t.right).toBeLessThan(layout.p.left+4);
     expect(Math.abs(layout.g.top-layout.h.top)).toBeLessThan(4);
     expect(Math.abs(layout.g.bottom-layout.h.bottom)).toBeLessThan(4);
-    expect(Math.abs(layout.t.top-layout.p.top)).toBeLessThan(4);
-    expect(Math.abs(layout.t.bottom-layout.p.bottom)).toBeLessThan(4);
+    expect(Math.abs(layout.g.left-layout.p.left)).toBeLessThan(4);
+    expect(Math.abs(layout.h.right-layout.p.right)).toBeLessThan(4);
     expect(Math.abs(layout.g.left-layout.r.left)).toBeLessThan(4);
     expect(Math.abs(layout.h.right-layout.r.right)).toBeLessThan(4);
-    expect(layout.r.top-layout.t.bottom).toBeGreaterThanOrEqual(8);
-    expect(layout.r.top-layout.t.bottom).toBeLessThanOrEqual(15);
+    expect(layout.p.top-layout.g.bottom).toBeGreaterThanOrEqual(8);
+    expect(layout.p.top-layout.g.bottom).toBeLessThanOrEqual(15);
+    expect(layout.r.top-layout.p.bottom).toBeGreaterThanOrEqual(8);
+    expect(layout.r.top-layout.p.bottom).toBeLessThanOrEqual(15);
     expect(layout.overflow).toBeLessThanOrEqual(3);
   }
   await page.setViewportSize({width:390,height:844});
   await expect(page.locator('#today .v915-today-columns')).toHaveCount(0);
   const order=await page.locator('#today > .stack > section.card').evaluateAll(cards=>cards.filter(el=>!el.hidden).map(c=>c.querySelector('.card-heading h2')?.textContent.trim()));
-  expect(order).toEqual(['Schedule','Habits','Tasks','Top Priorities','Projects']);
+  expect(order).toEqual(['Schedule','Habits','Top Priorities','Projects']);
   await expect(page.locator('#today > .stack')).toHaveCSS('grid-template-columns',/\d+.*px/);
   expect(errors).toEqual([]);
 });
@@ -99,7 +100,7 @@ test('v9.17 paired grid rows align without trimming either card body',async({pag
       const top=id=>document.getElementById(id).closest('.card').getBoundingClientRect().top;
       return Math.max(
         Math.abs(bottom('todayGlance')-bottom('todayHabits')),
-        Math.abs(bottom('v917TodayTasks')-bottom('v77TodayPriorities')),
+        Math.abs(document.getElementById('v77TodayPriorities').closest('.card').getBoundingClientRect().left-document.getElementById('todayGlance').closest('.card').getBoundingClientRect().left),
         Math.abs(top('todayGlance')-top('todayHabits'))
       );
     })).toBeLessThan(5);
