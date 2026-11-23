@@ -27,7 +27,7 @@
 }
 #today .v915-layout-ready .card-heading{gap:8px;align-items:center;}
 #today .v915-layout-ready .card-heading h2{min-width:0;}
-#today .v915-layout-ready :is(#todayGlance,#v77TodayPriorities) .entry{
+#today .v915-layout-ready #todayGlance .entry{
   padding-block:8px;
 }
 #today .v915-layout-ready .v77-today-project-grid{gap:8px;}

@@ -7,6 +7,11 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Compact task rows
+
+- [PR #102](https://github.com/jgoldslice/dc_64_33/pull/102), layout commit `e5d5380fe531d4f49ff144e3902030e67444363b`: Plan uses inline controls and the title opens Edit at phone widths. Due and scheduled captions wrap as needed. Today and Week checkoff lists use consistent title alignment and lighter dividers. The change affects presentation and leaves task data in its existing format.
+- Verified 23 targeted Chromium tests across task actions, navigation and widths from 320 to 1024 CSS pixels. Inspected the dark phone layout at 430 CSS pixels. The full local suite passed 405 browser tests, 29 Node tests, and JavaScript syntax checks. Physical iPhone and iPad verification is pending.
+
 ## 2026-11-23 — Weekly planning follow-through (browser verified; device QA pending)
 
 - Review fixes in `88b9887d0915b5a4d9410f54b1e165666bc8ae6b`: applying a resumed Goal draft preserves fields edited later outside planning and shows both values when the same field conflicts. Drafts saved before field tracking ask for an explicit choice where values differ. Review pauses Apply for unfinished task and event forms. Weekly checkoffs use the existing Project To-Do sync and can be undone with the rest of the plan.
