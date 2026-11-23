@@ -71,7 +71,7 @@ test('Week priority checkbox marks task done without opening editor',async({page
   await expect(page.locator('#modalBack')).not.toHaveClass(/open/);
 });
 
-test('Today Tasks and Top Priorities are view/check only, with room for long titles',async({page})=>{
+test('Today unified priorities are view/check only, with room for long titles',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[
@@ -83,16 +83,16 @@ test('Today Tasks and Top Priorities are view/check only, with room for long tit
     render();
   });
   await page.locator('[data-tab="today"]').click();
-  await expect(page.locator('#today .v917-tasks [data-open="task"]')).toHaveCount(0);
+  await expect(page.locator('#today .v917-tasks')).toHaveCount(0);
   const checkOnly='[data-bp-task-star],[data-bp-task-date],[data-edit-task],[data-bp-edit-task],.task-row-actions,[data-bp-swipe-done]';
-  for(const list of ['#v917TodayTasks','#v77TodayPriorities']){
+  for(const list of ['#v77TodayPriorities']){
     await expect(page.locator(list+' .bp-task-preview-row')).toHaveCount(2);
     await expect(page.locator(list+' '+checkOnly.split(',').join(','+list+' '))).toHaveCount(0);
     await expect(page.locator(list+' [data-bp-task-row="today-compact-a"] [data-bp-swipe-tomorrow]')).toHaveCount(0);
   }
   for(const width of [320,375,390,768,1024,1366]){
     await page.setViewportSize({width,height:900});
-    for(const list of ['#v917TodayTasks','#v77TodayPriorities']){
+    for(const list of ['#v77TodayPriorities']){
       const info=await page.locator(list+' [data-bp-task-row="today-compact-a"]').evaluate(el=>{
         const row=el.getBoundingClientRect(),title=el.querySelector('.bp-task-title').getBoundingClientRect();
         const checkbox=el.querySelector('[data-task-check]').getBoundingClientRect();
@@ -105,8 +105,9 @@ test('Today Tasks and Top Priorities are view/check only, with room for long tit
       expect(info.scrollWidth,width+' '+list+' overflow').toBeLessThanOrEqual(info.clientWidth+2);
     }
   }
-  await page.locator('#v917TodayTasks [data-bp-task-row="today-compact-a"] [data-task-check]').check();
-  await expect(page.locator('#v77TodayPriorities [data-bp-task-row="today-compact-a"]')).toHaveCount(0);
+  await page.locator('#v77TodayPriorities [data-bp-task-row="today-compact-a"] [data-task-check]').check();
+  // Completed work due today remains checkable until the date changes.
+  await expect(page.locator('#v77TodayPriorities [data-bp-task-row="today-compact-a"] [data-task-check]')).toBeChecked();
   expect(await page.evaluate(()=>{
     const disk=JSON.parse(localStorage.getItem(STORAGE_KEY));
     return {done:state.tasks.find(t=>t.id==='today-compact-a').done,
