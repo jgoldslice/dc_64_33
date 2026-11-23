@@ -206,7 +206,7 @@
     if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});
   }
   function weekChange(by){
-    const discard=meaningfulChanges();
+    const discard=meaningfulChanges()||!!draft.editingEvent;
     if(discard&&!confirm('Start a different week? Discard the un-applied changes in this planning draft?'))return;
     const old=draft,next=newDraft(add(old.weekStart,by*7));
     // Paging dates is not stage navigation. Keep the Schedule screen open.
