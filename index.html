@@ -1536,7 +1536,17 @@ function deletePlannerItem(type,id,fromModal=false){
       :type==='task'&&item.done
         ?'Delete completed task "'+item.title+'"? This cannot be undone.'
         :'Delete this item? This cannot be undone.';
-  if(!confirm(message))return false;
+  // Completion is the user's deliberate precondition for one-tap deletion.
+  // Keep the confirmation for unfinished tasks and all other item types.
+  const oneTapCompleted=type==='task'&&item.done;
+  if(!oneTapCompleted&&!confirm(message))return false;
+  // Preserve only the fields this deletion changes so a failed write cannot
+  // make a completed Task appear deleted while still present on disk.
+  const previous=oneTapCompleted?{
+    tasks:state.tasks,
+    projectActions:state.projects.map(p=>p.actions),
+    ideaTaskIds:state.ideas.map(n=>(n.actions||[]).map(a=>a.taskId))
+  }:null;
   if(type==='goal'){
     for(const t of state.tasks.filter(t=>String(t.goalId)===String(id))){t.area=item.category;t.goalId='';t.actionId='';t.actionIndex='';}
     for(const h of state.habits.filter(h=>String(h.goalId)===String(id))){h.area=item.category;h.goalId='';h.actionId='';}
@@ -1550,7 +1560,16 @@ function deletePlannerItem(type,id,fromModal=false){
     for(const n of state.ideas)for(const a of n.actions||[])if(String(a.taskId)===String(id))a.taskId='';
   }
   state[key]=state[key].filter(x=>String(x.id)!==String(id));
-  save();if(fromModal)closeModal();render();return true;
+  if(!save(oneTapCompleted)&&oneTapCompleted){
+    state.tasks=previous.tasks;
+    state.projects.forEach((p,i)=>{p.actions=previous.projectActions[i];});
+    state.ideas.forEach((n,i)=>(n.actions||[]).forEach((a,j)=>{a.taskId=previous.ideaTaskIds[i][j];}));
+    render();
+    return false;
+  }
+  if(fromModal)closeModal();
+  render();
+  return true;
 }
 $('deleteModal').onclick=()=>deletePlannerItem(modalMode,modalId,true);
 $('exportData').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='blueprint-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);};
