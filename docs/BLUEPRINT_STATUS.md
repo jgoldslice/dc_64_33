@@ -7,6 +7,17 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-22 — v9.54 Weekly Blueprint Schedule week paging (merged; browser verified; iOS QA pending)
+
+**Owner-reported iPad bug:** On Sunday November 22, the Design Week → Schedule sheet showed November 30–December 6 rather than the upcoming November 23–29 week. Tapping either calendar arrow appeared to exit Schedule. Root cause: changing weeks created a whole new draft with `step:0` (Report); opening a saved but empty browsed draft ignored the default next-Monday date.
+
+- [PR #85](https://github.com/jgoldslice/dc_64_33/pull/85) merged to `main` as `6b850f2fd3df063beddb623fa4f03b95304bccdc` (tested feature head `87d9959b4927aa5b0c2b41ae98b3e00f16f703a9`).
+- The Schedule pager now changes the week without leaving its stage, retains the selected weekday across the shift, restores keyboard focus to the arrow, and carries unsent Event title/time and new Task form fields when no meaningful draft changes exist. For saved events, other substantive draft changes, or an active event edit, an explicit confirmation remains required before replacing the planning draft; Cancel leaves it intact.
+- Opening Design Week reuses existing meaningful or in-progress drafts to protect user work. If an earlier blank draft points at a different week, the launcher now reanchors it to the upcoming Monday (or the Week tab's intentionally displayed week), preserving its stage. On Sunday Nov 22 the upcoming week is Nov 23–29.
+- No planner schema, existing Event/Task records, backup formats, IndexedDB, native PencilKit, or user media changed. `sw.js` cache version advanced for offline clients.
+- **Automated-test verified:** [GitHub Actions run #493](https://github.com/jgoldslice/dc_64_33/actions/runs/45086650370) passed **358/358 Chromium Playwright tests**, **29 standalone Node tests**, and JavaScript syntax checks on the reviewed feature head. Regressions exercise Sunday default, iPad week arrows and weekday/form preservation, reload of a blank browsed draft, and protection of event drafts. Initial run [#492](https://github.com/jgoldslice/dc_64_33/actions/runs/45086286649) had 357/358 pass; the sole failure was the new test targeting an intentionally hidden iPhone day selector on iPad. The test was corrected to target the visible iPad calendar cell; final run is green.
+- **Physical-device verification and deployment remain pending:** No local Capacitor web staging, iOS build/signing, or real iPad interaction occurred. Stage the reviewed merged web assets into the existing Mac wrapper with `scripts/stage-ios-web.py`, run `npx cap copy ios`, install over the current app with its existing signing team/bundle ID and **do not uninstall**. Verify Design Week on Sunday with/without unfinished work, the calendar's previous/next arrows, form dates, field preservation, Cancel on discard prompt, and resume after relaunch.
+
 ## 2026-11-22 — v9.53 Shared Area palette and interaction fixes (merged, browser verified, iOS QA pending)
 
 - Area swatches use Customize’s 15 named presets and exact values from the existing palette, plus Theme, which follows the current secondary color. Older v9.52 Area color names resolve to their corresponding Customize presets. The stored icon and area link are preserved when reading old backups.
