@@ -20,7 +20,7 @@ test('Task stars, dates, Edit and optional Delete stay in columns across iPhone 
 
   const rows=page.locator('#allTasks [data-bp-task-row]');
   await expect(rows).toHaveCount(4);
-  await expect(page.locator('#allTasks [data-bp-task-row="align-done"] .rank-badge')).toBeVisible();
+  await expect(page.locator('#allTasks [data-bp-task-row="align-ranked"] .rank-badge')).toBeVisible();
   await expect(page.locator('#allTasks [data-bp-task-row="align-done"] .task-row-actions button')).toHaveText(['Edit','Delete']);
   await expect(page.locator('#allTasks [data-bp-task-row="align-open-short"] .task-row-actions button')).toHaveText(['Edit']);
 
