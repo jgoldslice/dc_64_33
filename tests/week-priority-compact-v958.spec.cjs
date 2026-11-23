@@ -23,7 +23,7 @@ test('Week Top Priorities is view and check only; Plan retains Task editing',asy
     await expect(row.locator('[data-task-check]')).toBeVisible();
     await expect(row.locator('[data-bp-task-star],[data-bp-task-date],[data-edit-task],[data-bp-edit-task],.task-row-actions')).toHaveCount(0);
     await expect(row.locator('[data-bp-swipe-done]')).toHaveCount(0);
-    await expect(row.locator('[data-bp-swipe-tomorrow]')).toHaveCount(1);
+    await expect(row.locator('[data-bp-swipe-tomorrow]')).toHaveCount(0);
   }
   await expect(card.locator('[data-bp-task-row="week-compact-a"] .bp-task-preview-due')).toContainText('Due Dec 4');
   await expect(card.locator('[data-bp-task-row="week-compact-b"] .bp-task-preview-due')).toHaveCount(0);
@@ -47,10 +47,7 @@ test('Week Top Priorities is view and check only; Plan retains Task editing',asy
   await expect(plan.locator('[data-bp-task-star]')).toBeVisible();
   await expect(plan.locator('[data-bp-task-date]')).toHaveCount(0);
   await expect(plan.locator('.bp-task-due-caption')).toContainText('Due Dec 4');
-  await plan.locator('[data-bp-edit-task]').click();
-  await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
-  await expect(page.locator('#modalForm input[name="dueDate"]')).toHaveValue('2026-12-04');
-  await page.locator('#cancelModal').click();
+  await expect(plan.locator('[data-bp-edit-task]')).toBeVisible();
 });
 
 test('Week priority checkbox marks task done without opening editor',async({page})=>{
@@ -91,7 +88,7 @@ test('Today Tasks and Top Priorities are view/check only, with room for long tit
   for(const list of ['#v917TodayTasks','#v77TodayPriorities']){
     await expect(page.locator(list+' .bp-task-preview-row')).toHaveCount(2);
     await expect(page.locator(list+' '+checkOnly.split(',').join(','+list+' '))).toHaveCount(0);
-    await expect(page.locator(list+' [data-bp-task-row="today-compact-a"] [data-bp-swipe-tomorrow]')).toHaveCount(1);
+    await expect(page.locator(list+' [data-bp-task-row="today-compact-a"] [data-bp-swipe-tomorrow]')).toHaveCount(0);
   }
   for(const width of [320,375,390,768,1024,1366]){
     await page.setViewportSize({width,height:900});

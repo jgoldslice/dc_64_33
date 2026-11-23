@@ -418,9 +418,9 @@
       <div class="stack v917-today-grid" aria-label="Today dashboard">
         <section class="card focus-card" hidden aria-hidden="true"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Today's Focus</h2><span class="focus-pencil" aria-hidden="true">✎</span></div><p class="focus-prompt">What small thing deserves my best effort today?</p><textarea class="focus-answer focus-notebook" id="todayFocus" aria-label="Write today's focus" maxlength="180" rows="3"></textarea></section>
         <section class="card v917-schedule"><div class="card-heading"><h2><svg class="icon"><use href="#i-calendar"/></svg> Schedule</h2><button class="text-button" type="button" data-open="event" aria-label="Add event">+ Add</button></div><div class="v917-card-body" id="todayGlance" tabindex="0" role="region" aria-label="Today's schedule"></div></section>
-        <section class="card v917-habits"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habits</h2><button class="text-button" data-plan-tab="habits">View all</button></div><div class="v917-card-body" id="todayHabits" tabindex="0" role="region" aria-label="Today's habits"></div></section>
-        <section class="card v917-tasks"><div class="card-heading"><h2><svg class="icon"><use href="#i-check"/></svg> Tasks</h2></div><div class="v917-card-body" id="v917TodayTasks" tabindex="0" role="region" aria-label="Today's tasks and overdue tasks"></div></section>
-        <section class="card v917-priorities"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Top Priorities</h2><button type="button" class="text-button" id="v77ViewTasks">View all</button></div><div class="v917-card-body" id="v77TodayPriorities" tabindex="0" role="region" aria-label="Top priorities"></div></section>
+        <section class="card v917-habits"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="habits" aria-label="Open Habits in Plan"><svg class="icon"><use href="#i-habit"/></svg> Habits<span class="bp-heading-chevron" aria-hidden="true"></span></button></h2></div><div class="v917-card-body" id="todayHabits" tabindex="0" role="region" aria-label="Today's habits"></div></section>
+        <section class="card v917-tasks"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="tasks" aria-label="Open Tasks in Plan"><svg class="icon"><use href="#i-check"/></svg> Tasks<span class="bp-heading-chevron" aria-hidden="true"></span></button></h2></div><div class="v917-card-body" id="v917TodayTasks" tabindex="0" role="region" aria-label="Today's tasks and overdue tasks"></div></section>
+        <section class="card v917-priorities"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="tasks" aria-label="Open Top Priorities in Plan"><svg class="icon"><use href="#i-goal"/></svg> Top Priorities<span class="bp-heading-chevron" aria-hidden="true"></span></button></h2></div><div class="v917-card-body" id="v77TodayPriorities" tabindex="0" role="region" aria-label="Top priorities"></div></section>
         <section class="card v917-projects"><div class="card-heading"><h2><svg class="icon"><use href="#i-plan"/></svg> Projects</h2><button type="button" class="text-button" id="v77ViewProjects">View all</button></div><div class="v917-card-body v77-today-project-grid" id="v77TodayProjects" tabindex="0" role="region" aria-label="Recent projects"></div></section>
       </div>
     </section>
@@ -429,8 +429,8 @@
       <div class="week-layout week-v4">
         <section class="card focus-card v4-week-focus"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Weekly Focus</h2><span class="focus-pencil" aria-hidden="true">✎</span></div><p class="focus-prompt">What matters most this week?</p><textarea class="focus-answer focus-notebook" id="weeklyFocus" aria-label="Write weekly focus" maxlength="180" rows="3"></textarea></section>
         <section class="card v4-week-calendar"><div class="card-heading v916-minimal-heading"><h2>Week at a Glance</h2><div class="v94-week-tools"><button type="button" id="v94WeekBack" class="v94-week-arrow" aria-label="Previous calendar week" title="Previous week">‹</button><button type="button" id="v94WeekForward" class="v94-week-arrow" aria-label="Next calendar week" title="Next week">›</button><button type="button" id="addWeekEvent" class="v87-add-week-event" aria-label="Add event this week" title="Add event">+</button></div></div><div id="v817WeekViewport" class="v817-week-viewport v94-week-static" aria-label="Weekly calendar. Use the previous and next week arrow buttons to change weeks"><div id="v817WeekTrack" class="v817-week-track"><div id="v817WeekPrev" class="week-grid v817-week-panel no-swipe" aria-hidden="true" inert></div><div id="weekGrid" class="week-grid v816-week-swipe v817-week-panel" aria-label="Weekly calendar, swipe left for next week and right for previous week"></div><div id="v817WeekNext" class="week-grid v817-week-panel no-swipe" aria-hidden="true" inert></div></div></div></section>
-        <section class="card v4-week-priorities"><div class="card-heading"><h2><svg class="icon"><use href="#i-check"/></svg> Top Priorities</h2></div><div id="priorities"></div></section>
-        <section class="card v4-week-habits"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habit Tracker</h2><button class="text-button" data-plan-tab="habits">Edit</button></div><div id="weekHabits"></div></section>
+        <section class="card v4-week-priorities"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="tasks" aria-label="Open Top Priorities in Plan"><svg class="icon"><use href="#i-check"/></svg> Top Priorities<span class="bp-heading-chevron" aria-hidden="true"></span></button></h2></div><div id="priorities"></div></section>
+        <section class="card v4-week-habits"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="habits" aria-label="Open Habit Tracker in Plan"><svg class="icon"><use href="#i-habit"/></svg> Habit Tracker<span class="bp-heading-chevron" aria-hidden="true"></span></button></h2></div><div id="weekHabits"></div></section>
       </div>
     </section>
     <section class="view" id="myplan" aria-label="Plan">
@@ -849,23 +849,21 @@ function taskRow(t,rankMap=null,compactPreview=false){
   const planned=t.scheduledDate?'Scheduled '+new Date(t.scheduledDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})+(t.scheduledTime?' '+timeText(t.scheduledTime):''):'';
   const id=esc(t.id),title=esc(t.title);
   // Today and Week are read/check views; Plan retains the full editor.
-  if(compactPreview)return `<div class="entry bp-task-row bp-task-preview-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}">
+  if(compactPreview)return `<div class="entry bp-task-row bp-task-preview-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}" tabindex="-1">
     <div class="bp-task-main">
       <input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}>
       <div class="bp-task-detail">
         <div class="bp-task-title-line">
           ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}
-          <span class="entry-text bp-task-title">${title}</span>
+          <button type="button" class="entry-text bp-task-title bp-preview-link" data-bp-jump-task="${id}" aria-label="Find ${title} in Plan">${title}</button>
         </div>
         ${context?'<small class="bp-task-context">'+esc(context)+'</small>':''}
         ${due?'<small class="bp-task-preview-due">Due '+esc(due)+'</small>':''}
       </div>
     </div>
-    <div class="bp-task-swipe-actions" aria-label="Quick task actions">
-      <button type="button" data-bp-swipe-tomorrow="${id}" aria-label="Move ${title} deadline to tomorrow">Tomorrow</button>
-    </div>
+    
   </div>`;
-  return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}">
+  return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}" tabindex="-1">
     <div class="bp-task-main">
       <input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}>
       <div class="bp-task-detail"><div class="bp-task-title-line">
@@ -878,9 +876,7 @@ function taskRow(t,rankMap=null,compactPreview=false){
       <span class="task-row-actions"><button type="button" class="edit-small" data-bp-edit-task="${id}" aria-label="Edit ${title}">Edit</button>
         ${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':''}</span>
     </div>
-    <div class="bp-task-swipe-actions" aria-label="Quick task actions">
-      <button type="button" data-bp-swipe-tomorrow="${id}" aria-label="Move ${title} deadline to tomorrow">Tomorrow</button>
-    </div>
+    
   </div>`;
 }
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}
@@ -888,17 +884,24 @@ function habitGoal(h){return state.goals.find(g=>String(g.id)===String(h.goalId|
 function habitCaption(h){const goal=habitGoal(h);return `<span class="bp-habit-label"><span>${esc(h.title)}</span>${goal?`<small class="bp-habit-goal">${esc(goal.title)}</small>`:''}</span>`;}
 function habitWeekSummary(h){const monday=iso(startOfWeek(new Date()));let done=0,scheduled=0;for(let i=0;i<7;i++){const date=iso(plusDays(new Date(monday+'T12:00:00'),i));if(isScheduled(h,date)){scheduled++;if(h.days?.[date])done++;}}const requested=Number(h.weeklyTarget),target=h.weeklyTarget!=null&&Number.isInteger(requested)&&requested>=1&&requested<=scheduled?requested:scheduled;return target?done+' / '+target+' this week':'No days scheduled';}
 function habitToggle(h,date){return `<input type="checkbox" data-habit-check="${h.id}" data-date="${date}" aria-label="${esc(h.title)} ${date}" ${h.days[date]?'checked':''}>`;}
-function habitTable(week){const dates=Array.from({length:7},(_,i)=>iso(plusDays(week,i)));return `<div class="week-table"><span></span>${['M','T','W','T','F','S','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${state.habits.map(h=>`<span class="habit-name" title="${esc(h.title)}">${habitCaption(h)}</span>${dates.map(date=>isScheduled(h,date)?`<label>${habitToggle(h,date)}</label>`:'<span class="off">·</span>').join('')}`).join('')}</div>`;}
+function habitTable(week){const dates=Array.from({length:7},(_,i)=>iso(plusDays(week,i)));return `<div class="week-table"><span></span>${['M','T','W','T','F','S','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${state.habits.map(h=>`<button type="button" class="habit-name bp-habit-jump" data-bp-jump-habit="${esc(h.id)}" aria-label="Find ${esc(h.title)} in Plan">${habitCaption(h)}</button>${dates.map(date=>isScheduled(h,date)?`<label>${habitToggle(h,date)}</label>`:'<span class="off">·</span>').join('')}`).join('')}</div>`;}
+const expandedWeekTaskDays=new Set();
 function dayLines(date){
   const events=state.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-  const scheduled=state.tasks.filter(t=>!t.done&&t.scheduledDate===date)
-    .sort((a,b)=>(a.scheduledTime||'').localeCompare(b.scheduledTime||''));
-  const due=state.tasks.filter(t=>!t.done&&t.dueDate===date&&t.scheduledDate!==date);
-  return [
-    ...events.map(e=>`<p class="day-line bp-cal-event"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),
-    ...scheduled.slice(0,4).map(t=>`<p class="day-line bp-cal-task"><span class="when">${timeText(t.scheduledTime)}</span><span>${esc(t.title)}</span><span class="bp-cal-type">Task</span><button type="button" data-edit-task="${esc(t.id)}" aria-label="Edit scheduled task ${esc(t.title)}">↗</button></p>`),
-    ...due.slice(0,3).map(t=>`<p class="day-line bp-cal-due"><span>${esc(t.title)}</span><span class="due-mark">DUE</span><button type="button" data-edit-task="${esc(t.id)}" aria-label="Edit task ${esc(t.title)}">↗</button></p>`)
-  ].join('')||'<p class="day-empty">—</p>';
+  const order=(a,b)=>Number(a.done)-Number(b.done)||String(a.scheduledTime||'').localeCompare(String(b.scheduledTime||''));
+  const scheduled=state.tasks.filter(t=>t.scheduledDate===date).sort(order);
+  const due=state.tasks.filter(t=>t.dueDate===date&&t.scheduledDate!==date).sort(order);
+  const check=t=>`<label class="bp-cal-task-check"><input type="checkbox" data-task-check="${esc(t.id)}" aria-label="Complete ${esc(t.title)}" ${t.done?'checked':''}></label>`;
+  const taskTitle=t=>`<button type="button" class="bp-cal-task-title" data-bp-jump-task="${esc(t.id)}" aria-label="Find ${esc(t.title)} in Plan">${esc(t.title)}</button>`;
+  const tasks=[
+    ...scheduled.map(t=>`<div class="day-line bp-cal-task ${t.done?'bp-cal-task-completed':''}">${check(t)}<span class="when">${timeText(t.scheduledTime)}</span>${taskTitle(t)}</div>`),
+    ...due.map(t=>`<div class="day-line bp-cal-due ${t.done?'bp-cal-task-completed':''}">${check(t)}${taskTitle(t)}<span class="due-mark">DUE</span></div>`)
+  ];
+  const expanded=expandedWeekTaskDays.has(date);
+  const shown=expanded?tasks:tasks.slice(0,7);
+  const more=tasks.length>7?`<button type="button" class="bp-week-more" data-bp-week-more="${esc(date)}" aria-expanded="${expanded}">${expanded?'Show fewer tasks':'+'+(tasks.length-7)+' more tasks'}</button>`:'';
+  return [...events.map(e=>`<p class="day-line bp-cal-event"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),
+    ...shown,more].join('')||'<p class="day-empty">—</p>';
 }
 function dayCard(date){const d=new Date(date+'T12:00:00');return `<div class="day-card ${date===localToday()?'today':''}" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}
 
@@ -921,7 +924,15 @@ function showOpening(){
 function renderTaskSections(today=localToday()){
   const orderedPriorities=ranked();
   const rankMap=new Map(orderedPriorities.map((t,i)=>[String(t.id),i+1]));
-  const todaysTasks=state.tasks.filter(t=>t.dueDate===today).sort((a,b)=>Number(b.priority)-Number(a.priority));
+  // Today includes work deliberately scheduled today, even when its deadline
+  // is on a later day. Avoid repeating unfinished overdue work in both groups.
+  const todaysTasks=state.tasks.filter(t=>
+    (t.dueDate===today||t.scheduledDate===today)&&
+    !(!t.done&&t.dueDate&&t.dueDate<today)).sort((a,b)=>
+    Number(a.done)-Number(b.done)||
+    Number(b.scheduledDate===today)-Number(a.scheduledDate===today)||
+    Number(b.priority)-Number(a.priority)||
+    String(a.scheduledTime||'').localeCompare(String(b.scheduledTime||'')));
   // A missed deadline must not disappear simply because the calendar rolled over.
   // Keep overdue items inside Today at a Glance, not another home card.
   const overdue=state.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<today)
@@ -931,7 +942,7 @@ function renderTaskSections(today=localToday()){
     (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
       overdue.slice(0,3).map(t=>taskRow(t,rankMap,true)).join('')+
       (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
-    (todaysTasks.length?(overdue.length?'<div class="section-label">Due today</div>':'')+
+    (todaysTasks.length?(overdue.length?'<div class="section-label">For today</div>':'')+
       todaysTasks.map(t=>taskRow(t,rankMap,true)).join(''):'')+
     (!todaysTasks.length&&!overdue.length?'<p class="empty">No tasks due today.</p>':'');
   $('v917TodayTasks').scrollTop=taskScroll;
@@ -943,13 +954,13 @@ function renderTaskSections(today=localToday()){
 function renderHabitSections(today=localToday(),start=selectedWeek){
   const scheduled=state.habits.filter(h=>isScheduled(h,localToday()));
   const habitScroll=$('todayHabits').scrollTop;
-  $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<label class="habit-today">${habitCaption(h)}${habitToggle(h,localToday())}</label>`).join(''):'<p class="empty">No habits scheduled today.</p>';
+  $('todayHabits').innerHTML=scheduled.length?scheduled.map(h=>`<div class="habit-today"><button type="button" class="bp-habit-jump" data-bp-jump-habit="${esc(h.id)}" aria-label="Find ${esc(h.title)} in Plan">${habitCaption(h)}</button><label class="bp-habit-check-label">${habitToggle(h,localToday())}</label></div>`).join(''):'<p class="empty">No habits scheduled today.</p>';
   $('todayHabits').scrollTop=habitScroll;
   $('weekHabits').innerHTML=state.habits.length?habitTable(start):'<p class="empty">Add a habit to track your week.</p>';
   $('habitsWeekTitle').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
   v916WeekProgress(start);
   $('habitsTracker').innerHTML=state.habits.length?habitTable(start):'<p class="empty">No habits yet. Add your first habit.</p>';
-  $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item"><div><strong>${esc(h.title)}</strong>${habitGoal(h)?'<small class="bp-habit-goal">'+esc(habitGoal(h).title)+'</small>':''}<small>${h.weeklyTarget?'Goal: '+h.weeklyTarget+' days/week · ':''}${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
+  $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item" data-bp-habit-row="${esc(h.id)}" tabindex="-1"><div><strong>${esc(h.title)}</strong>${habitGoal(h)?'<small class="bp-habit-goal">'+esc(habitGoal(h).title)+'</small>':''}<small>${h.weeklyTarget?'Goal: '+h.weeklyTarget+' days/week · ':''}${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
 }
 function renderCalendarGrid(start=selectedWeek){
   const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
@@ -1323,6 +1334,20 @@ function planTab(name){
   });
   tab('myplan');
 }
+// Dashboard links keep Plan as the only Task/Habit management workspace.
+function jumpToPlan(section,id='',kind=''){
+  planTab(section);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const collection=kind==='task'?document.querySelectorAll('#allTasks [data-bp-task-row]'):
+      kind==='habit'?document.querySelectorAll('#habitManager [data-bp-habit-row]'):[];
+    const target=[...collection].find(node=>String(kind==='task'?node.dataset.bpTaskRow:node.dataset.bpHabitRow)===String(id));
+    if(!target){window.scrollTo({top:0,behavior:'instant'});return;}
+    target.scrollIntoView({block:'center',behavior:'instant'});
+    target.classList.add('bp-plan-jump-highlight');
+    target.focus({preventScroll:true});
+    setTimeout(()=>target.classList.remove('bp-plan-jump-highlight'),1800);
+  }));
+}
 function handleSave(event){
   event.preventDefault();const fd=new FormData($('modalForm'));const title=String(fd.get('title')||'').trim();if(!title&&!['todayFocus','weeklyFocus'].includes(modalMode))return;
   const existing=(arr)=>modalId===null?null:state[arr].find(x=>String(x.id)===String(modalId));
@@ -1412,6 +1437,16 @@ document.addEventListener('click',(e)=>{
   if(e.target.closest('#previewOpening')){showOpening(true);return;}
   if(e.target.closest('#paletteLauncher')){tab($('customize').classList.contains('active')?lastMainTab:'customize');return;}
   if(e.target.closest('#closeCustomize')){tab(lastMainTab);return;}
+  const heading=e.target.closest('[data-bp-plan-destination]');
+  if(heading){e.preventDefault();jumpToPlan(heading.dataset.bpPlanDestination);return;}
+  const taskLink=e.target.closest('[data-bp-jump-task]');
+  if(taskLink){e.preventDefault();jumpToPlan('tasks',taskLink.dataset.bpJumpTask,'task');return;}
+  const habitLink=e.target.closest('[data-bp-jump-habit]');
+  if(habitLink){e.preventDefault();jumpToPlan('habits',habitLink.dataset.bpJumpHabit,'habit');return;}
+  const more=e.target.closest('[data-bp-week-more]');
+  if(more){e.preventDefault();const day=more.dataset.bpWeekMore;
+    if(expandedWeekTaskDays.has(day))expandedWeekTaskDays.delete(day);else expandedWeekTaskDays.add(day);
+    renderCalendarGrid();document.querySelector('[data-bp-week-more="'+day+'"]')?.focus({preventScroll:true});return;}
   const inner=e.target.closest('[data-plan-tab]');if(inner){planTab(inner.dataset.planTab);return;}
   const t=e.target.closest('[data-tab]');if(t){if(t.dataset.tab==='myplan')planTab('overview');else tab(t.dataset.tab);return;}
   const addStep=e.target.closest('[data-step-add]');if(addStep){const rows=readGoalStepRows();rows.push({id:'a-'+uid(),title:''});renderGoalStepRows(rows);return;}
@@ -1501,7 +1536,30 @@ for(const key of ['todayFocus','weeklyFocus']){
 $('openingMessageInput').addEventListener('input',e=>{state.openingMessage=e.target.value.slice(0,280);queueTextSave();});
 document.addEventListener('change',(e)=>{
   const x=e.target;
-  if(x.id==='openingMode'){state.openingMode=x.value;save();return;}if(x.dataset.taskCheck){const item=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);if(item){item.done=x.checked;if(item.goalId!==''&&item.goalId!=null){const g=state.goals.find(g=>String(g.id)===String(item.goalId));const a=g?.actions.find(a=>String(a.id)===String(item.actionId||''));if(a)a.done=x.checked;}if(item.ideaId&&item.ideaActionId){const n=state.ideas.find(n=>String(n.id)===String(item.ideaId));const a=n?.actions?.find(a=>String(a.id)===String(item.ideaActionId));if(a)a.done=x.checked;}}}
+  if(x.id==='openingMode'){state.openingMode=x.value;save();return;}
+  if(x.dataset.taskCheck){
+    const item=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);
+    if(!item)return;
+    const goal=state.goals.find(g=>String(g.id)===String(item.goalId||''));
+    const goalAction=goal?.actions?.find(a=>String(a.id)===String(item.actionId||''));
+    const idea=state.ideas.find(n=>String(n.id)===String(item.ideaId||''));
+    const ideaAction=idea?.actions?.find(a=>String(a.id)===String(item.ideaActionId||''));
+    const project=state.projects.find(p=>String(p.id)===String(item.projectId||''));
+    const projectAction=project?.actions?.find(a=>String(a.id)===String(item.projectActionId||''));
+    const before={done:item.done,goalDone:goalAction?.done,ideaDone:ideaAction?.done,
+      projectAction:projectAction?{...projectAction}:null};
+    item.done=x.checked;
+    if(goalAction)goalAction.done=x.checked;
+    if(ideaAction)ideaAction.done=x.checked;
+    if(projectAction)v6SyncTaskAction(item);
+    if(!save(true)){
+      item.done=before.done;
+      if(goalAction)goalAction.done=before.goalDone;
+      if(ideaAction)ideaAction.done=before.ideaDone;
+      if(projectAction)Object.assign(projectAction,before.projectAction);
+    }
+    render('tasks');return;
+  }
   else if(x.dataset.ideaActionCheck){
     const n=activeIdea(),a=n?.actions?.find(a=>String(a.id)===String(x.dataset.ideaActionCheck));if(!a)return;
     a.done=x.checked;n.updated=new Date().toISOString();const t=state.tasks.find(t=>String(t.id)===String(a.taskId));if(t)t.done=x.checked;
@@ -1540,6 +1598,59 @@ $('modalForm').addEventListener('change',e=>{
 });
 $('cancelModal').onclick=closeModal;
 $('modalBack').onclick=e=>{if(e.target===$('modalBack'))closeModal();};
+// One-tap deletion is reversible briefly, without a confirmation modal.
+let bpTaskUndoSnapshot=null,bpTaskUndoTimer=null;
+function bpDeletedTaskLinks(item){
+  const id=String(item.id);
+  return {item,index:state.tasks.indexOf(item),
+    projects:state.projects.map(p=>({id:p.id,links:(p.actions||[]).map((a,i)=>({action:a,index:i})).filter(({action})=>
+      String(action.taskId||'')===id||(String(p.id)===String(item.projectId||'')&&
+      String(action.id)===String(item.projectActionId||'')))})).filter(p=>p.links.length),
+    ideas:state.ideas.map(n=>({id:n.id,links:(n.actions||[]).filter(a=>String(a.taskId)===id).map(a=>a.id)})).filter(n=>n.links.length)};
+}
+function bpShowTaskUndo(snapshot){
+  bpTaskUndoSnapshot=snapshot;clearTimeout(bpTaskUndoTimer);
+  let toast=document.getElementById('bpTaskUndoToast');
+  if(!toast){toast=document.createElement('div');toast.id='bpTaskUndoToast';toast.className='bp-task-undo-toast';
+    toast.setAttribute('role','status');
+    toast.innerHTML='<span>Task deleted</span><button type="button" data-bp-undo-task>Undo</button>';
+    document.body.append(toast);}
+  toast.hidden=false;
+  bpTaskUndoTimer=setTimeout(()=>{toast.hidden=true;bpTaskUndoSnapshot=null;},6500);
+}
+function bpUndoDeletedTask(){
+  const snapshot=bpTaskUndoSnapshot;if(!snapshot)return false;
+  const id=String(snapshot.item.id);
+  if(state.tasks.some(t=>String(t.id)===id))return false;
+  const tasksBefore=state.tasks;
+  const projectsBefore=state.projects.map(p=>p.actions);
+  const ideasBefore=state.ideas.map(n=>(n.actions||[]).map(a=>a.taskId));
+  state.tasks=state.tasks.slice();
+  state.tasks.splice(Math.max(0,Math.min(snapshot.index,state.tasks.length)),0,snapshot.item);
+  for(const saved of snapshot.projects){
+    const project=state.projects.find(p=>String(p.id)===String(saved.id));if(!project)continue;
+    project.actions=(project.actions||[]).slice();
+    for(const {action,index} of saved.links){
+      if(project.actions.some(a=>String(a.id)===String(action.id)))continue;
+      project.actions.splice(Math.max(0,Math.min(index,project.actions.length)),0,action);
+    }
+  }
+  for(const saved of snapshot.ideas){
+    const idea=state.ideas.find(n=>String(n.id)===String(saved.id));if(!idea)continue;
+    for(const action of idea.actions||[])
+      if(saved.links.some(x=>String(x)===String(action.id))&&!action.taskId)action.taskId=snapshot.item.id;
+  }
+  if(!save(true)){
+    state.tasks=tasksBefore;
+    state.projects.forEach((p,i)=>{p.actions=projectsBefore[i];});
+    state.ideas.forEach((n,i)=>(n.actions||[]).forEach((a,j)=>{a.taskId=ideasBefore[i][j];}));
+    render();return false;
+  }
+  clearTimeout(bpTaskUndoTimer);bpTaskUndoSnapshot=null;
+  const toast=document.getElementById('bpTaskUndoToast');if(toast)toast.hidden=true;
+  render();return true;
+}
+document.addEventListener('click',e=>{if(e.target.closest('[data-bp-undo-task]'))bpUndoDeletedTask();});
 function deletePlannerItem(type,id,fromModal=false){
   const key={task:'tasks',event:'events',habit:'habits',goal:'goals'}[type];
   if(!key)return false;
@@ -1556,6 +1667,7 @@ function deletePlannerItem(type,id,fromModal=false){
   // Keep the confirmation for unfinished tasks and all other item types.
   const oneTapCompleted=type==='task'&&item.done;
   if(!oneTapCompleted&&!confirm(message))return false;
+  const undoSnapshot=oneTapCompleted?bpDeletedTaskLinks(item):null;
   // Preserve only the fields this deletion changes so a failed write cannot
   // make a completed Task appear deleted while still present on disk.
   const previous=oneTapCompleted?{
@@ -1585,6 +1697,7 @@ function deletePlannerItem(type,id,fromModal=false){
   }
   if(fromModal)closeModal();
   render();
+  if(undoSnapshot)bpShowTaskUndo(undoSnapshot);
   return true;
 }
 $('deleteModal').onclick=()=>deletePlannerItem(modalMode,modalId,true);

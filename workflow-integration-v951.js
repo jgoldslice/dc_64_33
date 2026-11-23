@@ -1,12 +1,11 @@
 'use strict';
-/* Blueprint v9.51: lightweight task gestures and shared Project dashboards.
+/* Blueprint: shared Task priority actions and Project dashboards.
    Uses only existing state.tasks, state.habits, state.goals and state.projects.
    All edits use the guarded planner save; no duplicate collections or keys. */
 (function(){
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const findTask=id=>state.tasks.find(t=>String(t.id)===String(id));
   const safeDate=value=>/^\d{4}-\d{2}-\d{2}$/.test(String(value||''))?String(value):'';
-  const addDays=(n,date=new Date())=>{const d=new Date(date.getFullYear(),date.getMonth(),date.getDate());d.setDate(d.getDate()+n);return iso(d);};
   const formatDate=value=>safeDate(value)?new Date(value+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
   function updateTask(task,fields){
     if(!task)return false;
@@ -37,14 +36,6 @@
       const priority=!t.priority;
       const priorityRank=priority?Math.max(0,...state.tasks.filter(t=>t.priority).map(t=>t.priorityRank||0))+1:0;
       updateTask(t,{priority,priorityRank});return;
-    }
-    const tomorrow=e.target.closest('[data-bp-swipe-tomorrow]');
-    if(tomorrow){
-      // An explicit quick action completes the swipe. Do not swallow the next tap.
-      suppressClickUntil=0;suppressClickRow=null;
-      const t=findTask(tomorrow.dataset.bpSwipeTomorrow);
-      if(t)updateTask(t,{dueDate:addDays(1),date:addDays(1)});
-      return;
     }
     const projectAdd=e.target.closest('[data-bp-project-add]');
     if(projectAdd){
@@ -131,59 +122,6 @@
     },true);
     window.addEventListener('resize',()=>hideQuick(),{passive:true});
   }
-
-  // Native-feeling horizontal reveal. Vertical gestures remain ordinary
-  // scrolling; system edges and other tab navigation are unaffected.
-  const SWIPE_WIDTH=96; // One swipe action: postpone the deadline.
-  let gesture=null,openedRow=null,suppressClickUntil=0,suppressClickRow=null;
-  const rowOf=target=>target instanceof Element?target.closest('[data-bp-task-row]'):null;
-  function slide(row,offset){
-    const main=row?.querySelector('.bp-task-main');
-    if(main)main.style.transform='translate3d('+offset+'px,0,0)';
-  }
-  function closeRow(row){if(row){row.classList.remove('bp-task-revealed');slide(row,0);if(openedRow===row)openedRow=null;}}
-  function start(e){
-    if(e.touches.length!==1||!rowOf(e.target)||e.target.closest('input,select,textarea'))return;
-    const p=e.touches[0],row=rowOf(e.target);
-    if(openedRow&&openedRow!==row)closeRow(openedRow);
-    gesture={row,x:p.clientX,y:p.clientY,dx:0,horizontal:false,wasOpen:row.classList.contains('bp-task-revealed')};
-  }
-  function moving(e){
-    if(!gesture||e.touches.length!==1)return;
-    const t=e.touches[0],dx=t.clientX-gesture.x,dy=t.clientY-gesture.y;
-    if(!gesture.horizontal){
-      if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){gesture=null;return;}
-      if(Math.abs(dx)<12||Math.abs(dx)<Math.abs(dy)*1.4)return;
-      gesture.horizontal=true;
-    }
-    gesture.dx=dx;
-    slide(gesture.row,Math.max(-SWIPE_WIDTH,Math.min(0,dx+(gesture.wasOpen?-SWIPE_WIDTH:0))));
-    if(e.cancelable)e.preventDefault();
-  }
-  function finish(){
-    if(!gesture)return;
-    const g=gesture;gesture=null;
-    if(!g.horizontal){return;}
-    const reveal=g.wasOpen?g.dx<48:g.dx<-48;
-    if(reveal){
-      g.row.classList.add('bp-task-revealed');slide(g.row,-SWIPE_WIDTH);openedRow=g.row;
-    }else closeRow(g.row);
-    // Only discard the touch-generated click on the row that was swiped.
-    suppressClickUntil=Date.now()+400;suppressClickRow=g.row;
-  }
-  document.addEventListener('touchstart',start,{passive:true});
-  document.addEventListener('touchmove',moving,{passive:false});
-  document.addEventListener('touchend',finish,{passive:true});
-  document.addEventListener('touchcancel',()=>{
-    if(gesture)closeRow(gesture.row);
-    gesture=null;
-  },{passive:true});
-  document.addEventListener('click',e=>{
-    if(Date.now()>suppressClickUntil||rowOf(e.target)!==suppressClickRow||
-       e.target.closest('[data-bp-swipe-tomorrow]'))return;
-    suppressClickUntil=0;suppressClickRow=null;
-    e.preventDefault();e.stopImmediatePropagation();
-  },true);
 
   function projectPulse(p){
     const target=document.getElementById('v951ProjectPulse');
