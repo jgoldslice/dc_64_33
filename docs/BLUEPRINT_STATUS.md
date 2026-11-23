@@ -7,6 +7,11 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-22 — v9.55 Weekly Blueprint shows all tasks
+
+- Prioritize lists the shared planner’s tasks irrespective of deadline, including tasks linked to Areas, Goals and Projects. Completed tasks remain visible with a status label. Ranked tasks show their status in the list and can still be reordered in Priority order. Existing draft-only tasks are included. Priority changes still require Apply.
+- No storage keys, backup formats or native Swift changed. The offline bundle cache version advances. Local JavaScript syntax and all 29 Node tests pass. Physical-device verification requires staging the web bundle, running `npx cap copy ios`, and installing over the existing app from Xcode.
+
 ## 2026-11-22 — v9.54 Weekly Blueprint Schedule week paging (merged; browser verified; iOS QA pending)
 
 **Owner-reported iPad bug:** On Sunday November 22, the Design Week → Schedule sheet showed November 30–December 6 rather than the upcoming November 23–29 week. Tapping either calendar arrow appeared to exit Schedule. Root cause: changing weeks created a whole new draft with `step:0` (Report); opening a saved but empty browsed draft ignored the default next-Monday date.

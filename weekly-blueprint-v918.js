@@ -126,9 +126,10 @@
     }
     return draft.goals[key];
   }
-  function priorityIds(){
-    if(Array.isArray(draft.priority))return draft.priority;
-    return ranked().map(t=>idString(t.id));
+  function priorityIds(tasks=allAvailableTasks()){
+    const eligible=new Set(tasks.filter(t=>!doneTask(t)).map(t=>idString(t.id)));
+    const order=Array.isArray(draft.priority)?draft.priority:ranked().map(t=>t.id);
+    return [...new Set(order.map(idString))].filter(id=>eligible.has(id));
   }
   function allAvailableTasks(){
     return [...state.tasks,...draft.newTasks];
@@ -327,37 +328,39 @@
       '<button class="wb-input-button" type="submit">'+(draft.editingEvent?'Save event change':'+ Add event')+'</button></div></form></section>';
   }
   function prioritiesMarkup(){
-    const ids=priorityIds();
-    const relevant=allAvailableTasks().filter(t=>{
-      const due=draft.carry[idString(t.id)]||t.dueDate||'';
-      return !doneTask(t)&&(ids.includes(idString(t.id))||(due>=draft.weekStart&&due<=add(draft.weekStart,6)));
-    });
+    const tasks=allAvailableTasks();
+    const ids=priorityIds(tasks),selected=new Set(ids);
+    const byId=new Map(tasks.map(t=>[idString(t.id),t]));
+    const deadline=t=>{
+      const due=draft.carry[idString(t.id)]||t.dueDate;
+      return due?'Due '+niceDate(due):'No deadline';
+    };
     let ordered='<div class="wb-order" id="wbPriorityOrder">';
     for(let i=0;i<ids.length;i++){
-      const t=allAvailableTasks().find(t=>idString(t.id)===ids[i]);
-      if(!t||doneTask(t))continue;
+      const t=byId.get(ids[i]);
       ordered+='<div class="wb-priority" data-wb-priority-row="'+attr(ids[i])+'" draggable="true">'+
         '<button type="button" data-wb-drag="'+attr(ids[i])+'" aria-label="Drag to reorder '+attr(t.title)+'">⠿</button>'+
         '<span class="wb-priority-num">'+roman(i+1)+'</span>'+
-        '<span class="wb-priority-title">'+attr(t.title)+'<small>'+(t.dueDate?'Due '+niceDate(t.dueDate):'No deadline')+'</small></span>'+
+        '<span class="wb-priority-title">'+attr(t.title)+'<small>'+deadline(t)+'</small></span>'+
         '<span class="wb-order-actions">'+
         '<button type="button" data-wb-move-priority="'+attr(ids[i])+'" data-wb-dir="-1" aria-label="Move priority up" '+(i===0?'disabled':'')+'>↑</button>'+
         '<button type="button" data-wb-move-priority="'+attr(ids[i])+'" data-wb-dir="1" aria-label="Move priority down" '+(i===ids.length-1?'disabled':'')+'>↓</button>'+
         '<button type="button" data-wb-remove-priority="'+attr(ids[i])+'" aria-label="Remove from priorities">×</button></span></div>';
     }
     ordered+='</div>';
-    let available='<div class="wb-list">';
-    for(const t of relevant.filter(t=>!ids.includes(idString(t.id)))){
-      available+='<div class="wb-row"><span class="wb-row-main">'+attr(t.title)+'<small>'+(t.dueDate?'Due '+niceDate(t.dueDate):'No deadline')+'</small></span>'+
-        '<button type="button" class="wb-inline-action" data-wb-add-priority="'+attr(t.id)+'">+ Prioritize</button></div>';
-    }
-    available+='</div>';
+    const taskRows=tasks.sort((a,b)=>Number(doneTask(a))-Number(doneTask(b))).map(t=>{
+      const status=doneTask(t)?'Completed':selected.has(idString(t.id))?'Prioritized':'';
+      const action=status?'<span class="wb-chip">'+status+'</span>':
+        '<button type="button" class="wb-inline-action" data-wb-add-priority="'+attr(t.id)+'">+ Prioritize</button>';
+      return '<div class="wb-row"><span class="wb-row-main">'+attr(t.title)+'<small>'+deadline(t)+'</small></span>'+action+'</div>';
+    }).join('');
     const form=draft.taskForm;
     const goal=goalFor(form.goalId),area=priorityTaskArea(form.area,goal);
     return '<h3 class="wb-section-heading">Set your priorities</h3><p class="wb-subtext">Rank what matters this week. Drag to reorder, or use the arrows.</p>'+
       '<section class="wb-block"><div class="wb-block-title"><h3>Priority order</h3><small>'+ids.length+' selected</small></div>'+
       (ids.length?ordered:'<p class="wb-empty">No priorities selected.</p>')+'</section>'+
-      '<section class="wb-block"><div class="wb-block-title"><h3>Tasks due this week</h3></div>'+available+'</section>'+
+      '<section class="wb-block" aria-labelledby="wbAllTasksTitle"><div class="wb-block-title"><h3 id="wbAllTasksTitle">All tasks</h3></div>'+
+      (taskRows?'<div class="wb-list">'+taskRows+'</div>':'<p class="wb-empty">No tasks yet.</p>')+'</section>'+
       '<section class="wb-block"><div class="wb-block-title"><h3>Add a priority task</h3></div>'+
       '<form class="wb-new-priority" id="wbNewTaskForm"><label>Task name<input maxlength="160" required name="title" value="'+attr(form.title||'')+'" placeholder="What needs to get done?"></label>'+
       '<label class="wb-priority-date">Due date<input name="dueDate" type="date" value="'+attr(form.dueDate||draft.weekStart)+'"></label>'+
