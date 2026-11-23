@@ -10,7 +10,8 @@
 ## 2026-11-22 — v9.55 Weekly Blueprint shows all tasks
 
 - Prioritize lists the shared planner’s tasks irrespective of deadline, including tasks linked to Areas, Goals and Projects. Completed tasks remain visible with a status label. Ranked tasks show their status in the list and can still be reordered in Priority order. Existing draft-only tasks are included. Priority changes still require Apply.
-- No storage keys, backup formats or native Swift changed. The offline bundle cache version advances. Local JavaScript syntax and all 29 Node tests pass. Physical-device verification requires staging the web bundle, running `npx cap copy ios`, and installing over the existing app from Xcode.
+- [PR #86](https://github.com/jgoldslice/dc_64_33/pull/86) merged as `98eca3c`. [Actions run #496](https://github.com/jgoldslice/dc_64_33/actions/runs/45119277116) passed **359 Chromium Playwright tests**, **29 Node tests**, and JavaScript syntax checks. The regression checks the full task list and verifies that Apply ranks an undated Project task while retaining its link.
+- No storage keys, backup formats or native Swift changed. The offline bundle cache version advances. Temporary iOS web staging passed locally. Physical-device verification requires staging the merged web bundle, running `npx cap copy ios`, and installing over the existing app from Xcode.
 
 ## 2026-11-22 — v9.54 Weekly Blueprint Schedule week paging (merged; browser verified; iOS QA pending)
 
