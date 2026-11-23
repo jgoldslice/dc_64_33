@@ -1485,7 +1485,30 @@ for(const key of ['todayFocus','weeklyFocus']){
 $('openingMessageInput').addEventListener('input',e=>{state.openingMessage=e.target.value.slice(0,280);queueTextSave();});
 document.addEventListener('change',(e)=>{
   const x=e.target;
-  if(x.id==='openingMode'){state.openingMode=x.value;save();return;}if(x.dataset.taskCheck){const item=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);if(item){item.done=x.checked;if(item.goalId!==''&&item.goalId!=null){const g=state.goals.find(g=>String(g.id)===String(item.goalId));const a=g?.actions.find(a=>String(a.id)===String(item.actionId||''));if(a)a.done=x.checked;}if(item.ideaId&&item.ideaActionId){const n=state.ideas.find(n=>String(n.id)===String(item.ideaId));const a=n?.actions?.find(a=>String(a.id)===String(item.ideaActionId));if(a)a.done=x.checked;}}}
+  if(x.id==='openingMode'){state.openingMode=x.value;save();return;}
+  if(x.dataset.taskCheck){
+    const task=state.tasks.find(t=>String(t.id)===x.dataset.taskCheck);
+    if(!task)return;
+    const goal=state.goals.find(g=>String(g.id)===String(task.goalId||''));
+    const goalAction=goal?.actions?.find(a=>String(a.id)===String(task.actionId||''));
+    const idea=state.ideas.find(n=>String(n.id)===String(task.ideaId||''));
+    const ideaAction=idea?.actions?.find(a=>String(a.id)===String(task.ideaActionId||''));
+    const project=state.projects.find(p=>String(p.id)===String(task.projectId||''));
+    const projectAction=project?.actions?.find(a=>String(a.id)===String(task.projectActionId||''));
+    const before={done:task.done,goalDone:goalAction?.done,ideaDone:ideaAction?.done,
+      projectAction:projectAction?{...projectAction}:null};
+    task.done=x.checked;
+    if(goalAction)goalAction.done=x.checked;
+    if(ideaAction)ideaAction.done=x.checked;
+    if(projectAction)v6SyncTaskAction(task);
+    if(!save(true)){
+      task.done=before.done;
+      if(goalAction)goalAction.done=before.goalDone;
+      if(ideaAction)ideaAction.done=before.ideaDone;
+      if(projectAction)Object.assign(projectAction,before.projectAction);
+    }
+    render('tasks');return;
+  }
   else if(x.dataset.ideaActionCheck){
     const n=activeIdea(),a=n?.actions?.find(a=>String(a.id)===String(x.dataset.ideaActionCheck));if(!a)return;
     a.done=x.checked;n.updated=new Date().toISOString();const t=state.tasks.find(t=>String(t.id)===String(a.taskId));if(t)t.done=x.checked;
