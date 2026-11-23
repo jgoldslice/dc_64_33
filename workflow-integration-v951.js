@@ -38,7 +38,7 @@
       const priorityRank=priority?Math.max(0,...state.tasks.filter(t=>t.priority).map(t=>t.priorityRank||0))+1:0;
       updateTask(t,{priority,priorityRank});return;
     }
-    const tomorrow=e.target.closest('[data-bp-swipe-tomorrow]');
+    const tomorrow=e.target.closest('[data-bp-swipe-tomorrow],[data-task-check]');
     if(tomorrow){
       const t=findTask(tomorrow.dataset.bpSwipeTomorrow);
       if(t)updateTask(t,{dueDate:addDays(1),date:addDays(1)});
