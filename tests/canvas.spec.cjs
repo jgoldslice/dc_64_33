@@ -4,16 +4,16 @@ const baseURL = 'http://127.0.0.1:8765/';
 
 test.use({ browserName: 'chromium', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
 
-test('Today shows five dedicated sections in compact mode', async ({ page }) => {
+test('Today shows four dedicated sections in compact mode', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(baseURL);
   await expect(page.locator('#today')).toBeVisible();
   const headings = await page.locator('#today > .stack > section:visible > .card-heading h2').allTextContents();
   expect(headings.map(s => s.trim().replace(/\s+/g, ' '))).toEqual([
-    'Schedule', 'Habits', 'Tasks', 'Top Priorities', 'Projects'
+    'Schedule', 'Habits', 'Top Priorities', 'Projects'
   ]);
-  await expect(page.locator('#v917TodayTasks')).toBeVisible();
+  await expect(page.locator('#v917TodayTasks')).toHaveCount(0);
   await expect(page.locator('#v77TodayPriorities')).toBeVisible();
   await expect(page.locator('#v77TodayProjects')).toBeVisible();
   expect(errors).toEqual([]);
