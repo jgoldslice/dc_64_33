@@ -284,7 +284,7 @@
   add.addEventListener('click',()=>open('',false,add));
   grid.addEventListener('click',e=>{
     // Task checkboxes, Plan links and expanded lists are not Add Event gestures.
-    if(e.target instanceof Element&&e.target.closest('[data-edit-task],[data-task-check],[data-bp-jump-task],[data-bp-week-more]'))return;
+    if(e.target instanceof Element&&e.target.closest('[data-edit-task],[data-task-check],.bp-cal-task-check,[data-bp-jump-task],[data-bp-week-more]'))return;
     const item=e.target instanceof Element?e.target.closest('[data-week-event-date]'):null;
     if(item&&grid.contains(item))open(item.dataset.weekEventDate,true,item);
   });
