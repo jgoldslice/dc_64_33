@@ -7,11 +7,11 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-23 — Notes image viewer and PencilKit gesture (in progress; device QA pending)
+## 2026-11-23 — Notes image viewer and PencilKit gesture (merged; device QA pending)
 
 - Owner reported saved note images appear cropped in the full-screen Library viewer and cannot zoom or pan; also requested a Photos save route. The existing PNG exporter renders the page surface including native handwriting; existing images were not altered. The viewer now fits the image within its available bounds, supports pinch/drag and zoom controls, and exposes Share / Save. On platforms supporting Web Share with files, choose Save Image from the system share sheet; otherwise it falls back to the existing download. Direct Photos access is not guaranteed in the installed WKWebView and must be verified on device.
 - The PencilKit navigation bridge suppresses duplicate pan updates during a pinch and rebases the continuing pan when a finger lifts. This addresses a plausible cause of the owner-reported jump, but is not physically verified. No stored note, drawing or backup schema changes.
-- Validation: 29 standalone Node tests and inline JS syntax checks passed. Targeted Playwright tests could not start locally: bundled browser missing and system Chromium failed to create a socket. CI and physical iPad testing are required. Native Swift changes must be incorporated in the actual Xcode wrapper as well as staging web assets; web copy alone does not update Swift. No iOS build or deployment performed.
+- Merged PR #95 as `c3b74bcb54e5b2374e21c44790d3ac046ef7a93e` (tested head `b7797128839d7ac1f02f21b2754e41f5d77174b9`). GitHub Actions run #45256084345 passed the full Chromium smoke suite, standalone Node tests and JavaScript syntax checks. Targeted Playwright tests could not start locally due to the environment. Physical iPad testing is required. Native Swift changes must be incorporated in the actual Xcode wrapper as well as staging web assets; web copy alone does not update Swift. No iOS build or deployment performed.
 
 ## 2026-11-23 — v9.60 Today single priority card (merged; 374 browser tests passed; device QA pending)
 
