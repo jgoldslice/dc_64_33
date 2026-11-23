@@ -114,12 +114,6 @@
       const priorityRank=priority?Math.max(0,...state.tasks.filter(t=>t.priority).map(t=>t.priorityRank||0))+1:0;
       updateTask(t,{priority,priorityRank});return;
     }
-    const done=e.target.closest('[data-bp-swipe-done]');
-    if(done){
-      const t=findTask(done.dataset.bpSwipeDone);
-      if(t)updateTask(t,{done:!t.done});
-      return;
-    }
     const tomorrow=e.target.closest('[data-bp-swipe-tomorrow]');
     if(tomorrow){
       const t=findTask(tomorrow.dataset.bpSwipeTomorrow);
@@ -263,7 +257,7 @@
     gesture=null;
   },{passive:true});
   document.addEventListener('click',e=>{
-    if(Date.now()>suppressClickUntil||!rowOf(e.target)||e.target.closest('[data-bp-swipe-done],[data-bp-swipe-tomorrow]'))return;
+    if(Date.now()>suppressClickUntil||!rowOf(e.target)||e.target.closest('[data-bp-swipe-tomorrow]'))return;
     e.preventDefault();e.stopImmediatePropagation();
   },true);
 
