@@ -7,6 +7,12 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Notes image viewer and PencilKit gesture (in progress; device QA pending)
+
+- Owner reported saved note images appear cropped in the full-screen Library viewer and cannot zoom or pan; also requested a Photos save route. The existing PNG exporter renders the page surface including native handwriting; existing images were not altered. The viewer now fits the image within its available bounds, supports pinch/drag and zoom controls, and exposes Share / Save. On platforms supporting Web Share with files, choose Save Image from the system share sheet; otherwise it falls back to the existing download. Direct Photos access is not guaranteed in the installed WKWebView and must be verified on device.
+- The PencilKit navigation bridge suppresses duplicate pan updates during a pinch and rebases the continuing pan when a finger lifts. This addresses a plausible cause of the owner-reported jump, but is not physically verified. No stored note, drawing or backup schema changes.
+- Validation: 29 standalone Node tests and inline JS syntax checks passed. Targeted Playwright tests could not start locally: bundled browser missing and system Chromium failed to create a socket. CI and physical iPad testing are required. Native Swift changes must be incorporated in the actual Xcode wrapper as well as staging web assets; web copy alone does not update Swift. No iOS build or deployment performed.
+
 ## 2026-11-23 — v9.60 Today single priority card (merged; 374 browser tests passed; device QA pending)
 
 **Owner request:** Remove the redundant Today Tasks card. The sole **Top Priorities** card should show genuinely starred priorities together with tasks due or scheduled on today's calendar date, displaying date-only urgency without silently making a permanent starred priority. Preserve overdue unfinished work and completed due-today work for checking/unchecking. Keep Plan the authoritative Task editor and Week's current priority/calendar behavior.

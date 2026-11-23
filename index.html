@@ -310,8 +310,10 @@
 .v6-viewer-actions{display:flex;gap:5px}
 .v6-viewer-actions button{padding:9px 8px;background:transparent;color:white;border:1px solid #ffffff42;border-radius:8px;font-size:12px}
 .v6-viewer-actions button[hidden]{display:none}
-.v6-image-viewer-body{flex:1;min-height:0;display:grid;place-items:center;cursor:zoom-out}
-#v6ImageFull{max-width:100%;max-height:100%;object-fit:contain}
+.v6-image-viewer-body{flex:1;min-height:0;min-width:0;position:relative;overflow:hidden;touch-action:none;cursor:grab}
+#v6ImageFull{position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;transform-origin:center;user-select:none;-webkit-user-drag:none}
+.v6-viewer-zoom{display:flex;justify-content:center;gap:8px;padding:6px 0}
+.v6-viewer-zoom button{min-width:44px;min-height:44px;border:1px solid #ffffff42;border-radius:8px;background:transparent;color:white}
 @media(max-width:520px){.v6-library-gallery{gap:6px;grid-template-columns:repeat(2,minmax(0,1fr))}}
 
   /* Canvas v8.13: destructive action appears only after completing a task. */
@@ -578,8 +580,9 @@
   </section>
 </div>
 <div id="v6ImageViewer" class="v6-image-viewer" hidden role="dialog" aria-modal="true" aria-label="Project image preview">
-  <div class="v6-image-viewer-bar"><button type="button" id="v6CloseImage" aria-label="Close image">×</button><span id="v6ImageTitle"></span><div class="v6-viewer-actions"><button type="button" id="v6ImageEdit" hidden>Edit</button><button type="button" id="v6ImageDownload">Save</button><button type="button" id="v6ImageDelete" aria-label="Delete image">Delete</button></div></div>
-  <div class="v6-image-viewer-body"><img id="v6ImageFull" alt="Project image"></div>
+  <div class="v6-image-viewer-bar"><button type="button" id="v6CloseImage" aria-label="Close image">×</button><span id="v6ImageTitle"></span><div class="v6-viewer-actions"><button type="button" id="v6ImageEdit" hidden>Edit</button><button type="button" id="v6ImageDownload">Share / Save</button><button type="button" id="v6ImageDelete" aria-label="Delete image">Delete</button></div></div>
+  <div class="v6-image-viewer-body"><img id="v6ImageFull" alt="Project image" draggable="false"></div>
+  <div class="v6-viewer-zoom" aria-label="Image zoom"><button type="button" id="v6ImageZoomOut" aria-label="Zoom out">−</button><button type="button" id="v6ImageZoomReset">Fit</button><button type="button" id="v6ImageZoomIn" aria-label="Zoom in">+</button></div>
 </div>
 <div id="projectChatBack" class="modal-back" role="presentation" hidden><section class="modal" role="dialog" aria-modal="true" aria-label="ChatGPT project handoff"><h2>Develop in ChatGPT</h2><p class="muted small">Copy your project context, then paste it into a ChatGPT chat or Project. Images and drawings need to be attached separately.</p><textarea id="projectChatText" class="v6-export-text" readonly aria-label="Project context for ChatGPT"></textarea><div class="row-buttons"><button type="button" id="copyProjectChat" class="primary-button">Copy Context</button><button type="button" id="openProjectChat" class="secondary-button">Open ChatGPT ↗</button><button type="button" id="closeProjectChat" class="text-button">Done</button></div></section></div>
 <div id="modalBack" class="modal-back" role="presentation"><form id="modalForm" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><h2 id="modalTitle"></h2><div id="modalFields" class="form-fields"></div><div class="modal-actions"><button type="button" class="danger-button" id="deleteModal" hidden>Delete</button><span class="modal-spacer"></span><button type="button" class="secondary-button" id="cancelModal">Cancel</button><button type="submit" class="primary-button">Save</button></div></form></div>
@@ -1848,7 +1851,7 @@ function v6RenderActions(p){
     return '<div class="v6-action-row '+(a.done?'completed':'')+'"><input type="checkbox" data-v6-check="'+esc(a.id)+'" aria-label="Complete '+esc(a.title)+'" '+(a.done?'checked':'')+'><span>'+esc(a.title)+'</span><button type="button" class="bp-project-priority" data-v6-priority="'+esc(a.id)+'" aria-pressed="'+!!linked?.priority+'" aria-label="'+(linked?.priority?'Remove priority from ':'Make priority: ')+esc(a.title)+'">'+(linked?.priority?'★':'☆')+'</button><button type="button" class="text-button" data-v6-task="'+esc(a.id)+'">Edit task</button><button class="v6-icon-btn" type="button" data-v6-remove-action="'+esc(a.id)+'">×</button></div>';
   }).join('')||'<p class="muted small">Add a To-Do here to see it in Plan Tasks.</p>';
 }
-let v6PreviewUrls=[],v6ImageViewerUrl=null,v6ImageViewerId=null,v6LibraryRenderToken=0,v6ThumbObserver=null;
+let v6PreviewUrls=[],v6ImageViewerUrl=null,v6ImageViewerId=null,v6ImageViewerBlob=null,v6LibraryRenderToken=0,v6ThumbObserver=null;
 function v6SuspendLibrary(){
   // Switching projects/sections must release hidden thumbnails and stop old
   // requests from painting into a newly selected project's Library.
@@ -1907,17 +1910,64 @@ async function v6ViewImage(id){
     const blob=await v6Blob('get',r.key);
     if(!blob||String(v6Project()?.id)!==String(p.id))throw Error('Image unavailable');
     v6CloseImage();
-    v6ImageViewerUrl=URL.createObjectURL(blob);v6ImageViewerId=r.id;
+    v6ImageViewerUrl=URL.createObjectURL(blob);v6ImageViewerId=r.id;v6ImageViewerBlob=blob;
     $('v6ImageFull').src=v6ImageViewerUrl;$('v6ImageFull').alt=r.title;
     $('v6ImageTitle').textContent=r.title;
     $('v6ImageEdit').hidden=r.type!=='sketch';
     $('v6ImageViewer').hidden=false;
+    v6ImageReset();
   }catch(err){alert('Could not open image: '+err.message);}
 }
 function v6CloseImage(){
   $('v6ImageViewer').hidden=true;$('v6ImageFull').removeAttribute('src');
   if(v6ImageViewerUrl)URL.revokeObjectURL(v6ImageViewerUrl);
-  v6ImageViewerUrl=null;v6ImageViewerId=null;
+  v6ImageViewerUrl=null;v6ImageViewerId=null;v6ImageViewerBlob=null;v6ImageReset();
+}
+// The image starts fitted in the available viewport. Gesture coordinates are
+// rebased whenever the number of fingers changes to avoid a release jump.
+const v6ImageBody=document.querySelector('.v6-image-viewer-body');
+const v6ImagePointers=new Map();
+let v6ImageScale=1,v6ImageX=0,v6ImageY=0,v6ImageGesture=null;
+function v6ImageDraw(){
+  const image=$('v6ImageFull'),body=v6ImageBody.getBoundingClientRect();
+  const maxX=Math.max(0,(image.offsetWidth*v6ImageScale-body.width)/2);
+  const maxY=Math.max(0,(image.offsetHeight*v6ImageScale-body.height)/2);
+  v6ImageX=Math.max(-maxX,Math.min(maxX,v6ImageX));v6ImageY=Math.max(-maxY,Math.min(maxY,v6ImageY));
+  image.style.transform=`translate(${v6ImageX}px,${v6ImageY}px) scale(${v6ImageScale})`;
+}
+function v6ImageReset(){v6ImageScale=1;v6ImageX=0;v6ImageY=0;v6ImagePointers.clear();v6ImageGesture=null;v6ImageDraw();}
+function v6ImageRebase(){
+  const pts=[...v6ImagePointers.values()].slice(0,2);
+  if(!pts.length){v6ImageGesture=null;return;}
+  const mid=pts.length===2?{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2}:pts[0];
+  v6ImageGesture={mid,dist:pts.length===2?Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y):0,scale:v6ImageScale,x:v6ImageX,y:v6ImageY};
+}
+v6ImageBody.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;v6ImagePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});v6ImageBody.setPointerCapture(e.pointerId);v6ImageRebase();});
+v6ImageBody.addEventListener('pointermove',e=>{
+  if(!v6ImagePointers.has(e.pointerId)||!v6ImageGesture)return;
+  v6ImagePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  const pts=[...v6ImagePointers.values()].slice(0,2),g=v6ImageGesture;
+  const mid=pts.length===2?{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2}:pts[0];
+  const dist=pts.length===2?Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y):0;
+  v6ImageScale=g.dist?Math.max(1,Math.min(5,g.scale*dist/g.dist)):g.scale;
+  const box=v6ImageBody.getBoundingClientRect(),cx=box.left+box.width/2,cy=box.top+box.height/2,ratio=v6ImageScale/g.scale;
+  v6ImageX=mid.x-cx-(g.mid.x-cx-g.x)*ratio;v6ImageY=mid.y-cy-(g.mid.y-cy-g.y)*ratio;v6ImageDraw();
+});
+function v6ImagePointerEnd(e){if(v6ImagePointers.delete(e.pointerId))v6ImageRebase();}
+v6ImageBody.addEventListener('pointerup',v6ImagePointerEnd);v6ImageBody.addEventListener('pointercancel',v6ImagePointerEnd);
+v6ImageBody.addEventListener('lostpointercapture',v6ImagePointerEnd);
+window.addEventListener('resize',v6ImageDraw);
+async function v6ShareImage(){
+  const r=v6Project()?.library.find(x=>String(x.id)===String(v6ImageViewerId)),blob=v6ImageViewerBlob;
+  if(!r||!blob)return;
+  const mime=blob.type||r.mime||'image/png',ext=mime==='image/jpeg'?'jpg':mime==='image/png'?'png':'img';
+  const file=new File([blob],(r.title||'Blueprint image')+'.'+ext,{type:mime});
+  if(navigator.share&&navigator.canShare?.({files:[file]})){
+    try{await navigator.share({files:[file],title:r.title});}catch(error){if(error.name!=='AbortError')alert('Could not share image: '+error.message);}
+  }else{
+    if(/iPad|iPhone|iPod/.test(navigator.userAgent))alert('Image sharing is unavailable in this app version. Use the downloaded image in Files to save it to Photos.');
+    v6OpenResource(r.id);
+  }
 }
 function v6RenderSketchView(){
   $('sketchGallery').hidden=v6SketchEditing;
@@ -2264,11 +2314,14 @@ document.addEventListener('click',async e=>{
   if(match('#uploadProjectFile')){v6CloseLibraryMenu();$('projectFileInput').click();return;}
   if(!$('libraryAddChoices').hidden&&!match('#libraryAddChoices'))v6CloseLibraryMenu();
   const gallery=match('[data-v6-view-image]');if(gallery){v6ViewImage(gallery.dataset.v6ViewImage);return;}
-  if(match('#v6CloseImage')||tgt.id==='v6ImageViewer'||match('.v6-image-viewer-body')){v6CloseImage();return;}
+  if(match('#v6CloseImage')||tgt.id==='v6ImageViewer'){v6CloseImage();return;}
+  if(match('#v6ImageZoomReset')){v6ImageReset();return;}
+  if(match('#v6ImageZoomIn')){v6ImageScale=Math.min(5,v6ImageScale*1.5);v6ImageDraw();return;}
+  if(match('#v6ImageZoomOut')){v6ImageScale=Math.max(1,v6ImageScale/1.5);v6ImageDraw();return;}
   if(match('#v6ImageEdit')){
     const id=v6ImageViewerId;v6CloseImage();v6ProjectTab='sketch';v6SketchEditing=false;v6Render();v6LoadSketch(id);return;
   }
-  if(match('#v6ImageDownload')){const id=v6ImageViewerId;v6OpenResource(id);return;}
+  if(match('#v6ImageDownload')){v6ShareImage();return;}
   if(match('#v6ImageDelete')){const id=v6ImageViewerId;v6DeleteResource(id).then(()=>{if(!v6Project()?.library.some(r=>String(r.id)===String(id)))v6CloseImage();});return;}
   const resource=match('[data-v6-open-resource]');if(resource){v6OpenResource(resource.dataset.v6OpenResource);return;}
   const deleted=match('[data-v6-delete-resource]');if(deleted){v6DeleteResource(deleted.dataset.v6DeleteResource);return;}
