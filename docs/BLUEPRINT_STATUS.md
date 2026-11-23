@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-22 — v9.57 Completed Task one-tap deletion (PR pending; browser/device QA pending)
+
+**Owner-reported iPad friction:** Plan → Tasks showed a native confirmation popup after tapping Delete on an already-checked task.
+
+- **Implemented on branch** `fix/completed-task-one-tap-delete-v957` from `main` baseline `37f018b` (code commits `9129b81`, tests `faf81f3`, offline cache `5f677c6`). Both the completed Task row’s Delete button and the completed Task editor’s Delete button remove the Task immediately without a confirmation dialog. Uncompleted Tasks, Events, Goals and Habits still retain their original confirmation requirements. The deletion is immediate and permanent; a backup is required to recover it after a successful deletion.
+- The existing shared Task cleanup still removes Project To-Do actions and clears Brainstorm idea action links, so deleted linked Tasks are not recreated. A completed Task’s deletion is guarded by verified local save and rolls back the Task, Project actions and idea links if persistence fails. No planner schema, storage key, backup format, or native Swift changes.
+- Updated Playwright regression checks one-tap row and editor deletion, unchanged confirmation for unfinished Tasks, disk persistence, Project and idea cleanup, and simulated failed-storage rollback. **Automated tests: pending** on branch; no local iPhone/iPad/Xcode device verification or deployment. GitHub Actions must pass before merge.
+- Post-merge: stage the reviewed web assets into the Mac Capacitor wrapper with `scripts/stage-ios-web.py`, then `npx cap copy ios` and install over the existing iOS app with its existing signing team and bundle identifier. Never uninstall or clear local app data; verify completed/uncompleted deletion, Task/Project link removal and offline update on device.
+
 ## 2026-11-22 — v9.56 Task action alignment (merged; automated-test verified; device QA pending)
 
 **Owner-reported iPad issue:** In Plan → Tasks, due-date buttons varied in width and completed rows added Delete after Edit, so due-date cards, priority stars and Edit controls shifted between rows.
