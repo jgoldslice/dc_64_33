@@ -23,6 +23,70 @@ test('Plan defaults to Overview and Weekly Blueprint opens as an accessible five
   expect(errors).toEqual([]);
 });
 
+test('Sunday planning starts next Monday and week arrows stay on Schedule',async({page})=>{
+  await page.clock.install({time:new Date('2026-11-22T19:00:00Z')});
+  await page.setViewportSize({width:1194,height:834});
+  await page.goto(base);
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  expect(await page.evaluate(()=>BlueprintWeekly.getDraft().weekStart)).toBe('2026-11-23');
+  await page.locator('[data-wb-step="2"]').click();
+  await page.locator('[data-wb-select-day="2026-11-26"]').first().click();
+  await page.locator('#wbEventForm input[name=title]').fill('Planning meeting');
+  await page.locator('#wbEventForm input[name=time]').fill('13:30');
+  await page.locator('[data-wb-week="1"]').click();
+  await expect(page.locator('#wbOverlay [role="dialog"]')).toBeVisible();
+  await expect(page.locator('#wbTitle')).toHaveText('Schedule');
+  expect(await page.evaluate(()=>BlueprintWeekly.getDraft().weekStart)).toBe('2026-11-30');
+  expect(await page.evaluate(()=>BlueprintWeekly.getDraft().selectedDay)).toBe('2026-12-03');
+  await expect(page.locator('#wbEventForm input[name=date]')).toHaveValue('2026-12-03');
+  await expect(page.locator('#wbEventForm input[name=title]')).toHaveValue('Planning meeting');
+  await expect(page.locator('#wbEventForm input[name=time]')).toHaveValue('13:30');
+  await page.locator('[data-wb-week="-1"]').click();
+  await expect(page.locator('#wbTitle')).toHaveText('Schedule');
+  expect(await page.evaluate(()=>BlueprintWeekly.getDraft().weekStart)).toBe('2026-11-23');
+  await expect(page.locator('#wbEventForm input[name=date]')).toHaveValue('2026-11-26');
+});
+
+test('reopening a blank browsed draft returns to the upcoming week without losing stage',async({page})=>{
+  await page.clock.install({time:new Date('2026-11-22T19:00:00Z')});
+  await page.goto(base);
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  await page.locator('[data-wb-step="2"]').click();
+  await page.locator('[data-wb-week="1"]').click();
+  expect(await page.evaluate(()=>BlueprintWeekly.getDraft().weekStart)).toBe('2026-11-30');
+  await page.locator('[data-wb-close]').click();
+  await page.reload();
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  await expect(page.locator('#wbTitle')).toHaveText('Schedule');
+  expect(await page.evaluate(()=>BlueprintWeekly.getDraft().weekStart)).toBe('2026-11-23');
+  await expect(page.locator('#wbEventForm input[name=date]')).toHaveValue('2026-11-23');
+});
+
+test('unsaved committed event drafts are retained on reopen and protected during week switches',async({page})=>{
+  await page.clock.install({time:new Date('2026-11-22T19:00:00Z')});
+  await page.goto(base);
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  await page.locator('[data-wb-step="2"]').click();
+  await page.locator('[data-wb-week="1"]').click();
+  await page.locator('#wbEventForm input[name=title]').fill('Save this event');
+  await page.locator('#wbEventForm button[type=submit]').click();
+  await page.locator('[data-wb-close]').click();
+  await page.reload();
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  expect(await page.evaluate(()=>BlueprintWeekly.getDraft().weekStart)).toBe('2026-11-30');
+  await expect(page.locator('#wbMain')).toContainText('Save this event');
+  page.once('dialog',dialog=>dialog.dismiss());
+  await page.locator('[data-wb-week="-1"]').click();
+  expect(await page.evaluate(()=>BlueprintWeekly.getDraft().weekStart)).toBe('2026-11-30');
+  await expect(page.locator('#wbTitle')).toHaveText('Schedule');
+  await expect(page.locator('#wbMain')).toContainText('Save this event');
+});
+
 test('Report stages last-week task and habit checkmarks, then applies them together',async({page})=>{
   await page.goto(base);
   const dates=await page.evaluate(()=>{
