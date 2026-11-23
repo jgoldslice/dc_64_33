@@ -186,6 +186,47 @@ test('iPad full week calendar shows existing events in their day and updates aft
   expect(await page.evaluate(()=>state.events[0].date)).toBe(day);
 });
 
+test('Prioritize lists all app tasks and can rank a Project to-do without a deadline',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    const tasks=[
+      {id:'plain',title:'Undated task'},
+      {id:'overdue',title:'Overdue task',dueDate:'2000-01-01'},
+      {id:'later',title:'Future task',dueDate:'2099-01-01'},
+      {id:'area',title:'Area task',area:'Research'},
+      {id:'goal',title:'Goal task',goalId:String(state.goals[0].id)},
+      {id:'selected',title:'Previously starred',priority:true,priorityRank:1},
+      {id:'done',title:'Completed task',done:true}
+    ];
+    state.tasks=tasks.map(t=>({dueDate:'',done:false,priority:false,priorityRank:0,...t}));
+    const action={id:'action',title:'Project task',done:false};
+    const project={id:'test-project',title:'Test Project',notes:[],library:[],actions:[action]};
+    state.projects=[project];
+    v6EnsureProjectTask(project,action);
+    render();
+  });
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('[data-wb-launch]').click();
+  await page.locator('[data-wb-step="3"]').click();
+  const list=page.getByRole('region',{name:'All tasks'});
+  const row=title=>list.locator('.wb-row').filter({hasText:title});
+  await expect(list.locator('.wb-row')).toHaveCount(8);
+  for(const title of ['Undated task','Overdue task','Future task','Area task','Goal task','Project task'])
+    await expect(row(title).getByRole('button',{name:'+ Prioritize'})).toBeVisible();
+  await expect(row('Previously starred')).toContainText('Prioritized');
+  await expect(row('Completed task').getByRole('button')).toHaveCount(0);
+  await expect(row('Completed task').locator('.wb-chip')).toHaveText('Completed');
+
+  await row('Project task').getByRole('button',{name:'+ Prioritize'}).click();
+  await expect(row('Project task')).toContainText('Prioritized');
+  await expect(page.locator('#wbPriorityOrder')).toContainText('Project task');
+  expect(await page.evaluate(()=>state.tasks.find(t=>t.title==='Project task').priority)).toBe(false);
+  await page.locator('[data-wb-step="4"]').click();
+  await page.locator('[data-wb-next]').click();
+  const task=await page.evaluate(()=>state.tasks.find(t=>t.title==='Project task'));
+  expect(task).toMatchObject({priority:true,priorityRank:2,projectId:'test-project',dueDate:''});
+});
+
 test('Priority reordering and undo restore the exact previous task priority state',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
