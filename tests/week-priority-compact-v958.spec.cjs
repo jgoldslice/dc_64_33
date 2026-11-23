@@ -59,7 +59,9 @@ test('Week priority checkbox marks task done without opening editor',async({page
   await page.locator('[data-tab="week"]').click();
   const row=page.locator('#priorities [data-bp-task-row="week-check"]');
   await expect(row.locator('[data-edit-task]')).toHaveCount(0);
-  await row.locator('[data-task-check]').check();
+  // Completing a priority removes its row immediately, so click is the
+  // correct interaction assertion instead of check() on a detached element.
+  await row.locator('[data-task-check]').click();
   await expect(row).toHaveCount(0);
   expect(await page.evaluate(()=>{
     const disk=JSON.parse(localStorage.getItem(STORAGE_KEY));
