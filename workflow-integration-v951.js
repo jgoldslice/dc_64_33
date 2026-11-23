@@ -1,12 +1,11 @@
 'use strict';
-/* Blueprint v9.51: lightweight task gestures and shared Project dashboards.
+/* Blueprint: shared Task priority actions and Project dashboards.
    Uses only existing state.tasks, state.habits, state.goals and state.projects.
    All edits use the guarded planner save; no duplicate collections or keys. */
 (function(){
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const findTask=id=>state.tasks.find(t=>String(t.id)===String(id));
   const safeDate=value=>/^\d{4}-\d{2}-\d{2}$/.test(String(value||''))?String(value):'';
-  const addDays=(n,date=new Date())=>{const d=new Date(date.getFullYear(),date.getMonth(),date.getDate());d.setDate(d.getDate()+n);return iso(d);};
   const formatDate=value=>safeDate(value)?new Date(value+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
   function updateTask(task,fields){
     if(!task)return false;
@@ -26,86 +25,10 @@
     window.v919RenderProjectOverview?.(v6Project());
     return true;
   }
-  const menu=document.createElement('div');
-  menu.id='bpTaskDates';
-  menu.className='bp-task-date-menu';
-  menu.setAttribute('role','dialog');
-  menu.setAttribute('aria-label','Task dates');
-  menu.hidden=true;
-  menu.innerHTML='<div class="bp-task-date-menu-heading"><strong>Task dates</strong><button type="button" data-bp-date-close aria-label="Close date picker">×</button></div>'+
-    '<div class="bp-task-date-presets"><button type="button" data-bp-date-preset="today">Today</button>'+
-    '<button type="button" data-bp-date-preset="tomorrow">Tomorrow</button>'+
-    '<button type="button" data-bp-date-preset="week">In 7 days</button>'+
-    '<button type="button" data-bp-date-preset="clear">No deadline</button></div>'+
-    '<label>Deadline <input type="date" data-bp-date-input></label>'+
-    '<div class="bp-task-menu-divider"></div>'+
-    '<label>On calendar <input type="date" data-bp-plan-input></label>'+
-    '<label>Time (optional) <input type="time" data-bp-time-input></label>'+
-    '<div class="bp-task-menu-actions"><button type="button" data-bp-plan-clear>Clear plan</button><button type="button" data-bp-plan-apply>Save schedule</button></div>';
-  document.body.append(menu);
-  let openedTask=null,restoreFocus=null;
-  function closeMenu(){
-    if(menu.hidden)return;
-    menu.hidden=true;
-    const focus=restoreFocus;
-    restoreFocus=null;openedTask=null;
-    if(focus?.isConnected)focus.focus({preventScroll:true});
-  }
-  function placeMenu(anchor){
-    const rect=anchor.getBoundingClientRect(),vw=window.visualViewport?.width||innerWidth,
-      vh=window.visualViewport?.height||innerHeight;
-    const width=Math.min(316,Math.max(250,vw-24));
-    menu.style.width=width+'px';
-    const left=Math.max(12,Math.min(rect.left,vw-width-12));
-    menu.style.left=left+'px';
-    menu.style.top=Math.max(12,Math.min(rect.bottom+8,vh-menu.getBoundingClientRect().height-12))+'px';
-  }
-  function openMenu(anchor,id){
-    const task=findTask(id);
-    if(!task)return;
-    closeMenu();
-    openedTask=String(id);restoreFocus=anchor;
-    menu.querySelector('[data-bp-date-input]').value=safeDate(task.dueDate);
-    menu.querySelector('[data-bp-plan-input]').value=safeDate(task.scheduledDate);
-    menu.querySelector('[data-bp-time-input]').value=task.scheduledTime||'';
-    menu.hidden=false;
-    placeMenu(anchor);
-    menu.querySelector('[data-bp-date-input]').focus({preventScroll:true});
-  }
-  function setDeadline(date){
-    const task=findTask(openedTask);
-    if(!task)return;
-    if(updateTask(task,{dueDate:date,date})){
-      const id=openedTask;closeMenu();
-      // Preserve the existing focus route even when render replaces the row.
-      document.querySelector('[data-bp-task-date="'+CSS.escape(id)+'"]')?.focus({preventScroll:true});
-    }
-  }
-  menu.addEventListener('click',e=>{
-    const button=e.target.closest('button');if(!button)return;
-    if(button.hasAttribute('data-bp-date-close')){closeMenu();return;}
-    const preset=button.dataset.bpDatePreset;
-    if(preset){
-      setDeadline(preset==='today'?localToday():preset==='tomorrow'?addDays(1):preset==='week'?addDays(7):'');
-      return;
-    }
-    if(button.hasAttribute('data-bp-plan-apply')||button.hasAttribute('data-bp-plan-clear')){
-      const task=findTask(openedTask);if(!task)return;
-      const clear=button.hasAttribute('data-bp-plan-clear');
-      const day=clear?'':safeDate(menu.querySelector('[data-bp-plan-input]').value);
-      const time=clear||!day?'':menu.querySelector('[data-bp-time-input]').value;
-      if(updateTask(task,{scheduledDate:day,scheduledTime:time})){closeMenu();}
-    }
-  });
-  menu.addEventListener('change',e=>{
-    if(e.target.matches('[data-bp-date-input]'))setDeadline(safeDate(e.target.value));
-  });
   document.addEventListener('click',e=>{
     if(!(e.target instanceof Element))return;
     const edit=e.target.closest('[data-bp-edit-task]');
     if(edit){e.preventDefault();openModal('task',edit.dataset.bpEditTask);return;}
-    const date=e.target.closest('[data-bp-task-date]');
-    if(date){e.preventDefault();openMenu(date,date.dataset.bpTaskDate);return;}
     const star=e.target.closest('[data-bp-task-star]');
     if(star){
       e.preventDefault();const t=findTask(star.dataset.bpTaskStar);
@@ -113,14 +36,6 @@
       const priority=!t.priority;
       const priorityRank=priority?Math.max(0,...state.tasks.filter(t=>t.priority).map(t=>t.priorityRank||0))+1:0;
       updateTask(t,{priority,priorityRank});return;
-    }
-    const tomorrow=e.target.closest('[data-bp-swipe-tomorrow]');
-    if(tomorrow){
-      // An explicit quick action completes the swipe. Do not swallow the next tap.
-      suppressClickUntil=0;suppressClickRow=null;
-      const t=findTask(tomorrow.dataset.bpSwipeTomorrow);
-      if(t)updateTask(t,{dueDate:addDays(1),date:addDays(1)});
-      return;
     }
     const projectAdd=e.target.closest('[data-bp-project-add]');
     if(projectAdd){
@@ -130,13 +45,7 @@
       openModal(projectAdd.dataset.bpProjectAdd);
       return;
     }
-    if(!menu.hidden&&!menu.contains(e.target))closeMenu();
   });
-  window.addEventListener('resize',closeMenu,{passive:true});
-  window.addEventListener('scroll',closeMenu,true);
-  document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'&&!menu.hidden){e.preventDefault();closeMenu();}
-  },true);
 
   // One Quick Add for every tab. It opens the existing forms rather than
   // creating competing task/goal/habit/event entry paths or storage models.
@@ -213,59 +122,6 @@
     },true);
     window.addEventListener('resize',()=>hideQuick(),{passive:true});
   }
-
-  // Native-feeling horizontal reveal. Vertical gestures remain ordinary
-  // scrolling; system edges and other tab navigation are unaffected.
-  const SWIPE_WIDTH=96; // One swipe action: postpone the deadline.
-  let gesture=null,openedRow=null,suppressClickUntil=0,suppressClickRow=null;
-  const rowOf=target=>target instanceof Element?target.closest('[data-bp-task-row]'):null;
-  function slide(row,offset){
-    const main=row?.querySelector('.bp-task-main');
-    if(main)main.style.transform='translate3d('+offset+'px,0,0)';
-  }
-  function closeRow(row){if(row){row.classList.remove('bp-task-revealed');slide(row,0);if(openedRow===row)openedRow=null;}}
-  function start(e){
-    if(e.touches.length!==1||!rowOf(e.target)||e.target.closest('input,select,textarea'))return;
-    const p=e.touches[0],row=rowOf(e.target);
-    if(openedRow&&openedRow!==row)closeRow(openedRow);
-    gesture={row,x:p.clientX,y:p.clientY,dx:0,horizontal:false,wasOpen:row.classList.contains('bp-task-revealed')};
-  }
-  function moving(e){
-    if(!gesture||e.touches.length!==1)return;
-    const t=e.touches[0],dx=t.clientX-gesture.x,dy=t.clientY-gesture.y;
-    if(!gesture.horizontal){
-      if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){gesture=null;return;}
-      if(Math.abs(dx)<12||Math.abs(dx)<Math.abs(dy)*1.4)return;
-      gesture.horizontal=true;
-    }
-    gesture.dx=dx;
-    slide(gesture.row,Math.max(-SWIPE_WIDTH,Math.min(0,dx+(gesture.wasOpen?-SWIPE_WIDTH:0))));
-    if(e.cancelable)e.preventDefault();
-  }
-  function finish(){
-    if(!gesture)return;
-    const g=gesture;gesture=null;
-    if(!g.horizontal){return;}
-    const reveal=g.wasOpen?g.dx<48:g.dx<-48;
-    if(reveal){
-      g.row.classList.add('bp-task-revealed');slide(g.row,-SWIPE_WIDTH);openedRow=g.row;
-    }else closeRow(g.row);
-    // Only discard the touch-generated click on the row that was swiped.
-    suppressClickUntil=Date.now()+400;suppressClickRow=g.row;
-  }
-  document.addEventListener('touchstart',start,{passive:true});
-  document.addEventListener('touchmove',moving,{passive:false});
-  document.addEventListener('touchend',finish,{passive:true});
-  document.addEventListener('touchcancel',()=>{
-    if(gesture)closeRow(gesture.row);
-    gesture=null;
-  },{passive:true});
-  document.addEventListener('click',e=>{
-    if(Date.now()>suppressClickUntil||rowOf(e.target)!==suppressClickRow||
-       e.target.closest('[data-bp-swipe-tomorrow]'))return;
-    suppressClickUntil=0;suppressClickRow=null;
-    e.preventDefault();e.stopImmediatePropagation();
-  },true);
 
   function projectPulse(p){
     const target=document.getElementById('v951ProjectPulse');
