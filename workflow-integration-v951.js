@@ -116,6 +116,8 @@
     }
     const tomorrow=e.target.closest('[data-bp-swipe-tomorrow]');
     if(tomorrow){
+      // An explicit quick action completes the swipe. Do not swallow the next tap.
+      suppressClickUntil=0;suppressClickRow=null;
       const t=findTask(tomorrow.dataset.bpSwipeTomorrow);
       if(t)updateTask(t,{dueDate:addDays(1),date:addDays(1)});
       return;
@@ -215,7 +217,7 @@
   // Native-feeling horizontal reveal. Vertical gestures remain ordinary
   // scrolling; system edges and other tab navigation are unaffected.
   const SWIPE_WIDTH=96; // One swipe action: postpone the deadline.
-  let gesture=null,openedRow=null,suppressClickUntil=0;
+  let gesture=null,openedRow=null,suppressClickUntil=0,suppressClickRow=null;
   const rowOf=target=>target instanceof Element?target.closest('[data-bp-task-row]'):null;
   function slide(row,offset){
     const main=row?.querySelector('.bp-task-main');
@@ -248,7 +250,8 @@
     if(reveal){
       g.row.classList.add('bp-task-revealed');slide(g.row,-SWIPE_WIDTH);openedRow=g.row;
     }else closeRow(g.row);
-    suppressClickUntil=Date.now()+400;
+    // Only discard the touch-generated click on the row that was swiped.
+    suppressClickUntil=Date.now()+400;suppressClickRow=g.row;
   }
   document.addEventListener('touchstart',start,{passive:true});
   document.addEventListener('touchmove',moving,{passive:false});
@@ -258,7 +261,9 @@
     gesture=null;
   },{passive:true});
   document.addEventListener('click',e=>{
-    if(Date.now()>suppressClickUntil||!rowOf(e.target)||e.target.closest('[data-bp-swipe-tomorrow]'))return;
+    if(Date.now()>suppressClickUntil||rowOf(e.target)!==suppressClickRow||
+       e.target.closest('[data-bp-swipe-tomorrow]'))return;
+    suppressClickUntil=0;suppressClickRow=null;
     e.preventDefault();e.stopImmediatePropagation();
   },true);
 
