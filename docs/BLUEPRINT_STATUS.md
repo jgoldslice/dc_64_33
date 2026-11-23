@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-22 — v9.59 Plan Task row Set Date simplification (PR pending)
+
+**Owner request completed in code:** Remove the remaining inline **Set Date** button from Plan → Tasks in addition to the Today/Week compact cards already merged in v9.58. Plan remains where tasks are edited.
+
+- **Implemented on branch** `fix/plan-task-inline-date-button-v959` from the verified v9.58 `main`. Plan Task rows keep checkboxes, rank badges, priority stars, title-based Edit, and aligned Edit/Delete controls, but replace the redundant date button with a small, passive `Due …` caption. The existing Task editor retains Deadline, On calendar, and Scheduled time fields.
+- Removed the obsolete standalone Task date popover and its click/keyboard listeners and unused CSS. The existing shared Task editor and deadline persistence remain unchanged. Compact Today and Week cards, their 96px Tomorrow swipe, checkbox behavior, offline data and existing backup/export formats are preserved.
+- Revised existing browser tests to verify column alignment across 320/375/390/620/768/1024px, absence of inline date controls, and Plan editor scheduling/persistence. **Automated test verification: pending GitHub Actions.** **Physical device QA: pending. Deployed: no.**
+- After merge, stage the latest `main` web bundle into the existing Mac Capacitor wrapper using `scripts/stage-ios-web.py`, run `npx cap copy ios`, and install over the app in Xcode without uninstalling it or clearing local user data.
+
 ## 2026-11-22 — v9.58 Today/Week Task card simplification (merged; browser-verified; device QA pending)
 
 **Owner-reported iPad bug and clarified request:** In Week → Top Priorities, a swiped row showed both Done and Tomorrow, squashing the task name. The Week sidebar card is approximately 320px wide even on a large iPad, but Task editing controls were sized using the full viewport. The owner requested: remove swipe Done; keep Tomorrow; remove Set date, star editing, Edit, and + Add from Week Top Priorities, and apply the same simplified read/check behavior to Today’s Tasks and Top Priorities. Plan remains the Task creation and editing workspace. The checkbox remains how users mark these Tasks completed.
