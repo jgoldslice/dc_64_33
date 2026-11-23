@@ -12,6 +12,7 @@
     '<form id="v87EventForm" class="v87-event-sheet" role="dialog" aria-modal="true" aria-labelledby="v87EventTitle">',
       '<div class="v87-event-heading"><h2 id="v87EventTitle">Add event</h2>',
         '<button type="button" id="v87EventClose" class="v87-event-close" aria-label="Close event form">×</button></div>',
+      '<div class="v87-event-content">',
       '<p id="v87EventDate" class="v87-event-date"></p>',
       '<div class="v816-modal-week-controls v817-date-heading" aria-label="Selected event week">'+
         '<span id="v816EventWeek" aria-live="polite"></span>'+
@@ -21,6 +22,7 @@
         '<input id="v87EventName" name="title" type="text" maxlength="160" placeholder="What\'s happening?" autocomplete="off" required></label>',
       '<label class="v87-event-label" for="v87EventTime">Time',
         '<input id="v87EventTime" name="time" type="time" value="09:00" required></label>',
+      '</div>',
       '<div class="v87-event-actions">',
         '<button type="button" id="v87EventCancel" class="secondary-button">Cancel</button>',
         '<button type="submit" class="primary-button">Add event</button>',
