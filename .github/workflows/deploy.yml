@@ -29,6 +29,13 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
+          name: github-pages-${{ github.run_attempt }}
+      # Artifact metadata may lag after upload finalization. A unique name
+      # also keeps a retried workflow from finding artifacts from old attempts.
+      - name: Allow artifact metadata to become available
+        run: sleep 15
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
