@@ -117,7 +117,7 @@ test('Calendar distinguishes scheduled Tasks from Events and opens the Task edit
   await expect(page.locator('#v87EventBack')).toBeHidden();
 });
 
-test('Task swipe reveals Done and Tomorrow, and linked Project action completion persists',async({page})=>{
+test('Task swipe offers only Tomorrow, and rescheduling retains linked Project completion',async({page})=>{
   await newProject(page);
   await page.locator('[data-bp-project-add="task"]').click();
   await setTitle(page,'Inspect catalyst');
@@ -130,7 +130,7 @@ test('Task swipe reveals Done and Tomorrow, and linked Project action completion
   await page.locator('[data-tab="today"]').click();
   const row=page.locator('#v917TodayTasks [data-bp-task-row="'+task+'"]');
   await expect(row).toBeVisible();
-  await row.evaluate(async source=>{
+  await row.evaluate(source=>{
     const rect=source.getBoundingClientRect(),x=rect.left+rect.width*.62,y=rect.top+rect.height*.5;
     const touch=(xx,yy)=>new Touch({identifier:42,target:source,clientX:xx,clientY:yy});
     const evt=(type,xx,yy)=>new TouchEvent(type,{bubbles:true,cancelable:true,
@@ -141,17 +141,67 @@ test('Task swipe reveals Done and Tomorrow, and linked Project action completion
     source.dispatchEvent(evt('touchend',x-115,y+1));
   });
   await expect(row).toHaveClass(/bp-task-revealed/);
-  await row.locator('[data-bp-swipe-done]').click();
+  await expect(row.locator('[data-bp-swipe-done]')).toHaveCount(0);
+  const button=row.locator('[data-bp-swipe-tomorrow]');
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAttribute('aria-label','Push Inspect catalyst to tomorrow');
+  const geometry=await row.evaluate(el=>{
+    const r=el.getBoundingClientRect(),wrap=el.querySelector('.bp-task-swipe-actions').getBoundingClientRect(),
+      button=el.querySelector('[data-bp-swipe-tomorrow]').getBoundingClientRect(),
+      main=el.querySelector('.bp-task-main').getBoundingClientRect();
+    return {rowRight:r.right,actionRight:wrap.right,width:wrap.width,buttonWidth:button.width,
+      buttonHeight:button.height,mainRight:main.right,actionLeft:wrap.left};
+  });
+  expect(geometry.width).toBe(112);
+  expect(geometry.buttonWidth).toBe(geometry.width);
+  expect(geometry.buttonHeight).toBeGreaterThanOrEqual(44);
+  expect(geometry.actionRight).toBeCloseTo(geometry.rowRight,0);
+  expect(geometry.mainRight).toBeLessThanOrEqual(geometry.actionLeft+1);
+  await button.click();
   const changed=await page.evaluate(id=>{
     const t=state.tasks.find(t=>String(t.id)===String(id));
     const p=state.projects.find(p=>String(p.id)===String(t.projectId));
     const a=p.actions.find(a=>String(a.id)===String(t.projectActionId));
     const disk=JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return {done:t.done,actionDone:a.done,
-      diskTask:disk.tasks.find(x=>String(x.id)===String(id))?.done,
+    const saved=disk.tasks.find(x=>String(x.id)===String(id));
+    return {dueDate:t.dueDate,date:t.date,expected:iso(plusDays(new Date(),1)),done:t.done,
+      actionDone:a.done,diskDueDate:saved?.dueDate,diskDone:saved?.done,
       diskAction:disk.projects[0].actions.find(x=>String(x.id)===String(a.id))?.done};
   },task);
-  expect(changed).toEqual({done:true,actionDone:true,diskTask:true,diskAction:true});
+  expect(changed).toEqual({dueDate:changed.expected,date:changed.expected,expected:changed.expected,
+    done:false,actionDone:false,diskDueDate:changed.expected,diskDone:false,diskAction:false});
+  await expect(row).toHaveCount(0);
+});
+
+test('Tomorrow swipe action fills its reveal at phone, tablet and Split View widths',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.tasks=[{id:'only-tomorrow',title:'Prepare a very long catalyst presentation',
+      dueDate:localToday(),date:localToday(),done:false,priority:false,priorityRank:0}];
+    if(!save(true))throw Error('Unable to prepare Task fixture');
+    render();
+  });
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
+  for(const width of [320,390,620,768,1024]){
+    await page.setViewportSize({width,height:844});
+    const row=page.locator('#allTasks [data-bp-task-row="only-tomorrow"]');
+    await row.evaluate(el=>el.classList.add('bp-task-revealed'));
+    const measurements=await row.evaluate(el=>{
+      const wrap=el.querySelector('.bp-task-swipe-actions').getBoundingClientRect(),
+        button=el.querySelector('[data-bp-swipe-tomorrow]').getBoundingClientRect(),
+        row=el.getBoundingClientRect();
+      return {rowRight:row.right,wrapRight:wrap.right,wrapWidth:wrap.width,buttonWidth:button.width,
+        buttonHeight:button.height,buttonLeft:button.left,wrapLeft:wrap.left};
+    });
+    expect(measurements.buttonWidth,width+' button width').toBe(measurements.wrapWidth);
+    expect(measurements.wrapWidth,width+' reveal width').toBe(112);
+    expect(measurements.buttonLeft,width+' button left').toBeCloseTo(measurements.wrapLeft,0);
+    expect(measurements.wrapRight,width+' action right').toBeCloseTo(measurements.rowRight,0);
+    expect(measurements.buttonHeight,width+' touch target').toBeGreaterThanOrEqual(44);
+    await expect(row.locator('[data-bp-swipe-done]')).toHaveCount(0);
+    await expect(row.locator('[data-task-check]')).toBeVisible();
+  }
 });
 
 test('Project removal detaches but does not delete linked Tasks, Habits, or Goals',async({page})=>{
