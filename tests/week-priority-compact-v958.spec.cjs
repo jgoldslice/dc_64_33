@@ -46,6 +46,7 @@ test('Week Top Priorities is view and check only; Plan retains Task editing',asy
   const plan=page.locator('#allTasks [data-bp-task-row="week-compact-a"]');
   await expect(plan.locator('[data-bp-task-star]')).toBeVisible();
   await expect(plan.locator('[data-bp-task-date]')).toHaveCount(0);
+  await expect(plan.locator('.bp-task-due-caption')).toContainText('Due Dec 4');
   await expect(plan.locator('[data-bp-edit-task]')).toBeVisible();
 });
 
