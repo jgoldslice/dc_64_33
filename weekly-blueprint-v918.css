@@ -138,3 +138,12 @@
 @media(prefers-reduced-motion:reduce){
   .wb-back,.wb-sheet{transition:none!important;animation:none!important}
 }
+
+.wb-carry-options,.wb-schedule-task{flex-wrap:wrap;gap:6px}
+.wb-carry-options label,.wb-schedule-task{font-size:12px;color:var(--muted)}
+.wb-task-entry .wb-schedule-task{display:flex;align-items:center;padding:0 10px 8px}
+.wb-schedule-task select{min-height:44px;max-width:100%;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:16px}
+.wb-step-task{align-self:start;margin:0 0 6px 25px}
+.wb-review-group .wb-block-title{margin-bottom:4px}
+.wb-review-group .wb-block-title h3{margin:0}
+[data-wb-launch-dates]:not([hidden]){display:block;font-size:.8em;font-weight:500}

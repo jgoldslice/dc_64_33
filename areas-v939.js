@@ -303,7 +303,7 @@
     mount.innerHTML='<div class="bp-area-grid">'+tiles+'</div>'+
       '<div class="bp-areas-header" aria-label="Area actions"><div class="bp-area-heading-actions">'+
         '<button type="button" class="secondary-button" data-bpa-new>+ Area</button>'+
-        '<button type="button" class="primary-button bp-area-week-action" data-wb-launch aria-label="Design next week" title="Design next week">'+icon('calendar')+'<span>Design Next Week</span></button>'+
+        '<button type="button" class="primary-button bp-area-week-action" data-wb-launch aria-label="Design next week" title="Design next week">'+icon('calendar')+'<span><span data-wb-launch-label>Design Next Week</span><small data-wb-launch-dates hidden></small></span></button>'+
         '</div></div>';
     document.getElementById('overview')?.classList.remove('bp-area-detail');
   }
@@ -323,7 +323,9 @@
         section('Projects','projects',data.projects,projectRow)+'</div>':
         '<div class="card bp-area-empty">'+icon('plan')+'<h3>Nothing here yet</h3><p>Add a task, habit, goal, or project. Goals and projects are completely optional.</p><button type="button" class="secondary-button" data-bpa-add-toggle aria-haspopup="dialog" aria-expanded="false">+ Add to '+escapeHtml(display(selected))+'</button></div>');
   }
-  function render(){if(!mount)return;closeCreateMenu();closeAreaMenu();cancelPress();if(selected===null)renderOverview();else renderDetail();}
+  function render(){if(!mount)return;closeCreateMenu();closeAreaMenu();cancelPress();if(selected===null){
+    renderOverview();root.BlueprintWeekly?.refreshLaunchButtons();
+  }else renderDetail();}
   function refresh(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render();});}
   root.blueprintAreas={refresh,model,moveAppearance,currentArea:()=>selected};
   // Share the exact Area icon and theme-color choices with Project appearance.
