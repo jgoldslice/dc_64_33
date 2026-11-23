@@ -3,6 +3,11 @@
 .bp-task-main{display:grid;grid-template-columns:22px minmax(0,1fr) 44px 92px;gap:7px;align-items:center;min-width:0;min-height:48px;padding:6px 2px;position:relative;z-index:2;background:var(--surface);will-change:transform;transition:transform .18s ease}
 .bp-task-main>input[type=checkbox]{grid-column:1;grid-row:1;flex:none;width:20px;height:20px}
 .bp-task-detail{grid-column:2;grid-row:1;min-width:0;display:grid;gap:2px;overflow:hidden}
+/* Today is for reading and checking work off; editing controls live in Plan. */
+.bp-task-row.bp-task-readonly .bp-task-main{grid-template-columns:22px minmax(0,1fr)}
+.bp-task-row.bp-task-readonly .bp-task-detail{grid-column:2;grid-row:1}
+.bp-task-row.bp-task-readonly .bp-task-title{cursor:default}
+
 .bp-task-title-line{display:flex;gap:6px;align-items:center;min-width:0}
 .bp-task-title-line>.rank-badge{flex:none}
 .bp-task-title-line>.bp-task-title{flex:1;min-width:0}
@@ -104,6 +109,12 @@ body.canvas-ipad-sidebar-collapsed .bottom-nav #bpQuickAdd.bp-quick-add{
 }
 body.canvas-ipad-sidebar-collapsed .bottom-nav #bpQuickAdd .bp-quick-label{display:none}
 body.v928-notes-focus #bpQuickAdd{display:none!important}
+
+/* Today remains a compact two-column row even in iPhone portrait. */
+@media(max-width:620px){
+  .bp-task-row.bp-task-readonly .bp-task-main{grid-template-columns:22px minmax(0,1fr)}
+  .bp-task-row.bp-task-readonly .bp-task-detail{grid-column:2;grid-row:1}
+}
 
 /* Narrow task rows: actions stay in the same columns on each card. */
 @media(max-width:620px){
