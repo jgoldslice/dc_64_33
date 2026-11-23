@@ -125,6 +125,7 @@ body.v928-notes-focus #bpQuickAdd{display:none!important}
   border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .bp-plan-heading-link>.icon{flex:none}
 .bp-heading-chevron{font:20px/1 -apple-system,BlinkMacSystemFont,sans-serif;color:var(--muted);margin-left:3px}
+.bp-heading-chevron::after{content:'›'}
 .bp-plan-heading-link:focus-visible,.bp-preview-link:focus-visible,.bp-habit-jump:focus-visible,.bp-cal-task-title:focus-visible{
   outline:2px solid var(--secondary-ui);outline-offset:2px;border-radius:6px}
 .bp-preview-link{cursor:pointer!important}
