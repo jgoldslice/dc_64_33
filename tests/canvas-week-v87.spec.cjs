@@ -31,7 +31,7 @@ test('tap a weekday to add an event with only name and time, save and reopen',as
   const errors=await loadWeek(page);
   const day=page.locator('#weekGrid [data-week-event-date]').nth(1);
   const date=await day.getAttribute('data-week-event-date');
-  await day.click();
+  await day.locator('.day-top').click();
   await expect(page.locator('#v87EventBack')).toBeVisible();
   // v8.16 always shows week chips so a tapped day can be moved to another week.
   await expect(page.locator('#v87EventDates')).toBeVisible();
@@ -66,7 +66,7 @@ test('Saturday and Sunday independently target the correct dates',async({page})=
   const weekend=page.locator('#weekGrid .weekend-half[data-week-event-date]');
   const dates=await weekend.evaluateAll(els=>els.map(el=>el.dataset.weekEventDate));
   for(let i=0;i<2;i++){
-    await weekend.nth(i).click();
+    await weekend.nth(i).locator('.day-top').click();
     await addEvent(page,{title:'Weekend '+i,time:i===0?'10:15':'17:30'});
   }
   const stored=await page.evaluate(()=>state.events.filter(e=>e.title.startsWith('Weekend ')).map(e=>({title:e.title,date:e.date,time:e.time})));
@@ -115,7 +115,7 @@ test('events entered for today also appear in Today at a Glance',async({page})=>
   const today=await page.evaluate(()=>localToday());
   const cell=page.locator('#weekGrid [data-week-event-date="'+today+'"]');
   if(!(await cell.count()))test.skip(true,'Current displayed week excludes today');
-  await cell.click();
+  await cell.locator('.day-top').click();
   await addEvent(page,{title:'Today calendar appointment',time:'13:15'});
   await page.locator('[data-tab="today"]').click();
   await expect(page.locator('#todayGlance')).toContainText('Today calendar appointment');
