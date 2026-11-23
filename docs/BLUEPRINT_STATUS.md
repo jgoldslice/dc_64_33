@@ -7,7 +7,11 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-23 — Weekly planning follow-through (PR open; device QA pending)
+## 2026-11-23 — Weekly planning follow-through (browser verified; device QA pending)
+
+- Review fixes in `88b9887d0915b5a4d9410f54b1e165666bc8ae6b`: applying a resumed Goal draft preserves fields edited later outside planning and shows both values when the same field conflicts. Drafts saved before field tracking ask for an explicit choice where values differ. Review pauses Apply for unfinished task and event forms. Weekly checkoffs use the existing Project To-Do sync and can be undone with the rest of the plan.
+- Today keeps due-today, scheduled-today and starred work visible, with three or more other overdue tasks grouped under a collapsed Overdue section.
+- The full local run passed 404 Chromium tests, 29 standalone Node tests and JavaScript syntax checks. The Notes viewer and simulated PencilKit navigation are covered by the browser suite. Pinch handoff and Save Image in the actual native share sheet still need a physical iPad check.
 
 - [PR #101](https://github.com/jgoldslice/dc_64_33/pull/101), implementation commit `4a60fafc238431b11ba224ce7fbb9fd39f011510`: the Week day sheet offers Add Task and Add Event with the selected day filled in. During weekly planning, Carry Forward schedules unfinished work for Monday by default and preserves the deadline unless explicitly changed. Prioritize can move the task to another day. Goal steps can become tasks linked to the source step and goal. Review groups changes and links back to the corresponding stage. Week and Areas show Continue planning and the date range for a meaningful draft.
 - Local verification passed 401 Chromium browser tests, 29 standalone Node tests, and JavaScript syntax checks. The existing draft and backup keys remain readable, and calendar changes are staged until Apply. A physical iPhone/iPad check is pending. For a native update, stage the reviewed web assets in the existing Capacitor wrapper, run `npx cap copy ios`, then build and install with Xcode using the same signing team and bundle ID.
