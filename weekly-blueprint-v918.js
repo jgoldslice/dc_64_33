@@ -276,10 +276,11 @@
     for(const original of goals){
       const key=idString(original.id),g=goalFor(key);
       const acts=g.actions||[],done=acts.filter(a=>a.done).length;
+      const isNew=(draft.newGoals||[]).some(item=>idString(item.id)===key);
       output+='<details class="wb-goal" data-wb-goal-details="'+attr(key)+'" '+(goalOpen.has(key)?'open':'')+'>'+
-        '<summary><span class="wb-goal-summary"><strong>'+attr(g.title)+'</strong><small>'+attr(g.category||'Personal')+' · '+done+' of '+acts.length+' steps</small></span><span aria-hidden="true">⌄</span></summary>'+
+        '<summary><span class="wb-goal-summary"><strong>'+attr(g.title||'New goal')+'</strong><small>'+attr(g.category||'Personal')+' · '+done+' of '+acts.length+' steps</small></span><span aria-hidden="true">⌄</span></summary>'+
         '<div class="wb-goal-editor">'+
-        '<label>Goal name<input type="text" maxlength="160" data-wb-goal-field="title" data-wb-goal="'+attr(key)+'" value="'+attr(g.title)+'"></label>'+
+        '<label>Goal name<input type="text" maxlength="160" placeholder="What do you want to achieve?" data-wb-goal-field="title" data-wb-goal="'+attr(key)+'" value="'+attr(g.title)+'"></label>'+
         '<label>Category<select data-wb-goal-field="category" data-wb-goal="'+attr(key)+'">'+
         state.categories.map(c=>'<option value="'+attr(c)+'" '+(g.category===c?'selected':'')+'>'+attr(c)+'</option>').join('')+'</select></label>'+
         '<label>Motivation<textarea maxlength="3000" rows="2" data-wb-goal-field="motivation" data-wb-goal="'+attr(key)+'" placeholder="Why it matters (optional)">'+attr(g.motivation||'')+'</textarea></label>'+
@@ -292,7 +293,8 @@
           '<button type="button" data-wb-step-move="'+attr(key)+'" data-wb-step="'+attr(a.id)+'" data-wb-dir="1" aria-label="Move step down" '+(i===acts.length-1?'disabled':'')+'>↓</button>'+
           '<button type="button" data-wb-step-delete="'+attr(key)+'" data-wb-step="'+attr(a.id)+'" aria-label="Remove step">×</button></div>';
       }
-      output+='<button type="button" class="wb-add-step goal-step-add" data-wb-step-add="'+attr(key)+'">+ Add Step</button></div></details>';
+      output+='<button type="button" class="wb-add-step goal-step-add" data-wb-step-add="'+attr(key)+'">+ Add Step</button>'+
+        (isNew?'<button type="button" class="wb-remove-goal" data-wb-remove-goal="'+attr(key)+'">Remove new goal</button>':'')+'</div></details>';
     }
     return output;
   }
@@ -321,7 +323,7 @@
       '<small>'+byDay(draft.selectedDay).length+' events</small></div>'+
       (byDay(draft.selectedDay).length?'<div class="wb-list">'+byDay(draft.selectedDay).map(eventMarkup).join('')+'</div>':'<p class="wb-empty">Nothing scheduled yet.</p>')+'</div>';
     const f=draft.eventForm;
-    return '<h3 class="wb-section-heading">Schedule your week</h3><p class="wb-subtext">Tap a day or an event. New events appear here immediately in your draft.</p>'+
+    return '<h3 class="wb-section-heading">Schedule your week</h3><p class="wb-subtext">Tap a day to add an event. While editing, tap another day to move it.</p>'+
       '<div class="wb-week-pager"><button type="button" data-wb-week="-1" aria-label="Previous planning week">‹</button><strong>'+dateRange(draft.weekStart)+'</strong>'+
       '<button type="button" data-wb-week="1" aria-label="Next planning week">›</button></div>'+
       selectDayMarkup()+calendar+daily+
@@ -371,7 +373,7 @@
       '<form class="wb-new-priority" id="wbNewTaskForm"><label>Task name<input maxlength="160" required name="title" value="'+attr(form.title||'')+'" placeholder="What needs to get done?"></label>'+
       '<label class="wb-priority-date">Due date<input name="dueDate" type="date" value="'+attr(form.dueDate||draft.weekStart)+'"></label>'+
       '<label>Connected goal<select name="goalId"><option value="">None</option>'+
-      [...state.goals,...(draft.newGoals||[])].map(g=>'<option value="'+attr(g.id)+'" '+(idString(form.goalId)===idString(g.id)?'selected':'')+'>'+attr(g.title)+'</option>').join('')+
+      [...state.goals,...(draft.newGoals||[])].map(g=>'<option value="'+attr(g.id)+'" '+(idString(form.goalId)===idString(g.id)?'selected':'')+'>'+attr(g.title||'New goal')+'</option>').join('')+
       '</select></label>'+
       '<label>Area<select name="area" '+(goal?'disabled':'')+'><option value="">Unassigned</option>'+
       state.categories.map(a=>'<option value="'+attr(a)+'" '+(a===area?'selected':'')+'>'+attr(a)+'</option>').join('')+
@@ -401,7 +403,7 @@
     }).filter(Boolean):[];
     const groups=[
       ['Last week',taskChanges.map(([id,val])=>(val?'✓ ':'○ ')+current(id).title).concat(habitChanges)],
-      ['Goal updates',goalChanges.concat((draft.newGoals||[]).map(g=>'+ '+g.title))],
+      ['Goal updates',goalChanges.concat((draft.newGoals||[]).map(g=>'+ '+(clean(g.title)||'Unnamed goal')))],
       ['Calendar',eventChanges],
       ['Carry forward',carry],
       ['New tasks',draft.newTasks.map(t=>{
@@ -447,6 +449,13 @@
   function editEvent(key){
     const e=effectiveEvents().find(e=>e.wbKey===key);
     if(!e)return;
+    if(showEventForm&&draft.editingEvent===key)return;
+    const currentEdit=effectiveEvents().find(item=>item.wbKey===draft.editingEvent);
+    const pending=draft.eventForm||{};
+    const hasUnsaved=currentEdit
+      ? ['title','date','time'].some(field=>String(pending[field]||'')!==String(currentEdit[field]||(field==='time'?'09:00':'')))
+      : !!clean(pending.title);
+    if(showEventForm&&hasUnsaved&&!confirm('Discard the event changes you are editing?'))return;
     draft.editingEvent=key;
     showEventForm=true;
     draft.selectedDay=e.date;
@@ -706,7 +715,7 @@
   overlay.addEventListener('click',function(e){
     const day=e.target.closest('[data-wb-day-card]');
     if(day&&!e.target.closest('button')){
-      draft.selectedDay=day.dataset.wbDayCard;draft.editingEvent=null;draft.eventForm.date=draft.selectedDay;
+      draft.selectedDay=day.dataset.wbDayCard;draft.eventForm.date=draft.selectedDay;
       showEventForm=true;storeDraft();renderSheet(false);return;
     }
     const button=e.target.closest('button');
@@ -716,12 +725,24 @@
     if(button.hasAttribute('data-wb-back')){setStep(draft.step-1);return;}
     if(button.hasAttribute('data-wb-next')){if(draft.step===4)apply();else setStep(draft.step+1);return;}
     if(button.dataset.wbWeek){weekChange(Number(button.dataset.wbWeek));return;}
-    if(button.dataset.wbSelectDay){draft.selectedDay=button.dataset.wbSelectDay;draft.editingEvent=null;draft.eventForm.date=draft.selectedDay;showEventForm=true;storeDraft();renderSheet(false);return;}
+    if(button.dataset.wbSelectDay){draft.selectedDay=button.dataset.wbSelectDay;draft.eventForm.date=draft.selectedDay;showEventForm=true;storeDraft();renderSheet(false);return;}
     if(button.hasAttribute('data-wb-task-toggle')){showTaskForm=!showTaskForm;renderSheet(false);return;}
     if(button.hasAttribute('data-wb-add-goal')){
-      const g={id:'wbg-'+uid(),title:'New goal',category:state.categories[0]||'Personal',motivation:'',actions:[]};
+      const g={id:'wbg-'+uid(),title:'',category:state.categories[0]||'Personal',motivation:'',actions:[]};
       (draft.newGoals||(draft.newGoals=[])).push(g);goalOpen.add(idString(g.id));storeDraft();renderSheet(false);
       overlay.querySelector('[data-wb-goal-field="title"][data-wb-goal="'+g.id+'"]')?.focus();return;
+    }
+    if(button.dataset.wbRemoveGoal){
+      const id=button.dataset.wbRemoveGoal;
+      const goal=(draft.newGoals||[]).find(g=>idString(g.id)===id);
+      if(!goal)return;
+      const linked=draft.newTasks.some(t=>idString(t.goalId||'')===id)||idString(draft.taskForm?.goalId||'')===id;
+      const hasContent=!!clean(goal.title)||!!clean(goal.motivation)||(goal.actions||[]).some(a=>clean(a.title));
+      if((hasContent||linked)&&!confirm('Remove this new goal from the draft?'+(linked?' Linked tasks will be kept and unlinked.':'')))return;
+      draft.newGoals=draft.newGoals.filter(g=>idString(g.id)!==id);
+      for(const task of draft.newTasks)if(idString(task.goalId||'')===id)task.goalId='';
+      if(idString(draft.taskForm?.goalId||'')===id)draft.taskForm.goalId='';
+      goalOpen.delete(id);storeDraft();renderSheet(false);return;
     }
     if(button.dataset.wbEditEvent){editEvent(button.dataset.wbEditEvent);return;}
     if(button.hasAttribute('data-wb-event-cancel')){
