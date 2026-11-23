@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-22 — v9.56 Task action alignment (PR #87, unmerged; device QA pending)
+
+**Owner-reported iPad issue:** In Plan → Tasks, due-date buttons varied in width and completed rows added Delete after Edit, so due-date cards, priority stars and Edit controls shifted between rows.
+
+- **Implemented on branch** `fix/task-row-action-alignment-v956`, proposed in [PR #87](https://github.com/jgoldslice/dc_64_33/pull/87) from main baseline `6612857`; code commits `5602731`, `4ae7fa6`, regression `3eb3b4a`, cache `f42463d`. Task controls use stable desktop columns and a compact second-row arrangement below 620px. Priority rank now stays next to the title. Edit and conditional Delete each have a 44px-high touch target. The reserved Delete column is intentionally empty for incomplete tasks so controls never move.
+- Files changed: `workflow-integration-v951.css`, `index.html`, `tests/task-row-alignment-v956.spec.cjs`, `sw.js`, and this status entry. No localStorage/IndexedDB schema, Task data, native Swift or backup modifications.
+- **Automated tests: pending.** The new Playwright test measures column alignment and overflow at 320, 375, 390, 620, 768, and 1024px and checks star, deadline and editor interactions. GitHub Actions smoke results must be reviewed before merge; no tests were run locally through a browser/Xcode in this session.
+- **Physical-device verified:** No. **Deployed:** No. On the Mac, stage the latest merged web files into the existing iOS wrapper, run `npx cap copy ios`, and use Xcode's App scheme to install over the existing app, retaining the same signing team and bundle ID. Test long Task titles, completed and open rows in iPhone portrait, iPad portrait/landscape and Split View; confirm no clipped date, unexpected swipe, or loss of edits. Do not uninstall the app.
+
 ## 2026-11-22 — v9.55 Weekly Blueprint shows all tasks
 
 - Prioritize lists the shared planner’s tasks irrespective of deadline, including tasks linked to Areas, Goals and Projects. Completed tasks remain visible with a status label. Ranked tasks show their status in the list and can still be reordered in Priority order. Existing draft-only tasks are included. Priority changes still require Apply.

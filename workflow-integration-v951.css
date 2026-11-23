@@ -1,15 +1,18 @@
 /* Blueprint v9.51 — shared task actions and compact Project pulse. */
 .bp-task-row.entry{position:relative;display:block;min-width:0;overflow:hidden;padding:0;margin:0;border-radius:9px}
-.bp-task-main{display:flex;gap:7px;align-items:center;min-width:0;min-height:48px;padding:6px 2px;position:relative;z-index:2;background:var(--surface);will-change:transform;transition:transform .18s ease}
-.bp-task-main>input[type=checkbox]{flex:none;width:20px;height:20px}
-.bp-task-detail{min-width:65px;flex:1 1 auto;display:grid;gap:2px;overflow:hidden}
+.bp-task-main{display:grid;grid-template-columns:22px minmax(0,1fr) 44px 98px 92px;gap:7px;align-items:center;min-width:0;min-height:48px;padding:6px 2px;position:relative;z-index:2;background:var(--surface);will-change:transform;transition:transform .18s ease}
+.bp-task-main>input[type=checkbox]{grid-column:1;grid-row:1;flex:none;width:20px;height:20px}
+.bp-task-detail{grid-column:2;grid-row:1;min-width:0;display:grid;gap:2px;overflow:hidden}
+.bp-task-title-line{display:flex;gap:6px;align-items:center;min-width:0}
+.bp-task-title-line>.rank-badge{flex:none}
+.bp-task-title-line>.bp-task-title{flex:1;min-width:0}
 .bp-task-title.entry-text{display:block;min-width:0;width:100%;background:transparent;border:0;text-align:left;color:var(--ink);font-size:13px;font-weight:600;line-height:1.4;padding:3px 0;white-space:normal;overflow-wrap:anywhere}
 .bp-task-title:focus-visible,.bp-task-star:focus-visible,.bp-task-due:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:1px}
 .bp-task-context,.bp-task-planned{display:block;font-size:10px;line-height:1.3;color:var(--muted);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bp-task-star,.bp-task-due{flex:none;border:0;background:transparent;color:var(--secondary-ui);min-height:44px;border-radius:9px}
-.bp-task-star{font-size:22px;min-width:34px;padding:4px}
+.bp-task-star{grid-column:3;grid-row:1;justify-self:center;font-size:22px;width:44px;min-width:44px;padding:4px}
 .bp-task-star[aria-pressed=true]{color:var(--secondary-ui)}
-.bp-task-due{font-size:11px;max-width:98px;min-width:59px;padding:3px 4px;text-align:center;border:1px solid var(--line);background:var(--wash);line-height:1.25}
+.bp-task-due{grid-column:4;grid-row:1;width:98px;min-width:98px;max-width:98px;font-size:11px;padding:3px 4px;text-align:center;border:1px solid var(--line);background:var(--wash);line-height:1.25;white-space:nowrap;font-variant-numeric:tabular-nums}
 .bp-task-swipe-actions{position:absolute;inset:0 0 0 auto;display:none;justify-content:flex-end;align-items:stretch;width:112px;z-index:3}
 .bp-task-row.bp-task-revealed .bp-task-swipe-actions{display:flex;pointer-events:auto}
 .bp-task-swipe-actions button{width:56px;min-width:56px;border:0;color:var(--ink);background:var(--wash);font-size:11px;padding:4px}
@@ -50,11 +53,15 @@
 .v951-connection>span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .v951-connection small{font-size:10px;color:var(--muted);white-space:nowrap}
 .v951-no-links{font-size:12px;color:var(--muted)}
+/* On a narrow phone or iPad Split View, keep title on its own line.
+   The fixed-width action columns stay aligned even when Delete is absent. */
+@media(max-width:620px){
+  .bp-task-main{grid-template-columns:22px minmax(0,1fr) 44px 90px 88px;gap:4px;row-gap:2px}
+  .bp-task-detail{grid-column:2 / -1;grid-row:1}
+  .bp-task-star{grid-column:3;grid-row:2;margin:0}
+  .bp-task-due{grid-column:4;grid-row:2;width:90px;min-width:90px;max-width:90px}
+}
 @media(max-width:520px){
-  .bp-task-main{flex-wrap:wrap;gap:5px}
-  .bp-task-detail{flex-basis:calc(100% - 65px)}
-  .bp-task-star{margin-left:auto}
-  .bp-task-due{min-width:90px}
   .v951-pulse{grid-template-columns:repeat(2,minmax(0,1fr))}
   .v951-connections{grid-template-columns:minmax(0,1fr)}
 }
@@ -72,17 +79,14 @@
 
 /* Keep the established adjacent Edit/Delete controls while the title itself
    is also an edit target. Smaller screens wrap the actions below the title. */
-.bp-task-row .task-row-actions{display:inline-flex;align-items:center;gap:5px;flex:none}
-.bp-task-row .task-row-actions .edit-small{min-height:32px;min-width:34px;border:0;background:transparent;color:var(--secondary-ui);font-size:11px;padding:3px 5px}
+.bp-task-row .task-row-actions{grid-column:5;grid-row:1;display:grid;grid-template-columns:44px 48px;align-items:center;justify-items:center;gap:0;width:92px;min-width:0}
+.bp-task-row .task-row-actions .edit-small{min-height:44px;min-width:44px;width:100%;border:0;background:transparent;color:var(--secondary-ui);font-size:11px;padding:3px 1px;text-align:center}
+.bp-task-row .task-row-actions .delete-completed-task{min-height:44px}
 .v951-project-pulse,.v951-project-connections{border:1px solid var(--line);background:var(--surface);border-radius:16px;min-width:0;padding:14px 17px;box-shadow:var(--shadow)}
 .v951-project-pulse .card-heading,.v951-project-connections .card-heading{margin-bottom:11px}
 .v951-project-pulse .card-heading h3,.v951-project-connections .card-heading h3{font:normal 21px/1.2 Georgia,serif;color:var(--ink);margin:0}
 .bp-cal-task>span:not(.bp-cal-type),.bp-cal-due>span:first-child{min-width:0;overflow-wrap:anywhere}
 .bp-cal-task button[data-edit-task],.bp-cal-due button[data-edit-task]{margin-left:auto;flex:none;font-weight:700;min-width:24px;min-height:26px;font-size:13px;text-align:center}
-@media(max-width:620px){
- .bp-task-row .task-row-actions{margin-left:auto}
- .bp-task-main .bp-task-detail{min-width:0}
-}
 
 /* One Quick Add action is docked, never floating over real controls. */
 #bpQuickAdd.bp-quick-add{
@@ -110,3 +114,8 @@ body.canvas-ipad-sidebar-collapsed .bottom-nav #bpQuickAdd.bp-quick-add{
 }
 body.canvas-ipad-sidebar-collapsed .bottom-nav #bpQuickAdd .bp-quick-label{display:none}
 body.v928-notes-focus #bpQuickAdd{display:none!important}
+
+/* Narrow task rows: actions stay in the same columns on each card. */
+@media(max-width:620px){
+  .bp-task-row .task-row-actions{grid-column:5;grid-row:2;width:88px;grid-template-columns:44px 44px;margin:0}
+}
