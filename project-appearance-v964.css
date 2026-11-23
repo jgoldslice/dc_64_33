@@ -1,0 +1,32 @@
+/* A compact, recognizable project mark on every project entry point. */
+.bp-project-mark{display:inline-grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:color-mix(in srgb,var(--project-accent,var(--secondary)) 16%,var(--surface));color:color-mix(in srgb,var(--project-accent,var(--secondary)) 72%,var(--ink));font-style:normal;overflow:hidden}
+.bp-project-mark svg,.v77-project-folder .bp-project-mark svg,.v6-folder .bp-project-mark svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bp-project-mark img{display:block;width:100%;height:100%;object-fit:cover}
+.bp-project-icon-edit{display:grid;place-items:center;flex:none;width:44px;height:44px;padding:0;border:0;border-radius:12px;background:transparent;color:var(--ink)}
+.bp-project-icon-edit[hidden]{display:none!important}
+.bp-project-icon-edit .bp-project-mark{width:40px;height:40px}
+.bp-project-icon-edit:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:2px}
+#today .v917-projects .v917-card-body,#today .v915-layout-ready #v77TodayProjects{max-height:none;overflow:visible}
+#today .v917-projects .v77-project-folder{min-height:76px;flex-direction:row;align-items:center;justify-content:flex-start;gap:12px}
+#today .v917-projects .v77-project-folder>span{flex:1;min-width:0;white-space:normal}
+.bp-area-project-open .bp-project-mark{width:32px;height:32px;border-radius:9px}
+.bp-area-project-open .bp-project-mark svg{width:18px;height:18px}
+.bp-project-picker{display:grid;gap:10px;min-width:0}
+.bp-project-picker-preview{display:grid;place-items:center}
+.bp-project-picker-preview .bp-project-mark{width:64px;height:64px;border-radius:18px}
+.bp-project-picker-preview .bp-project-mark svg{width:32px;height:32px}
+.bp-project-picker fieldset{border:0;padding:0;margin:0;min-width:0}
+.bp-project-picker legend{font-size:12px;font-weight:700;color:var(--muted);margin:0 0 7px}
+.bp-project-picker-icons,.bp-project-picker-colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(40px,1fr));gap:6px}
+.bp-project-picker-icons{max-height:min(32dvh,235px);overflow-y:auto;overscroll-behavior:contain;padding:2px}
+#bpSheet .bp-project-picker-icons button,#bpSheet .bp-project-picker-colors button{display:grid;place-items:center;min-width:0;min-height:44px;padding:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--ink)}
+#bpSheet .bp-project-picker-icons button[aria-pressed=true],#bpSheet .bp-project-picker-colors button[aria-pressed=true]{background:var(--wash);box-shadow:inset 0 0 0 1px var(--secondary-ui);border-color:var(--secondary-ui)}
+.bp-project-picker-icons svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bp-project-picker-colors i{display:block;width:24px;height:24px;border-radius:50%;background:var(--project-accent);border:1px solid var(--line)}
+.bp-project-photo-controls{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.bp-project-photo-select{position:relative;display:inline-flex!important;align-items:center;justify-content:center;min-height:44px;padding:8px 13px;border:1px solid var(--line);border-radius:10px;background:var(--wash);color:var(--ink);font-size:13px;font-weight:650;cursor:pointer}
+.bp-project-photo-select input{position:absolute;width:1px!important;height:1px;opacity:0;overflow:hidden;padding:0!important}
+.bp-project-photo-select:focus-within{outline:2px solid var(--secondary-ui);outline-offset:2px}
+.bp-project-photo-controls [hidden]{display:none!important}
+.bp-project-photo-status{min-height:0;margin:0!important;color:var(--muted);font-size:12px;text-align:center}
+@media(max-width:649px){#today .v917-projects .v917-card-body{grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr))}}

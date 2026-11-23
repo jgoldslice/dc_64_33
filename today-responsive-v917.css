@@ -39,7 +39,7 @@
   scrollbar-width:thin;
   touch-action:pan-y;
 }
-#today .v917-projects .v917-card-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));align-content:start;gap:10px}
+#today .v917-projects .v917-card-body{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));align-content:start;gap:10px;flex:0 0 auto;max-height:none;overflow:visible}
 #today .v917-card-body .v77-project-folder{min-height:88px}
 #today .v917-card-body:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:-2px;border-radius:8px}
 #today .v917-overflow-hint{
@@ -76,8 +76,8 @@
     max-height:clamp(180px,34dvh,345px);
   }
   #today > .stack.v917-today-grid > .v917-projects{
-    min-height:120px;
-    max-height:clamp(145px,20dvh,215px);
+    min-height:145px;
+    max-height:none;
   }
   }
 }

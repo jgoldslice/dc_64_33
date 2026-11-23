@@ -29,7 +29,7 @@
   const escapeHtml=text=>String(text??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const icon=name=>'<svg class="icon" aria-hidden="true"><use href="#i-'+name+'"></use></svg>';
   const areaIcons={
-    plan:['Folder','M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],check:['Checkmark'],goal:['Target'],calendar:['Calendar'],clock:['Clock'],
+    plan:['Folder','M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'],inbox:['Inbox','M4 4h16l2 10v5H2v-5L4 4zM2 14h6l2 3h4l2-3h6'],check:['Checkmark'],goal:['Target'],calendar:['Calendar'],clock:['Clock'],
     home:['Home','M3 11l9-8 9 8M5 10v11h14V10M10 21v-7h4v7'],
     briefcase:['Work','M3 7h18v13H3zM8 7V4h8v3M3 12h18M10 12v3h4v-3'],
     book:['Book','M12 5v16M12 5C9 3 6 3 3 4v15c3-1 6-1 9 2 3-3 6-3 9-2V4c-3-1-6-1-9 1z'],
@@ -67,7 +67,7 @@
     indigo:'lavender',purple:'lavender',pink:'rose'
   }));
   const areaDefaults=new Map([
-    [INBOX,['check','slate']],['Personal',['home','sage']],['Physical',['fitness','copper']],
+    [INBOX,['inbox','slate']],['Personal',['home','sage']],['Physical',['fitness','copper']],
     ['Research',['flask','ocean']],['Spiritual',['sun','lavender']]
   ]);
   function areaIcon(key){
@@ -275,7 +275,7 @@
       '<button type="button" class="text-button" data-bpa-edit-goal="'+escapeHtml(g.id)+'">Edit goal</button></div></details>';
   }
   function projectRow(p){
-    return '<div class="bp-area-project"><button type="button" data-bpa-project="'+escapeHtml(p.id)+'" class="bp-area-project-open">'+icon('plan')+'<span>'+escapeHtml(p.title)+'</span><span aria-hidden="true">›</span></button>'+
+    return '<div class="bp-area-project"><button type="button" data-bpa-project="'+escapeHtml(p.id)+'" class="bp-area-project-open">'+(root.BlueprintProjectAppearance?.markup(p)||icon('plan'))+'<span>'+escapeHtml(p.title)+'</span><span aria-hidden="true">›</span></button>'+
       '<label class="bp-area-project-move"><span class="bp-visually-hidden">Area for '+escapeHtml(p.title)+'</span><select data-bpa-project-area="'+escapeHtml(p.id)+'" aria-label="Area for '+escapeHtml(p.title)+'">'+selectionOptions(validArea(p.area,state.categories))+'</select></label></div>';
   }
   function section(title,kind,items,draw){
@@ -298,7 +298,7 @@
         badge(appearance(a))+'<span class="bp-area-tile-title"><strong>'+name+'</strong><span class="bp-area-chevron" aria-hidden="true">›</span></span>'+
         '<span class="bp-area-tile-sub">'+(count?counts(data):'No items yet')+'</span></button>'+
         (a===INBOX?'':'<button type="button" class="bp-area-appearance-button" data-bpa-appearance="'+escapeHtml(a)+'" aria-label="Customize '+name+'" aria-haspopup="dialog" title="Icon &amp; color">'+
-          '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19v1h1l12-12-1-1L4 19zm11-11 3 3m0-8v4m-2-2h4"/></svg></button>')+'</div>';
+          '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h6m4 0h6M4 17h10m4 0h2"/><circle cx="12" cy="7" r="2"/><circle cx="16" cy="17" r="2"/></svg></button>')+'</div>';
     }).join('');
     mount.innerHTML='<div class="bp-area-grid">'+tiles+'</div>'+
       '<div class="bp-areas-header" aria-label="Area actions"><div class="bp-area-heading-actions">'+
@@ -326,6 +326,12 @@
   function render(){if(!mount)return;closeCreateMenu();closeAreaMenu();cancelPress();if(selected===null)renderOverview();else renderDetail();}
   function refresh(){if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;render();});}
   root.blueprintAreas={refresh,model,moveAppearance,currentArea:()=>selected};
+  // Share the exact Area icon and theme-color choices with Project appearance.
+  root.BlueprintAppearanceOptions=Object.freeze({
+    icons:Object.freeze(Object.entries(areaIcons).map(([key,[label]])=>Object.freeze({key,label}))),
+    colors:Object.freeze([...areaColors].map(([key,{name,value}])=>Object.freeze({key,name,value}))),
+    iconMarkup:key=>areaIcon(Object.hasOwn(areaIcons,key)?key:'plan')
+  });
   const trySave=()=>{save(true);refresh();};
   // Native-feeling long press for touch/Pencil; cancel when scrolling or dragging.
   mount.addEventListener('pointerdown',event=>{

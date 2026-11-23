@@ -94,7 +94,7 @@ test('Area icon and color persist, travel with rename, and can be set on creatio
   await page.getByRole('button',{name:'Customize Research'}).click();
   const sheet=page.locator('#bpSheet');
   const icons=sheet.locator('button[data-area-icon]');
-  await expect(icons).toHaveCount(30);
+  await expect(icons).toHaveCount(31);
   await expect(sheet.locator('button[data-area-icon][title]')).toHaveCount(0);
   expect((await icons.allTextContents()).every(text=>text.trim()==='')).toBe(true);
   expect(await sheet.locator('[data-area-color]').count()).toBeGreaterThanOrEqual(12);
