@@ -1625,6 +1625,8 @@ function bpDeletedTaskLinks(item){
     ideas:state.ideas.map(n=>({id:n.id,links:(n.actions||[]).filter(a=>String(a.taskId)===id).map(a=>a.id)})).filter(n=>n.links.length)};
 }
 function bpShowTaskUndo(snapshot){
+  // A complete backup import may replace the entire planner while the toast is visible.
+  snapshot.ownerState=state;
   bpTaskUndoSnapshot=snapshot;clearTimeout(bpTaskUndoTimer);
   let toast=document.getElementById('bpTaskUndoToast');
   if(!toast){toast=document.createElement('div');toast.id='bpTaskUndoToast';toast.className='bp-task-undo-toast';
@@ -1637,6 +1639,11 @@ function bpShowTaskUndo(snapshot){
 }
 function bpUndoDeletedTask(){
   const snapshot=bpTaskUndoSnapshot;if(!snapshot)return false;
+  if(snapshot.ownerState!==state){
+    clearTimeout(bpTaskUndoTimer);bpTaskUndoSnapshot=null;
+    const toast=document.getElementById('bpTaskUndoToast');if(toast)toast.hidden=true;
+    return false;
+  }
   const id=String(snapshot.item.id);
   if(snapshot.kind==='event'){
     if(state.events.some(e=>String(e.id)===id))return false;

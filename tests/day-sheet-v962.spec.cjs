@@ -75,6 +75,24 @@ test('event deletion offers one Undo and rolls back a failed save',async({page})
   await page.locator('#cancelModal').click();
 });
 
+test('Undo never adds a deleted event to a replaced planner',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    state.events=[{id:'old-event',title:'Old appointment',date:localToday(),time:'10:00'}];
+    if(!save(true))throw Error('Could not seed');render();
+  });
+  await page.locator('#todayGlance [data-edit-event="old-event"]').click();
+  await page.locator('#deleteModal').click();
+  await expect(page.locator('#bpTaskUndoToast')).toBeVisible();
+  await page.evaluate(()=>{
+    state=normalize({...state,events:[{id:'new-event',title:'Imported appointment',date:localToday(),time:'12:00'}]});
+    if(!save(true))throw Error('Could not save replaced planner');render();
+  });
+  await page.locator('[data-bp-undo-task]').click();
+  expect(await page.evaluate(()=>state.events.map(e=>e.id))).toEqual(['new-event']);
+  await expect(page.locator('#bpTaskUndoToast')).toBeHidden();
+});
+
 test('return to current week and open an empty day with keyboard',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{state.events=[];state.tasks=[];save(true);render();});

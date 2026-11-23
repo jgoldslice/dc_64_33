@@ -343,7 +343,9 @@
     if(dayBack.hidden||!dayBack.contains(e.target)||!e.target.matches('[data-task-check]'))return;
     // The main listener has already committed or rolled back the checkoff.
     const id=e.target.dataset.taskCheck,scroll=dayContent.scrollTop;
-    drawDay();dayContent.scrollTop=scroll;
+    const sheet=dayBack.querySelector('.bp-day-sheet'),sheetScroll=sheet.scrollTop;
+    if(state.tasks.find(t=>String(t.id)===id)?.done)showCompleted=true;
+    drawDay();dayContent.scrollTop=scroll;sheet.scrollTop=sheetScroll;
     [...dayBack.querySelectorAll('[data-task-check]')].find(el=>el.dataset.taskCheck===id)?.focus({preventScroll:true});
   });
   document.addEventListener('keydown',e=>{

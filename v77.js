@@ -7,6 +7,7 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const folderIcon='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
   let completedExpanded=false;
+  priorityHost.addEventListener('change',e=>{if(e.target.matches('[data-task-check]')&&e.target.checked)completedExpanded=true;});
   priorityHost.addEventListener('toggle',e=>{if(e.target.matches('.bp-today-completed'))completedExpanded=e.target.open;},true);
   function refreshTodayExtras(){
     const top=todayPriorityTasks();
