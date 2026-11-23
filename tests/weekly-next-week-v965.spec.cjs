@@ -114,7 +114,7 @@ test('switching events asks before discarding an unfinished event',async({page})
   await expect(page.locator('#wbEventForm input[name="title"]')).toHaveValue('Existing');
 });
 
-test('only today is highlighted, including in adjacent weeks and on a Sunday',async({page})=>{
+test('only today is highlighted on a Sunday and other weeks stay neutral',async({page})=>{
   await page.clock.install({time:new Date('2026-11-22T19:00:00Z')});
   await page.setViewportSize({width:1194,height:834});
   await page.goto('/');
@@ -128,13 +128,18 @@ test('only today is highlighted, including in adjacent weeks and on a Sunday',as
     const secondary=getComputedStyle(probe).backgroundColor;probe.remove();
     return {
       currentWeekend:value('#weekGrid .day-card.weekend'),
-      adjacentWeekend:value('#v817WeekNext .day-card.weekend'),
       ordinaryDay:value('#weekGrid .day-card:not(.weekend)'),
       sunday:value('#weekGrid .weekend-half.today'),secondary
     };
   });
   expect(backgrounds.currentWeekend).toBe(backgrounds.ordinaryDay);
-  expect(backgrounds.adjacentWeekend).toBe(backgrounds.ordinaryDay);
   expect(backgrounds.sunday).not.toBe(backgrounds.ordinaryDay);
   expect(backgrounds.sunday).toBe(backgrounds.secondary);
+  await page.locator('#v94WeekForward').click();
+  await expect(page.locator('#weekGrid [data-week-event-date="2026-11-29"]')).not.toHaveClass(/today/);
+  expect(await page.locator('#weekGrid .today').count()).toBe(0);
+  const nextWeekend=await page.locator('#weekGrid .day-card.weekend').evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(nextWeekend).toBe(backgrounds.ordinaryDay);
+  await page.locator('#v94WeekBack').click();
+  await expect(page.locator('#weekGrid [data-week-event-date="2026-11-22"]')).toHaveClass(/today/);
 });

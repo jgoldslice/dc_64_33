@@ -180,7 +180,7 @@
     const days=Array.from({length:5},(_,i)=>dayCard(iso(plusDays(start,i)))).join('');
     const weekend=[5,6].map(i=>{
       const d=plusDays(start,i),date=iso(d);
-      return '<div class="weekend-half '+(date===localToday()?'today':'')+'" data-week-event-date="'+date+'">'+
+      return '<div class="weekend-half" data-week-event-date="'+date+'">'+
         '<div class="day-top"><span>'+weekDay(d)+'</span>'+
         '<span class="day-date">'+format(d)+'</span></div>'+dayLines(date)+'</div>';
     }).join('');
