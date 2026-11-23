@@ -26,86 +26,10 @@
     window.v919RenderProjectOverview?.(v6Project());
     return true;
   }
-  const menu=document.createElement('div');
-  menu.id='bpTaskDates';
-  menu.className='bp-task-date-menu';
-  menu.setAttribute('role','dialog');
-  menu.setAttribute('aria-label','Task dates');
-  menu.hidden=true;
-  menu.innerHTML='<div class="bp-task-date-menu-heading"><strong>Task dates</strong><button type="button" data-bp-date-close aria-label="Close date picker">×</button></div>'+
-    '<div class="bp-task-date-presets"><button type="button" data-bp-date-preset="today">Today</button>'+
-    '<button type="button" data-bp-date-preset="tomorrow">Tomorrow</button>'+
-    '<button type="button" data-bp-date-preset="week">In 7 days</button>'+
-    '<button type="button" data-bp-date-preset="clear">No deadline</button></div>'+
-    '<label>Deadline <input type="date" data-bp-date-input></label>'+
-    '<div class="bp-task-menu-divider"></div>'+
-    '<label>On calendar <input type="date" data-bp-plan-input></label>'+
-    '<label>Time (optional) <input type="time" data-bp-time-input></label>'+
-    '<div class="bp-task-menu-actions"><button type="button" data-bp-plan-clear>Clear plan</button><button type="button" data-bp-plan-apply>Save schedule</button></div>';
-  document.body.append(menu);
-  let openedTask=null,restoreFocus=null;
-  function closeMenu(){
-    if(menu.hidden)return;
-    menu.hidden=true;
-    const focus=restoreFocus;
-    restoreFocus=null;openedTask=null;
-    if(focus?.isConnected)focus.focus({preventScroll:true});
-  }
-  function placeMenu(anchor){
-    const rect=anchor.getBoundingClientRect(),vw=window.visualViewport?.width||innerWidth,
-      vh=window.visualViewport?.height||innerHeight;
-    const width=Math.min(316,Math.max(250,vw-24));
-    menu.style.width=width+'px';
-    const left=Math.max(12,Math.min(rect.left,vw-width-12));
-    menu.style.left=left+'px';
-    menu.style.top=Math.max(12,Math.min(rect.bottom+8,vh-menu.getBoundingClientRect().height-12))+'px';
-  }
-  function openMenu(anchor,id){
-    const task=findTask(id);
-    if(!task)return;
-    closeMenu();
-    openedTask=String(id);restoreFocus=anchor;
-    menu.querySelector('[data-bp-date-input]').value=safeDate(task.dueDate);
-    menu.querySelector('[data-bp-plan-input]').value=safeDate(task.scheduledDate);
-    menu.querySelector('[data-bp-time-input]').value=task.scheduledTime||'';
-    menu.hidden=false;
-    placeMenu(anchor);
-    menu.querySelector('[data-bp-date-input]').focus({preventScroll:true});
-  }
-  function setDeadline(date){
-    const task=findTask(openedTask);
-    if(!task)return;
-    if(updateTask(task,{dueDate:date,date})){
-      const id=openedTask;closeMenu();
-      // Preserve the existing focus route even when render replaces the row.
-      document.querySelector('[data-bp-task-date="'+CSS.escape(id)+'"]')?.focus({preventScroll:true});
-    }
-  }
-  menu.addEventListener('click',e=>{
-    const button=e.target.closest('button');if(!button)return;
-    if(button.hasAttribute('data-bp-date-close')){closeMenu();return;}
-    const preset=button.dataset.bpDatePreset;
-    if(preset){
-      setDeadline(preset==='today'?localToday():preset==='tomorrow'?addDays(1):preset==='week'?addDays(7):'');
-      return;
-    }
-    if(button.hasAttribute('data-bp-plan-apply')||button.hasAttribute('data-bp-plan-clear')){
-      const task=findTask(openedTask);if(!task)return;
-      const clear=button.hasAttribute('data-bp-plan-clear');
-      const day=clear?'':safeDate(menu.querySelector('[data-bp-plan-input]').value);
-      const time=clear||!day?'':menu.querySelector('[data-bp-time-input]').value;
-      if(updateTask(task,{scheduledDate:day,scheduledTime:time})){closeMenu();}
-    }
-  });
-  menu.addEventListener('change',e=>{
-    if(e.target.matches('[data-bp-date-input]'))setDeadline(safeDate(e.target.value));
-  });
   document.addEventListener('click',e=>{
     if(!(e.target instanceof Element))return;
     const edit=e.target.closest('[data-bp-edit-task]');
     if(edit){e.preventDefault();openModal('task',edit.dataset.bpEditTask);return;}
-    const date=e.target.closest('[data-bp-task-date]');
-    if(date){e.preventDefault();openMenu(date,date.dataset.bpTaskDate);return;}
     const star=e.target.closest('[data-bp-task-star]');
     if(star){
       e.preventDefault();const t=findTask(star.dataset.bpTaskStar);
@@ -130,13 +54,7 @@
       openModal(projectAdd.dataset.bpProjectAdd);
       return;
     }
-    if(!menu.hidden&&!menu.contains(e.target))closeMenu();
   });
-  window.addEventListener('resize',closeMenu,{passive:true});
-  window.addEventListener('scroll',closeMenu,true);
-  document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'&&!menu.hidden){e.preventDefault();closeMenu();}
-  },true);
 
   // One Quick Add for every tab. It opens the existing forms rather than
   // creating competing task/goal/habit/event entry paths or storage models.
