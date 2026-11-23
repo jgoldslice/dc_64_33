@@ -98,3 +98,27 @@ test('One-tap completed deletion offers Undo and restores Project and Idea refer
   expect(restored).toEqual({task:true,project:'delete-linked',idea:'delete-linked',stored:true});
   await expect(page.locator('#bpTaskUndoToast')).toBeHidden();
 });
+
+
+test('Today includes scheduled work due later without duplicating overdue work',async({page})=>{
+  await page.goto(base);
+  await page.evaluate(()=>{
+    const now=localToday();
+    const tomorrow=iso(plusDays(new Date(now+'T12:00:00'),1));
+    const yesterday=iso(plusDays(new Date(now+'T12:00:00'),-1));
+    state.tasks=[
+      {id:'scheduled-later',title:'Prepare next-week lab',done:false,dueDate:tomorrow,scheduledDate:now,scheduledTime:'09:00',priority:false},
+      {id:'due-today',title:'Submit worksheet',done:false,dueDate:now,scheduledDate:'',priority:false},
+      {id:'overdue-scheduled',title:'Fix overdue report',done:false,dueDate:yesterday,scheduledDate:now,priority:false},
+      {id:'finished-today',title:'Already finished',done:true,dueDate:now,scheduledDate:'',priority:false}
+    ];
+    if(!save(true))throw Error('Unable to seed scheduled Today tasks');
+    render();
+  });
+  const today=page.locator('#v917TodayTasks');
+  const all=await today.locator('[data-bp-task-row]').evaluateAll(rows=>rows.map(row=>row.dataset.bpTaskRow));
+  expect(all).toEqual(['overdue-scheduled','scheduled-later','due-today','finished-today']);
+  await expect(today.getByText('For today')).toBeVisible();
+  await today.locator('[data-bp-task-row="scheduled-later"] [data-task-check]').check();
+  expect(await page.evaluate(()=>state.tasks.find(t=>t.id==='scheduled-later').done)).toBe(true);
+});
