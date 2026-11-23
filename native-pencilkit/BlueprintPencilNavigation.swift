@@ -119,6 +119,12 @@ final class BlueprintPencilNavigation: NSObject, UIGestureRecognizerDelegate {
             send("change", at: recognizer.location(in: webView))
         case .ended, .cancelled, .failed:
             pinching = false
+            // A continuing pan now reports the remaining finger instead of
+            // the two-finger midpoint. Start a fresh web anchor at that point.
+            if panning, session {
+                scale = 1
+                send("start", at: pan.location(in: webView))
+            }
             endIfNecessary(at: recognizer.location(in: webView))
         default:
             break
@@ -136,7 +142,9 @@ final class BlueprintPencilNavigation: NSObject, UIGestureRecognizerDelegate {
             }
         case .changed:
             panning = true
-            send("change", at: recognizer.location(in: webView))
+            // Pinch already forwards the moving midpoint. Sending pan updates
+            // too can interleave inconsistent positions and duplicate motion.
+            if !pinching { send("change", at: recognizer.location(in: webView)) }
         case .ended, .cancelled, .failed:
             panning = false
             endIfNecessary(at: recognizer.location(in: webView))
