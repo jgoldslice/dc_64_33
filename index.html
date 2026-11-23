@@ -418,9 +418,9 @@
       <div class="stack v917-today-grid" aria-label="Today dashboard">
         <section class="card focus-card" hidden aria-hidden="true"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Today's Focus</h2><span class="focus-pencil" aria-hidden="true">✎</span></div><p class="focus-prompt">What small thing deserves my best effort today?</p><textarea class="focus-answer focus-notebook" id="todayFocus" aria-label="Write today's focus" maxlength="180" rows="3"></textarea></section>
         <section class="card v917-schedule"><div class="card-heading"><h2><svg class="icon"><use href="#i-calendar"/></svg> Schedule</h2><button class="text-button" type="button" data-open="event" aria-label="Add event">+ Add</button></div><div class="v917-card-body" id="todayGlance" tabindex="0" role="region" aria-label="Today's schedule"></div></section>
-        <section class="card v917-habits"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habits</h2><button class="text-button" data-plan-tab="habits">View all</button></div><div class="v917-card-body" id="todayHabits" tabindex="0" role="region" aria-label="Today's habits"></div></section>
-        <section class="card v917-tasks"><div class="card-heading"><h2><svg class="icon"><use href="#i-check"/></svg> Tasks</h2></div><div class="v917-card-body" id="v917TodayTasks" tabindex="0" role="region" aria-label="Today's tasks and overdue tasks"></div></section>
-        <section class="card v917-priorities"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Top Priorities</h2><button type="button" class="text-button" id="v77ViewTasks">View all</button></div><div class="v917-card-body" id="v77TodayPriorities" tabindex="0" role="region" aria-label="Top priorities"></div></section>
+        <section class="card v917-habits"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="habits" aria-label="Open Habits in Plan"><svg class="icon"><use href="#i-habit"/></svg> Habits<span class="bp-heading-chevron" aria-hidden="true">›</span></button></h2></div><div class="v917-card-body" id="todayHabits" tabindex="0" role="region" aria-label="Today's habits"></div></section>
+        <section class="card v917-tasks"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="tasks" aria-label="Open Tasks in Plan"><svg class="icon"><use href="#i-check"/></svg> Tasks<span class="bp-heading-chevron" aria-hidden="true">›</span></button></h2></div><div class="v917-card-body" id="v917TodayTasks" tabindex="0" role="region" aria-label="Today's tasks and overdue tasks"></div></section>
+        <section class="card v917-priorities"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="tasks" aria-label="Open Top Priorities in Plan"><svg class="icon"><use href="#i-goal"/></svg> Top Priorities<span class="bp-heading-chevron" aria-hidden="true">›</span></button></h2></div><div class="v917-card-body" id="v77TodayPriorities" tabindex="0" role="region" aria-label="Top priorities"></div></section>
         <section class="card v917-projects"><div class="card-heading"><h2><svg class="icon"><use href="#i-plan"/></svg> Projects</h2><button type="button" class="text-button" id="v77ViewProjects">View all</button></div><div class="v917-card-body v77-today-project-grid" id="v77TodayProjects" tabindex="0" role="region" aria-label="Recent projects"></div></section>
       </div>
     </section>
@@ -429,8 +429,8 @@
       <div class="week-layout week-v4">
         <section class="card focus-card v4-week-focus"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Weekly Focus</h2><span class="focus-pencil" aria-hidden="true">✎</span></div><p class="focus-prompt">What matters most this week?</p><textarea class="focus-answer focus-notebook" id="weeklyFocus" aria-label="Write weekly focus" maxlength="180" rows="3"></textarea></section>
         <section class="card v4-week-calendar"><div class="card-heading v916-minimal-heading"><h2>Week at a Glance</h2><div class="v94-week-tools"><button type="button" id="v94WeekBack" class="v94-week-arrow" aria-label="Previous calendar week" title="Previous week">‹</button><button type="button" id="v94WeekForward" class="v94-week-arrow" aria-label="Next calendar week" title="Next week">›</button><button type="button" id="addWeekEvent" class="v87-add-week-event" aria-label="Add event this week" title="Add event">+</button></div></div><div id="v817WeekViewport" class="v817-week-viewport v94-week-static" aria-label="Weekly calendar. Use the previous and next week arrow buttons to change weeks"><div id="v817WeekTrack" class="v817-week-track"><div id="v817WeekPrev" class="week-grid v817-week-panel no-swipe" aria-hidden="true" inert></div><div id="weekGrid" class="week-grid v816-week-swipe v817-week-panel" aria-label="Weekly calendar, swipe left for next week and right for previous week"></div><div id="v817WeekNext" class="week-grid v817-week-panel no-swipe" aria-hidden="true" inert></div></div></div></section>
-        <section class="card v4-week-priorities"><div class="card-heading"><h2><svg class="icon"><use href="#i-check"/></svg> Top Priorities</h2></div><div id="priorities"></div></section>
-        <section class="card v4-week-habits"><div class="card-heading"><h2><svg class="icon"><use href="#i-habit"/></svg> Habit Tracker</h2><button class="text-button" data-plan-tab="habits">Edit</button></div><div id="weekHabits"></div></section>
+        <section class="card v4-week-priorities"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="tasks" aria-label="Open Top Priorities in Plan"><svg class="icon"><use href="#i-check"/></svg> Top Priorities<span class="bp-heading-chevron" aria-hidden="true">›</span></button></h2></div><div id="priorities"></div></section>
+        <section class="card v4-week-habits"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="habits" aria-label="Open Habit Tracker in Plan"><svg class="icon"><use href="#i-habit"/></svg> Habit Tracker<span class="bp-heading-chevron" aria-hidden="true">›</span></button></h2></div><div id="weekHabits"></div></section>
       </div>
     </section>
     <section class="view" id="myplan" aria-label="Plan">
@@ -855,15 +855,13 @@ function taskRow(t,rankMap=null,compactPreview=false){
       <div class="bp-task-detail">
         <div class="bp-task-title-line">
           ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}
-          <span class="entry-text bp-task-title">${title}</span>
+          <button type="button" class="entry-text bp-task-title bp-preview-link" data-bp-jump-task="${id}" aria-label="Find ${title} in Plan">${title}</button>
         </div>
         ${context?'<small class="bp-task-context">'+esc(context)+'</small>':''}
         ${due?'<small class="bp-task-preview-due">Due '+esc(due)+'</small>':''}
       </div>
     </div>
-    <div class="bp-task-swipe-actions" aria-label="Quick task actions">
-      <button type="button" data-bp-swipe-tomorrow="${id}" aria-label="Move ${title} deadline to tomorrow">Tomorrow</button>
-    </div>
+    
   </div>`;
   return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}">
     <div class="bp-task-main">
@@ -874,13 +872,10 @@ function taskRow(t,rankMap=null,compactPreview=false){
         ${context?'<small class="bp-task-context">'+esc(context)+'</small>':''}
         ${planned?'<small class="bp-task-planned">'+esc(planned)+'</small>':''}</div>
       <button type="button" class="bp-task-star" data-bp-task-star="${id}" aria-label="${t.priority?'Remove priority from':'Prioritize'} ${title}" aria-pressed="${!!t.priority}">${t.priority?'★':'☆'}</button>
-      <button type="button" class="bp-task-due" data-bp-task-date="${id}" aria-label="Change deadline for ${title}">${due?'Due '+esc(due):'Set date'}</button>
       <span class="task-row-actions"><button type="button" class="edit-small" data-bp-edit-task="${id}" aria-label="Edit ${title}">Edit</button>
         ${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':''}</span>
     </div>
-    <div class="bp-task-swipe-actions" aria-label="Quick task actions">
-      <button type="button" data-bp-swipe-tomorrow="${id}" aria-label="Move ${title} deadline to tomorrow">Tomorrow</button>
-    </div>
+    
   </div>`;
 }
 function eventRow(e){return `<div class="entry event"><span class="time">${timeText(e.time)}</span><span class="time-dot" aria-hidden="true"></span><span class="entry-text">${esc(e.title)}</span><button class="edit-small" data-edit-event="${e.id}" aria-label="Edit ${esc(e.title)}">Edit</button></div>`;}
