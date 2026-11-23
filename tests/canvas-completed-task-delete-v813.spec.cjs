@@ -44,21 +44,18 @@ test('checking a task reveals Delete and unchecking it removes Delete without lo
   expect(await page.evaluate(()=>state.tasks.find(t=>t.id==='done-a').done)).toBe(false);
 });
 
-test('canceling deletion leaves the completed task and check mark untouched',async({page})=>{
+test('one tap deletes a completed task without showing a confirmation dialog',async({page})=>{
   await openTasks(page);
-  let message='';
-  page.once('dialog',async d=>{message=d.message();await d.dismiss();});
+  const dialogs=[];
+  page.on('dialog',async d=>{dialogs.push(d.message());await d.dismiss();});
   await row(page,'done-b').locator('[data-delete-completed-task]').click();
-  expect(message).toContain('Delete completed task "Make progress on research"?');
-  expect(message).toContain('cannot be undone');
-  await expect(row(page,'done-b')).toBeVisible();
-  await expect(row(page,'done-b').locator('[data-task-check]')).toBeChecked();
-  expect(await page.evaluate(()=>state.tasks.length)).toBe(3);
+  await expect(row(page,'done-b')).toHaveCount(0);
+  expect(dialogs).toEqual([]);
+  expect(await page.evaluate(()=>state.tasks.map(t=>t.id))).toEqual(['done-a','done-c']);
 });
 
-test('confirmed deletion removes only that completed task, persists through reload and keeps open tasks',async({page})=>{
+test('one-tap deletion removes only that completed task, persists through reload and keeps open tasks',async({page})=>{
   const errors=await openTasks(page);
-  page.once('dialog',d=>d.accept());
   await row(page,'done-b').locator('[data-delete-completed-task]').click();
   await expect(row(page,'done-b')).toHaveCount(0);
   await expect(row(page,'done-a')).toBeVisible();
@@ -81,7 +78,6 @@ test('inline delete preserves the existing Edit modal and uses the existing shar
   await expect(page.locator('#modalBack')).toBeVisible();
   await expect(page.locator('#deleteModal')).toBeVisible();
   await page.locator('#cancelModal').click();
-  page.once('dialog',d=>d.accept());
   await row(page,'done-b').locator('[data-delete-completed-task]').click();
   await expect(row(page,'done-b')).toHaveCount(0);
   await expect(row(page,'done-a').locator('[data-edit-task="done-a"]')).toBeVisible();
@@ -103,4 +99,94 @@ test('the inline Delete action works with long completed titles in a phone-width
   expect(geometry.left).toBeGreaterThanOrEqual(0);
   expect(geometry.right).toBeLessThanOrEqual(geometry.cardRight+2);
   expect(geometry.width).toBeGreaterThan(50);
+});
+
+test('completed Task deletion from editor is immediate but unfinished Task deletion remains protected',async({page})=>{
+  await openTasks(page);
+  const dialogs=[];
+  page.on('dialog',async d=>{dialogs.push(d.message());await d.dismiss();});
+  await row(page,'done-b').locator('[data-edit-task="done-b"]').click();
+  await page.locator('#deleteModal').click();
+  await expect(row(page,'done-b')).toHaveCount(0);
+  await expect(page.locator('#modalBack')).not.toHaveClass(/open/);
+  expect(dialogs).toEqual([]);
+  await row(page,'done-a').locator('[data-edit-task="done-a"]').click();
+  await page.locator('#deleteModal').click();
+  expect(dialogs).toHaveLength(1);
+  expect(dialogs[0]).toContain('cannot be undone');
+  await expect(row(page,'done-a')).toBeVisible();
+  await expect(page.locator('#modalBack')).toHaveClass(/open/);
+});
+
+test('one-tap removal cleans Project actions and idea links without creating a duplicate Task',async({page})=>{
+  await openTasks(page);
+  await page.evaluate(()=>{
+    const t=state.tasks.find(t=>t.id==='done-b');
+    t.projectId='linked-project';
+    t.projectActionId='linked-action';
+    state.projects.push({id:'linked-project',title:'Research',actions:[
+      {id:'linked-action',taskId:t.id,title:t.title,done:true},
+      {id:'unrelated-action',taskId:'done-a',title:'Keep this action',done:false}
+    ],library:[],notes:[]});
+    state.ideas.push({id:'linked-idea',title:'Linked idea',actions:[
+      {id:'idea-action',title:t.title,taskId:t.id,done:true}
+    ]});
+    if(!save(true))throw Error('Unable to seed linked Task');
+    render();
+  });
+  const dialogs=[];page.on('dialog',d=>{dialogs.push(d.message());d.dismiss();});
+  await row(page,'done-b').locator('[data-delete-completed-task]').click();
+  const details=await page.evaluate(()=>{
+    render();
+    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return {
+      taskExists:state.tasks.some(t=>t.id==='done-b'),
+      linkedProjectActions:state.projects[0].actions.map(a=>a.id),
+      ideaTaskId:state.ideas[0].actions[0].taskId,
+      storedTaskExists:saved.tasks.some(t=>t.id==='done-b'),
+      storedProjectActions:saved.projects[0].actions.map(a=>a.id),
+      storedIdeaTaskId:saved.ideas[0].actions[0].taskId
+    };
+  });
+  expect(dialogs).toEqual([]);
+  expect(details).toEqual({taskExists:false,linkedProjectActions:['unrelated-action'],ideaTaskId:'',
+    storedTaskExists:false,storedProjectActions:['unrelated-action'],storedIdeaTaskId:''});
+});
+
+test('failed storage write keeps completed Task and linked references visible',async({page})=>{
+  await openTasks(page);
+  await page.evaluate(()=>{
+    const t=state.tasks.find(t=>t.id==='done-b');
+    t.projectId='rollback-project';t.projectActionId='rollback-action';
+    state.projects.push({id:'rollback-project',title:'Research',actions:[
+      {id:'rollback-action',taskId:'done-b',title:t.title,done:true}
+    ],library:[],notes:[]});
+    state.ideas.push({id:'rollback-idea',title:'Research notes',actions:[
+      {id:'rollback-idea-action',title:'Step',taskId:'done-b',done:true}
+    ]});
+    if(!save(true))throw Error('Unable to prepare linked Task');
+    const original=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(k,v){
+      if(k===STORAGE_KEY)throw new DOMException('Storage full','QuotaExceededError');
+      return original.call(this,k,v);
+    };
+    window.restoreTaskDeleteStorage=()=>{Storage.prototype.setItem=original;};
+  });
+  try{
+    await row(page,'done-b').locator('[data-delete-completed-task]').click();
+    await expect(row(page,'done-b')).toBeVisible();
+    const result=await page.evaluate(()=>{
+      const disk=JSON.parse(localStorage.getItem(STORAGE_KEY));
+      return {
+        taskExists:state.tasks.some(t=>t.id==='done-b'),
+        projectActionCount:state.projects[0].actions.length,
+        projectTaskId:state.projects[0].actions[0].taskId,
+        ideaTaskId:state.ideas[0].actions[0].taskId,
+        diskTaskExists:disk.tasks.some(t=>t.id==='done-b')
+      };
+    });
+    expect(result).toEqual({taskExists:true,projectActionCount:1,projectTaskId:'done-b',ideaTaskId:'done-b',diskTaskExists:true});
+  }finally{
+    await page.evaluate(()=>window.restoreTaskDeleteStorage());
+  }
 });
