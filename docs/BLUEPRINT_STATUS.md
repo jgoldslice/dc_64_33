@@ -7,6 +7,12 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Design Next Week (in review)
+
+- [PR #99](https://github.com/jgoldslice/dc_64_33/pull/99), based on `68dd228f81f743ebb8ad8f019f13da96895f32b6`: the Week and Area actions open the next Monday–Sunday by default while preserving a meaningful existing draft. The goal stage supports adding draft goals; the schedule opens the event editor on day selection with the date inferred; the task editor opens on request. Current-day accent replaces the weekend-wide highlight, including Saturday and Sunday. Draft changes still require Review and Apply.
+- Review fixes: selecting another day while editing moves the existing event rather than creating a duplicate; switching events confirms before discarding unsaved input. New goals start unnamed, require a title at Apply, and can be removed while keeping any linked draft tasks. The current-day fill uses the secondary color, and weekend highlighting follows the actual date. Regression tests cover these behaviors.
+- The earlier PR head `51c0b1eb7cc4725020597fbb9c3c6a48c249e784` passed 395 browser tests, syntax checks and 29 Node tests in [GitHub Actions #45278189906](https://github.com/jgoldslice/dc_64_33/actions/runs/45278189906). A follow-up run passed 398/399 browser tests; the sole failure was a new test assuming inactive adjacent panels were populated. The test now checks the real week-navigation controls; rerun, deployed website, and physical-device verification are pending. Local browser execution was blocked by the environment. No native Swift changes; installed iOS apps need web assets staged and a Capacitor/Xcode rebuild.
+
 ## 2026-11-23 — Project icons, photos, and Today card (merged; device QA pending)
 
 - Starting point `f295693db83c1866af1bfe1a3335a938947fafb0` on `main`. The Today Projects card grows to display its up-to-four recent project tiles without an internal scrollbar. Normal page scrolling can still be needed when the screen or other content requires it.

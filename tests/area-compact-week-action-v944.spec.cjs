@@ -14,7 +14,7 @@ test('Area actions are compact siblings below the cards, with no weekly feature 
     await expect(area).toBeVisible();
     await expect(page.locator('#overview > .wb-overview-feature')).toHaveCount(0);
     await expect(page.locator('#overview [data-wb-launch]')).toHaveCount(1);
-    await expect(week).toHaveAttribute('aria-label','Design your week');
+    await expect(week).toHaveAttribute('aria-label','Design next week');
     const rects=await page.evaluate(()=>{
       const cards=document.querySelector('.bp-area-grid').getBoundingClientRect();
       const area=document.querySelector('#bpAreasRoot [data-bpa-new]').getBoundingClientRect();
