@@ -128,7 +128,7 @@ test('one-tap removal cleans Project actions and idea links without creating a d
       {id:'linked-action',taskId:t.id,title:t.title,done:true},
       {id:'unrelated-action',taskId:'done-a',title:'Keep this action',done:false}
     ],library:[],notes:[]});
-    state.ideas.push({id:'linked-idea',title:'Linked idea',actions:[
+    state.ideas.push({id:'linked-idea',title:'Linked idea',body:'',updated:'2026-11-22T12:00:00Z',actions:[
       {id:'idea-action',title:t.title,taskId:t.id,done:true}
     ]});
     if(!save(true))throw Error('Unable to seed linked Task');
@@ -161,7 +161,7 @@ test('failed storage write keeps completed Task and linked references visible',a
     state.projects.push({id:'rollback-project',title:'Research',actions:[
       {id:'rollback-action',taskId:'done-b',title:t.title,done:true}
     ],library:[],notes:[]});
-    state.ideas.push({id:'rollback-idea',title:'Research notes',actions:[
+    state.ideas.push({id:'rollback-idea',title:'Research notes',body:'',updated:'2026-11-22T12:00:00Z',actions:[
       {id:'rollback-idea-action',title:'Step',taskId:'done-b',done:true}
     ]});
     if(!save(true))throw Error('Unable to prepare linked Task');
