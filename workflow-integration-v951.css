@@ -119,23 +119,21 @@ body.v928-notes-focus #bpQuickAdd{display:none!important}
   .bp-task-row .task-row-actions{grid-column:5;grid-row:2;width:88px;grid-template-columns:44px 44px;margin:0}
 }
 
-/* v9.58: the Week priority card is narrow even on a full-size iPad.
-   Respond to the card's width, not the viewport, and let titles wrap. */
-#week .v4-week-priorities{container-type:inline-size;container-name:bp-week-priorities}
-@container bp-week-priorities (max-width:520px){
-  #week .v4-week-priorities .bp-task-main{
-    grid-template-columns:22px minmax(0,1fr) 44px;
-    column-gap:6px;row-gap:2px;padding:7px 2px
-  }
-  #week .v4-week-priorities .bp-task-main>input[type=checkbox]{grid-column:1;grid-row:1}
-  #week .v4-week-priorities .bp-task-detail{grid-column:2;grid-row:1;min-width:0}
-  #week .v4-week-priorities .bp-task-star{grid-column:3;grid-row:1;margin:0}
-  #week .v4-week-priorities .bp-task-due{
-    grid-column:2;grid-row:2;justify-self:end;
-    width:94px;min-width:94px;max-width:94px
-  }
-  #week .v4-week-priorities .bp-task-row .task-row-actions{
-    grid-column:3;grid-row:2;justify-self:end;
-    grid-template-columns:44px;width:44px;margin:0
-  }
+/* The Week card is a compact view/check list at every iPhone/iPad width.
+   Plan/Today retain full Task editing controls and fixed action columns. */
+#week .v4-week-priorities .bp-week-task-row .bp-task-main{
+  grid-template-columns:22px minmax(0,1fr);
+  column-gap:9px;row-gap:0;
+  min-width:0;align-items:center;padding:7px 2px
+}
+#week .v4-week-priorities .bp-week-task-row .bp-task-detail{
+  grid-column:2;grid-row:1;min-width:0
+}
+#week .bp-week-task-row .bp-task-title-line{align-items:baseline;gap:7px}
+#week .bp-week-task-row .bp-task-title{
+  min-width:0;overflow-wrap:anywhere;line-height:1.45;padding:1px 0
+}
+#week .bp-week-task-row .bp-week-task-due{
+  display:block;font-size:10px;line-height:1.4;color:var(--muted);
+  font-variant-numeric:tabular-nums
 }
