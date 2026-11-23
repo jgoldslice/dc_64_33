@@ -119,21 +119,21 @@ body.v928-notes-focus #bpQuickAdd{display:none!important}
   .bp-task-row .task-row-actions{grid-column:5;grid-row:2;width:88px;grid-template-columns:44px 44px;margin:0}
 }
 
-/* The Week card is a compact view/check list at every iPhone/iPad width.
-   Plan/Today retain full Task editing controls and fixed action columns. */
-#week .v4-week-priorities .bp-week-task-row .bp-task-main{
+/* Today and Week show read/check-only Tasks. Unlike Plan task rows,
+   the compact cards must fit inside a narrow column even on an iPad. */
+.bp-task-preview-row .bp-task-main{
   grid-template-columns:22px minmax(0,1fr);
   column-gap:9px;row-gap:0;
   min-width:0;align-items:center;padding:7px 2px
 }
-#week .v4-week-priorities .bp-week-task-row .bp-task-detail{
+.bp-task-preview-row .bp-task-detail{
   grid-column:2;grid-row:1;min-width:0
 }
-#week .bp-week-task-row .bp-task-title-line{align-items:baseline;gap:7px}
-#week .bp-week-task-row .bp-task-title{
+.bp-task-preview-row .bp-task-title-line{align-items:baseline;gap:7px}
+.bp-task-preview-row .bp-task-title{
   min-width:0;overflow-wrap:anywhere;line-height:1.45;padding:1px 0
 }
-#week .bp-week-task-row .bp-week-task-due{
+.bp-task-preview-row .bp-task-preview-due{
   display:block;font-size:10px;line-height:1.4;color:var(--muted);
   font-variant-numeric:tabular-nums
 }
