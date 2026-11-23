@@ -9,9 +9,6 @@ test('Today and Week card headings navigate to the simple Plan Tasks and Habits 
   await expect(page.locator('#myplan')).toHaveClass(/active/);
   await expect(page.locator('#tasks')).toHaveClass(/active/);
   await page.locator('[data-tab="today"]').click();
-  await page.locator('.v917-tasks [data-bp-plan-destination="tasks"]').click();
-  await expect(page.locator('#tasks')).toHaveClass(/active/);
-  await page.locator('[data-tab="today"]').click();
   await page.locator('.v917-habits [data-bp-plan-destination="habits"]').click();
   await expect(page.locator('#habits')).toHaveClass(/active/);
   await page.locator('[data-tab="week"]').click();
@@ -61,7 +58,7 @@ test('Crowded Week days expand all tasks and keep checked tasks available to unc
   await expect(wed.locator('[data-bp-jump-task]')).toHaveCount(7);
 });
 
-test('Today orders unfinished tasks ahead of completed tasks',async({page})=>{
+test('Today unified list orders unfinished due tasks ahead of completed ones',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     const d=localToday();
@@ -69,8 +66,8 @@ test('Today orders unfinished tasks ahead of completed tasks',async({page})=>{
       {id:'unfinished-last',title:'Remaining',done:false,dueDate:d,priority:false}];
     if(!save(true))throw Error('Unable to seed Today');render();
   });
-  await expect(page.locator('#v917TodayTasks [data-bp-task-row]')).toHaveCount(2);
-  await expect(page.locator('#v917TodayTasks [data-bp-task-row]').first()).toHaveAttribute('data-bp-task-row','unfinished-last');
+  await expect(page.locator('#v77TodayPriorities [data-bp-task-row]')).toHaveCount(2);
+  await expect(page.locator('#v77TodayPriorities [data-bp-task-row]').first()).toHaveAttribute('data-bp-task-row','unfinished-last');
 });
 
 test('One-tap completed deletion offers Undo and restores Project and Idea references',async({page})=>{
@@ -115,10 +112,10 @@ test('Today includes scheduled work due later without duplicating overdue work',
     if(!save(true))throw Error('Unable to seed scheduled Today tasks');
     render();
   });
-  const today=page.locator('#v917TodayTasks');
+  const today=page.locator('#v77TodayPriorities');
   const all=await today.locator('[data-bp-task-row]').evaluateAll(rows=>rows.map(row=>row.dataset.bpTaskRow));
   expect(all).toEqual(['overdue-scheduled','scheduled-later','due-today','finished-today']);
-  await expect(today.getByText('For today')).toBeVisible();
+  await expect(today.getByText('Scheduled today', {exact:false})).toBeVisible();
   await today.locator('[data-bp-task-row="scheduled-later"] [data-task-check]').check();
   expect(await page.evaluate(()=>state.tasks.find(t=>t.id==='scheduled-later').done)).toBe(true);
 });
