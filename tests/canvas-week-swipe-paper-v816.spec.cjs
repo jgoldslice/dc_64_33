@@ -104,7 +104,7 @@ test('Add Event can schedule a future week and opens that calendar week on save'
 test('tapping a day opens its date and still allows swiping to next week',async({page})=>{
   await openWeek(page);
   const date=await page.locator('#weekGrid [data-week-event-date]').first().getAttribute('data-week-event-date');
-  await page.locator('#weekGrid [data-week-event-date]').first().click();
+  await page.locator('#weekGrid [data-week-event-date]').first().locator('.day-top').click();
   await expect(page.locator('#v87EventBack')).toBeVisible();
   await expect(page.locator('#v87EventDates [data-v87-date]')).toHaveCount(21);
   await expect(page.locator('#v87EventDates [aria-pressed="true"]')).toHaveAttribute('data-v87-date',date);
