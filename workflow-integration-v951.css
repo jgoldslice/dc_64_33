@@ -13,10 +13,11 @@
 .bp-task-star{grid-column:3;grid-row:1;justify-self:center;font-size:22px;width:44px;min-width:44px;padding:4px}
 .bp-task-star[aria-pressed=true]{color:var(--secondary-ui)}
 .bp-task-due{grid-column:4;grid-row:1;width:98px;min-width:98px;max-width:98px;font-size:11px;padding:3px 4px;text-align:center;border:1px solid var(--line);background:var(--wash);line-height:1.25;white-space:nowrap;font-variant-numeric:tabular-nums}
+/* One swipe action fills the entire 112px reveal, including narrow iPhones. */
 .bp-task-swipe-actions{position:absolute;inset:0 0 0 auto;display:none;justify-content:flex-end;align-items:stretch;width:112px;z-index:3}
 .bp-task-row.bp-task-revealed .bp-task-swipe-actions{display:flex;pointer-events:auto}
-.bp-task-swipe-actions button{width:56px;min-width:56px;border:0;color:var(--ink);background:var(--wash);font-size:11px;padding:4px}
-.bp-task-swipe-actions button:first-child{color:var(--surface);background:var(--primary-ui)}
+.bp-task-swipe-actions [data-bp-swipe-tomorrow]{display:flex;align-items:center;justify-content:center;width:100%;min-width:112px;min-height:44px;border:0;border-radius:9px 0 0 9px;color:var(--surface);background:var(--primary-ui);font-size:12px;font-weight:650;white-space:nowrap;padding:8px}
+.bp-task-swipe-actions [data-bp-swipe-tomorrow]:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:-3px}
 .bp-task-row.bp-task-revealed .bp-task-main{transform:translate3d(-112px,0,0)}
 .bp-task-row.done .bp-task-title{text-decoration:line-through;color:var(--muted)}
 .bp-task-row .delete-completed-task{font-size:10px;flex:none;min-height:35px}
