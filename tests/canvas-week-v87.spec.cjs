@@ -32,6 +32,8 @@ test('tap a weekday to add an event with only name and time, save and reopen',as
   const day=page.locator('#weekGrid [data-week-event-date]').nth(1);
   const date=await day.getAttribute('data-week-event-date');
   await day.locator('.day-top').click();
+  await expect(page.locator('#bpDayBack')).toBeVisible();
+  await page.locator('[data-bp-day-add]').click();
   await expect(page.locator('#v87EventBack')).toBeVisible();
   // v8.16 always shows week chips so a tapped day can be moved to another week.
   await expect(page.locator('#v87EventDates')).toBeVisible();
@@ -67,6 +69,7 @@ test('Saturday and Sunday independently target the correct dates',async({page})=
   const dates=await weekend.evaluateAll(els=>els.map(el=>el.dataset.weekEventDate));
   for(let i=0;i<2;i++){
     await weekend.nth(i).locator('.day-top').click();
+    await page.locator('[data-bp-day-add]').click();
     await addEvent(page,{title:'Weekend '+i,time:i===0?'10:15':'17:30'});
   }
   const stored=await page.evaluate(()=>state.events.filter(e=>e.title.startsWith('Weekend ')).map(e=>({title:e.title,date:e.date,time:e.time})));
@@ -98,16 +101,17 @@ test('keyboard Enter opens quick add; Escape cancels without writing an event',a
   const day=page.locator('#weekGrid [data-week-event-date]').first();
   await day.focus();
   await page.keyboard.press('Enter');
-  await expect(page.locator('#v87EventBack')).toBeVisible();
+  await expect(page.locator('#bpDayBack')).toBeVisible();
+  await page.locator('[data-bp-day-add]').click();
   await page.locator('#v87EventName').fill('Do not save');
   await page.keyboard.press('Escape');
   await expect(page.locator('#v87EventBack')).toBeHidden();
   await expect(day).toBeFocused();
   expect(await page.evaluate(()=>state.events.some(e=>e.title==='Do not save'))).toBe(false);
   await day.focus();await page.keyboard.press('Space');
-  await expect(page.locator('#v87EventBack')).toBeVisible();
-  await page.locator('#v87EventCancel').click();
-  await expect(page.locator('#v87EventBack')).toBeHidden();
+  await expect(page.locator('#bpDayBack')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#bpDayBack')).toBeHidden();
 });
 
 test('events entered for today also appear in Today at a Glance',async({page})=>{
@@ -116,6 +120,7 @@ test('events entered for today also appear in Today at a Glance',async({page})=>
   const cell=page.locator('#weekGrid [data-week-event-date="'+today+'"]');
   if(!(await cell.count()))test.skip(true,'Current displayed week excludes today');
   await cell.locator('.day-top').click();
+  await page.locator('[data-bp-day-add]').click();
   await addEvent(page,{title:'Today calendar appointment',time:'13:15'});
   await page.locator('[data-tab="today"]').click();
   await expect(page.locator('#todayGlance')).toContainText('Today calendar appointment');

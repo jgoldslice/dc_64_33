@@ -161,3 +161,29 @@
 @media(prefers-reduced-motion:reduce){
   .v817-date-scroller,.v817-week-viewport{scroll-behavior:auto}
 }
+
+/* Full day details, with the same date model and task actions as the grid. */
+.bp-day-sheet{gap:12px;max-width:460px}
+.bp-day-sheet .v87-event-heading h2{font-size:23px;line-height:1.25;overflow-wrap:anywhere}
+.bp-day-content{overflow-y:auto;overscroll-behavior:contain;min-height:0}
+.bp-day-content h3{margin:14px 0 5px;color:var(--muted);font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.bp-day-content h3:first-child{margin-top:0}
+.bp-day-event,.bp-day-task{min-width:0;display:flex;align-items:center;gap:7px;width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);text-align:left}
+.bp-day-event{min-height:56px;padding:7px 2px;cursor:pointer}
+.bp-day-event>span:nth-child(2){min-width:0;flex:1}
+.bp-day-event strong,.bp-day-event small,.bp-day-task small{display:block;overflow-wrap:anywhere}
+.bp-day-event strong{font-size:14px;font-weight:600}
+.bp-day-event small,.bp-day-task small{font-size:11px;color:var(--muted);margin-top:3px}
+.bp-day-event-icon{display:grid;place-items:center;flex:none;width:35px;color:var(--secondary-ui);font-size:21px}
+.bp-day-chevron{font-size:22px;color:var(--muted)}
+.bp-day-task-info{flex:1;min-width:0;padding:7px 0}
+.bp-day-task input{width:20px;height:20px;accent-color:var(--secondary-ui)}
+.bp-day-task-title{display:block;border:0;background:transparent;color:var(--ink);font-size:14px;font-weight:600;text-align:left;min-height:32px;padding:0;overflow-wrap:anywhere}
+.bp-day-task.done .bp-day-task-title{text-decoration:line-through;color:var(--muted)}
+.bp-day-add{min-height:44px;justify-self:end}
+.bp-day-completed summary,.bp-today-completed summary{cursor:pointer;padding:10px 2px;color:var(--secondary-ui);font-size:12px;font-weight:650;min-height:40px}
+.bp-day-sheet button:focus-visible,.bp-day-sheet input:focus-visible,.bp-day-sheet summary:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:2px}
+.bp-week-today{min-height:44px;border:0;background:transparent;color:var(--secondary-ui);font-size:12px;font-weight:700;padding:3px 5px}
+.bp-week-today[hidden]{display:none!important}
+@media(max-width:420px){.v4-week-calendar .card-heading{flex-wrap:wrap}.v4-week-calendar .v94-week-tools{flex-wrap:wrap;justify-content:flex-end}}
+.bp-cal-event-icon{color:var(--secondary-ui);font-size:13px}

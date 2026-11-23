@@ -281,18 +281,97 @@
     // The strip needs a laid-out width before we scroll to its middle week.
     requestAnimationFrame(()=>{centerDates();});
   }
+  // A single date sheet provides a complete, scrollable list without changing
+  // the underlying task or event model. Checkoffs still use the app handler.
+  const dayBack=document.createElement('div');
+  dayBack.id='bpDayBack';dayBack.className='v87-event-back bp-day-back';dayBack.hidden=true;
+  dayBack.innerHTML='<section class="v87-event-sheet bp-day-sheet" role="dialog" aria-modal="true" aria-labelledby="bpDayTitle">'+
+    '<div class="v87-event-heading"><h2 id="bpDayTitle"></h2><button type="button" class="v87-event-close" data-bp-day-close aria-label="Close day">×</button></div>'+
+    '<div id="bpDayContent" class="bp-day-content"></div><button type="button" class="primary-button bp-day-add" data-bp-day-add>+ Add event</button></section>';
+  document.body.append(dayBack);
+  const dayTitle=dayBack.querySelector('#bpDayTitle');
+  const dayContent=dayBack.querySelector('#bpDayContent');
+  let dayDate='',dayOrigin=null,showCompleted=false;
+  function origin(){
+    return [...grid.querySelectorAll('[data-week-event-date]')].find(el=>el.dataset.weekEventDate===dayDate)||add;
+  }
+  function closeDay(restore=true){
+    if(dayBack.hidden)return;
+    dayBack.hidden=true;
+    if(restore)(dayOrigin?.isConnected?dayOrigin:origin()).focus({preventScroll:true});
+  }
+  function drawDay(){
+    const {events,scheduled,due}=weekDayItems(dayDate);
+    const tasks=[...scheduled,...due];
+    const taskEntry=t=>{
+      const project=state.projects.find(p=>String(p.id)===String(t.projectId||'')&&t.projectId);
+      const goal=state.goals.find(g=>String(g.id)===String(t.goalId||'')&&t.goalId);
+      const context=[goal?.category||project?.area||t.area||'',project?.title].filter(Boolean).join(' · ');
+      const timing=t.scheduledDate===dayDate?(t.scheduledTime?timeText(t.scheduledTime):'Scheduled'):'Due';
+      return '<div class="bp-day-task '+(t.done?'done':'')+'">'+
+        '<label class="bp-habit-check-label"><input type="checkbox" data-task-check="'+esc(t.id)+'" aria-label="Complete '+esc(t.title)+'" '+(t.done?'checked':'')+'></label>'+
+        '<div class="bp-day-task-info"><button type="button" class="bp-day-task-title" data-bp-jump-task="'+esc(t.id)+'">'+esc(t.title)+'</button>'+
+        '<small>'+esc(timing)+(context?' · '+esc(context):'')+'</small></div></div>';
+    };
+    const unfinished=tasks.filter(t=>!t.done),completed=tasks.filter(t=>t.done);
+    const finished=completed.length>=3?'<details class="bp-day-completed" '+(showCompleted?'open':'')+'><summary>Completed ('+completed.length+')</summary>'+completed.map(taskEntry).join('')+'</details>':completed.map(taskEntry).join('');
+    const eventRows=events.map(event=>'<button type="button" class="bp-day-event" data-edit-event="'+esc(event.id)+'">'+
+      '<span aria-hidden="true" class="bp-day-event-icon">◷</span><span><strong>'+esc(event.title)+'</strong><small>'+esc(timeText(event.time))+'</small></span><span class="bp-day-chevron" aria-hidden="true">›</span></button>').join('');
+    dayContent.innerHTML=events.length||tasks.length?
+      (events.length?'<h3>Events</h3>'+eventRows:'')+(tasks.length?'<h3>Tasks</h3>'+unfinished.map(taskEntry).join('')+finished:''):
+      '<p class="empty">Nothing scheduled for this day.</p>';
+  }
+  function openDay(date,trigger){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+    dayDate=date;dayOrigin=trigger;showCompleted=false;
+    dayTitle.textContent=new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+    drawDay();dayBack.hidden=false;
+    dayBack.querySelector('[data-bp-day-close]').focus({preventScroll:true});
+  }
+  dayBack.addEventListener('click',e=>{
+    if(e.target===dayBack||e.target.closest('[data-bp-day-close]')){closeDay();return;}
+    if(e.target.closest('[data-bp-day-add]')){
+      const date=dayDate,trigger=origin();closeDay(false);open(date,true,trigger);return;
+    }
+    // The delegated app handler opens the existing Task or Event editor.
+    if(e.target.closest('[data-bp-jump-task],[data-edit-event]'))closeDay(false);
+  });
+  dayBack.addEventListener('toggle',e=>{
+    if(e.target.matches('.bp-day-completed'))showCompleted=e.target.open;
+  },true);
+  document.addEventListener('change',e=>{
+    if(dayBack.hidden||!dayBack.contains(e.target)||!e.target.matches('[data-task-check]'))return;
+    // The main listener has already committed or rolled back the checkoff.
+    const id=e.target.dataset.taskCheck,scroll=dayContent.scrollTop;
+    const sheet=dayBack.querySelector('.bp-day-sheet'),sheetScroll=sheet.scrollTop;
+    if(state.tasks.find(t=>String(t.id)===id)?.done)showCompleted=true;
+    drawDay();dayContent.scrollTop=scroll;sheet.scrollTop=sheetScroll;
+    [...dayBack.querySelectorAll('[data-task-check]')].find(el=>el.dataset.taskCheck===id)?.focus({preventScroll:true});
+  });
+  document.addEventListener('keydown',e=>{
+    if(dayBack.hidden)return;
+    if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeDay();return;}
+    if(e.key!=='Tab')return;
+    const focusable=[...dayBack.querySelectorAll('button:not([disabled]),input:not([disabled]),summary')].filter(el=>el.getClientRects().length);
+    if(!focusable.length)return;
+    const first=focusable[0],last=focusable[focusable.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  },true);
   add.addEventListener('click',()=>open('',false,add));
   grid.addEventListener('click',e=>{
-    // Task checkboxes, Plan links and expanded lists are not Add Event gestures.
-    if(e.target instanceof Element&&e.target.closest('[data-edit-task],[data-task-check],.bp-cal-task-check,[data-bp-jump-task],[data-bp-week-more]'))return;
-    const item=e.target instanceof Element?e.target.closest('[data-week-event-date]'):null;
-    if(item&&grid.contains(item))open(item.dataset.weekEventDate,true,item);
+    const target=e.target instanceof Element?e.target:null;if(!target)return;
+    const more=target.closest('[data-bp-week-more]');
+    if(more){e.preventDefault();openDay(more.dataset.bpWeekMore,more);return;}
+    if(target.closest('[data-edit-task],[data-task-check],.bp-cal-task-check,[data-bp-jump-task]'))return;
+    const item=target.closest('[data-week-event-date]');
+    if(item&&grid.contains(item))openDay(item.dataset.weekEventDate,item);
   });
   grid.addEventListener('keydown',e=>{
     if(e.key!=='Enter'&&e.key!==' ')return;
     const item=e.target;
     if(!(item instanceof Element)||!item.matches('[data-week-event-date]'))return;
-    e.preventDefault();open(item.dataset.weekEventDate,true,item);
+    e.preventDefault();openDay(item.dataset.weekEventDate,item);
   });
   overlay.addEventListener('click',e=>{
     if(e.target===overlay||e.target===x||e.target===cancel)close();
