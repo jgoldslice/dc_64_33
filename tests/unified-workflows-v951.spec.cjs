@@ -65,7 +65,7 @@ test('Project quick creation reuses Task, Habit and Goal forms with inherited Pr
   await expect(page.locator('#allTasks')).toContainText('Prepare vials');
 });
 
-test('Today Task title edits, star prioritizes, and quick date picker sets schedule without duplicate Task',async({page})=>{
+test('Today and Plan omit Set Date; task schedule is edited through Plan',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[{id:'unified-task',title:'Design reactor',done:false,dueDate:localToday(),
@@ -76,45 +76,52 @@ test('Today Task title edits, star prioritizes, and quick date picker sets sched
   });
   const row=page.locator('#v917TodayTasks [data-bp-task-row="unified-task"]');
   await expect(row).toContainText('Design reactor');
+  await expect(row.locator('[data-bp-task-date]')).toHaveCount(0);
+  await expect(row.locator('[data-bp-swipe-done]')).toHaveCount(0);
+  await expect(row.locator('[data-bp-swipe-tomorrow]')).toHaveCount(1);
   await row.locator('[data-bp-task-star]').click();
   expect(await page.evaluate(()=>state.tasks[0].priority)).toBe(true);
   await expect(page.locator('#v77TodayPriorities')).toContainText('Design reactor');
-  await row.locator('[data-bp-task-date]').click();
-  await expect(page.locator('#bpTaskDates')).toBeVisible();
-  await page.locator('[data-bp-plan-input]').fill('2026-12-09');
-  await page.locator('[data-bp-time-input]').fill('14:15');
-  await page.locator('[data-bp-plan-apply]').click();
-  expect(await page.evaluate(()=>({count:state.tasks.length,day:state.tasks[0].scheduledDate,time:state.tasks[0].scheduledTime})))
-    .toEqual({count:1,day:'2026-12-09',time:'14:15'});
-  await row.locator('[data-bp-task-date]').click();
-  await page.locator('[data-bp-date-preset="tomorrow"]').click();
-  const tomorrow=await page.evaluate(()=>iso(plusDays(new Date(),1)));
-  expect(await page.evaluate(()=>state.tasks[0].dueDate)).toBe(tomorrow);
   await page.locator('[data-tab="myplan"]').click();
   await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
-  await page.locator('#allTasks [data-edit-task="unified-task"]').click();
+  const plan=page.locator('#allTasks [data-bp-task-row="unified-task"]');
+  await expect(plan.locator('[data-bp-task-date]')).toHaveCount(0);
+  await plan.locator('[data-bp-edit-task]').click();
   await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
-  await expect(page.locator('#modalForm input[name="scheduledDate"]')).toHaveValue('2026-12-09');
-  await page.locator('#cancelModal').click();
+  await page.locator('#modalForm input[name="scheduledDate"]').fill('2026-12-09');
+  await page.locator('#modalForm input[name="scheduledTime"]').fill('14:15');
+  await page.locator('#modalForm input[name="dueDate"]').fill('2026-12-10');
+  await page.locator('#modalForm button[type="submit"]').click();
+  expect(await page.evaluate(()=>{
+    const t=state.tasks[0];
+    return {count:state.tasks.length,day:t.scheduledDate,time:t.scheduledTime,due:t.dueDate};
+  })).toEqual({count:1,day:'2026-12-09',time:'14:15',due:'2026-12-10'});
 });
 
-test('Calendar distinguishes scheduled Tasks from Events and opens the Task editor',async({page})=>{
+test('Week displays scheduled Tasks and Events and allows direct checkoff without opening Add Event',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     selectedWeek=startOfWeek(new Date('2026-12-09T12:00:00'));
     state.tasks=[{id:'calendar-task',title:'Run the reactor',done:false,dueDate:'2026-12-12',
       date:'2026-12-12',scheduledDate:'2026-12-09',scheduledTime:'11:30',priority:false,priorityRank:0}];
     state.events=[{id:'calendar-event',title:'Lab meeting',date:'2026-12-09',time:'09:00'}];
-    save(true);render();
+    if(!save(true))throw Error('Could not seed calendar fixtures');render();
   });
   await page.locator('[data-tab="week"]').click();
   const wednesday=page.locator('#weekGrid [data-week-event-date="2026-12-09"]');
   await expect(wednesday).toContainText('Lab meeting');
   await expect(wednesday).toContainText('Run the reactor');
   await expect(wednesday.locator('.bp-cal-type')).toHaveText('Task');
-  await wednesday.locator('[data-edit-task="calendar-task"]').click();
-  await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
+  await expect(wednesday.locator('[data-edit-task]')).toHaveCount(0);
+  const check=wednesday.locator('[data-task-check="calendar-task"]');
+  await expect(check).not.toBeChecked();
+  await check.check();
   await expect(page.locator('#v87EventBack')).toBeHidden();
+  await expect(wednesday.locator('[data-task-check="calendar-task"]')).toBeChecked();
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem(STORAGE_KEY)).tasks[0].done)).toBe(true);
+  await wednesday.locator('[data-task-check="calendar-task"]').uncheck();
+  await expect(wednesday.locator('[data-task-check="calendar-task"]')).not.toBeChecked();
+  expect(await page.evaluate(()=>state.tasks[0].done)).toBe(false);
 });
 
 test('Task swipe offers only Tomorrow, and rescheduling retains linked Project completion',async({page})=>{
