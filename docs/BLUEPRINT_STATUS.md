@@ -10,7 +10,7 @@
 ## 2026-11-23 — Compact task rows
 
 - [PR #102](https://github.com/jgoldslice/dc_64_33/pull/102), layout commit `e5d5380fe531d4f49ff144e3902030e67444363b`: Plan uses inline controls and the title opens Edit at phone widths. Due and scheduled captions wrap as needed. Today and Week checkoff lists use consistent title alignment and lighter dividers. The change affects presentation and leaves task data in its existing format.
-- Verified 23 targeted Chromium tests across task actions, navigation and widths from 320 to 1024 CSS pixels. Inspected the dark phone layout at 430 CSS pixels. Physical iPhone and iPad verification is pending.
+- Verified 23 targeted Chromium tests across task actions, navigation and widths from 320 to 1024 CSS pixels. Inspected the dark phone layout at 430 CSS pixels. The full local suite passed 405 browser tests, 29 Node tests, and JavaScript syntax checks. Physical iPhone and iPad verification is pending.
 
 ## 2026-11-23 — Weekly planning follow-through (browser verified; device QA pending)
 
