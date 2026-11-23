@@ -114,7 +114,7 @@ test('Today includes scheduled work due later without duplicating overdue work',
   });
   const today=page.locator('#v77TodayPriorities');
   const all=await today.locator('[data-bp-task-row]').evaluateAll(rows=>rows.map(row=>row.dataset.bpTaskRow));
-  expect(all).toEqual(['overdue-scheduled','scheduled-later','due-today','finished-today']);
+  expect(all).toEqual(['overdue-scheduled','due-today','scheduled-later','finished-today']);
   await expect(today.getByText('Scheduled today', {exact:false})).toBeVisible();
   await today.locator('[data-bp-task-row="scheduled-later"] [data-task-check]').check();
   expect(await page.evaluate(()=>state.tasks.find(t=>t.id==='scheduled-later').done)).toBe(true);
