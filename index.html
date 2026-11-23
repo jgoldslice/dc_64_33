@@ -849,7 +849,7 @@ function taskRow(t,rankMap=null,compactPreview=false){
   const planned=t.scheduledDate?'Scheduled '+new Date(t.scheduledDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})+(t.scheduledTime?' '+timeText(t.scheduledTime):''):'';
   const id=esc(t.id),title=esc(t.title);
   // Today and Week are read/check views; Plan retains the full editor.
-  if(compactPreview)return `<div class="entry bp-task-row bp-task-preview-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}">
+  if(compactPreview)return `<div class="entry bp-task-row bp-task-preview-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}" tabindex="-1">
     <div class="bp-task-main">
       <input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}>
       <div class="bp-task-detail">
@@ -863,7 +863,7 @@ function taskRow(t,rankMap=null,compactPreview=false){
     </div>
     
   </div>`;
-  return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}">
+  return `<div class="entry bp-task-row no-swipe ${t.done?'done':''}" data-no-swipe data-bp-task-row="${id}" tabindex="-1">
     <div class="bp-task-main">
       <input type="checkbox" aria-label="Complete ${title}" data-task-check="${id}" ${t.done?'checked':''}>
       <div class="bp-task-detail"><div class="bp-task-title-line">
@@ -1327,6 +1327,20 @@ function planTab(name){
   });
   tab('myplan');
 }
+// Dashboard links keep Plan as the only Task/Habit management workspace.
+function jumpToPlan(section,id='',kind=''){
+  planTab(section);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const collection=kind==='task'?document.querySelectorAll('#allTasks [data-bp-task-row]'):
+      kind==='habit'?document.querySelectorAll('#habitManager [data-bp-habit-row]'):[];
+    const target=[...collection].find(node=>String(kind==='task'?node.dataset.bpTaskRow:node.dataset.bpHabitRow)===String(id));
+    if(!target){window.scrollTo({top:0,behavior:'instant'});return;}
+    target.scrollIntoView({block:'center',behavior:'instant'});
+    target.classList.add('bp-plan-jump-highlight');
+    target.focus({preventScroll:true});
+    setTimeout(()=>target.classList.remove('bp-plan-jump-highlight'),1800);
+  }));
+}
 function handleSave(event){
   event.preventDefault();const fd=new FormData($('modalForm'));const title=String(fd.get('title')||'').trim();if(!title&&!['todayFocus','weeklyFocus'].includes(modalMode))return;
   const existing=(arr)=>modalId===null?null:state[arr].find(x=>String(x.id)===String(modalId));
@@ -1416,6 +1430,16 @@ document.addEventListener('click',(e)=>{
   if(e.target.closest('#previewOpening')){showOpening(true);return;}
   if(e.target.closest('#paletteLauncher')){tab($('customize').classList.contains('active')?lastMainTab:'customize');return;}
   if(e.target.closest('#closeCustomize')){tab(lastMainTab);return;}
+  const heading=e.target.closest('[data-bp-plan-destination]');
+  if(heading){e.preventDefault();jumpToPlan(heading.dataset.bpPlanDestination);return;}
+  const taskLink=e.target.closest('[data-bp-jump-task]');
+  if(taskLink){e.preventDefault();jumpToPlan('tasks',taskLink.dataset.bpJumpTask,'task');return;}
+  const habitLink=e.target.closest('[data-bp-jump-habit]');
+  if(habitLink){e.preventDefault();jumpToPlan('habits',habitLink.dataset.bpJumpHabit,'habit');return;}
+  const more=e.target.closest('[data-bp-week-more]');
+  if(more){e.preventDefault();const day=more.dataset.bpWeekMore;
+    if(expandedWeekTaskDays.has(day))expandedWeekTaskDays.delete(day);else expandedWeekTaskDays.add(day);
+    renderCalendarGrid();document.querySelector('[data-bp-week-more="'+day+'"]')?.focus({preventScroll:true});return;}
   const inner=e.target.closest('[data-plan-tab]');if(inner){planTab(inner.dataset.planTab);return;}
   const t=e.target.closest('[data-tab]');if(t){if(t.dataset.tab==='myplan')planTab('overview');else tab(t.dataset.tab);return;}
   const addStep=e.target.closest('[data-step-add]');if(addStep){const rows=readGoalStepRows();rows.push({id:'a-'+uid(),title:''});renderGoalStepRows(rows);return;}
