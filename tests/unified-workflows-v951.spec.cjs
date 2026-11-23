@@ -83,7 +83,7 @@ test('Today reads and checks Tasks while Plan handles priority, date, and editin
   await row.locator('[data-bp-task-star]').click();
   expect(await page.evaluate(()=>state.tasks[0].priority)).toBe(true);
   await expect(page.locator('#v77TodayPriorities')).toContainText('Design reactor');
-  await expect(page.locator('#v77TodayPriorities [data-bp-task-star],[data-bp-task-date],[data-edit-task]')).toHaveCount(0);
+  await expect(page.locator('#v77TodayPriorities :is([data-bp-task-star],[data-bp-task-date],[data-edit-task])')).toHaveCount(0);
   await row.locator('[data-bp-task-date]').click();
   await expect(page.locator('#bpTaskDates')).toBeVisible();
   await page.locator('[data-bp-plan-input]').fill('2026-12-09');
@@ -156,7 +156,9 @@ test('Week swipe exposes only Tomorrow and checkbox completion persists with its
     const stored=disk.tasks.find(x=>String(x.id)===String(id));
     return {dueDate:t.dueDate,date:t.date,done:t.done,priority:t.priority,storedDate:stored.dueDate};
   },task)).toEqual({dueDate:tomorrow,date:tomorrow,done:false,priority:true,storedDate:tomorrow});
-  await row.locator('[data-task-check]').check();
+  // Completion removes a ranked Task from this list; click does not require
+  // its discarded DOM checkbox to remain checked after rerender.
+  await row.locator('[data-task-check]').click();
   await expect(row).toHaveCount(0);
   const changed=await page.evaluate(id=>{
     const t=state.tasks.find(t=>String(t.id)===String(id));
