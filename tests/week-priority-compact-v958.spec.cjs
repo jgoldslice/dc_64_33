@@ -23,7 +23,7 @@ test('Week Top Priorities is view and check only; Plan retains Task editing',asy
     await expect(row.locator('[data-task-check]')).toBeVisible();
     await expect(row.locator('[data-bp-task-star],[data-bp-task-date],[data-edit-task],[data-bp-edit-task],.task-row-actions')).toHaveCount(0);
     await expect(row.locator('[data-bp-swipe-done]')).toHaveCount(0);
-    await expect(row.locator('[data-bp-swipe-tomorrow]')).toHaveCount(1);
+    await expect(row.locator('[data-bp-swipe-tomorrow]')).toHaveCount(0);
   }
   await expect(card.locator('[data-bp-task-row="week-compact-a"] .bp-task-preview-due')).toContainText('Due Dec 4');
   await expect(card.locator('[data-bp-task-row="week-compact-b"] .bp-task-preview-due')).toHaveCount(0);
@@ -45,7 +45,7 @@ test('Week Top Priorities is view and check only; Plan retains Task editing',asy
   await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
   const plan=page.locator('#allTasks [data-bp-task-row="week-compact-a"]');
   await expect(plan.locator('[data-bp-task-star]')).toBeVisible();
-  await expect(plan.locator('[data-bp-task-date]')).toBeVisible();
+  await expect(plan.locator('[data-bp-task-date]')).toHaveCount(0);
   await expect(plan.locator('[data-bp-edit-task]')).toBeVisible();
 });
 
@@ -87,7 +87,7 @@ test('Today Tasks and Top Priorities are view/check only, with room for long tit
   for(const list of ['#v917TodayTasks','#v77TodayPriorities']){
     await expect(page.locator(list+' .bp-task-preview-row')).toHaveCount(2);
     await expect(page.locator(list+' '+checkOnly.split(',').join(','+list+' '))).toHaveCount(0);
-    await expect(page.locator(list+' [data-bp-task-row="today-compact-a"] [data-bp-swipe-tomorrow]')).toHaveCount(1);
+    await expect(page.locator(list+' [data-bp-task-row="today-compact-a"] [data-bp-swipe-tomorrow]')).toHaveCount(0);
   }
   for(const width of [320,375,390,768,1024,1366]){
     await page.setViewportSize({width,height:900});
