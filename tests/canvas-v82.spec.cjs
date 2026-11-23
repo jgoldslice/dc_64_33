@@ -68,7 +68,7 @@ test('Unfinished overdue tasks appear in unified Today priorities without duplic
     save();render();
   });
   await expect(page.locator('#v77TodayPriorities')).toContainText('Missed important task');
-  await expect(page.locator('#v77TodayPriorities [data-bp-task-row="992001"] .bp-task-preview-due')).toContainText('Overdue');
+  await expect(page.locator('#v77TodayPriorities [data-bp-task-row="992001"] .bp-task-preview-due')).toContainText(/overdue/i);
   await expect(page.locator('#v77TodayPriorities')).not.toContainText('Already finished');
   await expect(page.locator('#todayGlance')).not.toContainText('Missed important task');
   const headings=await page.locator('#today>.stack>section:visible>.card-heading h2').allTextContents();

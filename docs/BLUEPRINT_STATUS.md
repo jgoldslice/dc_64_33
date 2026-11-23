@@ -7,6 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Today and Week day details (feature branch; verification pending)
+
+- Starting point: `3b4aeccbaea5feb9668ff230dae21eb990f44be5` on GitHub `main`. A separate source snapshot was used to preserve the older, locally modified checkout and native iOS wrapper.
+- A date or its +more control opens a scrollable day sheet with all events and deduplicated scheduled/due Tasks. Existing checkoff, linked Project/Goal/Idea propagation, save verification, Plan navigation, and selected-date Add Event are reused. Groups of three or more completed Tasks are accessible in a collapsible section in Today and the day sheet.
+- Added relative overdue captions, a return-to-current-week control, Event/Task visual distinction, context and an empty day state. Single-tap Event deletion uses the existing short-lived shared Undo toast with verified writes and rollback. Undo remains in memory; a subsequent eligible deletion replaces the previous Undo. No planner schema, data keys, native drawing files, or backup formats changed. The service worker cache version changes so updated assets are available offline.
+- Local JavaScript syntax and 29 standalone Node tests passed. Local Playwright execution was blocked by the execution sandbox (loopback server and Chromium launch denied); GitHub Actions and real iPhone/iPad QA were pending when this entry was written. This branch is not evidence of an iOS installation or deployment.
+
 ## 2026-11-23 — Notes image viewer and PencilKit gesture (merged; device QA pending)
 
 - Owner reported saved note images appear cropped in the full-screen Library viewer and cannot zoom or pan; also requested a Photos save route. The existing PNG exporter renders the page surface including native handwriting; existing images were not altered. The viewer now fits the image within its available bounds, supports pinch/drag and zoom controls, and exposes Share / Save. On platforms supporting Web Share with files, choose Save Image from the system share sheet; otherwise it falls back to the existing download. Direct Photos access is not guaranteed in the installed WKWebView and must be verified on device.

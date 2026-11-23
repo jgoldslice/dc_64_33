@@ -429,7 +429,7 @@
       <div class="view-header week-top"><div><h1 id="weekTitle">This Week</h1></div><div class="week-controls"><button type="button" id="wbWeekLaunch" class="wb-week-shortcut" data-wb-launch-week title="Plan the displayed week">Plan week</button><button id="prevWeek" aria-label="Previous week">‹</button><span id="weekLabel"></span><button id="nextWeek" aria-label="Next week">›</button></div></div>
       <div class="week-layout week-v4">
         <section class="card focus-card v4-week-focus"><div class="card-heading"><h2><svg class="icon"><use href="#i-goal"/></svg> Weekly Focus</h2><span class="focus-pencil" aria-hidden="true">✎</span></div><p class="focus-prompt">What matters most this week?</p><textarea class="focus-answer focus-notebook" id="weeklyFocus" aria-label="Write weekly focus" maxlength="180" rows="3"></textarea></section>
-        <section class="card v4-week-calendar"><div class="card-heading v916-minimal-heading"><h2>Week at a Glance</h2><div class="v94-week-tools"><button type="button" id="v94WeekBack" class="v94-week-arrow" aria-label="Previous calendar week" title="Previous week">‹</button><button type="button" id="v94WeekForward" class="v94-week-arrow" aria-label="Next calendar week" title="Next week">›</button><button type="button" id="addWeekEvent" class="v87-add-week-event" aria-label="Add event this week" title="Add event">+</button></div></div><div id="v817WeekViewport" class="v817-week-viewport v94-week-static" aria-label="Weekly calendar. Use the previous and next week arrow buttons to change weeks"><div id="v817WeekTrack" class="v817-week-track"><div id="v817WeekPrev" class="week-grid v817-week-panel no-swipe" aria-hidden="true" inert></div><div id="weekGrid" class="week-grid v816-week-swipe v817-week-panel" aria-label="Weekly calendar, swipe left for next week and right for previous week"></div><div id="v817WeekNext" class="week-grid v817-week-panel no-swipe" aria-hidden="true" inert></div></div></div></section>
+        <section class="card v4-week-calendar"><div class="card-heading v916-minimal-heading"><h2>Week at a Glance</h2><div class="v94-week-tools"><button type="button" id="v94WeekToday" class="bp-week-today" hidden aria-label="Return to current week">Today</button><button type="button" id="v94WeekBack" class="v94-week-arrow" aria-label="Previous calendar week" title="Previous week">‹</button><button type="button" id="v94WeekForward" class="v94-week-arrow" aria-label="Next calendar week" title="Next week">›</button><button type="button" id="addWeekEvent" class="v87-add-week-event" aria-label="Add event this week" title="Add event">+</button></div></div><div id="v817WeekViewport" class="v817-week-viewport v94-week-static" aria-label="Weekly calendar. Use the previous and next week arrow buttons to change weeks"><div id="v817WeekTrack" class="v817-week-track"><div id="v817WeekPrev" class="week-grid v817-week-panel no-swipe" aria-hidden="true" inert></div><div id="weekGrid" class="week-grid v816-week-swipe v817-week-panel" aria-label="Weekly calendar, swipe left for next week and right for previous week"></div><div id="v817WeekNext" class="week-grid v817-week-panel no-swipe" aria-hidden="true" inert></div></div></div></section>
         <section class="card v4-week-priorities"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="tasks" aria-label="Open Top Priorities in Plan"><svg class="icon"><use href="#i-check"/></svg> Top Priorities<span class="bp-heading-chevron" aria-hidden="true"></span></button></h2></div><div id="priorities"></div></section>
         <section class="card v4-week-habits"><div class="card-heading"><h2><button type="button" class="bp-plan-heading-link" data-bp-plan-destination="habits" aria-label="Open Habit Tracker in Plan"><svg class="icon"><use href="#i-habit"/></svg> Habit Tracker<span class="bp-heading-chevron" aria-hidden="true"></span></button></h2></div><div id="weekHabits"></div></section>
       </div>
@@ -861,6 +861,14 @@ function todayPriorityTasks(today=localToday()){
     seen.add(key);return true;
   });
 }
+function overdueCaption(dueDate,today) {
+  // Calendar-date arithmetic avoids 23/25 hour DST days changing the count.
+  const parts=value=>value.split('-').map(Number);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(dueDate||''))return '';
+  const [y,m,d]=parts(dueDate),[ty,tm,td]=parts(today);
+  const days=Math.round((Date.UTC(ty,tm-1,td)-Date.UTC(y,m-1,d))/86400000);
+  return days>0?days+' '+(days===1?'day':'days')+' overdue':'';
+}
 function taskRow(t,rankMap=null,compactPreview=false,todayPreview=false){
   const rank=rankMap instanceof Map?rankMap.get(String(t.id))||0:ranked().findIndex(x=>String(x.id)===String(t.id))+1;
   const goal=state.goals.find(g=>String(g.id)===String(t.goalId||'')&&t.goalId);
@@ -871,7 +879,7 @@ function taskRow(t,rankMap=null,compactPreview=false,todayPreview=false){
   const planned=t.scheduledDate?'Scheduled '+new Date(t.scheduledDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})+(t.scheduledTime?' '+timeText(t.scheduledTime):''):'';
   const today=localToday();
   const previewCaption=todayPreview
-    ? t.dueDate&&t.dueDate<today&&!t.done?'Overdue · Due '+due
+    ? t.dueDate&&t.dueDate<today&&!t.done?(overdueCaption(t.dueDate,today)||'Overdue')+' · Due '+due
       : t.dueDate===today?'Due today'
       : t.scheduledDate===today?'Scheduled today'+(due?' · Due '+due:'')
       : due?'Due '+due:''
@@ -914,25 +922,27 @@ function habitCaption(h){const goal=habitGoal(h);return `<span class="bp-habit-l
 function habitWeekSummary(h){const monday=iso(startOfWeek(new Date()));let done=0,scheduled=0;for(let i=0;i<7;i++){const date=iso(plusDays(new Date(monday+'T12:00:00'),i));if(isScheduled(h,date)){scheduled++;if(h.days?.[date])done++;}}const requested=Number(h.weeklyTarget),target=h.weeklyTarget!=null&&Number.isInteger(requested)&&requested>=1&&requested<=scheduled?requested:scheduled;return target?done+' / '+target+' this week':'No days scheduled';}
 function habitToggle(h,date){return `<input type="checkbox" data-habit-check="${h.id}" data-date="${date}" aria-label="${esc(h.title)} ${date}" ${h.days[date]?'checked':''}>`;}
 function habitTable(week){const dates=Array.from({length:7},(_,i)=>iso(plusDays(week,i)));return `<div class="week-table"><span></span>${['M','T','W','T','F','S','S'].map(d=>`<span class="dow">${d}</span>`).join('')}${state.habits.map(h=>`<button type="button" class="habit-name bp-habit-jump" data-bp-jump-habit="${esc(h.id)}" aria-label="Find ${esc(h.title)} in Plan">${habitCaption(h)}</button>${dates.map(date=>isScheduled(h,date)?`<label>${habitToggle(h,date)}</label>`:'<span class="off">·</span>').join('')}`).join('')}</div>`;}
-const expandedWeekTaskDays=new Set();
-function dayLines(date){
+function weekDayItems(date){
   const events=state.events.filter(e=>e.date===date).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   const order=(a,b)=>Number(a.done)-Number(b.done)||String(a.scheduledTime||'').localeCompare(String(b.scheduledTime||''));
   const scheduled=state.tasks.filter(t=>t.scheduledDate===date).sort(order);
   const due=state.tasks.filter(t=>t.dueDate===date&&t.scheduledDate!==date).sort(order);
+  return {events,scheduled,due};
+}
+function dayLines(date){
+  const {events,scheduled,due}=weekDayItems(date);
   const check=t=>`<label class="bp-cal-task-check"><input type="checkbox" data-task-check="${esc(t.id)}" aria-label="Complete ${esc(t.title)}" ${t.done?'checked':''}></label>`;
   const taskTitle=t=>`<button type="button" class="bp-cal-task-title" data-bp-jump-task="${esc(t.id)}" aria-label="Find ${esc(t.title)} in Plan">${esc(t.title)}</button>`;
   const tasks=[
     ...scheduled.map(t=>`<div class="day-line bp-cal-task ${t.done?'bp-cal-task-completed':''}">${check(t)}<span class="when">${timeText(t.scheduledTime)}</span>${taskTitle(t)}</div>`),
     ...due.map(t=>`<div class="day-line bp-cal-due ${t.done?'bp-cal-task-completed':''}">${check(t)}${taskTitle(t)}<span class="due-mark">DUE</span></div>`)
   ];
-  const expanded=expandedWeekTaskDays.has(date);
-  const shown=expanded?tasks:tasks.slice(0,7);
-  const more=tasks.length>7?`<button type="button" class="bp-week-more" data-bp-week-more="${esc(date)}" aria-expanded="${expanded}">${expanded?'Show fewer tasks':'+'+(tasks.length-7)+' more tasks'}</button>`:'';
-  return [...events.map(e=>`<p class="day-line bp-cal-event"><span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),
+  const shown=tasks.slice(0,7);
+  const more=tasks.length>7?`<button type="button" class="bp-week-more" data-bp-week-more="${esc(date)}" aria-label="Show all tasks and events for ${esc(date)}">+${tasks.length-7} more tasks</button>`:'';
+  return [...events.map(e=>`<p class="day-line bp-cal-event"><span class="bp-cal-event-icon" aria-hidden="true">◷</span> <span class="when">${timeText(e.time)} </span>${esc(e.title)}</p>`),
     ...shown,more].join('')||'<p class="day-empty">—</p>';
 }
-function dayCard(date){const d=new Date(date+'T12:00:00');return `<div class="day-card ${date===localToday()?'today':''}" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}
+function dayCard(date){const d=new Date(date+'T12:00:00');return `<div class="day-card ${date===localToday()?'today':''}" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Show day on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}
 
 function closeOpening(){
   clearTimeout(pendingOpeningTimer);pendingOpeningTimer=null;
@@ -970,7 +980,7 @@ function renderHabitSections(today=localToday(),start=selectedWeek){
   $('habitManager').innerHTML=state.habits.map(h=>`<div class="habit-manage-item" data-bp-habit-row="${esc(h.id)}" tabindex="-1"><div><strong>${esc(h.title)}</strong>${habitGoal(h)?'<small class="bp-habit-goal">'+esc(habitGoal(h).title)+'</small>':''}<small>${h.weeklyTarget?'Goal: '+h.weeklyTarget+' days/week · ':''}${h.schedule.length===7?'Every day':h.schedule.length===0?'No days selected':h.schedule.map(d=>['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(', ')}</small></div><button class="text-button" data-edit-habit="${h.id}">Edit</button></div>`).join('')||'<p class="empty">No habits created yet.</p>';
 }
 function renderCalendarGrid(start=selectedWeek){
-  const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Add event on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
+  const weekend=[5,6].map(i=>{const d=plusDays(start,i),date=iso(d);return `<div class="weekend-half" data-week-event-date="${date}" role="button" tabindex="0" aria-label="Show day on ${d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}"><div class="day-top"><span>${weekDay(d)}</span><span class="day-date">${format(d)}</span></div>${dayLines(date)}</div>`;}).join('');
   $('weekGrid').innerHTML=Array.from({length:5},(_,i)=>dayCard(iso(plusDays(start,i)))).join('')+`<div class="day-card weekend">${weekend}</div>`;
 }
 function render(scope='all'){
@@ -1012,6 +1022,7 @@ function render(scope='all'){
   const monthDay=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   $('weekTitle').textContent=`${monthDay(start)} – ${monthDay(plusDays(start,6))}`;
   $('weekLabel').textContent=`${format(start)} – ${format(plusDays(start,6))}`;
+  $('v94WeekToday').hidden=iso(startOfWeek(start))===iso(startOfWeek(new Date()));
   renderTaskSections(today);
   renderHabitSections(today,start);
   renderCalendarGrid(start);
@@ -1450,10 +1461,7 @@ document.addEventListener('click',(e)=>{
   if(taskLink){e.preventDefault();jumpToPlan('tasks',taskLink.dataset.bpJumpTask,'task');return;}
   const habitLink=e.target.closest('[data-bp-jump-habit]');
   if(habitLink){e.preventDefault();jumpToPlan('habits',habitLink.dataset.bpJumpHabit,'habit');return;}
-  const more=e.target.closest('[data-bp-week-more]');
-  if(more){e.preventDefault();const day=more.dataset.bpWeekMore;
-    if(expandedWeekTaskDays.has(day))expandedWeekTaskDays.delete(day);else expandedWeekTaskDays.add(day);
-    renderCalendarGrid();document.querySelector('[data-bp-week-more="'+day+'"]')?.focus({preventScroll:true});return;}
+
   const inner=e.target.closest('[data-plan-tab]');if(inner){planTab(inner.dataset.planTab);return;}
   const t=e.target.closest('[data-tab]');if(t){if(t.dataset.tab==='myplan')planTab('overview');else tab(t.dataset.tab);return;}
   const addStep=e.target.closest('[data-step-add]');if(addStep){const rows=readGoalStepRows();rows.push({id:'a-'+uid(),title:''});renderGoalStepRows(rows);return;}
@@ -1583,6 +1591,7 @@ document.addEventListener('change',(e)=>{
 document.addEventListener('toggle',(e)=>{if(!e.target.matches('details[data-goal]'))return;const id=e.target.dataset.goal;if(e.target.open)expandedGoals.add(id);else expandedGoals.delete(id);},true);
 $('prevWeek').onclick=()=>{selectedWeek=plusDays(selectedWeek,-7);render();};
 $('nextWeek').onclick=()=>{selectedWeek=plusDays(selectedWeek,7);render();};
+$('v94WeekToday').onclick=()=>{selectedWeek=startOfWeek(new Date());render();$('v94WeekBack').focus({preventScroll:true});};
 $('v916HabitPrev').onclick=()=>{$('prevWeek').click();};
 $('v916HabitNext').onclick=()=>{$('nextWeek').click();};
 $('modalForm').addEventListener('submit',handleSave);
@@ -1622,12 +1631,23 @@ function bpShowTaskUndo(snapshot){
     toast.setAttribute('role','status');
     toast.innerHTML='<span>Task deleted</span><button type="button" data-bp-undo-task>Undo</button>';
     document.body.append(toast);}
+  toast.querySelector('span').textContent='Task deleted';
   toast.hidden=false;
   bpTaskUndoTimer=setTimeout(()=>{toast.hidden=true;bpTaskUndoSnapshot=null;},6500);
 }
 function bpUndoDeletedTask(){
   const snapshot=bpTaskUndoSnapshot;if(!snapshot)return false;
   const id=String(snapshot.item.id);
+  if(snapshot.kind==='event'){
+    if(state.events.some(e=>String(e.id)===id))return false;
+    const before=state.events;
+    state.events=state.events.slice();
+    state.events.splice(Math.max(0,Math.min(snapshot.index,state.events.length)),0,snapshot.item);
+    if(!save(true)){state.events=before;render();return false;}
+    clearTimeout(bpTaskUndoTimer);bpTaskUndoSnapshot=null;
+    const toast=document.getElementById('bpTaskUndoToast');if(toast)toast.hidden=true;
+    render();return true;
+  }
   if(state.tasks.some(t=>String(t.id)===id))return false;
   const tasksBefore=state.tasks;
   const projectsBefore=state.projects.map(p=>p.actions);
@@ -1671,10 +1691,13 @@ function deletePlannerItem(type,id,fromModal=false){
         ?'Delete completed task "'+item.title+'"? This cannot be undone.'
         :'Delete this item? This cannot be undone.';
   // Completion is the user's deliberate precondition for one-tap deletion.
-  // Keep the confirmation for unfinished tasks and all other item types.
+  // Events and completed tasks can be restored with the temporary Undo toast.
   const oneTapCompleted=type==='task'&&item.done;
-  if(!oneTapCompleted&&!confirm(message))return false;
-  const undoSnapshot=oneTapCompleted?bpDeletedTaskLinks(item):null;
+  const oneTapEvent=type==='event';
+  if(!oneTapCompleted&&!oneTapEvent&&!confirm(message))return false;
+  const undoSnapshot=oneTapCompleted?bpDeletedTaskLinks(item):
+    oneTapEvent?{kind:'event',item,index:state.events.indexOf(item)}:null;
+  const previousEvents=oneTapEvent?state.events:null;
   // Preserve only the fields this deletion changes so a failed write cannot
   // make a completed Task appear deleted while still present on disk.
   const previous=oneTapCompleted?{
@@ -1695,7 +1718,8 @@ function deletePlannerItem(type,id,fromModal=false){
     for(const n of state.ideas)for(const a of n.actions||[])if(String(a.taskId)===String(id))a.taskId='';
   }
   state[key]=state[key].filter(x=>String(x.id)!==String(id));
-  if(!save(oneTapCompleted)&&oneTapCompleted){
+  if(!save(oneTapCompleted||oneTapEvent)&&(oneTapCompleted||oneTapEvent)){
+    if(oneTapEvent){state.events=previousEvents;render();return false;}
     state.tasks=previous.tasks;
     state.projects.forEach((p,i)=>{p.actions=previous.projectActions[i];});
     state.ideas.forEach((n,i)=>(n.actions||[]).forEach((a,j)=>{a.taskId=previous.ideaTaskIds[i][j];}));
@@ -1704,7 +1728,7 @@ function deletePlannerItem(type,id,fromModal=false){
   }
   if(fromModal)closeModal();
   render();
-  if(undoSnapshot)bpShowTaskUndo(undoSnapshot);
+  if(undoSnapshot){bpShowTaskUndo(undoSnapshot);if(oneTapEvent)document.querySelector('#bpTaskUndoToast span').textContent='Event deleted';}
   return true;
 }
 $('deleteModal').onclick=()=>deletePlannerItem(modalMode,modalId,true);

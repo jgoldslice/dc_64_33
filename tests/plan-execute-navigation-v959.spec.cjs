@@ -47,14 +47,15 @@ test('Crowded Week days expand all tasks and keep checked tasks available to unc
   await expect(wed.locator('[data-bp-jump-task]')).toHaveCount(7);
   await expect(wed.locator('[data-bp-week-more]')).toContainText('+5 more tasks');
   await wed.locator('[data-bp-week-more]').click();
-  await expect(wed.locator('[data-bp-jump-task]')).toHaveCount(12);
-  await expect(wed.locator('[data-bp-week-more]')).toHaveAttribute('aria-expanded','true');
-  await expect(wed.locator('[data-task-check="crowd-1"]')).toBeChecked();
-  await wed.locator('[data-task-check="crowd-1"]').uncheck();
-  await expect(wed.locator('[data-task-check="crowd-1"]')).not.toBeChecked();
+  const day=page.locator('#bpDayBack');
+  await expect(day).toBeVisible();
+  await expect(day.locator('[data-bp-jump-task]')).toHaveCount(12);
+  await expect(day.locator('[data-task-check="crowd-1"]')).toBeChecked();
+  await day.locator('[data-task-check="crowd-1"]').uncheck();
+  await expect(day.locator('[data-task-check="crowd-1"]')).not.toBeChecked();
   await expect(page.locator('#v87EventBack')).toBeHidden();
   expect(await page.evaluate(()=>state.tasks.find(t=>t.id==='crowd-1').done)).toBe(false);
-  await wed.locator('[data-bp-week-more]').click();
+  await day.locator('[data-bp-day-close]').click();
   await expect(wed.locator('[data-bp-jump-task]')).toHaveCount(7);
 });
 
