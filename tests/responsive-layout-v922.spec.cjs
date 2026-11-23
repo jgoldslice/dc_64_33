@@ -43,11 +43,11 @@ test('empty Today cards avoid excessive reserved space, dense data remains scrol
   });
   const dimensions=await page.evaluate(()=>{
     const c=n=>document.querySelector('#today .'+n).getBoundingClientRect().height;
-    return [c('v917-schedule'),c('v917-habits'),c('v917-tasks'),c('v917-priorities'),c('v917-projects')];
+    return [c('v917-schedule'),c('v917-habits'),c('v917-priorities'),c('v917-projects')];
   });
   expect(dimensions[0]).toBeLessThan(215);
   expect(dimensions[2]).toBeLessThan(180);
-  expect(dimensions[4]).toBeLessThan(155);
+  expect(dimensions[3]).toBeLessThan(155);
   await page.evaluate(()=>{
     state.events=Array.from({length:30},(_,i)=>({id:'qa-event-'+i,title:'Meeting '+i,date:localToday(),time:'12:00'}));
     render();

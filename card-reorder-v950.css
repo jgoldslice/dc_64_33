@@ -6,7 +6,7 @@
   grid-template-areas:none!important;
   grid-auto-flow:row!important;
 }
-#today > .stack.v917-today-grid.bp-today-custom-order > :is(.v917-schedule,.v917-habits,.v917-tasks,.v917-priorities,.v917-projects){
+#today > .stack.v917-today-grid.bp-today-custom-order > :is(.v917-schedule,.v917-habits,.v917-priorities,.v917-projects){
   grid-area:auto!important;
 }
 @media (min-height:600px){

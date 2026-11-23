@@ -5,7 +5,7 @@
   const root=document.documentElement;
   const today=document.getElementById('today');
   const scrollBodies=[...document.querySelectorAll('#today .v917-card-body')];
-  if(!today||scrollBodies.length!==5)return;
+  if(!today||!scrollBodies.length)return;
   let frame=0;
   function inspect(){
     frame=0;

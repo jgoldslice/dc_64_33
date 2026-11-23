@@ -7,9 +7,11 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const folderIcon='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
   function refreshTodayExtras(){
-    const top=ranked().slice(0,5);
-    const rankMap=new Map(top.map((t,i)=>[String(t.id),i+1]));
-    priorityHost.innerHTML=top.length?top.map(t=>taskRow(t,rankMap,true)).join(''):'<p class="muted small">No priorities yet. Mark an important task as a priority.</p>';
+    const top=todayPriorityTasks();
+    const rankMap=new Map(ranked().map((t,i)=>[String(t.id),i+1]));
+    const previousScroll=priorityHost.scrollTop;
+    priorityHost.innerHTML=top.length?top.map(t=>taskRow(t,rankMap,true,true)).join(''):'<p class="muted small">Nothing due or prioritized today.</p>';
+    priorityHost.scrollTop=previousScroll;
     const projects=(state.projects||[]).slice().sort((a,b)=>(Number(b.lastOpenedAt)||0)-(Number(a.lastOpenedAt)||0)).slice(0,4);
     projectsHost.innerHTML=projects.length?projects.map(p=>
       '<button class="v77-project-folder" type="button" data-v77-open-project="'+esc(p.id)+'" aria-label="Open project: '+esc(p.title)+'">'+

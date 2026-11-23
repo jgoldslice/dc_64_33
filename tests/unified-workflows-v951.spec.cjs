@@ -65,14 +65,14 @@ test('Project quick creation reuses Task, Habit and Goal forms with inherited Pr
   await expect(page.locator('#allTasks')).toContainText('Prepare vials');
 });
 
-test('Today Task heading and individual title open Plan, where dates and priority are edited',async({page})=>{
+test('Today unified priority title opens Plan, where dates and priority are edited',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[{id:'unified-task',title:'Design reactor',done:false,dueDate:localToday(),
       date:localToday(),scheduledDate:'',scheduledTime:'',priority:false,priorityRank:0}];
     if(!save(true))throw Error('Cannot seed Task');render();
   });
-  const today=page.locator('#v917TodayTasks [data-bp-task-row="unified-task"]');
+  const today=page.locator('#v77TodayPriorities [data-bp-task-row="unified-task"]');
   await expect(today).toContainText('Design reactor');
   await expect(today.locator('[data-bp-swipe-tomorrow],[data-bp-task-star],[data-bp-task-date],[data-bp-edit-task]')).toHaveCount(0);
   await today.locator('[data-bp-jump-task="unified-task"]').click();

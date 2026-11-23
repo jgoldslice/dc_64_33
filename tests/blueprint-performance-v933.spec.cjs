@@ -76,13 +76,13 @@ test('Habit checkbox keeps unrelated task/calendar DOM while updating goal and h
     state.goals=[{id:'goal1',title:'Learn piano',category:'Personal',actions:[]}];
     save(true);render();
     window.__v933Before={
-      task:document.getElementById('v917TodayTasks').firstElementChild,
+      task:document.getElementById('v77TodayPriorities').firstElementChild,
       calendar:document.getElementById('weekGrid').firstElementChild
     };
   });
   await page.locator('#todayHabits [data-habit-check="habit1"]').check();
   const result=await page.evaluate(()=>({
-    taskKept:document.getElementById('v917TodayTasks').firstElementChild===window.__v933Before.task,
+    taskKept:document.getElementById('v77TodayPriorities').firstElementChild===window.__v933Before.task,
     calendarKept:document.getElementById('weekGrid').firstElementChild===window.__v933Before.calendar,
     habitSaved:!!state.habits[0].days[localToday()],
     weekUpdated:!!document.querySelector('#habitsTracker input[data-habit-check="habit1"][data-date="'+localToday()+'"]')?.checked
@@ -100,7 +100,7 @@ test('Task checkbox keeps unrelated habit DOM while updating goal and priority v
     save(true);render();
     window.__v933OldHabit=document.getElementById('todayHabits').firstElementChild;
   });
-  await page.locator('#v917TodayTasks [data-task-check="task1"]').check();
+  await page.locator('#v77TodayPriorities [data-task-check="task1"]').check();
   expect(await page.evaluate(()=>({
     habitKept:document.getElementById('todayHabits').firstElementChild===window.__v933OldHabit,
     taskSaved:state.tasks[0].done,

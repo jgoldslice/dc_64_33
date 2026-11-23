@@ -1,11 +1,21 @@
 # Blueprint — Development Status
 
-**Last documentation update:** 2026-11-22
+**Last documentation update:** 2026-11-23
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
 **Verification scope:** Fetched root README and index.html; checked that AGENTS.md and this status file were absent; inspected recent commit identifiers. This is **not** a full source-code audit, automated test run, or iOS device test.
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
+
+## 2026-11-23 — v9.60 Today single priority card (feature branch; verification pending)
+
+**Owner request:** Remove the redundant Today Tasks card. The sole **Top Priorities** card should show genuinely starred priorities together with tasks due or scheduled on today's calendar date, displaying date-only urgency without silently making a permanent starred priority. Preserve overdue unfinished work and completed due-today work for checking/unchecking. Keep Plan the authoritative Task editor and Week's current priority/calendar behavior.
+
+- **Implemented on** `feature/today-unified-priorities-v960` (based on main `e4a8db35`; feature head before documentation `e6cd59291356d695a3a4cf99d22e2f502e05639d`). Today now uses four cards — Schedule, Habits, Top Priorities, Projects. The combined Task list de-duplicates overdue unfinished, due-today, scheduled-today, and unfinished starred Tasks. Overdue and scheduled-today captions make inclusion explicit; completed Tasks due/scheduled today remain available to uncheck. The Week Top Priorities section still uses ranked starred Tasks only, and all Tasks remain in Plan. No Task `priority`/`priorityRank` fields are written by this display logic.
+- **Layout and persistence:** Today uses one column on narrow screens and balanced rows on wider panes, with the combined priorities spanning the width. The reorder controller now knows four cards and filters out any legacy saved `tasks` card ID **in memory only**. Existing `state.todayCardOrder`, task data, local storage/IndexedDB contents and backup/export schemas remain untouched; importing an older five-card backup still restores the remaining card order. Offline service-worker cache name updated.
+- **Regression work:** Updated relevant browser tests for navigation, Today/Week checkbox behavior, layout, responsive overflow, card long-press and keyboard reordering, and legacy backup ordering; added a date-only priority/persistence test. **Automated verification: not yet run for this feature branch at documentation time. Physical-device verified: no. Deployed to iPhone/iPad: no.** CI and actual iPhone/iPad checks remain release gates. No Mac/Xcode build has been run.
+- **Long-term product direction — requested, not implemented:** Treat a future foldable iPhone ("iPhone Duo") as the adaptive target. Ultimately Today and Week should be a single navigation destination, showing daily execution when physically folded and automatically changing to weekly planning when unfolded. This is a product goal, not an existing iOS posture API or shipped feature; do not infer fold state solely from viewport width or claim physical-device testing.
+- **iOS update after verified merge:** Keep the original app installed and unchanged app ID/team, stage current `main` web assets with `scripts/stage-ios-web.py` into the actual local Capacitor wrapper, run `npx cap copy ios`, build and install with Xcode, then verify real user data, Task checkoffs, card drag/reorder and both device sizes. A GitHub merge alone does **not** update the app.
 
 ## 2026-11-22 — v9.59 Execute-to-Plan navigation and Week completeness (merged; 373 browser tests passed; device QA pending)
 

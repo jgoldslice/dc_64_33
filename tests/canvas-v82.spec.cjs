@@ -58,7 +58,7 @@ test('Reopening a project always starts at Overview and its cards open each edit
   await expect(page.locator('#v76Editor')).toBeVisible();
 });
 
-test('Overdue tasks appear in dedicated Today Tasks card without adding duplicates',async({page})=>{
+test('Unfinished overdue tasks appear in unified Today priorities without duplicates',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks.push(
@@ -67,12 +67,12 @@ test('Overdue tasks appear in dedicated Today Tasks card without adding duplicat
     );
     save();render();
   });
-  await expect(page.locator('#v917TodayTasks .v82-overdue-label')).toHaveText('Overdue');
-  await expect(page.locator('#v917TodayTasks')).toContainText('Missed important task');
-  await expect(page.locator('#v917TodayTasks')).not.toContainText('Already finished');
+  await expect(page.locator('#v77TodayPriorities')).toContainText('Missed important task');
+  await expect(page.locator('#v77TodayPriorities [data-bp-task-row="992001"] .bp-task-preview-due')).toContainText('Overdue');
+  await expect(page.locator('#v77TodayPriorities')).not.toContainText('Already finished');
   await expect(page.locator('#todayGlance')).not.toContainText('Missed important task');
   const headings=await page.locator('#today>.stack>section:visible>.card-heading h2').allTextContents();
-  expect(headings.length).toBe(5);
+  expect(headings.length).toBe(4);
 });
 
 test('Deleting one project keeps cross-project media, and removes orphaned files',async({page})=>{

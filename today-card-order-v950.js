@@ -5,7 +5,8 @@
   if(!board||!window.BlueprintCardReorder)return;
   const reorder=window.BlueprintCardReorder({
     board,
-    names:['schedule','habits','tasks','priorities','projects'],
+    names:['schedule','habits','priorities','projects'],
+    // Saved five-card orders remain readable; the removed Tasks ID is ignored.
     dataset:'bpTodayCard',
     selector:id=>'.v917-'+id,
     cardSelector:'[data-bp-today-card]',

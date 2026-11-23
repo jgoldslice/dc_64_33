@@ -2,7 +2,7 @@
 const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 
-test('Today separates schedule, tasks and priority cards without duplicating overdue items',async({page})=>{
+test('Today separates schedule and a single due/priority card without repeating tasks',async({page})=>{
   await page.setViewportSize({width:834,height:1194});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);
@@ -16,10 +16,11 @@ test('Today separates schedule, tasks and priority cards without duplicating ove
   });
   await expect(page.locator('#todayGlance')).toContainText('Lab appointment');
   await expect(page.locator('#todayGlance')).not.toContainText('Finish report');
-  await expect(page.locator('#v917TodayTasks')).toContainText('Finish report');
-  await expect(page.locator('#v917TodayTasks')).toContainText('Overdue report');
-  await expect(page.locator('#v917TodayTasks')).not.toContainText('Lab appointment');
+  await expect(page.locator('#v917TodayTasks')).toHaveCount(0);
   await expect(page.locator('#v77TodayPriorities')).toContainText('Finish report');
+  await expect(page.locator('#v77TodayPriorities')).toContainText('Overdue report');
+  await expect(page.locator('#v77TodayPriorities')).not.toContainText('Lab appointment');
+  await expect(page.locator('#v77TodayPriorities [data-bp-task-row="task-now"]')).toHaveCount(1);
   await expect(page.locator('#today > .stack > .v917-projects')).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -58,7 +59,7 @@ test('dense Today cards remain scrollable without visual instruction captions',a
     state.tasks=Array.from({length:20},(_,i)=>({id:'scroll-task-'+i,title:'Task '+i,dueDate:localToday(),priority:false,done:false}));
     render();
   });
-  for(const [id,cardName] of [['todayGlance','v917-schedule'],['v917TodayTasks','v917-tasks']]){
+  for(const [id,cardName] of [['todayGlance','v917-schedule'],['v77TodayPriorities','v917-priorities']]){
     const body=page.locator('#'+id);
     const card=page.locator('.'+cardName);
     await expect.poll(()=>body.evaluate(el=>el.scrollHeight-el.clientHeight)).toBeGreaterThan(60);
