@@ -3,7 +3,7 @@ const {test,expect}=require('@playwright/test');
 const base='http://127.0.0.1:8765/';
 test.use({browserName:'chromium'});
 
-test('Task stars, dates, Edit and optional Delete stay in columns across iPhone and iPad widths',async({page})=>{
+test('Plan Task stars, Edit and optional Delete stay aligned without inline date across iPhone and iPad widths',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[
@@ -29,17 +29,15 @@ test('Task stars, dates, Edit and optional Delete stay in columns across iPhone 
     const geometry=await rows.evaluateAll(list=>list.map(row=>{
       const rect=sel=>{const r=row.querySelector(sel).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
       return {row:row.getBoundingClientRect().toJSON(),
-        star:rect('.bp-task-star'),date:rect('.bp-task-due'),
+        star:rect('.bp-task-star'),
         edit:rect('[data-bp-edit-task]'),actions:rect('.task-row-actions')};
     }));
-    for(const field of ['star','date','edit']){
+    for(const field of ['star','edit']){
       const left=geometry.map(g=>g[field].left);
       expect(Math.max(...left)-Math.min(...left),width+' '+field+' left alignment').toBeLessThanOrEqual(2);
     }
     for(const g of geometry){
-      expect(g.date.width,width+' deadline button width').toBeGreaterThanOrEqual(88);
       expect(g.edit.height,width+' Edit touch height').toBeGreaterThanOrEqual(44);
-      expect(g.date.right,width+' deadline vs actions').toBeLessThanOrEqual(g.actions.left+1);
       expect(g.actions.right,width+' actions vs row edge').toBeLessThanOrEqual(g.row.right+1);
       expect(g.star.left,width+' star vs row edge').toBeGreaterThanOrEqual(g.row.left-1);
       expect(g.edit.right,width+' Edit within action area').toBeLessThanOrEqual(g.actions.right+1);
@@ -49,7 +47,7 @@ test('Task stars, dates, Edit and optional Delete stay in columns across iPhone 
   }
 });
 
-test('Aligned Task date, star, Edit and Delete remain interactive',async({page})=>{
+test('Plan star and Edit remain interactive without date popup',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[
@@ -63,9 +61,8 @@ test('Aligned Task date, star, Edit and Delete remain interactive',async({page})
   const row=page.locator('#allTasks [data-bp-task-row="alignment-interactive"]');
   await row.locator('[data-bp-task-star]').click();
   await expect(row.locator('[data-bp-task-star]')).toHaveAttribute('aria-pressed','true');
-  await row.locator('[data-bp-task-date]').click();
-  await expect(page.locator('#bpTaskDates')).toBeVisible();
-  await page.locator('#bpTaskDates [data-bp-date-preset="tomorrow"]').click();
+  await expect(row.locator('[data-bp-task-date]')).toHaveCount(0);
+  await expect(page.locator('#bpTaskDates')).toHaveCount(0);
   await row.locator('[data-bp-edit-task]').click();
   await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
   await page.locator('#cancelModal').click();
