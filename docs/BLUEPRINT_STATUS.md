@@ -7,6 +7,17 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-22 — v9.58 Today / Plan / Week Task roles and Tomorrow-only swipe (review pending)
+
+**Owner direction:** Remove Done from the swipe reveal; keep Push to Tomorrow with a neat full-width layout. Remove the inline Set Date button from Task rows in both Today and Plan. Today and Week should be uncluttered views for seeing and checking off Tasks, while Task date/time edits and priority changes belong in Plan.
+
+- **Implemented on branch** `fix/task-swipe-tomorrow-only-v958` (baseline: merged PR #89). Today shows an accessible checkbox, title and context without Edit, Delete, star or Set Date; its sole swipe action is Tomorrow. Plan retains Task title editing, star and Edit/Delete, but removes redundant Set Date. All existing Task editor fields remain available in Plan.
+- The swipe reveal remains **112px** to preserve gesture behavior and iOS cancellation handling; the Tomorrow action fills all 112px instead of sharing two 56px controls with Done. No separate Done click listener remains. Task deadlines are still rescheduled and saved through the existing shared task state.
+- Week cards display checkboxes for scheduled and due Tasks, including completed Tasks so they can be unchecked. Checkbox interactions do not open Add Event. Goal steps, Brainstorm idea checkoffs, and linked Project actions stay in sync; failed storage writes roll back those changes. Week does not expose an inline Task editor button; edit and scheduling controls remain in Plan.
+- Modified `index.html`, `workflow-integration-v951.js`, `workflow-integration-v951.css`, `week-events-v87.js`, `sw.js`, existing Playwright tests, and this status. The old redundant inline date picker JS/CSS was removed. No changes to localStorage keys, task or Project schemas, backup/export formats, IndexedDB assets, or native Swift.
+- **Tests:** regression updates and GitHub Actions pending. Explicitly verify Task rows and Tomorrow swipe geometry at 320–1024px, Week checkbox persistence/linked state and Event popover guard, Plan date/time editor, iPad Split View and phone layouts. **Physical-device verified: No. Deployed: No.**
+- Once reviewed and merged, stage `main` web assets with `scripts/stage-ios-web.py` in the current Mac Capacitor project, run `npx cap copy ios` and install using Xcode **over the existing app** (same signing team/bundle ID, without uninstalling or clearing data). Test Today, Plan and Week on both iPhone and iPad, including swipes, checkoff, reopening and app restart.
+
 ## 2026-11-22 — v9.57 Completed Task one-tap deletion (merged; targeted browser tests passed; device QA pending)
 
 **Owner-reported iPad friction:** Plan → Tasks showed a native confirmation popup after tapping Delete on an already-checked task.
