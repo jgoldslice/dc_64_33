@@ -1591,6 +1591,59 @@ $('modalForm').addEventListener('change',e=>{
 });
 $('cancelModal').onclick=closeModal;
 $('modalBack').onclick=e=>{if(e.target===$('modalBack'))closeModal();};
+// One-tap deletion is reversible briefly, without a confirmation modal.
+let bpTaskUndoSnapshot=null,bpTaskUndoTimer=null;
+function bpDeletedTaskLinks(item){
+  const id=String(item.id);
+  return {item,index:state.tasks.indexOf(item),
+    projects:state.projects.map(p=>({id:p.id,links:(p.actions||[]).map((a,i)=>({action:a,index:i})).filter(({action})=>
+      String(action.taskId||'')===id||(String(p.id)===String(item.projectId||'')&&
+      String(action.id)===String(item.projectActionId||'')))})).filter(p=>p.links.length),
+    ideas:state.ideas.map(n=>({id:n.id,links:(n.actions||[]).filter(a=>String(a.taskId)===id).map(a=>a.id)})).filter(n=>n.links.length)};
+}
+function bpShowTaskUndo(snapshot){
+  bpTaskUndoSnapshot=snapshot;clearTimeout(bpTaskUndoTimer);
+  let toast=document.getElementById('bpTaskUndoToast');
+  if(!toast){toast=document.createElement('div');toast.id='bpTaskUndoToast';toast.className='bp-task-undo-toast';
+    toast.setAttribute('role','status');
+    toast.innerHTML='<span>Task deleted</span><button type="button" data-bp-undo-task>Undo</button>';
+    document.body.append(toast);}
+  toast.hidden=false;
+  bpTaskUndoTimer=setTimeout(()=>{toast.hidden=true;bpTaskUndoSnapshot=null;},6500);
+}
+function bpUndoDeletedTask(){
+  const snapshot=bpTaskUndoSnapshot;if(!snapshot)return false;
+  const id=String(snapshot.item.id);
+  if(state.tasks.some(t=>String(t.id)===id))return false;
+  const tasksBefore=state.tasks;
+  const projectsBefore=state.projects.map(p=>p.actions);
+  const ideasBefore=state.ideas.map(n=>(n.actions||[]).map(a=>a.taskId));
+  state.tasks=state.tasks.slice();
+  state.tasks.splice(Math.max(0,Math.min(snapshot.index,state.tasks.length)),0,snapshot.item);
+  for(const saved of snapshot.projects){
+    const project=state.projects.find(p=>String(p.id)===String(saved.id));if(!project)continue;
+    project.actions=(project.actions||[]).slice();
+    for(const {action,index} of saved.links){
+      if(project.actions.some(a=>String(a.id)===String(action.id)))continue;
+      project.actions.splice(Math.max(0,Math.min(index,project.actions.length)),0,action);
+    }
+  }
+  for(const saved of snapshot.ideas){
+    const idea=state.ideas.find(n=>String(n.id)===String(saved.id));if(!idea)continue;
+    for(const action of idea.actions||[])
+      if(saved.links.some(x=>String(x)===String(action.id))&&!action.taskId)action.taskId=snapshot.item.id;
+  }
+  if(!save(true)){
+    state.tasks=tasksBefore;
+    state.projects.forEach((p,i)=>{p.actions=projectsBefore[i];});
+    state.ideas.forEach((n,i)=>(n.actions||[]).forEach((a,j)=>{a.taskId=ideasBefore[i][j];}));
+    render();return false;
+  }
+  clearTimeout(bpTaskUndoTimer);bpTaskUndoSnapshot=null;
+  const toast=document.getElementById('bpTaskUndoToast');if(toast)toast.hidden=true;
+  render();return true;
+}
+document.addEventListener('click',e=>{if(e.target.closest('[data-bp-undo-task]'))bpUndoDeletedTask();});
 function deletePlannerItem(type,id,fromModal=false){
   const key={task:'tasks',event:'events',habit:'habits',goal:'goals'}[type];
   if(!key)return false;
@@ -1607,6 +1660,7 @@ function deletePlannerItem(type,id,fromModal=false){
   // Keep the confirmation for unfinished tasks and all other item types.
   const oneTapCompleted=type==='task'&&item.done;
   if(!oneTapCompleted&&!confirm(message))return false;
+  const undoSnapshot=oneTapCompleted?bpDeletedTaskLinks(item):null;
   // Preserve only the fields this deletion changes so a failed write cannot
   // make a completed Task appear deleted while still present on disk.
   const previous=oneTapCompleted?{
@@ -1636,6 +1690,7 @@ function deletePlannerItem(type,id,fromModal=false){
   }
   if(fromModal)closeModal();
   render();
+  if(undoSnapshot)bpShowTaskUndo(undoSnapshot);
   return true;
 }
 $('deleteModal').onclick=()=>deletePlannerItem(modalMode,modalId,true);
