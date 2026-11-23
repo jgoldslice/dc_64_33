@@ -872,9 +872,9 @@ function taskRow(t,rankMap=null,compactPreview=false){
         ${rank?'<span class="rank-badge">'+roman(rank)+'</span>':''}
         <button type="button" class="entry-text bp-task-title" data-edit-task="${id}" aria-label="Edit ${title}">${title}</button></div>
         ${context?'<small class="bp-task-context">'+esc(context)+'</small>':''}
+        ${due?'<small class="bp-task-due-caption">Due '+esc(due)+'</small>':''}
         ${planned?'<small class="bp-task-planned">'+esc(planned)+'</small>':''}</div>
       <button type="button" class="bp-task-star" data-bp-task-star="${id}" aria-label="${t.priority?'Remove priority from':'Prioritize'} ${title}" aria-pressed="${!!t.priority}">${t.priority?'★':'☆'}</button>
-      <button type="button" class="bp-task-due" data-bp-task-date="${id}" aria-label="Change deadline for ${title}">${due?'Due '+esc(due):'Set date'}</button>
       <span class="task-row-actions"><button type="button" class="edit-small" data-bp-edit-task="${id}" aria-label="Edit ${title}">Edit</button>
         ${t.done?'<button type="button" class="edit-small delete-completed-task" data-delete-completed-task="'+id+'" aria-label="Delete completed task '+title+'">Delete</button>':''}</span>
     </div>
