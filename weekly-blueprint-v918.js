@@ -169,7 +169,16 @@
   }
   function open(fromWeek){
     returnFocus=document.activeElement;
-    if(!draft&&!draftLoadError)draft=newDraft(fromWeek?iso(startOfWeek(selectedWeek)):draftStart());
+    const targetStart=fromWeek?iso(startOfWeek(selectedWeek)):draftStart();
+    if(!draft&&!draftLoadError)draft=newDraft(targetStart);
+    else if(draft&&draft.weekStart!==targetStart&&!meaningfulChanges()&&
+      !clean(draft.eventForm?.title)&&!clean(draft.taskForm?.title)){
+      // A blank, previously browsed draft must not override the intended week
+      // on the next launch. Preserve the current stage, not an obsolete date.
+      const step=draft.step;
+      draft=newDraft(targetStart);
+      draft.step=step;
+    }
     if(draft&&!draft.selectedDay)draft.selectedDay=draft.weekStart;
     originalOverflow=document.body.style.overflow;
     document.body.style.overflow='hidden';
@@ -197,9 +206,24 @@
     if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});
   }
   function weekChange(by){
-    if(meaningfulChanges()&&!confirm('Start a different week? Discard the un-applied changes in this planning draft?'))return;
-    draft=newDraft(add(draft.weekStart,by*7));
+    const discard=meaningfulChanges()||!!draft.editingEvent;
+    if(discard&&!confirm('Start a different week? Discard the un-applied changes in this planning draft?'))return;
+    const old=draft,next=newDraft(add(old.weekStart,by*7));
+    // Paging dates is not stage navigation. Keep the Schedule screen open.
+    next.step=old.step;
+    const offset=Math.round((dateObject(old.selectedDay||old.weekStart)-dateObject(old.weekStart))/86400000);
+    next.selectedDay=add(next.weekStart,Math.max(0,Math.min(6,Number.isFinite(offset)?offset:0)));
+    if(!discard){
+      // Unsaved text in an entry field is not yet a planner change: keep it
+      // while browsing weeks, but use a date in the newly displayed week.
+      next.eventForm={title:old.editingEvent?'':old.eventForm?.title||'',
+        date:next.selectedDay,time:old.eventForm?.time||'09:00'};
+      next.taskForm={title:old.taskForm?.title||'',dueDate:next.weekStart,
+        goalId:old.taskForm?.goalId||'',area:old.taskForm?.area||''};
+    }
+    draft=next;
     goalOpen.clear();storeDraft();renderSheet(true);
+    E('wbMain').querySelector('[data-wb-week="'+by+'"]')?.focus({preventScroll:true});
   }
   function changeNotice(){E('wbStatus').textContent='';}
   function reportMarkup(){
