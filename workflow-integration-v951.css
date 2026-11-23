@@ -20,18 +20,6 @@
 .bp-task-row.bp-task-revealed .bp-task-main{transform:translate3d(-112px,0,0)}
 .bp-task-row.done .bp-task-title{text-decoration:line-through;color:var(--muted)}
 .bp-task-row .delete-completed-task{font-size:10px;flex:none;min-height:35px}
-.bp-task-date-menu{position:fixed;z-index:22005;display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:14px;box-shadow:0 12px 36px #0003;color:var(--ink);max-height:calc(100dvh - 24px);overflow:auto}
-.bp-task-date-menu[hidden]{display:none!important}
-.bp-task-date-menu-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.bp-task-date-menu-heading strong{font-size:14px}
-.bp-task-date-menu-heading button{font-size:22px;width:44px;height:44px;border:0;background:transparent;color:var(--ink)}
-.bp-task-date-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.bp-task-date-presets button,.bp-task-menu-actions button{border-radius:9px;border:1px solid var(--line);background:var(--wash);color:var(--ink);min-height:40px;padding:8px;font-size:12px;font-weight:600}
-.bp-task-date-menu label{display:grid;gap:4px;min-width:0;color:var(--muted);font-size:11px;font-weight:650}
-.bp-task-date-menu input{width:100%;min-height:42px;min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);padding:6px 9px;color-scheme:inherit}
-.bp-task-menu-divider{height:1px;background:var(--line)}
-.bp-task-menu-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.bp-task-menu-actions [data-bp-plan-apply]{background:var(--primary-ui);color:var(--surface)}
 .bp-cal-task,.bp-cal-due{display:flex;gap:3px;align-items:center;min-width:0;color:var(--secondary-ui)}
 .bp-cal-task-check{flex:0 0 40px;display:grid;place-items:center;width:40px;min-height:44px;margin-left:-8px;cursor:pointer}
 .bp-cal-task-check input{width:20px;height:20px;margin:0;accent-color:var(--secondary-ui);cursor:pointer}
