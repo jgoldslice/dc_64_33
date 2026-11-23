@@ -120,3 +120,10 @@ button:focus-visible, a:focus-visible, .v81-project-rail button:focus-visible {
     scroll-behavior:auto!important;
   }
 }
+
+/* Keep editor actions in view when the device is short or the window is small. */
+#modalForm .modal-actions > button{min-height:44px}
+@media(max-height:820px){
+  #modalForm.modal{grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+  #modalForm .form-fields{min-height:0;grid-auto-rows:max-content;align-content:start;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px 2px 6px;margin:0 -2px}
+}

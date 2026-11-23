@@ -187,3 +187,10 @@
 .bp-week-today[hidden]{display:none!important}
 @media(max-width:420px){.v4-week-calendar .card-heading{flex-wrap:wrap}.v4-week-calendar .v94-week-tools{flex-wrap:wrap;justify-content:flex-end}}
 .bp-cal-event-icon{color:var(--secondary-ui);font-size:13px}
+
+/* The event fields scroll independently so the action row stays available. */
+.v87-event-content{display:grid;gap:17px;min-height:0}
+@media(max-height:820px){
+  #v87EventForm.v87-event-sheet,.bp-day-sheet{grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+  #v87EventForm .v87-event-content{grid-auto-rows:max-content;align-content:start;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:2px 2px 6px;margin:0 -2px}
+}

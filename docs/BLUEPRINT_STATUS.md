@@ -7,6 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Phone, iPad, and desktop website layout review (feature branch; QA pending)
+
+- Owner clarified the Mac target is the website, and deferred foldable-specific design. No foldable logic or posture assumptions were introduced. Starting point `129f7d50bd12d74c01a58ff8f6c9f3ba80d61371` on `main`.
+- Inspected the published website at phone portrait/landscape, iPad portrait/landscape, narrow tablet windows, and desktop widths. For Today, Week, Plan, and Brainstorm the 320–1440px spot checks found no page-level horizontal overflow or visible main-view controls outside the viewport. This was browser simulation, not native device verification. Confirmed in a 568×320 landscape browser that Task and Event form Save/Cancel actions were below the visible modal frame.
+- Planner editors, the Week Event form, and the busy-day sheet now keep their action rows visible at short viewport heights while their content scrolls independently. The Week Event form markup gained a scrollable content container; existing IDs, fields and save handlers remain unchanged. Primary editor buttons use at least 44px height. No planner data, backup format, PencilKit source, or native wrapper was modified; the service-worker cache version changes for the updated offline assets.
+- Local syntax checks and 29 Node regression tests passed. The first CI run on `9a55291` passed 384/388 browser tests; two new short-viewport assertions exposed shrinking form content, and two existing Notes tests also failed. After adjusting the scroll containers, the [focused rerun #45271043184](https://github.com/jgoldslice/dc_64_33/actions/runs/45271043184) passed all 15 selected browser tests including both Notes failures. A full suite on the final review branch was pending at this entry. Physical iPhone/iPad QA remains pending; this repository has no separate native macOS app target, and the Mac target is the desktop website.
+
 ## 2026-11-23 — Today and Week day details (merged; device QA pending)
 
 - Starting point: `3b4aeccbaea5feb9668ff230dae21eb990f44be5` on GitHub `main`. A separate source snapshot was used to preserve the older, locally modified checkout and native iOS wrapper.
