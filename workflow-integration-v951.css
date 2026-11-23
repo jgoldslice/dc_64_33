@@ -13,11 +13,10 @@
 .bp-task-star{grid-column:3;grid-row:1;justify-self:center;font-size:22px;width:44px;min-width:44px;padding:4px}
 .bp-task-star[aria-pressed=true]{color:var(--secondary-ui)}
 .bp-task-due{grid-column:4;grid-row:1;width:98px;min-width:98px;max-width:98px;font-size:11px;padding:3px 4px;text-align:center;border:1px solid var(--line);background:var(--wash);line-height:1.25;white-space:nowrap;font-variant-numeric:tabular-nums}
-.bp-task-swipe-actions{position:absolute;inset:0 0 0 auto;display:none;justify-content:flex-end;align-items:stretch;width:112px;z-index:3}
+.bp-task-swipe-actions{position:absolute;inset:0 0 0 auto;display:none;justify-content:flex-end;align-items:stretch;width:96px;z-index:3}
 .bp-task-row.bp-task-revealed .bp-task-swipe-actions{display:flex;pointer-events:auto}
-.bp-task-swipe-actions button{width:56px;min-width:56px;border:0;color:var(--ink);background:var(--wash);font-size:11px;padding:4px}
-.bp-task-swipe-actions button:first-child{color:var(--surface);background:var(--primary-ui)}
-.bp-task-row.bp-task-revealed .bp-task-main{transform:translate3d(-112px,0,0)}
+.bp-task-swipe-actions button{width:96px;min-width:96px;min-height:44px;border:0;color:var(--surface);background:var(--primary-ui);font-size:12px;font-weight:650;padding:6px;white-space:nowrap}
+.bp-task-row.bp-task-revealed .bp-task-main{transform:translate3d(-96px,0,0)}
 .bp-task-row.done .bp-task-title{text-decoration:line-through;color:var(--muted)}
 .bp-task-row .delete-completed-task{font-size:10px;flex:none;min-height:35px}
 .bp-task-date-menu{position:fixed;z-index:22005;display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:15px;padding:14px;box-shadow:0 12px 36px #0003;color:var(--ink);max-height:calc(100dvh - 24px);overflow:auto}
@@ -118,4 +117,25 @@ body.v928-notes-focus #bpQuickAdd{display:none!important}
 /* Narrow task rows: actions stay in the same columns on each card. */
 @media(max-width:620px){
   .bp-task-row .task-row-actions{grid-column:5;grid-row:2;width:88px;grid-template-columns:44px 44px;margin:0}
+}
+
+/* v9.58: the Week priority card is narrow even on a full-size iPad.
+   Respond to the card's width, not the viewport, and let titles wrap. */
+#week .v4-week-priorities{container-type:inline-size;container-name:bp-week-priorities}
+@container bp-week-priorities (max-width:520px){
+  #week .v4-week-priorities .bp-task-main{
+    grid-template-columns:22px minmax(0,1fr) 44px;
+    column-gap:6px;row-gap:2px;padding:7px 2px
+  }
+  #week .v4-week-priorities .bp-task-main>input[type=checkbox]{grid-column:1;grid-row:1}
+  #week .v4-week-priorities .bp-task-detail{grid-column:2;grid-row:1;min-width:0}
+  #week .v4-week-priorities .bp-task-star{grid-column:3;grid-row:1;margin:0}
+  #week .v4-week-priorities .bp-task-due{
+    grid-column:2;grid-row:2;justify-self:end;
+    width:94px;min-width:94px;max-width:94px
+  }
+  #week .v4-week-priorities .bp-task-row .task-row-actions{
+    grid-column:3;grid-row:2;justify-self:end;
+    grid-template-columns:44px;width:44px;margin:0
+  }
 }
