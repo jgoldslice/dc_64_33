@@ -7,13 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-22 — v9.59 Plan Task row Set Date simplification (PR pending)
+## 2026-11-22 — v9.59 Plan Task row Set Date simplification (merged; browser verified; device QA pending)
 
 **Owner request completed in code:** Remove the remaining inline **Set Date** button from Plan → Tasks in addition to the Today/Week compact cards already merged in v9.58. Plan remains where tasks are edited.
 
-- **Implemented on branch** `fix/plan-task-inline-date-button-v959` from the verified v9.58 `main`. Plan Task rows keep checkboxes, rank badges, priority stars, title-based Edit, and aligned Edit/Delete controls, but replace the redundant date button with a small, passive `Due …` caption. The existing Task editor retains Deadline, On calendar, and Scheduled time fields.
+- **Merged** [PR #92](https://github.com/jgoldslice/dc_64_33/pull/92) to `main` as `6c83277aec3b23d3f3ae5a7f015d824df58f3b6c` (verified feature head `158bbcafb509e3b85ba6ec5ee43bd70d0cf4ae6b`). Plan Task rows keep checkboxes, rank badges, priority stars, title-based Edit, and aligned Edit/Delete controls, but replace the redundant date button with a small, passive `Due …` caption. The existing Task editor retains Deadline, On calendar, and Scheduled time fields.
 - Removed the obsolete standalone Task date popover and its click/keyboard listeners and unused CSS. The existing shared Task editor and deadline persistence remain unchanged. Compact Today and Week cards, their 96px Tomorrow swipe, checkbox behavior, offline data and existing backup/export formats are preserved.
-- Revised existing browser tests to verify column alignment across 320/375/390/620/768/1024px, absence of inline date controls, and Plan editor scheduling/persistence. **Automated test verification: pending GitHub Actions.** **Physical device QA: pending. Deployed: no.**
+- **Automated-test verified:** [GitHub Actions run #45127423832](https://github.com/jgoldslice/dc_64_33/actions/runs/45127423832) passed all **367 Chromium Playwright tests**, JavaScript syntax and standalone Node regression tests on reviewed head `158bbca`. Browser checks verify Task-column alignment at 320/375/390/620/768/1024px, absence of inline date controls and Plan editor date/time persistence. The initial run #45126981147 passed 366/367; the remaining failure was an older test asserting that the removed date button should exist. Its assertion was updated to check the passive caption and editor, then the full suite passed. **Physical device QA: pending. Deployed: no.**
 - After merge, stage the latest `main` web bundle into the existing Mac Capacitor wrapper using `scripts/stage-ios-web.py`, run `npx cap copy ios`, and install over the app in Xcode without uninstalling it or clearing local user data.
 
 ## 2026-11-22 — v9.58 Today/Week Task card simplification (merged; browser-verified; device QA pending)
