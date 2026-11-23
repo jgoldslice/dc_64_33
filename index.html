@@ -354,6 +354,7 @@
 <link rel="stylesheet" href="goal-habits-v927.css">
 <link rel="stylesheet" href="areas-v939.css">
 <link rel="stylesheet" href="notes-workspace-v928.css">
+<link rel="stylesheet" href="project-appearance-v964.css">
 <style>
 /* iOS Safari zooms focused inputs below 16px. Preserve pinch zoom and
    existing label typography while keeping editable controls readable. */
@@ -1840,7 +1841,7 @@ function v6Render(){
   $('projectHome').hidden=!!p;$('projectWorkspace').hidden=!p;
   $('brainstormQuickIdeas').hidden=!!p;
   $('projectGrid').innerHTML=state.projects.map(p=>{
-    return '<button type="button" class="v6-folder" data-v6-project="'+esc(p.id)+'"><svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><strong>'+esc(p.title)+'</strong></button>';
+    return '<button type="button" class="v6-folder" data-v6-project="'+esc(p.id)+'">'+(window.BlueprintProjectAppearance?.markup(p)||'<svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>')+'<strong>'+esc(p.title)+'</strong></button>';
   }).join('')||'<p class="muted small">Create a project for your next idea, build, or experiment.</p>';
   $('brainstormDraft').placeholder=p?'Idea for '+p.title+'...':"What's on your mind?";
   if(!p)return;
@@ -2430,4 +2431,5 @@ v6Normalize();v6Render();
 <script src="local-storage-health-v926.js"></script>
 <script src="areas-v939.js"></script>
 <script src="workflow-integration-v951.js"></script>
+<script src="project-appearance-v964.js"></script>
 </body></html>

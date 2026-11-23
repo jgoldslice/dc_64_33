@@ -7,6 +7,12 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Project icons, photos, and Today card (implementation; verification pending)
+
+- Starting point `f295693db83c1866af1bfe1a3335a938947fafb0` on `main`. The Today Projects card grows to display its up-to-four recent project tiles without an internal scrollbar. Normal page scrolling can still be needed when the screen or other content requires it.
+- Unassigned now uses an inbox icon and the Area appearance action uses sliders. Project headers provide an icon and color picker with the same choices and palette as Areas, plus a photo chooser; project marks appear in Today, the project list and Area project rows. Icons are per project. User-supplied images become small, bounded thumbnails in the project manifest, so existing complete backups include them and old backups continue to load without a migration. The photo file itself is not added to the Project Library. Save failure restores the previous in-memory appearance.
+- JavaScript syntax checks and 29 local Node regressions passed. New browser checks cover project appearance, individual projects, photo backup/restore, failed saves, icon changes, and responsive sizing; GitHub browser verification is pending. Physical iPhone/iPad and installed-app verification are pending. No native Swift files were changed. After merge, stage the reviewed web assets into the existing Capacitor wrapper with `scripts/stage-ios-web.py`, run `npx cap copy ios`, and install over the existing app with the same bundle ID and team; do not uninstall or clear storage.
+
 ## 2026-11-23 — Phone, iPad, and desktop website layout review (merged; device QA pending)
 
 - Owner clarified the Mac target is the website, and deferred foldable-specific design. No foldable logic or posture assumptions were introduced. Starting point `129f7d50bd12d74c01a58ff8f6c9f3ba80d61371` on `main`.
