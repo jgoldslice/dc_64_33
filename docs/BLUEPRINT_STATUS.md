@@ -7,6 +7,11 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Weekly planning follow-through (PR open; device QA pending)
+
+- [PR #101](https://github.com/jgoldslice/dc_64_33/pull/101), implementation commit `4a60fafc238431b11ba224ce7fbb9fd39f011510`: the Week day sheet offers Add Task and Add Event with the selected day filled in. During weekly planning, Carry Forward schedules unfinished work for Monday by default and preserves the deadline unless explicitly changed. Prioritize can move the task to another day. Goal steps can become tasks linked to the source step and goal. Review groups changes and links back to the corresponding stage. Week and Areas show Continue planning and the date range for a meaningful draft.
+- Local verification passed 401 Chromium browser tests, 29 standalone Node tests, and JavaScript syntax checks. The existing draft and backup keys remain readable, and calendar changes are staged until Apply. A physical iPhone/iPad check is pending. For a native update, stage the reviewed web assets in the existing Capacitor wrapper, run `npx cap copy ios`, then build and install with Xcode using the same signing team and bundle ID.
+
 ## 2026-11-23 — Design Next Week (merged; device QA pending)
 
 - [PR #99](https://github.com/jgoldslice/dc_64_33/pull/99), based on `68dd228f81f743ebb8ad8f019f13da96895f32b6`, merged as `8d779a83c9b36c4a2a2bd8649aa8ea577d6878df`: the Week and Area actions open the next Monday–Sunday by default while preserving a meaningful existing draft. The goal stage supports adding draft goals; the schedule opens the event editor on day selection with the date inferred; the task editor opens on request. Current-day accent replaces the weekend-wide highlight, including Saturday and Sunday. Draft changes still require Review and Apply.
