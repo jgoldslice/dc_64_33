@@ -65,7 +65,7 @@ test('Project quick creation reuses Task, Habit and Goal forms with inherited Pr
   await expect(page.locator('#allTasks')).toContainText('Prepare vials');
 });
 
-test('Today Task title edits, star prioritizes, and quick date picker sets schedule without duplicate Task',async({page})=>{
+test('Today reads and checks Tasks while Plan handles priority, date, and editing',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[{id:'unified-task',title:'Design reactor',done:false,dueDate:localToday(),
@@ -74,11 +74,16 @@ test('Today Task title edits, star prioritizes, and quick date picker sets sched
     if(!save(true))throw Error('Could not save test task');
     render();
   });
-  const row=page.locator('#v917TodayTasks [data-bp-task-row="unified-task"]');
-  await expect(row).toContainText('Design reactor');
+  const today=page.locator('#v917TodayTasks [data-bp-task-row="unified-task"]');
+  await expect(today).toContainText('Design reactor');
+  await expect(today.locator('[data-bp-task-star],[data-bp-task-date],[data-edit-task],[data-bp-edit-task]')).toHaveCount(0);
+  await page.locator('[data-tab="myplan"]').click();
+  await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
+  const row=page.locator('#allTasks [data-bp-task-row="unified-task"]');
   await row.locator('[data-bp-task-star]').click();
   expect(await page.evaluate(()=>state.tasks[0].priority)).toBe(true);
   await expect(page.locator('#v77TodayPriorities')).toContainText('Design reactor');
+  await expect(page.locator('#v77TodayPriorities [data-bp-task-star],[data-bp-task-date],[data-edit-task]')).toHaveCount(0);
   await row.locator('[data-bp-task-date]').click();
   await expect(page.locator('#bpTaskDates')).toBeVisible();
   await page.locator('[data-bp-plan-input]').fill('2026-12-09');
@@ -90,8 +95,6 @@ test('Today Task title edits, star prioritizes, and quick date picker sets sched
   await page.locator('[data-bp-date-preset="tomorrow"]').click();
   const tomorrow=await page.evaluate(()=>iso(plusDays(new Date(),1)));
   expect(await page.evaluate(()=>state.tasks[0].dueDate)).toBe(tomorrow);
-  await page.locator('[data-tab="myplan"]').click();
-  await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
   await page.locator('#allTasks [data-edit-task="unified-task"]').click();
   await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
   await expect(page.locator('#modalForm input[name="scheduledDate"]')).toHaveValue('2026-12-09');
@@ -191,7 +194,7 @@ test('Project removal detaches but does not delete linked Tasks, Habits, or Goal
   expect(result.habit.area).toBe('Research');
 });
 
-test('Quick priority save failure restores the prior task and on-screen star',async({page})=>{
+test('Plan priority save failure restores the prior task and on-screen star',async({page})=>{
   await page.goto(base);
   await page.evaluate(()=>{
     state.tasks=[{id:'save-guard',title:'Safe Task',done:false,dueDate:localToday(),priority:false,priorityRank:0}];
@@ -204,9 +207,11 @@ test('Quick priority save failure restores the prior task and on-screen star',as
     window.restoreWrite=()=>Storage.prototype.setItem=original;
   });
   try{
-    await page.locator('#v917TodayTasks [data-bp-task-star="save-guard"]').click();
+    await page.locator('[data-tab="myplan"]').click();
+    await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
+    await page.locator('#allTasks [data-bp-task-star="save-guard"]').click();
     expect(await page.evaluate(()=>state.tasks[0].priority)).toBe(false);
-    await expect(page.locator('#v917TodayTasks [data-bp-task-star="save-guard"]')).toHaveAttribute('aria-pressed','false');
+    await expect(page.locator('#allTasks [data-bp-task-star="save-guard"]')).toHaveAttribute('aria-pressed','false');
   }finally{await page.evaluate(()=>window.restoreWrite());}
 });
 
