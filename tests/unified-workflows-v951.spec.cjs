@@ -79,13 +79,14 @@ test('Today and Plan omit Set Date; task schedule is edited through Plan',async(
   await expect(row.locator('[data-bp-task-date]')).toHaveCount(0);
   await expect(row.locator('[data-bp-swipe-done]')).toHaveCount(0);
   await expect(row.locator('[data-bp-swipe-tomorrow]')).toHaveCount(1);
-  await row.locator('[data-bp-task-star]').click();
-  expect(await page.evaluate(()=>state.tasks[0].priority)).toBe(true);
-  await expect(page.locator('#v77TodayPriorities')).toContainText('Design reactor');
+  await expect(row.locator('[data-bp-task-star],[data-bp-edit-task],[data-edit-task],[data-delete-completed-task]')).toHaveCount(0);
+  await expect(row.locator('[data-task-check]')).toBeVisible();
   await page.locator('[data-tab="myplan"]').click();
   await page.locator('#myplan .plan-tabs [data-plan-tab="tasks"]').click();
   const plan=page.locator('#allTasks [data-bp-task-row="unified-task"]');
   await expect(plan.locator('[data-bp-task-date]')).toHaveCount(0);
+  await plan.locator('[data-bp-task-star]').click();
+  expect(await page.evaluate(()=>state.tasks[0].priority)).toBe(true);
   await plan.locator('[data-bp-edit-task]').click();
   await expect(page.locator('#modalTitle')).toHaveText('Edit Task');
   await page.locator('#modalForm input[name="scheduledDate"]').fill('2026-12-09');
