@@ -923,9 +923,15 @@ function showOpening(){
 function renderTaskSections(today=localToday()){
   const orderedPriorities=ranked();
   const rankMap=new Map(orderedPriorities.map((t,i)=>[String(t.id),i+1]));
-  const todaysTasks=state.tasks.filter(t=>t.dueDate===today).sort((a,b)=>
-    Number(a.done)-Number(b.done)||Number(!!b.scheduledDate)-Number(!!a.scheduledDate)||
-    Number(b.priority)-Number(a.priority)||String(a.scheduledTime||'').localeCompare(String(b.scheduledTime||'')));
+  // Today includes work deliberately scheduled today, even when its deadline
+  // is on a later day. Avoid repeating unfinished overdue work in both groups.
+  const todaysTasks=state.tasks.filter(t=>
+    (t.dueDate===today||t.scheduledDate===today)&&
+    !(!t.done&&t.dueDate&&t.dueDate<today)).sort((a,b)=>
+    Number(a.done)-Number(b.done)||
+    Number(b.scheduledDate===today)-Number(a.scheduledDate===today)||
+    Number(b.priority)-Number(a.priority)||
+    String(a.scheduledTime||'').localeCompare(String(b.scheduledTime||'')));
   // A missed deadline must not disappear simply because the calendar rolled over.
   // Keep overdue items inside Today at a Glance, not another home card.
   const overdue=state.tasks.filter(t=>!t.done&&t.dueDate&&t.dueDate<today)
@@ -935,7 +941,7 @@ function renderTaskSections(today=localToday()){
     (overdue.length?'<div class="section-label v82-overdue-label">Overdue</div>'+
       overdue.slice(0,3).map(t=>taskRow(t,rankMap,true)).join('')+
       (overdue.length>3?'<button type="button" class="text-button v82-view-overdue" data-plan-tab="tasks">View '+(overdue.length-3)+' more overdue tasks</button>':''):'')+
-    (todaysTasks.length?(overdue.length?'<div class="section-label">Due today</div>':'')+
+    (todaysTasks.length?(overdue.length?'<div class="section-label">For today</div>':'')+
       todaysTasks.map(t=>taskRow(t,rankMap,true)).join(''):'')+
     (!todaysTasks.length&&!overdue.length?'<p class="empty">No tasks due today.</p>':'');
   $('v917TodayTasks').scrollTop=taskScroll;
