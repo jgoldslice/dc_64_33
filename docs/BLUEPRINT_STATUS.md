@@ -7,6 +7,11 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Design Next Week (in review)
+
+- The Week and Area actions open the next Monday–Sunday by default while preserving a meaningful existing draft. The goal stage supports adding draft goals; the schedule opens the event editor on day selection with the date inferred; the task editor opens on request. Current-day accent replaces the weekend-wide highlight, including Saturday and Sunday. Draft changes still require Review and Apply.
+- Local JavaScript syntax and 29 Node tests passed. Browser regression, deployed website, and physical-device verification pending. No native Swift changes; installed iOS apps need web assets staged and a Capacitor/Xcode rebuild.
+
 ## 2026-11-23 — Project icons, photos, and Today card (merged; device QA pending)
 
 - Starting point `f295693db83c1866af1bfe1a3335a938947fafb0` on `main`. The Today Projects card grows to display its up-to-four recent project tiles without an internal scrollbar. Normal page scrolling can still be needed when the screen or other content requires it.

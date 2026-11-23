@@ -9,6 +9,7 @@ async function openSchedule(page){
   await page.locator('[data-tab="myplan"]').click();
   await page.locator('[data-wb-launch]').click();
   await page.locator('[data-wb-step="2"]').click();
+  await page.locator('.wb-calendar [data-wb-select-day]').first().click();
   await expect(page.locator('#wbEventForm input[name="title"]')).toBeVisible();
 }
 
@@ -167,6 +168,7 @@ test('weekly priority task keeps its selected Area through draft resume and Appl
   await plan();
   await launch();
   await page.locator('[data-wb-step="3"]').click();
+  await page.locator('[data-wb-task-toggle]').click();
   const form=page.locator('#wbNewTaskForm');
   const area=form.getByRole('combobox',{name:'Area',exact:true});
   await expect(area).toHaveValue('');
@@ -209,6 +211,7 @@ test('weekly tasks inherit the goal Area and legacy drafts still apply as unassi
   await page.locator('[data-tab="myplan"]').click();
   await page.locator('[data-wb-launch]').click();
   await page.locator('[data-wb-step="3"]').click();
+  await page.locator('[data-wb-task-toggle]').click();
   const form=page.locator('#wbNewTaskForm');
   const area=form.getByRole('combobox',{name:'Area',exact:true});
   const goal=form.getByRole('combobox',{name:'Connected goal',exact:true});

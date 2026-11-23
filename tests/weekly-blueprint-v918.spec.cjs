@@ -72,6 +72,7 @@ test('unsaved committed event drafts are retained on reopen and protected during
   await page.locator('[data-wb-launch]').click();
   await page.locator('[data-wb-step="2"]').click();
   await page.locator('[data-wb-week="1"]').click();
+  await page.locator('.wb-calendar [data-wb-select-day]').first().click();
   await page.locator('#wbEventForm input[name=title]').fill('Save this event');
   await page.locator('#wbEventForm button[type=submit]').click();
   await page.locator('[data-wb-close]').click();
@@ -146,6 +147,7 @@ test('iPhone scheduling stays day-by-day, shows staged events immediately, and p
   await expect(page.locator('#wbOverlay .wb-days-strip')).toBeVisible();
   await expect(page.locator('#wbOverlay .wb-calendar')).toBeHidden();
   const day=await page.evaluate(()=>BlueprintWeekly.getDraft().weekStart);
+  await page.locator('.wb-days-strip [data-wb-select-day]').first().click();
   await page.locator('#wbEventForm input[name=title]').fill('Research meeting');
   await page.locator('#wbEventForm input[name=time]').fill('14:00');
   await page.locator('#wbEventForm button[type=submit]').click();
