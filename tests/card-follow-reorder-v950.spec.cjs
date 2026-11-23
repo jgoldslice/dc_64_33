@@ -2,7 +2,7 @@
 const {test,expect}=require('@playwright/test');
 const fs=require('node:fs/promises');
 const base='http://127.0.0.1:8765/';
-const defaults=['schedule','habits','tasks','priorities','projects'];
+const defaults=['schedule','habits','priorities','projects'];
 const todayOrder=page=>page.locator('#today > .v917-today-grid > [data-bp-today-card]')
   .evaluateAll(nodes=>nodes.map(n=>n.dataset.bpTodayCard));
 
@@ -29,9 +29,9 @@ test('Today keeps paired default cards and reorders by a true pointer-following 
   await page.mouse.move(b.x+b.width*.45,b.y+55,{steps:6});
   await page.mouse.up();
   await expect(ghost).toHaveCount(0);
-  expect(await todayOrder(page)).toEqual(['habits','schedule','tasks','priorities','projects']);
+  expect(await todayOrder(page)).toEqual(['habits','schedule','priorities','projects']);
   const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('jgold-planner-v1')).todayCardOrder);
-  expect(stored).toEqual(['habits','schedule','tasks','priorities','projects']);
+  expect(stored).toEqual(['habits','schedule','priorities','projects']);
   await page.reload();
   expect(await todayOrder(page)).toEqual(stored);
   const positions=await page.evaluate(()=>({
@@ -47,22 +47,22 @@ test('keyboard reordering supports a full-width Projects card and survives reloa
   const project=page.locator('[data-bp-today-card="projects"]');
   await project.focus();
   await page.keyboard.press('Alt+ArrowUp');
-  expect(await todayOrder(page)).toEqual(['schedule','habits','tasks','projects','priorities']);
+  expect(await todayOrder(page)).toEqual(['schedule','habits','projects','priorities']);
   await expect(project).toBeFocused();
   const widths=await page.evaluate(()=>({
     project:document.querySelector('[data-bp-today-card="projects"]').getBoundingClientRect().width,
-    tasks:document.querySelector('[data-bp-today-card="tasks"]').getBoundingClientRect().width
+    priorities:document.querySelector('[data-bp-today-card="priorities"]').getBoundingClientRect().width
   }));
-  expect(widths.project).toBeGreaterThan(widths.tasks+100);
+  expect(widths.project).toBeGreaterThan(widths.priorities+100);
   await page.reload();
-  expect(await todayOrder(page)).toEqual(['schedule','habits','tasks','projects','priorities']);
+  expect(await todayOrder(page)).toEqual(['schedule','habits','projects','priorities']);
 });
 
 test('touch hold moves a floating Today card without scrolling or triggering its contents',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.goto(base);
   const result=await page.evaluate(async()=>{
-    const source=document.querySelector('[data-bp-today-card="tasks"]');
+    const source=document.querySelector('[data-bp-today-card="priorities"]');
     const a=source.getBoundingClientRect();
     const x=a.left+25,y=a.top+30;
     const touch=(px,py)=>new Touch({identifier:7,target:source,clientX:px,clientY:py});
@@ -125,12 +125,12 @@ test('complete backup round-trip restores the custom Today card order immediatel
   ]);
   const backup=JSON.parse(await fs.readFile(await download.path(),'utf8'));
   expect(backup.state.todayCardOrder).toEqual(['projects','priorities','tasks','habits','schedule']);
-  await page.evaluate(()=>{state.todayCardOrder=['schedule','habits','tasks','priorities','projects'];if(!save(true))throw Error('Could not reset');});
+  await page.evaluate(()=>{state.todayCardOrder=['schedule','habits','priorities','projects'];if(!save(true))throw Error('Could not reset');});
   page.on('dialog',dialog=>dialog.accept());
   await page.evaluate(data=>v74ImportBackup(new Blob([JSON.stringify(data)])),backup);
-  expect(await todayOrder(page)).toEqual(['projects','priorities','tasks','habits','schedule']);
+  expect(await todayOrder(page)).toEqual(['projects','priorities','habits','schedule']);
   await page.reload();
-  expect(await todayOrder(page)).toEqual(['projects','priorities','tasks','habits','schedule']);
+  expect(await todayOrder(page)).toEqual(['projects','priorities','habits','schedule']);
 });
 
 test('Library follows the pointer and shows no persistent instruction subtitles',async({page})=>{
