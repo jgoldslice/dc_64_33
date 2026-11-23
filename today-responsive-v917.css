@@ -6,7 +6,7 @@
 #today > .stack.v917-today-grid{
   display:grid!important;
   grid-template-columns:minmax(0,1fr)!important;
-  grid-template-areas:"schedule" "habits" "tasks" "priorities" "projects"!important;
+  grid-template-areas:"schedule" "habits" "priorities" "projects"!important;
   gap:12px;
   align-items:stretch!important;
   align-content:start;
@@ -27,7 +27,6 @@
 }
 #today > .stack.v917-today-grid > .v917-schedule{grid-area:schedule!important}
 #today > .stack.v917-today-grid > .v917-habits{grid-area:habits!important}
-#today > .stack.v917-today-grid > .v917-tasks{grid-area:tasks!important}
 #today > .stack.v917-today-grid > .v917-priorities{grid-area:priorities!important}
 #today > .stack.v917-today-grid > .v917-projects{grid-area:projects!important}
 #today .v917-card-body{
@@ -63,7 +62,7 @@
   @container blueprint-today (min-width:520px){
   #today > .stack.v917-today-grid{
     grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)!important;
-    grid-template-areas:"schedule habits" "tasks priorities" "projects projects"!important;
+    grid-template-areas:"schedule habits" "priorities priorities" "projects projects"!important;
     grid-auto-rows:max-content;
     gap:12px;
   }
@@ -72,10 +71,9 @@
     min-height:170px;
     max-height:clamp(215px,35dvh,350px);
   }
-  #today > .stack.v917-today-grid > .v917-tasks,
   #today > .stack.v917-today-grid > .v917-priorities{
     min-height:145px;
-    max-height:clamp(180px,27dvh,270px);
+    max-height:clamp(180px,34dvh,345px);
   }
   #today > .stack.v917-today-grid > .v917-projects{
     min-height:120px;
@@ -107,7 +105,7 @@
   #today.view.active{min-height:0;display:block}
   #today > .stack.v917-today-grid{
     grid-template-columns:minmax(0,1fr)!important;
-    grid-template-areas:"schedule" "habits" "tasks" "priorities" "projects"!important;
+    grid-template-areas:"schedule" "habits" "priorities" "projects"!important;
   }
   #today > .stack.v917-today-grid > .card{max-height:none;min-height:0}
   #today .v917-card-body{max-height:none;overflow:visible}
