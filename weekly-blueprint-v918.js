@@ -8,6 +8,7 @@
   const UNDO_KEY='blueprint-weekly-v918-undo';
   const STEPS=['Report','Goals','Schedule','Prioritize','Review'];
   const FIELDS=['tasks','habits','goals','events','ideas'];
+  const GOAL_FIELDS={title:'Name',category:'Area',motivation:'Motivation',actions:'Steps'};
   const E=id=>document.getElementById(id);
   const clone=value=>structuredClone(value);
   const dateObject=s=>new Date(String(s)+'T12:00:00');
@@ -21,7 +22,7 @@
   const read=key=>{try{return JSON.parse(localStorage.getItem(key)||'null');}catch{return null;}};
   const newDraft=(start)=>({
     version:1,weekStart:start,step:0,selectedDay:start,
-    taskDone:{},habitDays:{},carry:{},goals:{},newGoals:[],
+    taskDone:{},habitDays:{},carry:{},carryToCalendar:{},taskSchedule:{},goals:{},goalBases:{},newGoals:[],
     newEvents:[],eventEdits:{},eventForm:{title:'',date:start,time:'09:00'},
     editingEvent:null,priority:null,priorityTouched:false,
     newTasks:[],taskForm:{title:'',dueDate:start,goalId:'',area:''},
@@ -124,9 +125,55 @@
     if(!draft.goals[key]){
       const existing=state.goals.find(g=>idString(g.id)===key);
       if(!existing)return null;
+      (draft.goalBases||(draft.goalBases={}))[key]=clone(Object.fromEntries(
+        Object.keys(GOAL_FIELDS).map(field=>[field,goalValue(existing,field)])));
       draft.goals[key]=clone(existing);
     }
     return draft.goals[key];
+  }
+  function goalValue(goal,field){
+    return goal[field]??(field==='actions'?[]:'');
+  }
+  const sameGoalValue=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  function goalEdits(id,update,saved){
+    const base=draft.goalBases?.[id];
+    return Object.keys(GOAL_FIELDS).flatMap(field=>{
+      const value=goalValue(update,field),current=goalValue(saved,field);
+      if(sameGoalValue(value,current))return [];
+      const tracked=base&&Object.hasOwn(base,field);
+      if(tracked&&sameGoalValue(value,goalValue(base,field)))return [];
+      return [{field,value,conflict:!tracked||!sameGoalValue(current,goalValue(base,field))}];
+    });
+  }
+  function goalConflicts(){
+    return Object.entries(draft.goals).flatMap(([id,update])=>{
+      const saved=state.goals.find(g=>idString(g.id)===id);
+      return saved?goalEdits(id,update,saved).filter(edit=>edit.conflict)
+        .map(({field,value})=>({id,title:saved.title,field,value,saved:goalValue(saved,field)})):[];
+    });
+  }
+  function describeGoalValue(field,value){
+    if(field==='actions')return value.map(step=>(step.done?'✓ ':'○ ')+(step.title||'Untitled step')).join(' · ')||'No steps';
+    return value||'Blank';
+  }
+  function unfinishedEvent(){
+    const form=draft.eventForm;
+    if(!form)return false;
+    if(!draft.editingEvent)return !!clean(form.title)||form.time!=='09:00';
+    const event=effectiveEvents().find(item=>item.wbKey===draft.editingEvent);
+    return !event||['title','date','time'].some(field=>form[field]!==(event[field]||(field==='time'?'09:00':'')));
+  }
+  function unfinishedForms(){
+    return [unfinishedEvent()&&['event',2],clean(draft.taskForm?.title)&&['task',3]].filter(Boolean);
+  }
+  function discardForm(kind){
+    if(kind==='event'){
+      draft.editingEvent=null;showEventForm=false;
+      draft.eventForm={title:'',date:draft.selectedDay,time:'09:00'};
+    }else{
+      showTaskForm=false;
+      draft.taskForm={title:'',dueDate:draft.weekStart,goalId:'',area:''};
+    }
   }
   function priorityIds(tasks=allAvailableTasks()){
     const eligible=new Set(tasks.filter(t=>!doneTask(t)).map(t=>idString(t.id)));
@@ -141,6 +188,21 @@
       ...draft.newEvents.map(e=>Object.assign({},e,{wbKey:'new:'+e.id}))];
   }
   function datesForWeek(){return Array.from({length:7},(_,i)=>add(draft.weekStart,i));}
+  function scheduleChanges(){
+    const changes=new Map();
+    for(const id of Object.keys(draft.carryToCalendar||{}))changes.set(id,draft.weekStart);
+    for(const [id,date] of Object.entries(draft.taskSchedule||{}))changes.set(id,date);
+    return changes;
+  }
+  function taskSchedule(t){
+    const id=idString(t.id);
+    return draft.taskSchedule?.[id]??(draft.carryToCalendar?.[id]?draft.weekStart:t.scheduledDate||'');
+  }
+  function stepAlreadyTask(goal,step){
+    const index=goal.actions.indexOf(step);
+    return allAvailableTasks().some(t=>idString(t.goalId)===idString(goal.id)&&
+      (t.actionId?idString(t.actionId)===idString(step.id):t.actionIndex!=null&&t.actionIndex!==''&&Number(t.actionIndex)===index));
+  }
   function meaningfulChanges(){
     let n=0;
     for(const [id,val] of Object.entries(draft.taskDone)){
@@ -152,7 +214,7 @@
     }
     for(const [id,g] of Object.entries(draft.goals)){
       const old=state.goals.find(x=>idString(x.id)===id);
-      if(old&&JSON.stringify(old)!==JSON.stringify(g))n++;
+      if(old&&goalEdits(id,g,old).length)n++;
     }
     for(const [id,ed] of Object.entries(draft.eventEdits)){
       const old=state.events.find(e=>idString(e.id)===id);
@@ -160,7 +222,11 @@
     }
     n+=draft.newEvents.length+draft.newTasks.length+(draft.newGoals||[]).length;
     for(const [id,date] of Object.entries(draft.carry)){
-      const t=current(id);if(t&&t.dueDate!==date)n++;
+      const t=current(id);if(t&&date&&t.dueDate!==date)n++;
+    }
+    for(const [id,date] of scheduleChanges()){
+      const t=current(id);
+      if(t&&!doneTask(t)&&(t.scheduledDate||'')!==date)n++;
     }
     if(draft.priorityTouched)n++;
     return n;
@@ -173,11 +239,11 @@
   function open(fromWeek){
     returnFocus=document.activeElement;
     const targetStart=draftStart();
-    showEventForm=!!draft?.editingEvent||!!clean(draft?.eventForm?.title);
+    showEventForm=!!draft&&(!!draft.editingEvent||unfinishedEvent());
     showTaskForm=!!clean(draft?.taskForm?.title);
     if(!draft&&!draftLoadError)draft=newDraft(targetStart);
-    else if(draft&&draft.weekStart!==targetStart&&!meaningfulChanges()&&
-      !clean(draft.eventForm?.title)&&!clean(draft.taskForm?.title)){
+    else if(draft&&draft.weekStart!==targetStart&&!meaningfulChanges()&&!Object.keys(draft.carry).length&&
+      !unfinishedForms().length){
       // A blank, previously browsed draft must not override the intended week
       // on the next launch. Preserve the current stage, not an obsolete date.
       const step=draft.step;
@@ -211,7 +277,7 @@
     if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});
   }
   function weekChange(by){
-    const discard=meaningfulChanges()||!!draft.editingEvent;
+    const discard=meaningfulChanges()||Object.keys(draft.carry).length||!!draft.editingEvent;
     if(discard&&!confirm('Start a different week? Discard the un-applied changes in this planning draft?'))return;
     const old=draft,next=newDraft(add(old.weekStart,by*7));
     // Paging dates is not stage navigation. Keep the Schedule screen open.
@@ -235,15 +301,20 @@
     const first=previousWeek(),last=add(first,6);
     const tasks=state.tasks.filter(t=>{
       const due=t.dueDate||t.date||'';
-      return (due>=first&&due<=last)||(due&&due<first&&!doneTask(t));
+      const scheduled=t.scheduledDate||'';
+      return [due,scheduled].some(date=>date&&(date>=first&&date<=last||date<first&&!doneTask(t)))||
+        Object.hasOwn(draft.carry,idString(t.id));
     }).sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||''));
     let taskRows='';
     for(const t of tasks){
       const key=idString(t.id),done=doneTask(t);
       taskRows+='<div class="wb-row"><input type="checkbox" data-wb-task-done="'+attr(key)+'" aria-label="Completed '+attr(t.title)+'" '+(done?'checked':'')+'>'+
         '<span class="wb-row-main">'+attr(t.title)+'<small>'+(t.dueDate?'Due '+niceDate(t.dueDate):'Unscheduled')+'</small></span>'+
-        (!done?'<label class="wb-hint"><input type="checkbox" data-wb-carry="'+attr(key)+'" '+(draft.carry[key]?'checked':'')+'> Carry forward</label>':'')+'</div>';
-      if(draft.carry[key]&&!done)taskRows+='<div class="wb-row"><span class="wb-hint">Move deadline to</span><input class="wb-carry-date" type="date" data-wb-carry-date="'+attr(key)+'" value="'+attr(draft.carry[key])+'"></div>';
+        (!done?'<label class="wb-hint"><input type="checkbox" data-wb-carry="'+attr(key)+'" '+(Object.hasOwn(draft.carry,key)?'checked':'')+'> Carry forward</label>':'')+'</div>';
+      if(Object.hasOwn(draft.carry,key)&&!done)taskRows+='<div class="wb-row wb-carry-options"><span class="wb-hint">'+
+        (draft.carry[key]?'Change the deadline':'Schedule '+niceDate(taskSchedule(t)||draft.weekStart)+' · Keep the deadline')+
+        '</span><label>New deadline (optional)<input class="wb-carry-date" aria-label="New deadline for '+attr(t.title)+
+        '" type="date" data-wb-carry-date="'+attr(key)+'" value="'+attr(draft.carry[key])+'"></label></div>';
     }
     let habits='<div class="wb-habit-table"><div class="wb-habit-row"><span></span>';
     for(let i=0;i<7;i++)habits+='<span class="wb-habit-head">'+['M','T','W','T','F','S','S'][i]+'</span>';
@@ -291,7 +362,9 @@
           '<input type="text" maxlength="160" value="'+attr(a.title)+'" data-wb-step-title="'+attr(key)+'" data-wb-step="'+attr(a.id)+'" aria-label="Step '+(i+1)+'">'+
           '<button type="button" data-wb-step-move="'+attr(key)+'" data-wb-step="'+attr(a.id)+'" data-wb-dir="-1" aria-label="Move step up" '+(i===0?'disabled':'')+'>↑</button>'+
           '<button type="button" data-wb-step-move="'+attr(key)+'" data-wb-step="'+attr(a.id)+'" data-wb-dir="1" aria-label="Move step down" '+(i===acts.length-1?'disabled':'')+'>↓</button>'+
-          '<button type="button" data-wb-step-delete="'+attr(key)+'" data-wb-step="'+attr(a.id)+'" aria-label="Remove step">×</button></div>';
+          '<button type="button" data-wb-step-delete="'+attr(key)+'" data-wb-step="'+attr(a.id)+'" aria-label="Remove step">×</button></div>'+
+          (!a.done&&!stepAlreadyTask(g,a)?'<button type="button" class="wb-inline-action wb-step-task" data-wb-step-task="'+attr(key)+
+            '" data-wb-step="'+attr(a.id)+'">+ Make task</button>':'');
       }
       output+='<button type="button" class="wb-add-step goal-step-add" data-wb-step-add="'+attr(key)+'">+ Add Step</button>'+
         (isNew?'<button type="button" class="wb-remove-goal" data-wb-remove-goal="'+attr(key)+'">Remove new goal</button>':'')+'</div></details>';
@@ -359,7 +432,13 @@
       const status=doneTask(t)?'Completed':selected.has(idString(t.id))?'Prioritized':'';
       const action=status?'<span class="wb-chip">'+status+'</span>':
         '<button type="button" class="wb-inline-action" data-wb-add-priority="'+attr(t.id)+'">+ Prioritize</button>';
-      return '<div class="wb-row"><span class="wb-row-main">'+attr(t.title)+'<small>'+deadline(t)+'</small></span>'+action+'</div>';
+      const scheduled=taskSchedule(t);
+      const dates=datesForWeek();
+      if(scheduled&&!dates.includes(scheduled))dates.unshift(scheduled);
+      const picker=doneTask(t)?'':'<label class="wb-schedule-task">On calendar<select aria-label="Schedule '+attr(t.title)+
+        '" data-wb-schedule-task="'+attr(t.id)+'"><option value="">Unscheduled</option>'+
+        dates.map(date=>'<option value="'+date+'" '+(date===scheduled?'selected':'')+'>'+dayName(date)+' '+niceDate(date)+'</option>').join('')+'</select></label>';
+      return '<div class="wb-task-entry"><div class="wb-row"><span class="wb-row-main">'+attr(t.title)+'<small>'+deadline(t)+'</small></span>'+action+'</div>'+picker+'</div>';
     }).join('');
     const form=draft.taskForm;
     const goal=goalFor(form.goalId),area=priorityTaskArea(form.area,goal);
@@ -380,7 +459,6 @@
       '</select></label><button type="submit" class="wb-input-button">+ Add task</button></form></section>';
   }
   function reviewMarkup(){
-    const first=previousWeek();
     const taskChanges=Object.entries(draft.taskDone).filter(([id,val])=>{const t=current(id);return t&&t.done!==val;});
     const habitChanges=[];
     for(const [id,days] of Object.entries(draft.habitDays)){
@@ -389,34 +467,61 @@
     }
     const goalChanges=Object.entries(draft.goals).filter(([id,g])=>{
       const orig=state.goals.find(x=>idString(x.id)===id);
-      return orig&&JSON.stringify(orig)!==JSON.stringify(g);
+      return orig&&goalEdits(id,g,orig).length;
     }).map(([,g])=>g.title+' · '+g.actions.filter(a=>a.done).length+'/'+g.actions.length+' steps');
     const eventChanges=draft.newEvents.map(e=>'+ '+e.title+' · '+niceDate(e.date)+' '+timeText(e.time));
     for(const [id,e] of Object.entries(draft.eventEdits)){
       const old=state.events.find(x=>idString(x.id)===id);
       if(old&&['title','date','time'].some(k=>e[k]!==old[k]))eventChanges.push('Edit '+e.title+' · '+niceDate(e.date)+' '+timeText(e.time));
     }
-    const carry=Object.entries(draft.carry).filter(([id,date])=>current(id)?.dueDate!==date).map(([id,date])=>current(id)?.title+' → '+niceDate(date));
+    const carry=Object.entries(draft.carry).filter(([id,date])=>date&&current(id)?.dueDate!==date)
+      .map(([id,date])=>current(id)?.title+' · Deadline → '+niceDate(date));
+    for(const [id,date] of scheduleChanges()){
+      const task=current(id);
+      if(task&&!doneTask(task)&&(task.scheduledDate||'')!==date)
+        carry.push(task.title+' · '+(date?'On calendar '+niceDate(date):'Removed from calendar'));
+    }
     const priorityRows=draft.priorityTouched?priorityIds().map((id,i)=>{
       const t=allAvailableTasks().find(x=>idString(x.id)===id);
       return t?(i+1)+'. '+t.title:'';
     }).filter(Boolean):[];
+    const newTasks=draft.newTasks.map(t=>{
+      const area=priorityTaskArea(t.area,goalFor(t.goalId));
+      const date=taskSchedule(t);
+      return '+ '+t.title+(t.dueDate?' · Due '+niceDate(t.dueDate):'')+
+        (date?' · On calendar '+niceDate(date):'')+(area?' · '+area:'');
+    });
     const groups=[
-      ['Last week',taskChanges.map(([id,val])=>(val?'✓ ':'○ ')+current(id).title).concat(habitChanges)],
-      ['Goal updates',goalChanges.concat((draft.newGoals||[]).map(g=>'+ '+(clean(g.title)||'Unnamed goal')))],
-      ['Calendar',eventChanges],
-      ['Carry forward',carry],
-      ['New tasks',draft.newTasks.map(t=>{
-        const area=priorityTaskArea(t.area,goalFor(t.goalId));
-        return t.title+' · '+(t.dueDate?niceDate(t.dueDate):'No deadline')+(area?' · '+area:'');
-      })],
-      ['Priority order',priorityRows]
+      ['Goals',1,goalChanges.concat((draft.newGoals||[]).map(g=>'+ '+(clean(g.title)||'Unnamed goal')))],
+      ['Events',2,eventChanges],
+      ['Tasks',3,taskChanges.map(([id,val])=>(val?'✓ ':'○ ')+current(id).title).concat(carry,newTasks)],
+      ['Habits',0,habitChanges]
     ];
+    if(draft.priorityTouched)groups.push(['Priority order',3,priorityRows.length?priorityRows:['Clear the priority order']]);
     let markup='<h3 class="wb-section-heading">Review your weekly blueprint</h3>'+
-      '<p class="wb-subtext">'+dateRange(draft.weekStart)+' · Review everything before applying changes to your actual planner.</p>';
-    for(const [name,items] of groups){
-      markup+='<section class="wb-review-group"><h3>'+attr(name)+' <span class="wb-hint">('+items.length+')</span></h3>'+
-        (items.length?items.map(item=>'<p>'+attr(item)+'</p>').join(''):'<p>Nothing to change.</p>')+'</section>';
+      '<p class="wb-subtext">'+dateRange(draft.weekStart)+' · Changes go into your planner when you apply.</p>';
+    for(const [kind,stage] of unfinishedForms()){
+      markup+='<section class="wb-review-group"><h3>Unfinished '+kind+'</h3>'+
+        '<p>Finish adding it to the draft or discard the entry before applying.</p>'+
+        '<button type="button" class="wb-inline-action" data-wb-stage="'+stage+'">Finish '+kind+'</button>'+
+        '<button type="button" class="wb-inline-action" data-wb-discard-form="'+kind+'">Discard '+kind+' entry</button></section>';
+    }
+    for(const {id,title,field,value,saved} of goalConflicts()){
+      markup+='<section class="wb-review-group"><h3>'+attr(title+' · '+GOAL_FIELDS[field])+'</h3>'+
+        '<p>Saved: '+attr(describeGoalValue(field,saved))+'</p>'+
+        '<p>Draft: '+attr(describeGoalValue(field,value))+'</p>'+
+        '<button type="button" class="wb-inline-action" data-wb-goal-resolve="saved" data-wb-goal-id="'+attr(id)+
+        '" data-wb-field="'+field+'">Keep saved '+GOAL_FIELDS[field].toLowerCase()+'</button>'+
+        '<button type="button" class="wb-inline-action" data-wb-goal-resolve="draft" data-wb-goal-id="'+attr(id)+
+        '" data-wb-field="'+field+'">Use draft '+GOAL_FIELDS[field].toLowerCase()+'</button></section>';
+    }
+    for(const [name,stage,items] of groups){
+      markup+='<section class="wb-review-group"><div class="wb-block-title"><h3>'+attr(name)+
+        ' <span class="wb-hint">('+items.length+')</span></h3><button type="button" class="wb-inline-action" data-wb-stage="'+stage+
+        '" aria-label="Edit '+attr(name.toLowerCase())+'">Edit</button></div>'+
+        (name==='Tasks'&&(taskChanges.length||Object.keys(draft.carry).length)?
+          '<button type="button" class="wb-inline-action" data-wb-stage="0">Edit report tasks</button>':'')+
+        (items.length?items.map(item=>'<p>'+attr(item)+'</p>').join(''):'<p>No changes</p>')+'</section>';
     }
     const conflicts=[];
     const events=effectiveEvents();
@@ -443,19 +548,14 @@
     main.scrollTop=top;
     E('wbBackButton').disabled=draft.step===0;
     E('wbNextButton').textContent=draft.step===4?'Apply Weekly Blueprint':'Continue';
-    E('wbNextButton').disabled=draft.step===4&&!meaningfulChanges();
+    E('wbNextButton').disabled=draft.step===4&&(!meaningfulChanges()||unfinishedForms().length>0||goalConflicts().length>0);
     E('wbStatus').textContent='';
   }
   function editEvent(key){
     const e=effectiveEvents().find(e=>e.wbKey===key);
     if(!e)return;
     if(showEventForm&&draft.editingEvent===key)return;
-    const currentEdit=effectiveEvents().find(item=>item.wbKey===draft.editingEvent);
-    const pending=draft.eventForm||{};
-    const hasUnsaved=currentEdit
-      ? ['title','date','time'].some(field=>String(pending[field]||'')!==String(currentEdit[field]||(field==='time'?'09:00':'')))
-      : !!clean(pending.title);
-    if(showEventForm&&hasUnsaved&&!confirm('Discard the event changes you are editing?'))return;
+    if(showEventForm&&unfinishedEvent()&&!confirm('Discard the event changes you are editing?'))return;
     draft.editingEvent=key;
     showEventForm=true;
     draft.selectedDay=e.date;
@@ -491,8 +591,9 @@
   }
   function apply(){
     if(draftLoadError)return;
-    if(!draft||draft.step!==4||!meaningfulChanges())return;
-    const before={};for(const key of FIELDS)before[key]=clone(state[key]);
+    if(!draft||draft.step!==4||!meaningfulChanges()||unfinishedForms().length||goalConflicts().length)return;
+    const fields=[...FIELDS];
+    const before={};for(const key of fields)before[key]=clone(state[key]);
     const next=clone(before),find=(key,id)=>next[key].find(x=>idString(x.id)===idString(id));
     const fail=message=>{E('wbStatus').textContent=message;return false;};
     try{
@@ -508,14 +609,17 @@
       // Apply goal edits, keeping task and habit links to unchanged step IDs.
       for(const [id,update] of Object.entries(draft.goals)){
         const g=find('goals',id),oldActions=g.actions||[];
-        g.title=clean(update.title).slice(0,160)||g.title;
-        g.category=state.categories.includes(update.category)?update.category:g.category;
-        g.motivation=String(update.motivation||'').slice(0,3000);
-        g.actions=clone(update.actions||[]).filter(a=>clean(a.title)).map(a=>({...a,id:a.id,title:clean(a.title).slice(0,160),done:!!a.done}));
+        const edits=new Map(goalEdits(id,update,g).map(({field,value})=>[field,value]));
+        if(edits.has('title'))g.title=clean(edits.get('title')).slice(0,160)||g.title;
+        if(state.categories.includes(edits.get('category')))g.category=edits.get('category');
+        if(edits.has('motivation'))g.motivation=String(edits.get('motivation')).slice(0,3000);
+        if(!edits.has('actions'))continue;
+        g.actions=clone(edits.get('actions')).filter(a=>clean(a.title))
+          .map(a=>({...a,title:clean(a.title).slice(0,160),done:!!a.done}));
         const retained=new Set(g.actions.map(a=>idString(a.id)));
         for(const t of next.tasks){
           if(idString(t.goalId||'')!==id)continue;
-          const old=oldActions.find(a=>idString(a.id)===idString(t.actionId||''))||oldActions[Number(t.actionIndex)];
+          const old=oldActions.find(a=>idString(a.id)===idString(t.actionId||''))||(t.actionIndex!==''?oldActions[Number(t.actionIndex)]:undefined);
           if(old&&!retained.has(idString(old.id))){t.goalId='';t.actionId='';t.actionIndex='';}
           else if(old){t.actionId=old.id;t.actionIndex=g.actions.findIndex(a=>idString(a.id)===idString(old.id));}
         }
@@ -546,8 +650,17 @@
       }
       for(const [id,date] of Object.entries(draft.carry)){
         const t=find('tasks',id);
-        if(!t||!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Invalid carry-forward task.');
-        if(!t.done){t.dueDate=date;t.date=date;}
+        if(!t||(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date)))throw Error('Invalid carry-forward task.');
+        if(date&&!t.done){t.dueDate=date;t.date=date;}
+      }
+      for(const [id,date] of scheduleChanges()){
+        if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Invalid scheduled task date.');
+        const task=find('tasks',id);
+        if(!task&& !draft.newTasks.some(t=>idString(t.id)===id))throw Error('A scheduled task was removed while this plan was open.');
+        if(task&&!task.done&&date!==(task.scheduledDate||'')){
+          task.scheduledDate=date;
+          task.scheduledTime='';
+        }
       }
       for(const [id,update] of Object.entries(draft.eventEdits)){
         const event=find('events',id);
@@ -562,7 +675,13 @@
       for(const t of draft.newTasks){
         const newId=uid();newTaskIds[idString(t.id)]=idString(newId);
         const goal=find('goals',t.goalId);
-        next.tasks.push({id:newId,title:t.title,dueDate:t.dueDate||'',date:t.dueDate||'',scheduledDate:'',scheduledTime:'',done:false,priority:false,priorityRank:0,goalId:goal?idString(goal.id):'',area:priorityTaskArea(t.area,goal),actionId:'',actionIndex:''});
+        const index=t.actionId?(goal?.actions?.findIndex(a=>idString(a.id)===idString(t.actionId))??-1):-1;
+        const step=index>=0?goal.actions[index]:null;
+        if(step&&next.tasks.some(task=>idString(task.goalId)===idString(goal.id)&&idString(task.actionId)===idString(step.id)))
+          throw Error('A task is already linked to '+step.title+'. Review your goal tasks first.');
+        next.tasks.push({id:newId,title:t.title,dueDate:t.dueDate||'',date:t.dueDate||'',scheduledDate:taskSchedule(t),
+          scheduledTime:'',done:!!step?.done,priority:false,priorityRank:0,goalId:goal?idString(goal.id):'',
+          area:priorityTaskArea(t.area,goal),actionId:step?.id||'',actionIndex:step?index:''});
       }
       if(draft.priorityTouched){
         const order=priorityIds().map(id=>newTaskIds[id]||id);
@@ -573,14 +692,26 @@
           if(t&&!t.done){t.priority=true;t.priorityRank=++count;}
         }
       }
+      // Use the same project completion update as the main task checkbox.
+      for(const task of next.tasks){
+        if(!task.projectId||!task.projectActionId||current(task.id)?.done===task.done)continue;
+        const project=state.projects.find(p=>idString(p.id)===idString(task.projectId));
+        if(!project?.actions.some(a=>idString(a.id)===idString(task.projectActionId)))continue;
+        if(!next.projects){
+          fields.push('projects');
+          before.projects=clone(state.projects);
+          next.projects=clone(before.projects);
+        }
+        v6SyncTaskAction(task,next.projects);
+      }
       // Persist a precise undo snapshot, then commit all affected collections
       // together through the app's verified, existing storage writer.
       const snapshot={version:1,before,after:clone(next),weekStart:draft.weekStart,created:Date.now()};
       try{localStorage.setItem(UNDO_KEY,JSON.stringify(snapshot));}
       catch{throw Error('Not enough space to prepare an undo. Nothing has been applied.');}
-      for(const key of FIELDS)state[key]=next[key];
+      for(const key of fields)state[key]=next[key];
       if(!save(true)){
-        for(const key of FIELDS)state[key]=before[key];
+        for(const key of fields)state[key]=before[key];
         localStorage.removeItem(UNDO_KEY);
         throw Error('Unable to save the plan. Your draft is still available.');
       }
@@ -600,28 +731,45 @@
   function undo(){
     const snapshot=read(UNDO_KEY);
     if(!snapshot||snapshot.version!==1)return;
-    for(const key of FIELDS){
+    const fields=Array.isArray(snapshot.before?.projects)?[...FIELDS,'projects']:FIELDS;
+    for(const key of fields){
       if(JSON.stringify(state[key])!==JSON.stringify(snapshot.after[key])){
         alert('Other planner changes were made after Weekly Blueprint. Undo is unavailable to protect newer edits.');
         return;
       }
     }
     if(!confirm('Undo the last Weekly Blueprint? This restores your previous tasks, goals, habits and events.'))return;
-    const now={};for(const key of FIELDS)now[key]=state[key];
-    for(const key of FIELDS)state[key]=snapshot.before[key];
+    const now={};for(const key of fields)now[key]=state[key];
+    for(const key of fields)state[key]=snapshot.before[key];
     if(!save(true)){
-      for(const key of FIELDS)state[key]=now[key];
+      for(const key of fields)state[key]=now[key];
       alert('Unable to save the undo. Your current planner is unchanged.');
       return;
     }
     localStorage.removeItem(UNDO_KEY);
     render();renderOverview();
   }
+  function refreshLaunchButtons(){
+    const canResume=draft&&(meaningfulChanges()||Object.keys(draft.carry).length||draft.editingEvent||
+      unfinishedForms().length);
+    const label=canResume?'Continue planning':'Design Next Week';
+    const range=canResume?dateRange(draft.weekStart):'';
+    E('wbDraftStatus').textContent=canResume?'Unfinished plan · '+range:'Five short steps · Changes stay in draft until applied';
+    for(const button of document.querySelectorAll('[data-wb-launch],[data-wb-launch-week]')){
+      const text=button.querySelector('[data-wb-launch-label]');
+      if(!text)continue;
+      text.textContent=label;
+      const dates=button.querySelector('[data-wb-launch-dates]');
+      dates.textContent=range;
+      dates.hidden=!range;
+      button.title=range?label+' · '+range:'Design next week';
+      if(button.hasAttribute('aria-label'))button.setAttribute('aria-label',button.title);
+    }
+  }
   function renderOverview(){
     const goals=E('wbOverviewGoals'),upcoming=E('wbOverviewUpcoming'),status=E('wbDraftStatus'),undoRegion=E('wbUndoRegion');
     if(!goals||!upcoming||!status||!undoRegion)return;
-    status.textContent=draft?'Unfinished plan saved · Resume anytime':'Five short steps · Changes stay in draft until applied';
-    E('wbStartButton')?.setAttribute('aria-label',draft?'Resume Weekly Blueprint':'Design Your Week');
+    refreshLaunchButtons();
     goals.innerHTML=state.goals.length?state.goals.slice(0,5).map(g=>{
       const total=(g.actions||[]).length,complete=(g.actions||[]).filter(a=>a.done).length;
       const pct=total?Math.round(complete/total*100):0;
@@ -688,7 +836,10 @@
     const x=e.target;
     if(x.dataset.wbTaskDone){
       draft.taskDone[x.dataset.wbTaskDone]=x.checked;
-      if(x.checked)delete draft.carry[x.dataset.wbTaskDone];
+      if(x.checked){
+        delete draft.carry[x.dataset.wbTaskDone];
+        if(draft.carryToCalendar)delete draft.carryToCalendar[x.dataset.wbTaskDone];
+      }
       storeDraft();renderSheet(false);
     }else if(x.dataset.wbHabit){
       const hid=x.dataset.wbHabit;
@@ -696,10 +847,22 @@
       draft.habitDays[hid][x.dataset.wbDate]=x.checked;
       storeDraft();
     }else if(x.dataset.wbCarry){
-      if(x.checked)draft.carry[x.dataset.wbCarry]=draft.weekStart;else delete draft.carry[x.dataset.wbCarry];
+      const id=x.dataset.wbCarry;
+      const carryToCalendar=draft.carryToCalendar||(draft.carryToCalendar={});
+      if(x.checked){draft.carry[id]='';carryToCalendar[id]=true;}
+      else {delete draft.carry[id];delete carryToCalendar[id];}
       storeDraft();renderSheet(false);
     }else if(x.dataset.wbCarryDate){
       draft.carry[x.dataset.wbCarryDate]=x.value;
+      storeDraft();renderSheet(false);
+    }else if(x.dataset.wbScheduleTask){
+      const id=x.dataset.wbScheduleTask;
+      const task=allAvailableTasks().find(t=>idString(t.id)===id);
+      if(!task||doneTask(task))return;
+      const schedule=draft.taskSchedule||(draft.taskSchedule={});
+      const initial=draft.carryToCalendar?.[id]?draft.weekStart:task.scheduledDate||'';
+      if(x.value===initial)delete schedule[id];
+      else schedule[id]=x.value;
       storeDraft();
     }else if(x.dataset.wbStepCheck){
       const g=editableGoal(x.dataset.wbStepCheck),step=g?.actions.find(a=>idString(a.id)===x.dataset.wbStep);
@@ -721,6 +884,20 @@
     const button=e.target.closest('button');
     if(!button)return;
     if(button.hasAttribute('data-wb-close')){close();return;}
+    if(button.dataset.wbDiscardForm){
+      discardForm(button.dataset.wbDiscardForm);storeDraft();renderSheet(false);return;
+    }
+    if(button.dataset.wbGoalResolve){
+      const id=button.dataset.wbGoalId,field=button.dataset.wbField;
+      const saved=state.goals.find(g=>idString(g.id)===id),update=draft.goals[id];
+      if(!saved||!update||!Object.hasOwn(GOAL_FIELDS,field))return;
+      const bases=draft.goalBases||(draft.goalBases={});
+      const base=bases[id]||(bases[id]={});
+      base[field]=clone(goalValue(saved,field));
+      if(button.dataset.wbGoalResolve==='saved')update[field]=clone(base[field]);
+      storeDraft();renderSheet(false);return;
+    }
+
     if(button.dataset.wbStage!==undefined){setStep(Number(button.dataset.wbStage));return;}
     if(button.hasAttribute('data-wb-back')){setStep(draft.step-1);return;}
     if(button.hasAttribute('data-wb-next')){if(draft.step===4)apply();else setStep(draft.step+1);return;}
@@ -746,7 +923,21 @@
     }
     if(button.dataset.wbEditEvent){editEvent(button.dataset.wbEditEvent);return;}
     if(button.hasAttribute('data-wb-event-cancel')){
-      draft.editingEvent=null;showEventForm=false;draft.eventForm={title:'',date:draft.selectedDay,time:'09:00'};storeDraft();renderSheet(false);return;
+      discardForm('event');storeDraft();renderSheet(false);return;
+    }
+    if(button.dataset.wbStepTask){
+      const g=goalFor(button.dataset.wbStepTask);
+      const step=g?.actions.find(a=>idString(a.id)===button.dataset.wbStep);
+      if(!step||step.done||stepAlreadyTask(g,step))return;
+      if(!clean(step.title)){
+        E('wbStatus').textContent='Give the step a name before making it a task.';
+        return;
+      }
+      draft.newTasks.push({id:'wbt-'+uid(),title:clean(step.title),goalId:idString(g.id),
+        actionId:step.id,area:g.category,scheduledDate:draft.weekStart});
+      storeDraft();renderSheet(false);
+      E('wbStatus').textContent='Task added to the draft for '+niceDate(draft.weekStart)+'.';
+      return;
     }
     if(button.dataset.wbStepAdd){
       const g=editableGoal(button.dataset.wbStepAdd);
@@ -840,5 +1031,5 @@
   const oldRender=render;
   render=function(scope){oldRender(scope);renderOverview();};
   renderOverview();
-  window.BlueprintWeekly={open:()=>open(false),close,getDraft:()=>draft?clone(draft):null,hasDraft:()=>!!draft};
+  window.BlueprintWeekly={open:()=>open(false),close,refreshLaunchButtons,getDraft:()=>draft?clone(draft):null,hasDraft:()=>!!draft};
 })();

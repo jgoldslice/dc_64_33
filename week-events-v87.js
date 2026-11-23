@@ -289,7 +289,7 @@
   dayBack.id='bpDayBack';dayBack.className='v87-event-back bp-day-back';dayBack.hidden=true;
   dayBack.innerHTML='<section class="v87-event-sheet bp-day-sheet" role="dialog" aria-modal="true" aria-labelledby="bpDayTitle">'+
     '<div class="v87-event-heading"><h2 id="bpDayTitle"></h2><button type="button" class="v87-event-close" data-bp-day-close aria-label="Close day">×</button></div>'+
-    '<div id="bpDayContent" class="bp-day-content"></div><button type="button" class="primary-button bp-day-add" data-bp-day-add>+ Add event</button></section>';
+    '<div id="bpDayContent" class="bp-day-content"></div><div class="bp-day-actions"><button type="button" class="secondary-button bp-day-add" data-bp-day-task>+ Add task</button><button type="button" class="primary-button bp-day-add" data-bp-day-add>+ Add event</button></div></section>';
   document.body.append(dayBack);
   const dayTitle=dayBack.querySelector('#bpDayTitle');
   const dayContent=dayBack.querySelector('#bpDayContent');
@@ -334,6 +334,9 @@
     if(e.target===dayBack||e.target.closest('[data-bp-day-close]')){closeDay();return;}
     if(e.target.closest('[data-bp-day-add]')){
       const date=dayDate,trigger=origin();closeDay(false);open(date,true,trigger);return;
+    }
+    if(e.target.closest('[data-bp-day-task]')){
+      closeDay(false);openModal('task',null,null,{scheduledDate:dayDate});return;
     }
     // The delegated app handler opens the existing Task or Event editor.
     if(e.target.closest('[data-bp-jump-task],[data-edit-event]'))closeDay(false);

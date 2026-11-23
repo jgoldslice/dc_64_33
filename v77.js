@@ -6,17 +6,24 @@
   if(!priorityHost||!projectsHost)return;
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const folderIcon='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
-  let completedExpanded=false;
+  let completedExpanded=false,overdueExpanded=false;
   priorityHost.addEventListener('change',e=>{if(e.target.matches('[data-task-check]')&&e.target.checked)completedExpanded=true;});
-  priorityHost.addEventListener('toggle',e=>{if(e.target.matches('.bp-today-completed'))completedExpanded=e.target.open;},true);
+  priorityHost.addEventListener('toggle',e=>{if(e.target.matches('.bp-today-completed'))completedExpanded=e.target.open;if(e.target.matches('.bp-today-overdue'))overdueExpanded=e.target.open;},true);
   function refreshTodayExtras(){
     const top=todayPriorityTasks();
     const rankMap=new Map(ranked().map((t,i)=>[String(t.id),i+1]));
     const previousScroll=priorityHost.scrollTop;
     const unfinished=top.filter(t=>!t.done),completed=top.filter(t=>t.done);
+    const today=localToday();
+    const isBacklog=t=>t.dueDate&&t.dueDate<today&&t.scheduledDate!==today&&!t.priority;
+    const backlog=unfinished.filter(isBacklog);
+    const active=unfinished.filter(t=>!isBacklog(t));
+    const lateRows=backlog.map(t=>taskRow(t,rankMap,true,true)).join('');
+    const overdue=backlog.length>=3?'<details class="bp-today-overdue" '+(overdueExpanded?'open':'')+
+      '><summary>Overdue ('+backlog.length+')</summary>'+lateRows+'</details>':lateRows;
     const doneRows=completed.map(t=>taskRow(t,rankMap,true,true)).join('');
     const finished=completed.length>=3?'<details class="bp-today-completed" '+(completedExpanded?'open':'')+'><summary>Completed ('+completed.length+')</summary>'+doneRows+'</details>':doneRows;
-    priorityHost.innerHTML=top.length?unfinished.map(t=>taskRow(t,rankMap,true,true)).join('')+finished:
+    priorityHost.innerHTML=top.length?active.map(t=>taskRow(t,rankMap,true,true)).join('')+overdue+finished:
       '<p class="muted small">Nothing due or prioritized today.</p><button type="button" class="text-button bp-empty-plan" data-bp-plan-destination="tasks">Open Tasks</button>';
     priorityHost.scrollTop=previousScroll;
     const projects=(state.projects||[]).slice().sort((a,b)=>(Number(b.lastOpenedAt)||0)-(Number(a.lastOpenedAt)||0)).slice(0,4);
