@@ -4,6 +4,7 @@ on:
     paths:
       - .github/workflows/firebase-emulator.yml
       - firebase.json
+      - blueprint-cloud-backup.mjs
       - firestore.rules
       - sync/**
       - tests/firebase-planner.emulator.mjs

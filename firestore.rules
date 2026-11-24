@@ -50,6 +50,17 @@ service cloud.firestore {
           && (collection == 'tasks' ? validTask(row.record) : validEvent(row.record))));
     }
 
+    match /users/{uid}/backups/{backupId} {
+      allow get, list: if owns(uid);
+      allow create: if owns(uid)
+        && request.resource.data.keys().hasOnly(['version', 'archive', 'createdAt'])
+        && request.resource.data.version == 1
+        && request.resource.data.archive is bytes
+        && request.resource.data.archive.size() > 0
+        && request.resource.data.archive.size() <= 768000
+        && request.resource.data.createdAt == request.time;
+    }
+
     match /users/{uid}/{collection}/{docId} {
       allow get, list: if owns(uid) && supported(collection);
       allow create: if owns(uid) && supported(collection)

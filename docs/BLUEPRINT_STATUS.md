@@ -7,6 +7,11 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Google Sign-In and manual cloud backup pilot
+
+- Added Customize → Cloud Backup, Google account sign-in for the web, a native Capacitor bridge source for iPhone/iPad, and account-scoped Firestore writes for immutable backup versions. The existing complete archive builder and guided restore support the same data as local backup up to 750 KiB. Local export remains available for larger archives.
+- The draft ships with a disabled Firebase client configuration. Live Google OAuth, an actual project, installing the bridge in Xcode, and physical-device testing still require setup. See [Firebase pilot development](FIREBASE_SYNC.md#configure-google-sign-in-and-manual-cloud-backup). Two-way sync is still a separate app integration.
+
 ## 2026-11-23 — Firebase planner sync foundation
 
 - Base commit `5590c0510fe3984b3921161afa60dfd6dfdeff48`. Added a task/event reconciliation module, a modular Firebase Firestore adapter, account-scoped rules and a demo-project emulator check. The preview uses existing record IDs, recognizes old task date/link fields, merges independent changes, and surfaces competing edits or delete/edit conflicts. The adapter checks expected cloud revisions and preserves deletions as revisioned markers. These modules are exercised independently of Blueprint's UI.

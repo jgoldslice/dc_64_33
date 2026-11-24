@@ -259,7 +259,7 @@
    }
    return {complete:true,data:source.state,media,drawings:source.version===3?source.drawings:null};
  }
- async function exportCompleteBackup(){
+ async function buildCompleteBackup(){
    if(canvasLoadError)throw Error('Saved planner data could not be loaded; export the untouched original using the recovery warning instead');
    // Snapshot first, so an export consistently refers to one planner version.
    // Keep the v2 format unchanged while avoiding a second giant JSON string
@@ -294,13 +294,16 @@
    // Browser Blob parts can be assembled without concatenating the entire
    // archive and every encoded attachment into a second JS string.
    const archive=new Blob(pieces,{type:'application/json'});
-   pieces.length=0;
+   return {archive, hasDrawings: !!drawings};
+ }
+ async function exportCompleteBackup(){
+   const {archive, hasDrawings}=await buildCompleteBackup();
    const u=URL.createObjectURL(archive);
    const a=document.createElement('a');
    a.href=u;a.download='canvas-complete-'+new Date().toISOString().slice(0,10)+'.json';
    document.body.appendChild(a);a.click();a.remove();
    setTimeout(()=>URL.revokeObjectURL(u),30000);
-   return drawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
+   return hasDrawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
  }
  async function importCompleteBackup(file){
    const source=JSON.parse(await file.text());
@@ -387,5 +390,9 @@
    finally{button.disabled=false;button.removeAttribute('aria-busy');}
  };
  window.v74ImportBackup=importCompleteBackup;
+ window.v74BuildCompleteBackup=async()=>{
+   if(canvasUnsaved||canvasTextSavePending)throw Error('Wait for your edits to save before creating a cloud backup.');
+   return (await buildCompleteBackup()).archive;
+ };
 
 })();

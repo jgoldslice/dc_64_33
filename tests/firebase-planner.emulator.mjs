@@ -8,6 +8,7 @@ import {
 import * as firestore from 'firebase/firestore';
 import {createFirebasePlannerStore, StalePlannerRevision} from '../sync/firebase-planner-store.mjs';
 import {planPlannerSync} from '../sync/planner-sync.mjs';
+import {createCloudBackupStore} from '../blueprint-cloud-backup.mjs';
 
 const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
 const dbHost = process.env.FIRESTORE_EMULATOR_HOST;
@@ -73,6 +74,25 @@ test('two Firebase clients synchronize planner records under one account', async
     assert.equal(saved.record.scheduledTime, '09:00');
     assert.equal(saved.record.done, true);
     assert.deepEqual((await phoneStore.list())[0], saved);
+  });
+
+  await t.test('cloud backup versions are immutable and isolated to the account', async () => {
+    const phoneBackup = createCloudBackupStore(phone);
+    const tabletBackup = createCloudBackupStore(tablet);
+    assert.equal(await tabletBackup.latest(), null);
+    await phoneBackup.save(new Blob(['first']));
+    await phoneBackup.save(new Blob(['second']));
+    assert.equal(await (await tabletBackup.latest()).archive.text(), 'second');
+    await assert.rejects(phoneBackup.save(new Blob([new Uint8Array(768001)])), /cloud limit/);
+    const backups = db => firestore.collection(db, 'users', uid, 'backups');
+    await assert.rejects(firestore.getDocsFromServer(backups(stranger.db)), permissionDenied);
+    await assert.rejects(firestore.addDoc(backups(stranger.db), {
+      version: 1, archive: firestore.Bytes.fromUint8Array(new Uint8Array([1])),
+      createdAt: firestore.serverTimestamp(),
+    }), permissionDenied);
+    const snapshots = await firestore.getDocsFromServer(backups(phone.db));
+    assert.equal(snapshots.size, 2);
+    await assert.rejects(firestore.deleteDoc(snapshots.docs[0].ref), permissionDenied);
   });
 
   await t.test('rules enforce account boundaries, schema, revisions and deletion markers', async () => {
