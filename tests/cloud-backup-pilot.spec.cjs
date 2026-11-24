@@ -1,6 +1,7 @@
 const {test, expect} = require('@playwright/test');
 
 async function openCloud(page) {
+  await page.setViewportSize({width: 390, height: 844});
   await page.goto('/');
   await page.locator('#paletteLauncher').click();
   const cloud = page.locator('#blueprint-cloud-backup');
