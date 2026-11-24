@@ -10,6 +10,7 @@
 ## 2026-11-23 — Google Sign-In and manual cloud backup pilot
 
 - Added Customize → Cloud Backup, Google account sign-in for the web, a native Capacitor bridge source for iPhone/iPad, and account-scoped Firestore writes for immutable backup versions. The existing complete archive builder and guided restore support the same data as local backup up to 750 KiB. Local export remains available for larger archives.
+- Verified `de4ae65d137f102af302d6b3e277e40a03caa66a` with [407 browser tests and 40 Node tests](https://github.com/jgoldslice/dc_64_33/actions/runs/45302529116), plus [five Firebase emulator tests](https://github.com/jgoldslice/dc_64_33/actions/runs/45302528995). Browser coverage uses a mocked signed-in session and exercises backup creation and the restore confirmation. The native Swift bridge passed a local syntax parse. A signed Xcode build and live OAuth are pending.
 - The draft ships with a disabled Firebase client configuration. Live Google OAuth, an actual project, installing the bridge in Xcode, and physical-device testing still require setup. See [Firebase pilot development](FIREBASE_SYNC.md#configure-google-sign-in-and-manual-cloud-backup). Two-way sync is still a separate app integration.
 
 ## 2026-11-23 — Firebase planner sync foundation
