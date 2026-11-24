@@ -7,6 +7,12 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-23 — Firebase planner sync foundation
+
+- Base commit `5590c0510fe3984b3921161afa60dfd6dfdeff48`. Added a task/event reconciliation module, a modular Firebase Firestore adapter, account-scoped rules and a demo-project emulator check. The preview uses existing record IDs, recognizes old task date/link fields, merges independent changes, and surfaces competing edits or delete/edit conflicts. The adapter checks expected cloud revisions and preserves deletions as revisioned markers. These modules are exercised independently of Blueprint's UI.
+- Local verification covers the reconciliation model. The separate Firebase workflow signs two clients into one test account and checks stale writes, permission failures and deletion against Auth and Firestore emulators. See [Firebase pilot development](FIREBASE_SYNC.md) for the test commands and rollout boundaries.
+- The app still uses its existing local save and backup paths. The next app slice is an opt-in sign-in and preview screen with a per-account durable baseline, a recoverable apply path, and Xcode testing on the iPhone and iPad. No production Firebase project, rules deployment, local planner migration or Xcode update is part of this foundation.
+
 ## 2026-11-23 — Compact task rows
 
 - [PR #102](https://github.com/jgoldslice/dc_64_33/pull/102), layout commit `e5d5380fe531d4f49ff144e3902030e67444363b`: Plan uses inline controls and the title opens Edit at phone widths. Due and scheduled captions wrap as needed. Today and Week checkoff lists use consistent title alignment and lighter dividers. The change affects presentation and leaves task data in its existing format.

@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owns(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function supported(collection) {
+      return collection == 'tasks' || collection == 'events';
+    }
+
+    function text(value, limit) {
+      return value is string && value.size() <= limit;
+    }
+
+    function validEvent(record) {
+      return record.keys().hasOnly(['id', 'title', 'date', 'time'])
+        && text(record.date, 32) && text(record.time, 32);
+    }
+
+    function validTask(record) {
+      return record.keys().hasOnly([
+          'id', 'title', 'date', 'dueDate', 'scheduledDate', 'scheduledTime',
+          'done', 'priority', 'priorityRank', 'area', 'projectId', 'projectActionId',
+          'goalId', 'actionId', 'actionIndex', 'ideaId', 'ideaActionId'
+        ])
+        && text(record.dueDate, 32) && record.date == record.dueDate
+        && text(record.scheduledDate, 32) && text(record.scheduledTime, 32)
+        && (record.scheduledDate != '' || record.scheduledTime == '')
+        && record.done is bool && record.priority is bool
+        && record.priorityRank is int && record.priorityRank >= 0
+        && record.priorityRank <= 9007199254740991
+        && (record.priority || record.priorityRank == 0)
+        && text(record.area, 512)
+        && text(record.projectId, 512) && text(record.projectActionId, 512)
+        && text(record.goalId, 512) && text(record.actionId, 512)
+        && (record.actionIndex == '' || (record.actionIndex is int
+          && record.actionIndex >= 0 && record.actionIndex <= 9007199254740991))
+        && text(record.ideaId, 512) && text(record.ideaActionId, 512);
+    }
+
+    function validRow(collection, docId) {
+      let row = request.resource.data;
+      return row.keys().hasOnly(['id', 'revision', 'record', 'updatedAt'])
+        && text(row.id, 128) && row.id.size() > 0 && docId == 'r-' + row.id
+        && row.revision is int && row.revision > 0 && row.revision <= 9007199254740991
+        && row.updatedAt == request.time
+        && (row.record == null || (row.record is map && row.record.id == row.id
+          && text(row.record.title, 4096) && row.record.title.size() > 0
+          && (collection == 'tasks' ? validTask(row.record) : validEvent(row.record))));
+    }
+
+    match /users/{uid}/{collection}/{docId} {
+      allow get, list: if owns(uid) && supported(collection);
+      allow create: if owns(uid) && supported(collection)
+        && validRow(collection, docId) && request.resource.data.revision == 1
+        && request.resource.data.record != null;
+      allow update: if owns(uid) && supported(collection)
+        && validRow(collection, docId)
+        && request.resource.data.revision == resource.data.revision + 1;
+    }
+  }
+}
