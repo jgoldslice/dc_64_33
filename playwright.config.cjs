@@ -1,6 +1,7 @@
 const { defineConfig } = require('@playwright/test');
 module.exports = defineConfig({
   testDir: './tests',
+  testMatch: '**/*.spec.cjs', // Standalone Node tests run separately in CI.
   timeout: 30000,
   use: { baseURL: 'http://127.0.0.1:8765/', headless: true },
   webServer: {

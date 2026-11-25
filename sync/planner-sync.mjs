@@ -50,7 +50,7 @@ export function projectPlannerRecord(collection, source) {
   }
 
   const dueDate = boundedText(source.dueDate ?? source.date, 'dueDate', 32);
-  const scheduledDate = boundedText(source.scheduledDate ?? source.date, 'scheduledDate', 32);
+  const scheduledDate = boundedText(source.scheduledDate, 'scheduledDate', 32);
   const priority = !!source.priority;
   const rank = Number(source.priorityRank);
   const index = source.actionIndex == null || source.actionIndex === '' ? '' : Number(source.actionIndex);

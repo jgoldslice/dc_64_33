@@ -6,6 +6,7 @@ on:
       - firebase.json
       - blueprint-cloud-backup.mjs
       - firestore.rules
+      - storage.rules
       - sync/**
       - tests/firebase-planner.emulator.mjs
 permissions:
@@ -26,4 +27,4 @@ jobs:
       - name: Install Firebase emulator and SDK
         run: npm install --no-save --package-lock=false --no-audit --no-fund firebase@12.10.0 firebase-tools@15
       - name: Exercise Auth and Firestore with a demo project
-        run: npx --no-install firebase emulators:exec --project demo-blueprint-sync --only auth,firestore "node --test tests/firebase-planner.emulator.mjs"
+        run: npx --no-install firebase emulators:exec --project demo-blueprint-sync --only auth,firestore,storage "node --test tests/firebase-planner.emulator.mjs"

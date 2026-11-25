@@ -21,7 +21,7 @@ jobs:
         run: npm install --no-save --no-audit --no-fund @playwright/test@1.56.1
       - name: Verify JavaScript syntax
         run: |
-          for file in *.js tests/*.spec.cjs; do
+          for file in *.js *.mjs sync/*.mjs tests/*.spec.cjs; do
             node --check "$file"
           done
       - name: Run standalone Node regression tests (native archive and Notes logic)

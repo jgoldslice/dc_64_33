@@ -1,11 +1,21 @@
 # Blueprint — Development Status
 
-**Last documentation update:** 2026-11-23
+**Last documentation update:** 2026-11-25
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
 **Verification scope:** Fetched root README and index.html; checked that AGENTS.md and this status file were absent; inspected recent commit identifiers. This is **not** a full source-code audit, automated test run, or iOS device test.
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
+
+## 2026-11-25 — Account-safe manual Firebase backup and staged Storage archives (draft)
+
+- Isolated branch `feature/firebase-safety-storage`, based on draft #103 head `ce30241ae461a6a34814521dbb5df0b7aa13c604`; verified main `5590c0510fe3984b3921161afa60dfd6dfdeff48`. Original #103 browser and emulator CI were successful (runs `45302972087` and `45302972051`). This branch includes #103 and leaves its branch untouched.
+- `blueprint-cloud-backup.mjs` now restores authentication on startup, tries persistent storage with a disclosed memory fallback, binds backup confirmation to the original account, and passes an account guard through the importer. `v74.js` checks it after validation/confirmation and immediately before the synchronous local commit. Account changes during asynchronous staging abort the restore and keep the saved planner intact.
+- Large complete archives (750 KiB–100 MiB) use create-only owner-scoped Storage objects and immutable v2 Firestore manifests with exact path, byte count and SHA-256. Smaller v1 cloud backups and existing local complete archives stay compatible. This stores the existing full archive, including attachments and native drawings, without a new local format or migration. `storage.rules`, updated Firestore rules, Storage emulator configuration, regression tests and setup/rollback instructions are included. The UI continues to restore the newest version only.
+- Sync projection now treats legacy task `date` as a deadline only; explicit `scheduledDate`/time remain independent. No existing local/cloud records are automatically rewritten. Service-worker asset cache is advanced for the paired importer/controller update; localStorage and IndexedDB identifiers remain unchanged.
+- Actual local checks: **47 Node tests passed**, JavaScript/module syntax and diff checks passed, **16 targeted Chromium tests passed** with `--workers=1` across cloud, complete backup and large-media specs. Covered corrupt paths/size/hash, interrupted publication, account switches during confirmation/staging, legacy restore, and a large v3 archive with attachment bytes and simulated native drawing staging. Earlier parallel local runs had intermittent test-server socket/loading failures; the serial targeted run passed. Full browser suite and new emulator CI results will be recorded after completion. Local emulator execution is blocked by no Java runtime; no system Java installation was attempted.
+- Browser discovery now selects `*.spec.cjs`; standalone `*.test.cjs` remain separately executed by Node in CI. Syntax CI includes `.mjs` modules. The new cloud unit suite uses ESM features incompatible with Playwright treating it as a browser spec.
+- **Not deployed or device verified.** Firebase config remains disabled (`null`). No live project, paid service, rules deployment, native wrapper, installed app, or personal planner data was touched. Cloud backup remains manual; automatic two-way sync, background writes, baselines/apply journaling, historical-version selection and retention/orphan cleanup remain future work. Live bucket CORS, Google OAuth, WebView persistence and physical iPhone/iPad drawing recovery must be checked separately. See [Firebase development notes](FIREBASE_SYNC.md#staged-storage-pilot-and-account-safety-2026-11-25).
 
 ## 2026-11-23 — Google Sign-In and manual cloud backup pilot
 

@@ -1,26 +1,52 @@
 const sdkBase = 'https://www.gstatic.com/firebasejs/12.10.0/';
 const maxBackupBytes = 750 * 1024;
 
-export function createCloudBackupStore({auth, db, firestore}) {
-  const uid = auth.currentUser?.uid;
+export const maxArchiveBytes = 100 * 1024 * 1024;
+
+async function checksum(archive) {
+  const hash = await crypto.subtle.digest('SHA-256', await archive.arrayBuffer());
+  return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+export function createCloudBackupStore({auth, db, firestore, storage, storageApi}) {
+  const account = auth.currentUser;
+  const uid = account?.uid;
   function assertAccount() {
-    if (!uid || auth.currentUser?.uid !== uid) throw new Error('Sign in again to use cloud backups.');
+    // Object identity also invalidates an operation after sign-out/sign-in to the same UID.
+    if (!uid || auth.currentUser !== account) throw new Error('Sign in again to use cloud backups.');
   }
   function backups() {
     assertAccount();
     return firestore.collection(db, 'users', uid, 'backups');
   }
   async function save(archive) {
-    if (!(archive instanceof Blob) || archive.size === 0 || archive.size > maxBackupBytes) {
-      throw new Error('This backup exceeds the 750 KiB cloud limit. Use Export backup to keep the complete file.');
-    }
-    const target = backups();
-    const bytes = new Uint8Array(await archive.arrayBuffer());
     assertAccount();
-    await firestore.addDoc(target, {
-      version: 1, archive: firestore.Bytes.fromUint8Array(bytes),
-      createdAt: firestore.serverTimestamp(),
-    });
+    if (!(archive instanceof Blob) || archive.size === 0 || archive.size > maxArchiveBytes) {
+      throw new Error('Invalid cloud backup size (maximum 100 MiB). Use Export backup.');
+    }
+    if (archive.size <= maxBackupBytes) {
+      const bytes = new Uint8Array(await archive.arrayBuffer());
+      assertAccount();
+      await firestore.addDoc(backups(), {
+        version: 1, archive: firestore.Bytes.fromUint8Array(bytes),
+        createdAt: firestore.serverTimestamp(),
+      });
+    } else {
+      if (!storage || !storageApi) {
+        throw new Error('This backup exceeds the 750 KiB cloud limit. Configure Storage or use Export backup.');
+      }
+      const target = firestore.doc(backups());
+      const path = `users/${uid}/backups/${target.id}/archive.json`;
+      const sha256 = await checksum(archive);
+      assertAccount();
+      await storageApi.uploadBytes(storageApi.ref(storage, path), archive, {contentType: 'application/json'});
+      assertAccount();
+      // Publish only after upload succeeds. A failed publication leaves an inert orphan;
+      // never delete or overwrite objects on an ambiguous network result.
+      await firestore.setDoc(target, {
+        version: 2, path, size: archive.size, sha256, createdAt: firestore.serverTimestamp(),
+      });
+    }
     assertAccount();
   }
   async function latest() {
@@ -28,18 +54,47 @@ export function createCloudBackupStore({auth, db, firestore}) {
     const snapshot = await firestore.getDocsFromServer(query);
     assertAccount();
     if (snapshot.empty) return null;
-    const data = snapshot.docs[0].data();
-    if (data.version !== 1 || !(data.archive instanceof firestore.Bytes)) {
+    const document = snapshot.docs[0];
+    const data = document.data();
+    let archive;
+    if (data.version === 1 && data.archive instanceof firestore.Bytes) {
+      const bytes = data.archive.toUint8Array();
+      if (!bytes.length || bytes.length > maxBackupBytes) throw new Error('Invalid cloud backup size.');
+      archive = new Blob([bytes], {type: 'application/json'});
+    } else if (data.version === 2) {
+      const path = `users/${uid}/backups/${document.id}/archive.json`;
+      if (data.path !== path || !Number.isSafeInteger(data.size) || data.size <= 0 ||
+          data.size > maxArchiveBytes || !/^[a-f0-9]{64}$/.test(data.sha256)) {
+        throw new Error('Invalid cloud backup manifest.');
+      }
+      if (!storage || !storageApi) throw new Error('Configure Storage to restore this cloud backup.');
+      archive = await storageApi.getBlob(storageApi.ref(storage, path), data.size);
+      assertAccount();
+      if (archive.size !== data.size || await checksum(archive) !== data.sha256) {
+        throw new Error('Cloud backup integrity check failed.');
+      }
+    } else {
       throw new Error('This cloud backup format could not be read.');
     }
-    const bytes = data.archive.toUint8Array();
-    if (!bytes.length || bytes.length > maxBackupBytes) throw new Error('Invalid cloud backup size.');
-    return {
-      archive: new Blob([bytes], {type: 'application/json'}),
-      date: data.createdAt?.toDate(),
-    };
+    assertAccount();
+    return {archive, date: data.createdAt?.toDate()};
   }
-  return {save, latest};
+  return {save, latest, assertAccount};
+}
+
+export async function configurePersistence(auth, authApi) {
+  try {
+    await authApi.setPersistence(auth, authApi.indexedDBLocalPersistence);
+    return true;
+  } catch {
+    try {
+      await authApi.setPersistence(auth, authApi.browserLocalPersistence);
+      return true;
+    } catch {
+      await authApi.setPersistence(auth, authApi.inMemoryPersistence);
+      return false;
+    }
+  }
 }
 
 async function connect() {
@@ -56,7 +111,12 @@ async function connect() {
   ]);
   const app = appApi.getApps().find(candidate => candidate.name === 'blueprint-cloud')
     ?? appApi.initializeApp(config, 'blueprint-cloud');
-  return {authApi, firestore, auth: authApi.getAuth(app), db: firestore.getFirestore(app)};
+  const auth = authApi.getAuth(app);
+  await auth.authStateReady();
+  const persistent = await configurePersistence(auth, authApi);
+  const storageApi = config.storageBucket ? await import(sdkBase + 'firebase-storage.js') : null;
+  return {authApi, firestore, auth, persistent, db: firestore.getFirestore(app),
+    storageApi, storage: storageApi?.getStorage(app)};
 }
 
 function install(card) {
@@ -67,6 +127,7 @@ function install(card) {
   const restore = card.querySelector('[data-cloud-restore]');
   const buttons = [signIn, signOut, save, restore];
   let client;
+  let connecting;
   let busy = false;
 
   function render() {
@@ -94,19 +155,30 @@ function install(card) {
     };
   }
 
+  function accountStatus() {
+    const account = client.auth.currentUser;
+    return account ? 'Signed in as ' + (account.email || 'Google account') +
+      (client.persistent ? '' : ' · Session only; sign in again after closing Blueprint.') : 'Signed out.';
+  }
+
+  async function initialize() {
+    if (!connecting) connecting = (async () => {
+      client = await connect();
+      client.authApi.onAuthStateChanged(client.auth, () => {
+        render();
+        if (!busy) status.textContent = accountStatus();
+      });
+      render();
+    })().catch(error => {connecting = null; throw error;});
+    return connecting;
+  }
+
   signIn.addEventListener('click', run(async () => {
     const native = globalThis.Capacitor?.isNativePlatform?.();
     if (native && !globalThis.Capacitor?.isPluginAvailable?.('BlueprintGoogleSignIn')) {
       throw new Error('This iOS build needs the Blueprint Google Sign-In bridge.');
     }
-    if (!client) {
-      client = await connect();
-      client.authApi.onAuthStateChanged(client.auth, user => {
-        render();
-        if (!busy) status.textContent = user ? 'Signed in as ' + (user.email || 'Google account') : 'Signed out.';
-      });
-      await client.auth.authStateReady();
-    }
+    await initialize();
     const {auth, authApi} = client;
     if (!auth.currentUser && !native && globalThis.navigator.userActivation?.isActive === false) {
       status.textContent = 'Google sign-in is ready. Tap Continue with Google.';
@@ -120,7 +192,7 @@ function install(card) {
       provider.setCustomParameters({prompt: 'select_account'});
       await authApi.signInWithPopup(auth, provider);
     }
-    status.textContent = 'Signed in as ' + (auth.currentUser.email || 'Google account');
+    status.textContent = accountStatus();
   }, 'Google sign-in did not complete. Check your connection and try again.'));
 
   signOut.addEventListener('click', run(async () => {
@@ -132,27 +204,32 @@ function install(card) {
   }, 'Could not finish signing out.'));
 
   save.addEventListener('click', run(async () => {
+    const store = createCloudBackupStore(client);
+    store.assertAccount();
     if (!await globalThis.BlueprintSheet.confirm('Save a complete copy of this device’s Blueprint data to your Google account?')) {
       status.textContent = 'Cloud backup canceled.';
       return;
     }
-    const store = createCloudBackupStore(client);
     await store.save(await globalThis.v74BuildCompleteBackup());
     status.textContent = 'Cloud backup saved.';
   }, 'Could not save the cloud backup. Check your connection and try again.'));
 
   restore.addEventListener('click', run(async () => {
-    const backup = await createCloudBackupStore(client).latest();
+    const store = createCloudBackupStore(client);
+    const backup = await store.latest();
     if (!backup) {
       status.textContent = 'This account has no cloud backup yet.';
       return;
     }
     const date = backup.date?.toLocaleString();
     status.textContent = date ? 'Latest cloud backup from ' + date : 'Latest cloud backup ready.';
-    await globalThis.v74ImportBackup(backup.archive);
+    await globalThis.v74ImportBackup(backup.archive, {assertCanCommit: store.assertAccount});
   }, 'Could not open the cloud backup. Check your connection and try again.'));
 
   render();
+  // Restore an existing session without a popup or a cloud data write.
+  run(async () => {await initialize(); status.textContent = accountStatus();},
+    'Cloud sign-in is unavailable. Local backups remain available.')();
 }
 
 const card = globalThis.document?.getElementById('blueprint-cloud-backup');

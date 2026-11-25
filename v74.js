@@ -305,14 +305,17 @@
    setTimeout(()=>URL.revokeObjectURL(u),30000);
    return hasDrawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
  }
- async function importCompleteBackup(file){
+ async function importCompleteBackup(file,{assertCanCommit=()=>{}}={}){
+   assertCanCommit();
    const source=JSON.parse(await file.text());
    const inspected=await inspectBackup(source);
+   assertCanCommit();
    if(canvasUnsaved)throw Error('Some current edits have not been saved. Export your current work before importing');
    if(!inspected.complete &&
      !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return;
    if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return;
 
+   assertCanCommit();
    const originalState=state,created=[];
    let attemptedCommit=false,previousManifest,next;
    try{
@@ -345,6 +348,8 @@
        created.push(key);
      }
      if(canvasUnsaved)throw Error('Save your current edits before importing');
+     // No await between the account check and the synchronous guarded save.
+     assertCanCommit();
      previousManifest=canvasLastManifest;
      attemptedCommit=true;
      state=next;

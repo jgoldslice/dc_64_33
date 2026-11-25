@@ -24,7 +24,7 @@ test('initial preview proposes seeding the saved task and event by their existin
   assert.deepEqual(plan.conflicts, []);
   assert.deepEqual(local, {tasks: [task], events: [event]});
   assert.equal(plan.uploads[0].record.dueDate, task.date);
-  assert.equal(plan.uploads[0].record.scheduledDate, task.date);
+  assert.equal(plan.uploads[0].record.scheduledDate, '');
 });
 
 test('second-device preview preserves distinct local and cloud records', () => {
@@ -129,4 +129,17 @@ test('rejects incomplete snapshots, duplicate IDs and invalid identities before 
     /record ID/);
   const mismatched = {...head('tasks', task), id: 'something-else'};
   assert.throws(() => planPlannerSync({planner: planner(), remote: [mismatched]}), /envelope/);
+});
+
+test('legacy deadlines never become appointments and explicit scheduling survives projection', () => {
+  for (const scheduledDate of [undefined, null, '']) {
+    const projected = projectPlannerRecord('tasks', {...task, scheduledDate, scheduledTime: '10:00'});
+    assert.equal(projected.dueDate, task.date);
+    assert.equal(projected.scheduledDate, '');
+    assert.equal(projected.scheduledTime, '');
+  }
+  const explicit = projectPlannerRecord('tasks', {...task, dueDate: '', scheduledDate: '2026-11-30', scheduledTime: '11:00'});
+  assert.equal(explicit.dueDate, '');
+  assert.equal(explicit.scheduledDate, '2026-11-30');
+  assert.equal(explicit.scheduledTime, '11:00');
 });

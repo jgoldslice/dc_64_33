@@ -6,24 +6,32 @@ import {
   connectAuthEmulator, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signOut,
 } from 'firebase/auth';
 import * as firestore from 'firebase/firestore';
+import * as storageApi from 'firebase/storage';
 import {createFirebasePlannerStore, StalePlannerRevision} from '../sync/firebase-planner-store.mjs';
 import {planPlannerSync} from '../sync/planner-sync.mjs';
 import {createCloudBackupStore} from '../blueprint-cloud-backup.mjs';
 
 const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
 const dbHost = process.env.FIRESTORE_EMULATOR_HOST;
+if (process.env.FIREBASE_STORAGE_EMULATOR_HOST !== '127.0.0.1:9199') {
+  throw new Error('Start the Blueprint Storage emulator before running this test.');
+}
 if (authHost !== '127.0.0.1:9099' || dbHost !== '127.0.0.1:8080') {
   throw new Error('Start the Blueprint Auth and Firestore emulators before running this test.');
 }
 
 function client(t) {
-  const app = initializeApp({projectId: 'demo-blueprint-sync', apiKey: 'demo-key'}, randomUUID());
+  const app = initializeApp({projectId: 'demo-blueprint-sync', apiKey: 'demo-key', storageBucket: 'demo-blueprint-sync.appspot.com'}, randomUUID());
   t.after(() => deleteApp(app));
   const auth = getAuth(app);
   connectAuthEmulator(auth, 'http://' + authHost, {disableWarnings: true});
   const db = firestore.getFirestore(app);
   firestore.connectFirestoreEmulator(db, '127.0.0.1', 8080);
-  return {auth, db, firestore};
+  const storage = storageApi.getStorage(app);
+  storageApi.connectStorageEmulator(storage, '127.0.0.1', 9199);
+  // getBlob is browser-only; exercise the same authenticated download with Node getBytes.
+  return {auth, db, firestore, storage, storageApi: {...storageApi,
+    getBlob: async (ref, max) => new Blob([await storageApi.getBytes(ref, max)])}};
 }
 
 const task = {id: 42, title: 'Draft report', done: false};
@@ -77,7 +85,7 @@ test('two Firebase clients synchronize planner records under one account', async
   });
 
   await t.test('cloud backup versions are immutable and isolated to the account', async () => {
-    const phoneBackup = createCloudBackupStore(phone);
+    const phoneBackup = createCloudBackupStore({...phone, storage: null});
     const tabletBackup = createCloudBackupStore(tablet);
     assert.equal(await tabletBackup.latest(), null);
     await phoneBackup.save(new Blob(['first']));
@@ -115,4 +123,44 @@ test('two Firebase clients synchronize planner records under one account', async
     await signOut(tablet.auth);
     await assert.rejects(tabletStore.list(), /same Blueprint account/);
   });
+});
+
+
+test('Storage versions round trip across clients with private immutable objects and validated manifests', async t => {
+  const owner = client(t), receiver = client(t), stranger = client(t), signedOut = client(t);
+  const email = randomUUID() + '@example.test';
+  await createUserWithEmailAndPassword(owner.auth, email, password);
+  await signInWithEmailAndPassword(receiver.auth, email, password);
+  await createUserWithEmailAndPassword(stranger.auth, randomUUID() + '@example.test', password);
+  const uid = owner.auth.currentUser.uid;
+  const source = new Blob(['large drawing archive:'.repeat(50000)], {type: 'application/json'});
+  const store = createCloudBackupStore(owner);
+  await store.save(source);
+  const restored = await createCloudBackupStore(receiver).latest();
+  assert.equal(await restored.archive.text(), await source.text());
+  const rows = await firestore.getDocsFromServer(firestore.collection(owner.db, 'users', uid, 'backups'));
+  const row = rows.docs[0];
+  const manifest = row.data();
+  assert.equal(manifest.version, 2);
+  const ref = c => storageApi.ref(c.storage, manifest.path);
+  const denied = {code: 'storage/unauthorized'};
+  await assert.rejects(storageApi.getBytes(ref(stranger)), denied);
+  await assert.rejects(storageApi.getBytes(ref(signedOut)), denied);
+  await assert.rejects(storageApi.uploadBytes(ref(stranger), new Uint8Array([1]), {contentType: 'application/json'}), denied);
+  await assert.rejects(storageApi.uploadBytes(ref(owner), new Uint8Array([1]), {contentType: 'application/json'}), denied);
+  await assert.rejects(storageApi.deleteObject(ref(owner)), denied);
+  const badRef = storageApi.ref(owner.storage, `users/${uid}/backups/bad/archive.json`);
+  await assert.rejects(storageApi.uploadBytes(badRef, new Uint8Array([1]), {contentType: 'text/plain'}), denied);
+  const data = {...manifest, createdAt: firestore.serverTimestamp()};
+  await assert.rejects(firestore.setDoc(row.ref, data), permissionDenied);
+  for (const invalid of [{path: 'users/other/backups/x/archive.json'}, {size: 104857601}, {sha256: 'bad'}]) {
+    await assert.rejects(firestore.addDoc(firestore.collection(owner.db, 'users', uid, 'backups'),
+      {...data, ...invalid}), permissionDenied);
+  }
+  // A structurally valid but incorrect digest must fail before the archive reaches local import.
+  const corruptRef = firestore.doc(firestore.collection(owner.db, 'users', uid, 'backups'));
+  const path = `users/${uid}/backups/${corruptRef.id}/archive.json`;
+  await storageApi.uploadBytes(storageApi.ref(owner.storage, path), new Uint8Array([1]), {contentType: 'application/json'});
+  await firestore.setDoc(corruptRef, {version: 2, path, size: 1, sha256: '0'.repeat(64), createdAt: firestore.serverTimestamp()});
+  await assert.rejects(createCloudBackupStore(receiver).latest(), /integrity check failed/);
 });
