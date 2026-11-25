@@ -154,8 +154,9 @@ test('Storage versions round trip across clients with private immutable objects 
   const data = {...manifest, createdAt: firestore.serverTimestamp()};
   await assert.rejects(firestore.setDoc(row.ref, data), permissionDenied);
   for (const invalid of [{path: 'users/other/backups/x/archive.json'}, {size: 104857601}, {sha256: 'bad'}]) {
-    await assert.rejects(firestore.addDoc(firestore.collection(owner.db, 'users', uid, 'backups'),
-      {...data, ...invalid}), permissionDenied);
+    const candidate = firestore.doc(firestore.collection(owner.db, 'users', uid, 'backups'));
+    await assert.rejects(firestore.setDoc(candidate,
+      {...data, path: `users/${uid}/backups/${candidate.id}/archive.json`, ...invalid}), permissionDenied);
   }
   // A structurally valid but incorrect digest must fail before the archive reaches local import.
   const corruptRef = firestore.doc(firestore.collection(owner.db, 'users', uid, 'backups'));
