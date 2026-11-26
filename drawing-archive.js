@@ -102,19 +102,21 @@ window.BlueprintDrawingArchive = (() => {
         throw Error('Invalid preserved iPad handwriting encoding');
     }
   }
-  async function stage(state, entries, {storeBrowserInk} = {}) {
+  async function stage(state, entries, {storeBrowserInk, reusePage} = {}) {
     const preserveOnWeb = !native?.isNativePlatform?.() && typeof storeBrowserInk === 'function';
     // The candidate planner is private until the existing restore commits.
     // Remap empty pages too, so they cannot inherit unrelated local ink.
     for (const [i, {projectId, pageId, project, page}] of pages(state).entries()) {
       const base64 = entries[i].base64;
-      const fresh = base64 === null || preserveOnWeb ? crypto.randomUUID() :
+      const reused = reusePage?.(projectId, pageId, entries[i]);
+      const fresh = reused ? reused.id : base64 === null || preserveOnWeb ? crypto.randomUUID() :
         (await invoke('stageDrawing', {projectId, base64})).pageId;
-      if (preserveOnWeb && base64 !== null) {
+      if (reused?.blueprintBrowserInk) page.blueprintBrowserInk = structuredClone(reused.blueprintBrowserInk);
+      if (!reused && preserveOnWeb && base64 !== null) {
         if (!validBase64(base64)) throw Error('Invalid preserved iPad handwriting encoding');
         page.blueprintBrowserInk = await storeBrowserInk(base64,entries[i].preview);
       }
-      if (typeof fresh !== 'string' || !fresh || project.notePages.some(p => String(p.id) === fresh))
+      if (typeof fresh !== 'string' || !fresh || project.notePages.some(p => p !== page && String(p.id) === fresh))
         throw Error('Could not stage native drawing');
       if (String(project.activeNotePageId) === pageId) project.activeNotePageId = fresh;
       page.id = fresh;

@@ -342,7 +342,14 @@
    setTimeout(()=>URL.revokeObjectURL(u),30000);
    return hasDrawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
  }
- async function importCompleteBackup(file, assertSourceAccount = () => {}){
+ async function importCompleteBackup(file, assertSourceAccount = () => {}, options = {}){
+   const syncing=options.sync===true;
+   if(!syncing)window.dispatchEvent(new Event('blueprint:before-import'));
+   if(syncing){
+     if(typeof options.guard!=='function'||options.expectedManifest!==canvasLastManifest)
+       throw Error('The local planner changed before sync.');
+     options.guard();
+   }
    assertSourceAccount();
    const source=JSON.parse(await file.text());
    const inspected=await inspectBackup(source);
@@ -352,7 +359,7 @@
      !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return false;
    const hasBrowserInk=!window.Capacitor?.isNativePlatform?.()&&inspected.drawings?.some(entry=>entry.base64!==null);
    const inkNotice=hasBrowserInk?' Original iPad handwriting is preserved for iOS. Where available, its preview will be displayed but cannot be edited on the web.':'';
-   if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'+inkNotice))return false;
+   if(!syncing&&!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'+inkNotice))return false;
 
    assertSourceAccount();
    const originalState=state,created=[];
@@ -361,6 +368,23 @@
    try{
      next=normalize(inspected.data);
      delete next.blueprintSyncGeneration;
+     const reusablePages=new Map(),reusableMedia=new Map();
+     if(syncing){
+       options.guard();next.blueprintSyncGeneration=state.blueprintSyncGeneration;
+       for(const asset of options.previousArchive.attachments)
+         reusableMedia.set(asset.sha256+':'+asset.mime,asset.key);
+       const previousInk=new Map((options.previousArchive.drawings||[]).map(d=>[JSON.stringify([d.projectId,d.pageId]),d]));
+       for(const project of state.projects||[]){
+         for(const page of project.notePages||[]){
+           const identity=String(page.blueprintSyncPageId||page.id);
+           reusablePages.set(JSON.stringify([String(project.id),identity]),{page,
+             drawing:previousInk.get(JSON.stringify([String(project.id),String(page.id)]))});
+         }
+         const target=next.projects.find(p=>String(p.id)===String(project.id));
+         const active=project.notePages?.find(p=>String(p.id)===String(project.activeNotePageId));
+         if(target&&active)target.activeNotePageId=String(active.blueprintSyncPageId||active.id);
+       }
+     }
      if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings,{storeBrowserInk:async (base64,preview)=>{
        const key='v85-ink-'+crypto.randomUUID();
        const blob=new Blob([base64],{type:'text/plain'});
@@ -377,12 +401,23 @@
          reference.preview={key:previewKey,sha256:checksum,width:preview.width,height:preview.height};
        }
        return reference;
-     }});
+     },reusePage:syncing?(projectId,pageId,entry)=>{
+       const old=reusablePages.get(JSON.stringify([projectId,pageId]));
+       if(old&&(old.drawing?.base64??null)===entry.base64&&
+          ((!old.drawing?.preview&&!entry.preview)||old.drawing?.preview&&entry.preview&&
+           old.drawing.preview.base64===entry.preview.base64&&old.drawing.preview.width===entry.preview.width&&
+           old.drawing.preview.height===entry.preview.height))
+         return {id:String(old.page.id),blueprintBrowserInk:old.page.blueprintBrowserInk};
+       return null;
+     }:undefined});
      const remap=new Map();
      const {required}=attachmentKeys(next);
      // Stage newly imported media under unique keys, never overwriting existing keys.
      for(const [sourceKey,blob] of inspected.media){
        if(!required.has(sourceKey))continue;
+       const descriptor=source.attachments.find(a=>a.key===sourceKey);
+       const reuse=syncing&&reusableMedia.get(descriptor.sha256+':'+descriptor.mime);
+       if(reuse){remap.set(sourceKey,reuse);continue;}
        const key='v85-import-'+crypto.randomUUID();
        await v6Blob('put',key,blob);
        created.push(key);remap.set(sourceKey,key);
@@ -407,6 +442,7 @@
      if(canvasUnsaved||canvasTextSavePending||state!==originalState||canvasLastManifest!==originalManifest||JSON.stringify(state)!==originalSnapshot)
        throw Error('Local planner changed during restore. Review the backup again.');
      assertSourceAccount();
+     if(syncing)options.guard();
      previousManifest=canvasLastManifest;
      attemptedCommit=true;
      state=next;
@@ -437,11 +473,11 @@
      throw error;
    }
    // Rendering errors must never roll back a successfully committed import.
-   window.v6ActiveProjectId=null;
+   if(!syncing)window.v6ActiveProjectId=null;
    try{v6Normalize();render();v6Render();}
    catch(error){console.error('Imported data saved, but the view needs refresh',error);
-     alert('Blueprint backup restored, but the view needs a reload. Your imported data was saved.');return true;}
-   alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.')+inkNotice);
+     if(!syncing)alert('Blueprint backup restored, but the view needs a reload. Your imported data was saved.');return true;}
+   if(!syncing)alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.')+inkNotice);
    return true;
  }
  document.getElementById('exportData').onclick=async()=>{
@@ -453,6 +489,32 @@
    finally{button.disabled=false;button.removeAttribute('aria-busy');}
  };
  window.v74ImportBackup=importCompleteBackup;
+ window.v74InspectBackup=inspectBackup;
+ let syncEpoch=0,lastSyncInput=0;
+ const noteInput=()=>{syncEpoch++;lastSyncInput=Date.now();window.dispatchEvent(new Event('blueprint:sync-dirty'));};
+ document.addEventListener('input',noteInput,true);
+ document.addEventListener('pointerdown',event=>{if(event.target.closest?.('#v76Editor'))noteInput();},true);
+ window.addEventListener('blueprint:pencil-dirty',noteInput);
+ function syncIdle(){
+   return !canvasLoadError&&!canvasUnsaved&&!canvasTextSavePending&&!canvasExternalChange&&
+     Date.now()-lastSyncInput>1500&&
+     !document.activeElement?.matches?.('input,textarea,[contenteditable="true"]')&&
+     ![...document.querySelectorAll('dialog[open],[role="dialog"]')].some(el=>!el.hidden&&el.getClientRects().length);
+ }
+ function syncToken(){return {manifest:canvasLastManifest,epoch:syncEpoch,state:JSON.stringify(state)};}
+ function assertSyncToken(token){
+   if(!syncIdle()||token.manifest!==canvasLastManifest||token.epoch!==syncEpoch||
+      localStorage.getItem(STORAGE_KEY)!==canvasLastManifest||JSON.stringify(state)!==token.state)
+     throw Error('Local changes are still saving. Sync will retry.');
+ }
+ window.BlueprintFullSyncLocal={
+   idle:syncIdle,token:syncToken,assert:assertSyncToken,
+   prepare:()=>BlueprintSyncLocal.prepare().generation,
+   generation:()=>state.blueprintSyncGeneration,
+   inspect:inspectBackup,
+   saved:()=>!canvasLoadError&&!canvasUnsaved&&!canvasTextSavePending&&!canvasExternalChange,
+ };
+
  window.v74BuildCompleteBackup=async()=>{
    if(canvasUnsaved||canvasTextSavePending)throw Error('Wait for your edits to save before creating a cloud backup.');
    return (await buildCompleteBackup()).archive;

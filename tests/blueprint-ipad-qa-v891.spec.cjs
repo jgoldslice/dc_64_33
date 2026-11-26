@@ -24,6 +24,8 @@ test('iPad sidebar and notebook controls have 44px targets without resizing the 
   await page.locator('[data-v919-project-open="notes"]').click();
   await expect(page.locator('#v815ZoomViewport')).toBeVisible();
   await expect(page.locator('#projectNotes .v76-toolbar')).toHaveCSS('flex-wrap', 'wrap');
+  // The fit observer applies the viewport bounds on its next animation frame.
+  await expect(page.locator('body')).toHaveCSS('overflow-y','hidden');
   const measurements = await page.evaluate(() => {
     const controls = Array.from(document.querySelectorAll('#projectNotes .v76-toolbar button, #projectNotes .v76-toolbar select'))
       .filter(el => el.getClientRects().length)

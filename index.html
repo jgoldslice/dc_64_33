@@ -543,7 +543,7 @@
         <button type="button" class="secondary-button" id="previewOpening">Preview Opening</button>
       </section>
       <section class="card"><h2>Your Data</h2><p class="muted small">Saved on this device. Export a backup before clearing Safari data or switching phones.</p><div class="row-buttons"><button class="secondary-button" id="exportData">Export backup</button><button class="secondary-button" id="importData">Import backup</button><button class="secondary-button" id="v926CheckLocal">Check local storage</button></div><div id="v926StorageReport" class="muted small" role="status" aria-live="polite" hidden></div><input hidden type="file" id="importFile" accept=".json,application/json"></section>
-      <section class="card" id="blueprint-cloud-backup" style="margin-bottom:calc(120px + env(safe-area-inset-bottom))">
+      <section class="card" id="blueprint-cloud-backup">
         <h2>Cloud Backup</h2>
         <p class="muted small">Save or restore a complete Blueprint backup, including notes, images and handwriting. Backups are manual, private to your signed-in account, and support up to 100 MiB each. On the web, iPad handwriting is shown as a read-only preview when included by an updated iOS backup.</p>
         <div class="row-buttons">
@@ -555,6 +555,22 @@
         </div>
         <p class="muted small" role="status" aria-live="polite"></p>
         <div data-cloud-review hidden><p class="muted small" data-cloud-summary></p><details><summary>Review record changes</summary><pre data-cloud-changes style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:18rem;overflow:auto"></pre></details><button type="button" class="secondary-button" data-cloud-apply>Apply reviewed sync</button></div>
+      </section>
+      <section class="card" id="blueprint-full-sync" data-full-sync aria-labelledby="fullSyncTitle" style="margin-bottom:calc(120px + env(safe-area-inset-bottom))">
+        <h3 id="fullSyncTitle">Automatic Sync</h3>
+        <p class="muted small">Keep tasks, goals, habits, projects, notes, images and handwriting together across your devices. Sync runs while Blueprint is open and reconnects after offline edits. Backups remain available separately.</p>
+        <div class="row-buttons">
+          <button type="button" class="secondary-button" data-full-sync-start disabled>Start from this device</button>
+          <button type="button" class="secondary-button" data-full-sync-join disabled>Join shared planner</button>
+          <button type="button" class="secondary-button" data-full-sync-pause hidden>Pause sync</button>
+          <button type="button" class="secondary-button" data-full-sync-resume hidden>Resume sync</button>
+          <button type="button" class="secondary-button" data-full-sync-recovery hidden>Export pre-sync recovery copy</button>
+        </div>
+        <p class="muted small" role="status" aria-live="polite" data-full-sync-status>Sign in above to set up automatic sync.</p>
+        <div data-full-sync-conflicts hidden><p>These changes overlap. Choose which version to use for the conflicting edits. Other changes will merge.</p><div class="row-buttons">
+          <button type="button" class="secondary-button" data-full-sync-choice="device">Keep this device’s conflicting edits</button>
+          <button type="button" class="secondary-button" data-full-sync-choice="cloud">Keep shared conflicting edits</button>
+        </div></div>
       </section>
     </div></section>
   </main>
@@ -792,6 +808,7 @@ function save(verify=false){
     canvasUnsaved=false;canvasSaveStatus(false);
     window.blueprintAreas?.refresh();
     if($('draftStatus')&&$('draftStatus').textContent==='Saving…')$('draftStatus').textContent='Saved';
+    window.dispatchEvent(new Event('blueprint:planner-saved'));
     return true;
   }catch(error){
     canvasUnsaved=true;canvasSaveStatus(true);

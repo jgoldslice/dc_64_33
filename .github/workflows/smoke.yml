@@ -30,3 +30,5 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Run Canvas smoke tests
         run: npx playwright test --reporter=line
+      - name: Verify full sync in the Safari browser engine
+        run: BLUEPRINT_SYNC_BROWSER=webkit npx playwright test tests/full-sync-browser.spec.cjs --workers=1 --reporter=line
