@@ -7,6 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-25 — Live pilot preparation after owner approval
+
+- Owner approved continuing setup and supplied a console screenshot showing the Blueprint project on Spark with an Add app action. The screenshot does not identify the project ID, app registrations, provider/rule/bucket state, or region.
+- Re-read agent guidance, status, cloud controller, guarded importer, native bridge, rules and staging flow. No additional confirmed data-loss defect emerged from this focused source review. Draft #104 remains unmerged; current `c690525` browser CI `45712933295` and emulator CI `45712933282` are successful.
+- Added `docs/FIREBASE_PILOT_CHECKLIST.md` with concrete registration, Spark small-backup pilot, Blaze Storage, native-build and device acceptance steps. Verified Firebase's official documentation: Storage requires Blaze; a generated storageBucket field does not establish a provisioned bucket. The small-backup pilot deliberately omits that field. Checklist records the remaining project/region/budget inputs without inventing values.
+- Discovered and suggested the official Firebase integration. It was not installed/connected at the time of preparation, so no live project resources, billing settings, app registrations, rules or account data were changed. Further live work needs the authenticated connection and confirmed target; the owner's existing setup approval is retained. The checklist is documentation only and changes no tested app code, configuration or automatic-write behavior.
+
 ## 2026-11-25 — Account-safe manual Firebase backup and staged Storage archives (draft)
 
 - Isolated branch `feature/firebase-safety-storage`, based on draft #103 head `ce30241ae461a6a34814521dbb5df0b7aa13c604`; verified main `5590c0510fe3984b3921161afa60dfd6dfdeff48`. Original #103 browser and emulator CI were successful (runs `45302972087` and `45302972051`). This branch includes #103 and leaves its branch untouched.

@@ -22,6 +22,8 @@ The emulator test uses Node 22 and Java 21. It creates disposable email/password
 
 ## Configure Google sign-in and manual cloud backup
 
+Use the [staged pilot checklist](FIREBASE_PILOT_CHECKLIST.md) for the console setup, Spark versus Blaze split, and physical-device acceptance tests.
+
 1. In a dedicated Firebase project, register a Web app and the Apple app `com.jgoldslice.canvas`. Enable Google in Authentication → Sign-in method and add your web host to Authorized domains. Create a Firestore database and deploy this branch's rules explicitly to that project. The emulator uses a separate demo project.
 2. Put the Web app's Firebase config object in `firebase-client.json` for the pilot build. The checked-in `null` disables the connection. Keep the iOS and web registration in the same Firebase project. The Apple app uses the same web configuration for its Firebase Auth session and Firestore.
 3. Add `native-firebase/BlueprintGoogleSignInPlugin.swift` and `GoogleService-Info.plist` to the existing Xcode App target. Add the `GoogleSignIn` product from `https://github.com/google/GoogleSignIn-iOS` using Swift Package Manager. In the App target's Info settings, set `GIDServerClientID` to the Google provider's Web OAuth client ID and add the iOS plist's `REVERSED_CLIENT_ID` as a URL scheme.
