@@ -60,5 +60,5 @@ window.BlueprintDrawingArchive = (() => {
       page.id = fresh;
     }
   }
-  return {collect, validate, stage};
+  return {available, collect, validate, stage};
 })();

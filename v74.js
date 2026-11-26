@@ -259,7 +259,7 @@
    }
    return {complete:true,data:source.state,media,drawings:source.version===3?source.drawings:null};
  }
- async function exportCompleteBackup(){
+ async function buildCompleteBackup(){
    if(canvasLoadError)throw Error('Saved planner data could not be loaded; export the untouched original using the recovery warning instead');
    // Snapshot first, so an export consistently refers to one planner version.
    // Keep the v2 format unchanged while avoiding a second giant JSON string
@@ -282,11 +282,13 @@
    }
    const pieces=[JSON.stringify(header).slice(0,-1)+',"attachments":['];
    let count=0;
+   const mediaIntegrity=[];
    for(const key of new Set([...required,...drafts])){
      const blob=await v6Blob('get',draftKeys.get(key)??key);
      if(!blob){if(required.has(key))throw Error('Missing saved attachment: '+key);continue;}
      const entry={key,mime:blob.type||'application/octet-stream',
        size:blob.size,sha256:await hashBlob(blob),base64:await blobToBase64(blob)};
+     mediaIntegrity.push({key:entry.key,mime:entry.mime,size:entry.size,sha256:entry.sha256});
      if(count++)pieces.push(',');
      pieces.push(JSON.stringify(entry));
    }
@@ -294,22 +296,30 @@
    // Browser Blob parts can be assembled without concatenating the entire
    // archive and every encoded attachment into a second JS string.
    const archive=new Blob(pieces,{type:'application/json'});
-   pieces.length=0;
+   const fingerprint=await hashState({state:header.stateSha256,drawings:header.drawingsSha256||null,media:mediaIntegrity});
+   return {archive, hasDrawings: !!drawings, fingerprint};
+ }
+ async function exportCompleteBackup(){
+   const {archive, hasDrawings}=await buildCompleteBackup();
    const u=URL.createObjectURL(archive);
    const a=document.createElement('a');
    a.href=u;a.download='canvas-complete-'+new Date().toISOString().slice(0,10)+'.json';
    document.body.appendChild(a);a.click();a.remove();
    setTimeout(()=>URL.revokeObjectURL(u),30000);
-   return drawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
+   return hasDrawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
  }
- async function importCompleteBackup(file){
+ async function importCompleteBackup(file,{assertCanCommit=()=>{}}={}){
+   assertCanCommit();
    const source=JSON.parse(await file.text());
    const inspected=await inspectBackup(source);
+   assertCanCommit();
    if(canvasUnsaved)throw Error('Some current edits have not been saved. Export your current work before importing');
    if(!inspected.complete &&
      !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return;
    if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return;
 
+   assertCanCommit();
+   window.dispatchEvent(new Event('blueprint:backup-import-start'));
    const originalState=state,created=[];
    let attemptedCommit=false,previousManifest,next;
    try{
@@ -342,6 +352,8 @@
        created.push(key);
      }
      if(canvasUnsaved)throw Error('Save your current edits before importing');
+     // No await between the account check and the synchronous guarded save.
+     assertCanCommit();
      previousManifest=canvasLastManifest;
      attemptedCommit=true;
      state=next;
@@ -387,5 +399,20 @@
    finally{button.disabled=false;button.removeAttribute('aria-busy');}
  };
  window.v74ImportBackup=importCompleteBackup;
+ window.v74BuildCloudBackupSnapshot=async()=>{
+   if(canvasUnsaved||canvasTextSavePending||canvasLoadError||canvasExternalChange||localStorage.getItem(STORAGE_KEY)!==canvasLastManifest)
+     throw Error('Wait for all local edits to save before backing up.');
+   if(window.Capacitor?.isNativePlatform?.()&&!await BlueprintDrawingArchive.available())
+     throw Error('This iOS build needs native drawing archive support before automatic backups.');
+   const before=canvasLastManifest;
+   const result=await buildCompleteBackup();
+   if(canvasUnsaved||canvasTextSavePending||canvasLastManifest!==before||localStorage.getItem(STORAGE_KEY)!==before)
+     throw Error('Local edits changed while preparing the backup. Retrying later.');
+   return result;
+ };
+ window.v74BuildCompleteBackup=async()=>{
+   if(canvasUnsaved||canvasTextSavePending)throw Error('Wait for your edits to save before creating a cloud backup.');
+   return (await buildCompleteBackup()).archive;
+ };
 
 })();
