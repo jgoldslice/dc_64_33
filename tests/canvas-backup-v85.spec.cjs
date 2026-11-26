@@ -372,3 +372,51 @@ test('browser restores iPad v3 archive, retains original ink through reload and 
   await page.evaluate(async()=>{const pg=state.projects[0].notePages[0];await v6Blob('delete',pg.blueprintBrowserInk.key);});
   expect(await page.evaluate(async()=>{try{await v74BuildCompleteBackup();return 'unexpected success';}catch(error){return error.message;}})).toContain('Preserved iPad handwriting is missing');
 });
+
+test('iPad handwriting preview survives browser restore, reload and complete re-export',async({page})=>{
+  await page.setViewportSize({width:1180,height:900});
+  await seed(page);
+  const archive=await exportData(page);
+  const png=await page.evaluate(()=>{
+    const canvas=document.createElement('canvas');canvas.width=500;canvas.height=900;
+    const ctx=canvas.getContext('2d');ctx.strokeStyle='#17293e';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(40,120);ctx.bezierCurveTo(100,30,100,210,180,110);
+    ctx.bezierCurveTo(230,40,250,170,320,100);ctx.stroke();
+    ctx.font='28px cursive';ctx.fillText('Handwriting preview',40,230);
+    return canvas.toDataURL('image/png').split(',')[1];
+  });
+  const preview={base64:png,width:500,height:900};
+  archive.version=3;
+  archive.drawings=[{projectId:'p-backup-a',pageId:'page-a',base64:'YWJj',preview},{projectId:'p-backup-b',pageId:'page-b',base64:null}];
+  archive.drawingsSha256=require('node:crypto').createHash('sha256').update(JSON.stringify(archive.drawings)).digest('hex');
+  await page.evaluate(()=>{window.confirm=()=>true;window.alert=()=>{};});
+  expect(await page.evaluate(async data=>v74ImportBackup(new Blob([JSON.stringify(data)])),archive)).toBe(true);
+  await page.reload();
+  const rendered=await page.evaluate(async()=>{
+    const pg=state.projects[0].notePages[0];const view=await v74ReadBrowserInkPreview(pg.blueprintBrowserInk.preview);
+    const url=URL.createObjectURL(view.blob);
+    try{const img=new Image();img.src=url;await img.decode();return {width:view.width,height:view.height,pixelWidth:img.naturalWidth,pixelHeight:img.naturalHeight};}
+    finally{URL.revokeObjectURL(url);}
+  });
+  expect(rendered).toEqual({width:500,height:900,pixelWidth:500,pixelHeight:900});
+  await page.locator('[data-tab="brainstorm"]').click();
+  await page.locator('[data-v6-project="p-backup-a"]').click();
+  await page.locator('[data-v919-project-open="notes"]').click();
+  const overlay=page.locator('#v76Surface > [data-browser-ink-preview]');
+  await expect(overlay).toBeVisible();
+  await expect(page.locator('#v76BrowserInkNotice')).toContainText('visible as a read-only preview');
+  expect(await overlay.evaluate(img=>({loaded:img.complete&&img.naturalWidth===500,
+    width:img.style.width,height:img.style.height,pointerEvents:getComputedStyle(img).pointerEvents})))
+    .toEqual({loaded:true,width:'500px',height:'900px',pointerEvents:'none'});
+  await page.screenshot({path:require('node:path').join(__dirname,'../test-results/handwriting-preview-notebook.png')});
+  // Changing pages must remove the previous page's raster immediately.
+  await page.locator('#v811NewPage').click();
+  await expect(overlay).toHaveCount(0);
+  const originalPage=await page.evaluate(()=>state.projects[0].notePages[0].id);
+  await page.locator('[data-v811-page-id="'+originalPage+'"]').click();
+  await expect(overlay).toBeVisible();
+  const exported=await exportData(page);
+  expect(exported.drawings[0].base64).toBe('YWJj');
+  expect(exported.drawings[0].preview).toEqual(preview);
+  expect(exported.state.projects[0].notePages[0]).not.toHaveProperty('blueprintBrowserInk');
+});

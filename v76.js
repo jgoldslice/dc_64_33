@@ -307,12 +307,14 @@
     // At reduced zoom, the complete visible white area must STILL be ink:
     // expand the logical sheet rather than painting unwritable margins.
     // A saved width also preserves ink placed beyond the original right edge.
-    const savedWidth=Math.max(0,Number(ctx?.page.width)||0);
+    const preview=ctx?.page.blueprintBrowserInk?.preview;
+    const previewExtent=value=>Number.isSafeInteger(value)&&value>0&&value<=20000?value:0;
+    const savedWidth=Math.max(0,Number(ctx?.page.width)||0,previewExtent(preview?.width));
     const baseWidth=Math.ceil(Math.max(zoomViewport.clientWidth,savedWidth,
       zoomViewport.clientWidth/noteZoom));
     const cssMinHeight=parseFloat(getComputedStyle(surface).minHeight)||0;
     const baseHeight=Math.ceil(Math.max(740,cssMinHeight,Number(ctx?.page.height)||740,
-      zoomViewport.clientHeight/Math.min(1,noteZoom)));
+      previewExtent(preview?.height),zoomViewport.clientHeight/Math.min(1,noteZoom)));
     const priorWidth=surface.clientWidth,priorHeight=surface.clientHeight;
     const width=baseWidth+'px',height=baseHeight+'px';
     if(surface.style.width!==width)surface.style.width=width;
@@ -775,11 +777,39 @@
     surface.append(box);
     if(selectedItemId===String(item.id))selectBox(selectedItemId);
   }
+  let inkPreviewGeneration=0,inkPreviewUrl=null;
+  function renderBrowserInk(page){
+    const generation=++inkPreviewGeneration;
+    const notice=document.getElementById('v76BrowserInkNotice');
+    surface.querySelector('[data-browser-ink-preview]')?.remove();
+    if(inkPreviewUrl){URL.revokeObjectURL(inkPreviewUrl);inkPreviewUrl=null;}
+    const reference=page.blueprintBrowserInk;
+    notice.hidden=!reference;
+    if(!reference)return;
+    notice.textContent='iPad handwriting is preserved. Back up again from an updated iPad to see its preview on the web.';
+    if(!reference.preview)return;
+    notice.textContent='Loading iPad handwriting preview…';
+    window.v74ReadBrowserInkPreview(reference.preview).then(({blob,width,height})=>{
+      if(generation!==inkPreviewGeneration)return;
+      const image=document.createElement('img');
+      image.dataset.browserInkPreview='';
+      image.alt='Read-only iPad handwriting';
+      image.draggable=false;
+      image.style.width=width+'px';image.style.height=height+'px';
+      image.onload=()=>{if(generation===inkPreviewGeneration)
+        notice.textContent='iPad handwriting is visible as a read-only preview. Edit the original in the iOS app.';};
+      image.onerror=()=>{if(generation===inkPreviewGeneration){
+        image.remove();notice.textContent='iPad handwriting preview could not be displayed. Original ink remains preserved.';}};
+      inkPreviewUrl=URL.createObjectURL(blob);image.src=inkPreviewUrl;surface.append(image);
+    }).catch(()=>{if(generation===inkPreviewGeneration)
+      notice.textContent='iPad handwriting preview is unavailable. Original ink remains preserved.';});
+  }
   function drawPage(p,page){
     surface.querySelectorAll('.v76-item').forEach(el=>el.remove());
     const height=Math.max(740,Number(page.height)||740);page.height=height;surface.style.height=height+'px';
     for(const item of page.objects||[])addRenderedObject(item,p,page);
     strokesView(page);
+    renderBrowserInk(page);
     syncZoomLayout();
   }
   function renderPageList(p){
@@ -834,7 +864,6 @@
       const opt=document.createElement('option');opt.value=pg.id;opt.textContent=pg.title;pageSelect.append(opt);
     });
     pageSelect.value=String(page.id);
-    document.getElementById('v76BrowserInkNotice').hidden=!page.blueprintBrowserInk;
     renderPageList(p);
     textSizeSelect.value=sizeName(page.defaultTextSize);
     drawPage(p,page);applyMode('select');
@@ -1155,6 +1184,13 @@
           ctx.drawImage(await loadImage('data:image/png;base64,'+result.base64),0,0,width,height);
         }
       }
+    }
+    if(page.blueprintBrowserInk){
+      if(!page.blueprintBrowserInk.preview)throw Error('This page has iPad handwriting without a preview. Save the page image from iOS.');
+      const preview=await window.v74ReadBrowserInkPreview(page.blueprintBrowserInk.preview);
+      const url=URL.createObjectURL(preview.blob);
+      try{ctx.drawImage(await loadImage(url),0,0,preview.width,preview.height);}
+      finally{URL.revokeObjectURL(url);}
     }
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
     if(!blob)throw Error('Could not encode page image');

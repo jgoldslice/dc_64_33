@@ -60,3 +60,20 @@ test('web preserves native ink as opaque data and reconstructs the drawing manif
   await assert.rejects(archive.collect(candidate),/updated web backup reader/);
   await assert.rejects(archive.collect(candidate,{readBrowserInk:async()=>null}),/damaged/);
 });
+
+test('a bounded preview is optional, validated, and travels with the original native drawing',async()=>{
+  const png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jR1sAAAAASUVORK5CYII=';
+  const window={};
+  runInNewContext(src,{window,atob,crypto:require('node:crypto').webcrypto});
+  const archive=window.BlueprintDrawingArchive;
+  const state={projects:[{id:'p',notePages:[{id:'one'}]}]};
+  const preview={base64:png,width:500,height:900};
+  const entry={projectId:'p',pageId:'one',base64:'YWJj',preview};
+  await archive.validate(state,[entry],{allowBrowserInk:true});
+  await assert.rejects(archive.validate(state,[{...entry,preview:{...preview,width:20001}}],{allowBrowserInk:true}),/preview/);
+  await assert.rejects(archive.validate(state,[{...entry,preview:{...preview,base64:'YWJj'}}],{allowBrowserInk:true}),/preview/);
+  await archive.stage(state,[entry],{storeBrowserInk:async (ink,view)=>{assert.equal(ink,'YWJj');assert.equal(view,preview);return {key:'ink',preview:{key:'png'}};}});
+  const next=await archive.collect(state,{readBrowserInk:async()=> 'YWJj',readBrowserPreview:async()=>preview});
+  assert.equal(next[0].base64,'YWJj');assert.equal(next[0].preview,preview);
+  assert.equal(next[0].pageId,state.projects[0].notePages[0].id);
+});

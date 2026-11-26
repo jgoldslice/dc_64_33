@@ -441,3 +441,5 @@
 .v938-text-size-choices button[aria-pressed="true"]::after{content:'✓';font-weight:750}
 .v938-text-size-choices button:focus-visible{outline:2px solid var(--secondary-ui);outline-offset:-2px}
 .v938-text-size-menu .v80-text-size[hidden]{display:none!important}
+/* Portable PencilKit raster overlay uses the original logical page coordinates. */
+.v76-page-surface>[data-browser-ink-preview]{position:absolute;left:0;top:0;max-width:none;max-height:none;pointer-events:none;user-select:none;z-index:6;object-fit:fill}

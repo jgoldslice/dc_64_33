@@ -46,3 +46,7 @@ Tests: `node --test tests/planner-sync.test.cjs tests/planner-pilot.test.cjs` an
 ## Public web pilot
 
 The Pages deployment injects the existing project's public Web SDK identifiers into the deployed artifact while the source configuration remains null. The Web SDK identifiers are not access credentials; the signed-in user's UID and server rules control archive access. The website's authorized domain and bucket GET CORS policy must remain configured. Sign into the same account used on iPad, export any existing browser planner before replacement, and choose Restore latest. A v3 browser restore stores native ink as opaque checksum-verified local bytes, included in subsequent complete exports; it does not display native PencilKit handwriting. The original immutable cloud backup is not modified. A browser export fails if preserved native ink is missing or corrupted. Use iOS to view or edit native ink. Continuous sync remains disabled.
+
+### Web handwriting preview candidate
+
+An optional PNG preview in a v3 drawing entry can display native ink on the browser in its original logical coordinates while the editable PKDrawing bytes remain intact. Updated iOS export is required to generate it; old backups remain readable and continue to show the preservation notice. Native strokes are read-only in the browser. Preview bytes are bounded and locally checksum-verified; the existing complete backup and restore guards are retained. No deployment or native build verified for this candidate.

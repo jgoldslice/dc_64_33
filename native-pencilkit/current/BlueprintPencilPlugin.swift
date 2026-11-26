@@ -37,8 +37,25 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                 guard let bytes = try BlueprintPencilStore.bytes(at: url) else {
                     call.resolve(["missing": true]); return
                 }
-                _ = try PKDrawing(data: bytes)
-                call.resolve(["base64": bytes.base64EncodedString()])
+                let drawing = try PKDrawing(data: bytes)
+                var result: [String: Any] = ["base64": bytes.base64EncodedString()]
+                // Optional, bounded raster preview from exactly the same drawing.
+                // Original editable data is always returned, even if no preview fits.
+                if call.getBool("includePreview") == true, !drawing.strokes.isEmpty {
+                    let bounds = drawing.bounds
+                    let w = ceil(max(1, bounds.maxX + 2))
+                    let h = ceil(max(1, bounds.maxY + 2))
+                    if w.isFinite, h.isFinite, w <= 20000, h <= 20000,
+                       bounds.maxX > 0, bounds.maxY > 0 {
+                        let scale = min(1.0, sqrt(1_800_000.0 / (w * h)), 3000.0 / max(w, h))
+                        let image = drawing.image(from: CGRect(x: 0, y: 0, width: w, height: h), scale: scale)
+                        if let png = image.pngData(), !png.isEmpty, png.count <= 1_800_000 {
+                            result["preview"] = ["base64": png.base64EncodedString(),
+                                                 "width": Int(w), "height": Int(h)]
+                        }
+                    }
+                }
+                call.resolve(result)
             } catch { call.reject("Drawing export failed: " + error.localizedDescription) }
         }
     }
