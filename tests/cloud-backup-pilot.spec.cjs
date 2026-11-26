@@ -222,10 +222,23 @@ test('automatic backups require consent, deduplicate snapshots, follow saved edi
   await page.evaluate(() => {state.tasks.push({id: 'auto-task', title: 'Automatic backup fixture', done: false});if (!save(true)) throw Error('Fixture save failed');});
   await page.clock.fastForward(31000);
   await expect.poll(() => page.evaluate(() => window.fixtureCloudWrites)).toBe(2);
-  page.on('dialog', dialog => dialog.dismiss());
-  await cloud.getByRole('button', {name: 'Restore latest'}).click();
+  const beforeRestore = await page.evaluate(() => localStorage.getItem(STORAGE_KEY));
+  const restoreButton = cloud.getByRole('button', {name: 'Restore latest'});
+  // Await cancellation itself, not just the automatic-backup pause which occurs
+  // before the asynchronous archive read and confirmation dialog.
+  await Promise.all([
+    page.waitForEvent('dialog').then(async dialog => {
+      expect(dialog.type()).toBe('confirm');
+      expect(dialog.message()).toContain('Replace your current Blueprint data');
+      await dialog.dismiss();
+    }),
+    restoreButton.click()
+  ]);
+  await expect(restoreButton).toBeEnabled();
   await expect(cloud.locator('[data-cloud-auto]')).not.toBeChecked();
   await expect(cloud.locator('[data-cloud-auto-status]')).toContainText('Restore paused');
+  expect(await page.evaluate(() => localStorage.getItem(STORAGE_KEY))).toBe(beforeRestore);
+  expect(await page.evaluate(() => window.fixtureCloudWrites)).toBe(2);
 });
 
 test('automatic pending Blob survives reload and explicit sign-out disables future uploads', async ({page}) => {
