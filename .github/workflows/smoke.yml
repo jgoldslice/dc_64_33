@@ -31,4 +31,4 @@ jobs:
       - name: Run Canvas smoke tests
         run: npx playwright test --reporter=line
       - name: Verify full sync in the Safari browser engine
-        run: BLUEPRINT_SYNC_BROWSER=webkit npx playwright test tests/full-sync-browser.spec.cjs --workers=1 --reporter=line
+        run: BLUEPRINT_SYNC_BROWSER=webkit npx playwright test tests/full-sync-browser.spec.cjs tests/pencilkit-navigation-v941.spec.cjs tests/native-sync-view.spec.cjs --browser=webkit --workers=1 --reporter=line

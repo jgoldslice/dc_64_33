@@ -38,22 +38,27 @@ export function createFullSyncLocal(){
   }
   async function apply(snapshot,graph,readObject,assertActive){
     const {blob}=await makeArchive(graph,readObject);await nativeIdle();assertActive();api.assert(snapshot.token);
-    if(globalThis.Capacitor?.isNativePlatform?.()){
-      await globalThis.Capacitor.nativePromise('BlueprintPencil','hideInline',{});
-      assertActive();api.assert(snapshot.token);
-    }
-    const viewport=document.getElementById('v815ZoomViewport');
-    const top=viewport?.scrollTop||0,left=viewport?.scrollLeft||0;
-    const originalScrollY=scrollY;
-    const editorMode=globalThis.BlueprintNotesBridge?.getMode();
-    const result=await globalThis.v74ImportBackup(blob,assertActive,{sync:true,
-      expectedManifest:snapshot.token.manifest,previousArchive:snapshot.archive,
-      guard:()=>{assertActive();api.assert(snapshot.token);}});
-    if(result!==true)throw Error('The shared planner could not be saved on this device.');
-    if(editorMode)globalThis.BlueprintNotesBridge?.setMode(editorMode);
-    if(viewport){viewport.scrollTop=top;viewport.scrollLeft=left;}
-    scrollTo({top:originalScrollY,behavior:'instant'});
-    window.dispatchEvent(new Event('resize'));
+    const native=!!globalThis.Capacitor?.isNativePlatform?.();
+    const inline=native?globalThis.BlueprintPencilInline:null;
+    try{
+      if(native){
+        if(inline?.suspendForSync)await inline.suspendForSync();
+        else await globalThis.Capacitor.nativePromise('BlueprintPencil','hideInline',{});
+        assertActive();api.assert(snapshot.token);
+      }
+      const viewport=document.getElementById('v815ZoomViewport');
+      const top=viewport?.scrollTop||0,left=viewport?.scrollLeft||0;
+      const originalScrollY=scrollY;
+      const editorMode=globalThis.BlueprintNotesBridge?.getMode();
+      const result=await globalThis.v74ImportBackup(blob,assertActive,{sync:true,
+        expectedManifest:snapshot.token.manifest,previousArchive:snapshot.archive,
+        guard:()=>{assertActive();api.assert(snapshot.token);}});
+      if(result!==true)throw Error('The shared planner could not be saved on this device.');
+      if(editorMode)globalThis.BlueprintNotesBridge?.setMode(editorMode);
+      if(viewport){viewport.scrollTop=top;viewport.scrollLeft=left;}
+      scrollTo({top:originalScrollY,behavior:'instant'});
+      window.dispatchEvent(new Event('resize'));
+    }finally{inline?.resumeAfterSync?.();}
   }
   return {snapshot,validate,apply,keepRecovery,
     assertSnapshot:async snapshot=>{await nativeIdle();api.assert(snapshot.token);},
