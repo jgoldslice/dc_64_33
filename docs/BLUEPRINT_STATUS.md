@@ -7,6 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-25 — Owner confirmed completed physical iPad-to-iPhone restore
+
+- Owner confirmed the corrected live restore now works after the large-attachment reader fix. The observed path is successful source iPad backup under the shared Google account, native iPhone sign-in, authenticated 21.4 MiB download, complete archive validation and successful receiving-device restore. This is owner-reported physical-device verification, alongside the automated tests; it does not establish continuous sync or arbitrary archive-size/device coverage.
+- Both current PR checks succeeded on `a69118732bed1f04327cf15e57cf26f515790224`: browser smoke run 45767721028 and Firebase emulator run 45767721005. The earlier pending entries below record the debugging chronology and are superseded by this result.
+- After the successful iPhone result, installed the same final signed restore build on the iPad without uninstalling. No planner content was read, uploaded or restored by the agent.
+- Remaining product limits: manual complete snapshots up to 100 MiB encoded each; replace-on-restore rather than merge; latest-only restore UI; immutable older versions and uploaded orphan files have no retention/delete flow; no cross-launch download resume; no automatic notes/projects/attachments sync. The separate reviewed planner pilot still covers only standalone tasks/events.
+
 ## 2026-11-25 — Fixed false corruption errors for large Base64 attachments
 
 - After the CORS correction, the owner confirmed the live iPhone download reached 100% and then failed with Corrupted attachment encoding. This error occurs in the existing complete archive importer after the outer Storage size/SHA-256 validation, isolating the issue from file transfer.
