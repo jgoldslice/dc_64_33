@@ -265,6 +265,7 @@
    // Keep the v2 format unchanged while avoiding a second giant JSON string
    // (and an all-attachments array) in addition to the base64 media.
    const snapshot=structuredClone(state);
+   delete snapshot.blueprintSyncGeneration;
    const {required,drafts}=attachmentKeys(snapshot);
    const draftKeys=new Map();
    for(const project of snapshot.projects||[]){
@@ -310,16 +311,18 @@
    const source=JSON.parse(await file.text());
    const inspected=await inspectBackup(source);
    assertSourceAccount();
-   if(canvasUnsaved)throw Error('Some current edits have not been saved. Export your current work before importing');
+   if(canvasUnsaved||canvasTextSavePending)throw Error('Some current edits have not been saved. Export your current work before importing');
    if(!inspected.complete &&
      !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return;
    if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return;
 
    assertSourceAccount();
    const originalState=state,created=[];
+   const originalManifest=canvasLastManifest, originalSnapshot=JSON.stringify(state);
    let attemptedCommit=false,previousManifest,next;
    try{
      next=normalize(inspected.data);
+     delete next.blueprintSyncGeneration;
      if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings);
      const remap=new Map();
      const {required}=attachmentKeys(next);
@@ -347,7 +350,8 @@
        await v6Blob('put',key,draft);
        created.push(key);
      }
-     if(canvasUnsaved)throw Error('Save your current edits before importing');
+     if(canvasUnsaved||canvasTextSavePending||state!==originalState||canvasLastManifest!==originalManifest||JSON.stringify(state)!==originalSnapshot)
+       throw Error('Local planner changed during restore. Review the backup again.');
      assertSourceAccount();
      previousManifest=canvasLastManifest;
      attemptedCommit=true;
@@ -355,7 +359,7 @@
      if(!save(true))throw Error('Planner storage is full or unavailable');
    }catch(error){
      const recoveryErrors=[];
-     state=originalState;
+     if(attemptedCommit)state=originalState;
      // If rollback cannot be verified, the persisted planner might still
      // reference staged bytes. Retain them for recovery.
      if(attemptedCommit){
