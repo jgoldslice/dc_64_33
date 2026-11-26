@@ -45,10 +45,12 @@ export function createFullSyncLocal(){
     const viewport=document.getElementById('v815ZoomViewport');
     const top=viewport?.scrollTop||0,left=viewport?.scrollLeft||0;
     const originalScrollY=scrollY;
+    const editorMode=globalThis.BlueprintNotesBridge?.getMode();
     const result=await globalThis.v74ImportBackup(blob,assertActive,{sync:true,
       expectedManifest:snapshot.token.manifest,previousArchive:snapshot.archive,
       guard:()=>{assertActive();api.assert(snapshot.token);}});
     if(result!==true)throw Error('The shared planner could not be saved on this device.');
+    if(editorMode)globalThis.BlueprintNotesBridge?.setMode(editorMode);
     if(viewport){viewport.scrollTop=top;viewport.scrollLeft=left;}
     scrollTo({top:originalScrollY,behavior:'instant'});
     window.dispatchEvent(new Event('resize'));

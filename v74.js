@@ -404,7 +404,9 @@
      },reusePage:syncing?(projectId,pageId,entry)=>{
        const old=reusablePages.get(JSON.stringify([projectId,pageId]));
        if(old&&(old.drawing?.base64??null)===entry.base64&&
-          JSON.stringify(old.drawing?.preview)===JSON.stringify(entry.preview))
+          ((!old.drawing?.preview&&!entry.preview)||old.drawing?.preview&&entry.preview&&
+           old.drawing.preview.base64===entry.preview.base64&&old.drawing.preview.width===entry.preview.width&&
+           old.drawing.preview.height===entry.preview.height))
          return {id:String(old.page.id),blueprintBrowserInk:old.page.blueprintBrowserInk};
        return null;
      }:undefined});
@@ -491,7 +493,7 @@
  let syncEpoch=0,lastSyncInput=0;
  const noteInput=()=>{syncEpoch++;lastSyncInput=Date.now();window.dispatchEvent(new Event('blueprint:sync-dirty'));};
  document.addEventListener('input',noteInput,true);
- document.addEventListener('pointerdown',event=>{if(event.target.closest?.('#v76Surface'))noteInput();},true);
+ document.addEventListener('pointerdown',event=>{if(event.target.closest?.('#v76Editor'))noteInput();},true);
  window.addEventListener('blueprint:pencil-dirty',noteInput);
  function syncIdle(){
    return !canvasLoadError&&!canvasUnsaved&&!canvasTextSavePending&&!canvasExternalChange&&

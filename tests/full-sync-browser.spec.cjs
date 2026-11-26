@@ -109,6 +109,8 @@ test('two devices automatically exchange full notes and habit edits, preserve in
     await confirmSetup(first,'[data-full-sync-start]');
     await confirmSetup(second,'[data-full-sync-join]');
     await expect.poll(()=>second.evaluate(()=>state.projects[0]?.title)).toBe('Shared Notes');
+    const sourcePage=await first.evaluate(()=>state.projects[0].notePages[0].id);
+    const receivingPage=await second.evaluate(()=>state.projects[0].notePages[0].id);
     await a.setOffline(true);
     await first.evaluate(()=>{state.projects[0].notePages[0].objects[0].html='Offline note edit';save(true);});
     const previousRevision=backend.docs.get('users/fixture/sync/current').revision;
@@ -125,6 +127,13 @@ test('two devices automatically exchange full notes and habit edits, preserve in
     await second.locator('#closeCustomize').click();
     await second.locator('[data-tab="brainstorm"]').click();await second.locator('[data-v6-project="p"]').click();await second.locator('[data-v919-project-open="notes"]').click();
     await expect(second.locator('[data-browser-ink-preview]')).toBeVisible();
+    expect(await first.evaluate(()=>state.projects[0].notePages[0].id)).toBe(sourcePage);
+    expect(await second.evaluate(()=>state.projects[0].notePages[0].id)).toBe(receivingPage);
+    await second.locator('[data-v76-mode="pen"]').click();
+    await first.evaluate(()=>{state.tasks[0].title='Changed while Notes stays open';save(true);});
+    await expect.poll(()=>second.evaluate(()=>state.tasks[0].title),{timeout:20000}).toBe('Changed while Notes stays open');
+    expect(await second.evaluate(()=>BlueprintNotesBridge.getMode())).toBe('pen');
+    expect(await second.evaluate(()=>state.projects[0].notePages[0].id)).toBe(receivingPage);
     await second.evaluate(()=>window.dispatchEvent(new Event('blueprint:before-import')));
     expect(await second.evaluate(()=>JSON.parse(localStorage.getItem('blueprint-full-sync-device-v1')).enabled)).toBe(false);
     expect(first.runtimeErrors).toEqual([]);expect(second.runtimeErrors).toEqual([]);
