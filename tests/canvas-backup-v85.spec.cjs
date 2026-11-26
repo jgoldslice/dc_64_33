@@ -372,3 +372,27 @@ test('browser restores iPad v3 archive, retains original ink through reload and 
   await page.evaluate(async()=>{const pg=state.projects[0].notePages[0];await v6Blob('delete',pg.blueprintBrowserInk.key);});
   expect(await page.evaluate(async()=>{try{await v74BuildCompleteBackup();return 'unexpected success';}catch(error){return error.message;}})).toContain('Preserved iPad handwriting is missing');
 });
+
+test('iPad handwriting preview survives browser restore, reload and complete re-export',async({page})=>{
+  await seed(page);
+  const archive=await exportData(page);
+  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=2;c.height=3;const ctx=c.getContext('2d');ctx.fillStyle='black';ctx.fillRect(0,0,1,2);return c.toDataURL('image/png').split(',')[1];});
+  const preview={base64:png,width:500,height:900};
+  archive.version=3;
+  archive.drawings=[{projectId:'p-backup-a',pageId:'page-a',base64:'YWJj',preview},{projectId:'p-backup-b',pageId:'page-b',base64:null}];
+  archive.drawingsSha256=require('node:crypto').createHash('sha256').update(JSON.stringify(archive.drawings)).digest('hex');
+  await page.evaluate(()=>{window.confirm=()=>true;window.alert=()=>{};});
+  expect(await page.evaluate(async data=>v74ImportBackup(new Blob([JSON.stringify(data)])),archive)).toBe(true);
+  await page.reload();
+  const rendered=await page.evaluate(async()=>{
+    const pg=state.projects[0].notePages[0];const view=await v74ReadBrowserInkPreview(pg.blueprintBrowserInk.preview);
+    const url=URL.createObjectURL(view.blob);
+    try{const img=new Image();img.src=url;await img.decode();return {width:view.width,height:view.height,pixelWidth:img.naturalWidth,pixelHeight:img.naturalHeight};}
+    finally{URL.revokeObjectURL(url);}
+  });
+  expect(rendered).toEqual({width:500,height:900,pixelWidth:2,pixelHeight:3});
+  const exported=await exportData(page);
+  expect(exported.drawings[0].base64).toBe('YWJj');
+  expect(exported.drawings[0].preview).toEqual(preview);
+  expect(exported.state.projects[0].notePages[0]).not.toHaveProperty('blueprintBrowserInk');
+});

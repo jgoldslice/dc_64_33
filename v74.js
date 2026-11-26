@@ -159,6 +159,18 @@
  };
  const hashState=stateData=>hashBytes(new TextEncoder().encode(JSON.stringify(stateData)));
  const hashBlob=blob=>blob.arrayBuffer().then(hashBytes);
+ async function readInkPreview(reference){
+   if(!reference||typeof reference.key!=='string'||!/^v85-ink-preview-[a-f0-9-]{36}$/i.test(reference.key)||
+      typeof reference.sha256!=='string'||!/^[a-f0-9]{64}$/.test(reference.sha256)||
+      !Number.isSafeInteger(reference.width)||!Number.isSafeInteger(reference.height)||
+      reference.width<1||reference.height<1||reference.width>20000||reference.height>20000)
+     throw Error('Invalid local handwriting preview reference');
+   const blob=await v6Blob('get',reference.key);
+   if(!blob||blob.type!=='image/png'||await hashBlob(blob)!==reference.sha256)
+     throw Error('Preserved handwriting preview is missing or damaged.');
+   return {blob,width:reference.width,height:reference.height};
+ }
+ window.v74ReadBrowserInkPreview=readInkPreview;
  function attachmentKeys(data){
    const keys=new Set(),drafts=new Set();
    for(const p of data.projects||[]){
@@ -290,6 +302,9 @@
      if(!blob||await hashBlob(blob)!==reference.sha256)
        throw Error('Preserved iPad handwriting is missing or damaged. Restore the original backup before exporting.');
      return blob.text();
+   },readBrowserPreview:async reference=>{
+     const {blob,width,height}=await readInkPreview(reference);
+     return {base64:await blobToBase64(blob),width,height};
    }});
    // Portable archives contain the original drawing manifest, never browser-local keys.
    for(const project of snapshot.projects||[])
@@ -336,7 +351,7 @@
    if(!inspected.complete &&
      !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return false;
    const hasBrowserInk=!window.Capacitor?.isNativePlatform?.()&&inspected.drawings?.some(entry=>entry.base64!==null);
-   const inkNotice=hasBrowserInk?' Original iPad handwriting will be preserved for iOS, but is not displayed or editable in this browser.':'';
+   const inkNotice=hasBrowserInk?' Original iPad handwriting is preserved for iOS. Where available, its preview will be displayed but cannot be edited on the web.':'';
    if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'+inkNotice))return false;
 
    assertSourceAccount();
@@ -346,13 +361,22 @@
    try{
      next=normalize(inspected.data);
      delete next.blueprintSyncGeneration;
-     if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings,{storeBrowserInk:async base64=>{
+     if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings,{storeBrowserInk:async (base64,preview)=>{
        const key='v85-ink-'+crypto.randomUUID();
        const blob=new Blob([base64],{type:'text/plain'});
        const sha256=await hashBlob(blob);
        await v6Blob('put',key,blob);
        created.push(key);
-       return {key,sha256};
+       const reference={key,sha256};
+       if(preview){
+         const previewKey='v85-ink-preview-'+crypto.randomUUID();
+         const png=base64ToBlob(preview.base64,'image/png');
+         const checksum=await hashBlob(png);
+         await v6Blob('put',previewKey,png);
+         created.push(previewKey);
+         reference.preview={key:previewKey,sha256:checksum,width:preview.width,height:preview.height};
+       }
+       return reference;
      }});
      const remap=new Map();
      const {required}=attachmentKeys(next);

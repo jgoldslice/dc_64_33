@@ -23,7 +23,23 @@ window.BlueprintDrawingArchive = (() => {
     }
     return rows;
   }
-  async function collect(state, {readBrowserInk} = {}) {
+  const maxPreviewLength = 2400000;
+  function validPreview(preview) {
+    if (!preview || !Number.isSafeInteger(preview.width) || !Number.isSafeInteger(preview.height) ||
+      preview.width < 1 || preview.height < 1 || preview.width > 20000 || preview.height > 20000 ||
+      typeof preview.base64 !== 'string' || preview.base64.length > maxPreviewLength ||
+      !validBase64(preview.base64)) return false;
+    try {
+      const header = atob(preview.base64.slice(0,32));
+      if (header.length < 24 || header.slice(0,8) !== '\x89PNG\r\n\x1a\n' ||
+          header.slice(12,16) !== 'IHDR') return false;
+      const n = i => header.charCodeAt(i)*16777216+header.charCodeAt(i+1)*65536+
+        header.charCodeAt(i+2)*256+header.charCodeAt(i+3);
+      const w=n(16),h=n(20);
+      return w>0 && h>0 && w<=4096 && h<=4096 && w*h<=2100000;
+    } catch { return false; }
+  }
+  async function collect(state, {readBrowserInk, readBrowserPreview} = {}) {
     const rows = pages(state);
     const hasBrowserInk = rows.some(row => row.page.blueprintBrowserInk);
     if (hasBrowserInk) {
@@ -33,17 +49,30 @@ window.BlueprintDrawingArchive = (() => {
       for (const {projectId, pageId, page} of rows) {
         const base64 = page.blueprintBrowserInk ? await readBrowserInk(page.blueprintBrowserInk) : null;
         if (page.blueprintBrowserInk && !validBase64(base64)) throw Error('Preserved iPad handwriting is damaged.');
-        entries.push({projectId, pageId, base64});
+        const entry={projectId,pageId,base64};
+        if (page.blueprintBrowserInk?.preview) {
+          if (!readBrowserPreview) throw Error('Preserved handwriting preview needs the updated web reader.');
+          const preview=await readBrowserPreview(page.blueprintBrowserInk.preview);
+          if (!validPreview(preview)) throw Error('Preserved handwriting preview is damaged.');
+          entry.preview=preview;
+        }
+        entries.push(entry);
       }
       return entries;
     }
     if (!await available()) return null;
     const entries = [];
+    let previewBytes=0;
     for (const {projectId, pageId} of rows) {
-      const result = await invoke('exportDrawing', {projectId, pageId});
+      const result = await invoke('exportDrawing', {projectId, pageId, includePreview:previewBytes<12000000});
       if (result.missing !== true && typeof result.base64 !== 'string')
         throw Error('Could not read drawing on page ' + pageId);
-      entries.push({projectId, pageId, base64: result.missing ? null : result.base64});
+      const entry={projectId,pageId,base64:result.missing ? null : result.base64};
+      if (entry.base64 && validPreview(result.preview) && previewBytes+result.preview.base64.length<=12000000) {
+        entry.preview=result.preview;
+        previewBytes+=result.preview.base64.length;
+      }
+      entries.push(entry);
     }
     return entries;
   }
@@ -63,6 +92,8 @@ window.BlueprintDrawingArchive = (() => {
       if (entry?.projectId !== row.projectId || entry.pageId !== row.pageId ||
           !(entry.base64 === null || typeof entry.base64 === 'string' && entry.base64.length > 0))
         throw Error('Invalid drawing or notebook page relationship');
+      if (entry.preview !== undefined && (entry.base64 === null || !validPreview(entry.preview)))
+        throw Error('Invalid handwriting preview');
     });
     if (entries.some(entry => entry.base64 !== null) && !await available()) {
       if (native?.isNativePlatform?.() || !allowBrowserInk)
@@ -81,7 +112,7 @@ window.BlueprintDrawingArchive = (() => {
         (await invoke('stageDrawing', {projectId, base64})).pageId;
       if (preserveOnWeb && base64 !== null) {
         if (!validBase64(base64)) throw Error('Invalid preserved iPad handwriting encoding');
-        page.blueprintBrowserInk = await storeBrowserInk(base64);
+        page.blueprintBrowserInk = await storeBrowserInk(base64,entries[i].preview);
       }
       if (typeof fresh !== 'string' || !fresh || project.notePages.some(p => String(p.id) === fresh))
         throw Error('Could not stage native drawing');
