@@ -63,7 +63,7 @@ def main():
     if not manifest:
         parser.error("Cannot read the service worker asset list.")
     names = re.findall(r"'\./([^']*)'", manifest.group(1))
-    if "index.html" not in names or any(Path(n).name != n for n in names if n):
+    if "index.html" not in names or any(Path(n).is_absolute() or any(part in ('', '.', '..') for part in n.split('/')) or '\\' in n for n in names if n):
         parser.error("Unexpected web asset list.")
     with tempfile.TemporaryDirectory() as work:
         stage = Path(work)
@@ -78,9 +78,14 @@ def main():
                     new = wrapper_entry(ref, name, current, new)
                 elif current not in historical_blobs(ref, name):
                     raise SystemExit(f"Unrecognized local edits in {name}. Review before staging.")
+            (stage / name).parent.mkdir(parents=True, exist_ok=True)
             (stage / name).write_bytes(new)
-        for source in stage.iterdir():
-            shutil.copy2(source, target / source.name)
+        for source in stage.rglob('*'):
+            if not source.is_file():
+                continue
+            dest = target / source.relative_to(stage)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, dest)
     print(f"Staged Blueprint {ref[:12]} into {target}")
 
 
