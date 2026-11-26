@@ -7,6 +7,14 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-25 — Reviewed manual planner sync pilot (draft; verification pending)
+
+- Resumed draft PR #103 from `c91051fa02a411be44fb5f42fbe3dc5259249e59`. The previous account-safety changes passed [browser CI #45744067783](https://github.com/jgoldslice/dc_64_33/actions/runs/45744067783) and [Firebase emulator CI #45744067737](https://github.com/jgoldslice/dc_64_33/actions/runs/45744067737).
+- Added non-destructive pilot coordinator and account/project/device-generation scoped durable checkpoint (`96e8d198eb79dc9fce73336fbd0f5f1880d43843`); guarded local adapter (`806220d323dbd127de57d21cc6f9f61a62dd0f84`); explicit preview and apply UI (`4746533b31d818d305ae304d86fdc4439354d50c`). Pending intent is persisted before remote writes; verified local manifest and fresh cloud revision heads precede local apply. No automatic sync, deletion propagation, or linked Area/Project/Goal/Idea task changes. Conflicts block apply.
+- Backup generation stripping and concurrent restore guard `b2aa41642fc9877a56076d462bebf768237dd182`; offline asset list `7ee1301c35a61065f1e1c97e1da948cf1c53caef`; nested iOS staging `debd559c25296ccb4c6b505f77dd3f9877090ea8`; Firebase configuration cache bypass `148a7babdecaf69dc348fed358deca9819093d1e`. Existing archive versions remain unchanged.
+- Added Node regression tests `b6ec6a96f57c5ca233252ab62c73714042936791`, mock Firebase UI regression `5c4e062d582b7aa514eab845a1cdc61799938cd7`, and legacy date compatibility test `e79f439fca4c873127db6ce2896cab01ad20af26`. New tests not yet confirmed; no local execution environment or live credentials used. Setup/recovery details in `docs/FIREBASE_SYNC.md` at `6d357a3ae99189501487e2c1117199513d7e0ea7`. Do not merge or enable real account sync until CI passes and the live pilot is verified.
+- Remaining: live Firebase provisioning, native Google Sign-In bridge integration and signed device builds; disposable two-device verification; conflict resolution UI, deletion and linked-entity sync, larger attachments and automatic sync. No live user upload, paid services, main merge, or deployment.
+
 ## 2026-11-25 — Cloud backup account-safety follow-up (draft; CI pending)
 
 - Resumed draft [PR #103](https://github.com/jgoldslice/dc_64_33/pull/103) from `ce30241ae461a6a34814521dbb5df0b7aa13c604`; compared against main `5590c0510fe3984b3921161afa60dfd6dfdeff48`.
