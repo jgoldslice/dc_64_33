@@ -25,6 +25,7 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
     'firebase-app.js': 'export const getApps = () => []; export const initializeApp = () => ({});',
     'firebase-auth.js': `
       const auth = {currentUser: {uid: 'fixture', email: 'pilot@example.test'}, authStateReady: async () => {}};
+      globalThis.__cloudTestAuth = auth;
       export const getAuth = () => auth;
       export const onAuthStateChanged = (_, listener) => listener(auth.currentUser);
       export const signOut = async () => {auth.currentUser = null;};
@@ -67,6 +68,32 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
   expect(dialog.message()).toContain('Replace your current Blueprint data');
   await dialog.dismiss();
   await restoreClick;
+
+  // A different account must never receive a backup authorized for the
+  // original account, even if the change occurs during confirmation.
+  await page.evaluate(() => {
+    BlueprintSheet.confirm = async () => {
+      globalThis.__cloudTestAuth.currentUser = {uid: 'other', email: 'other@example.test'};
+      return true;
+    };
+  });
+  await cloud.getByRole('button', {name: 'Back up now'}).click();
+  await expect(cloud.getByRole('status')).toHaveText('Sign in again to use cloud backups.');
+
+  // The downloaded archive still belongs to fixture; changing accounts at
+  // the replacement confirmation must prevent the local manifest commit.
+  await page.evaluate(() => {
+    globalThis.__cloudTestAuth.currentUser = {uid: 'fixture', email: 'pilot@example.test'};
+    window.confirm = () => {
+      globalThis.__cloudTestAuth.currentUser = {uid: 'other', email: 'other@example.test'};
+      return true;
+    };
+    window.__cloudRestoreAlerts = [];
+    window.alert = message => window.__cloudRestoreAlerts.push(message);
+  });
+  await cloud.getByRole('button', {name: 'Restore latest'}).click();
+  await expect(cloud.getByRole('status')).toHaveText('Sign in again to use cloud backups.');
+  expect(await page.evaluate(() => window.__cloudRestoreAlerts)).toEqual([]);
 
   await cloud.getByRole('button', {name: 'Sign out'}).click();
   await expect(cloud.getByRole('status')).toHaveText('Signed out.');
