@@ -43,6 +43,7 @@ async function mockCloud(page, storage = false) {
     `,
     'firebase-firestore.js': `
       let latest;
+      window.fixtureCloudWrites = 0;
       export class Bytes {
         static fromUint8Array(bytes) {return new Bytes(bytes);}
         constructor(bytes) {this.bytes = bytes;}
@@ -59,6 +60,7 @@ async function mockCloud(page, storage = false) {
       export const addDoc = async (path, data) => {
         if (path !== 'users/fixture/backups') throw Error('Wrong backup account.');
         latest = data;
+        window.fixtureCloudWrites++;
       };
       export const getDocsFromServer = async () => ({empty: !latest, docs: [{id: 'version-1', data: () => latest}]});
     `,
@@ -76,9 +78,21 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
   // A persisted account is available without pressing sign-in.
   await expect(cloud.getByRole('status')).toHaveText('Signed in as pilot@example.test');
 
-  await page.evaluate(() => {BlueprintSheet.confirm = async () => true;});
+  const before = await page.evaluate(() => localStorage.getItem(STORAGE_KEY));
   await cloud.getByRole('button', {name: 'Back up now'}).click();
+  const confirmation = page.getByRole('dialog', {name: 'Save cloud backup'});
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation.getByRole('button', {name: 'Delete', exact: true})).toHaveCount(0);
+  await expect(confirmation.getByRole('button', {name: 'Back up now', exact: true})).not.toHaveClass(/bp-danger/);
+  await confirmation.getByRole('button', {name: 'Cancel', exact: true}).click();
+  await expect(cloud.getByRole('status')).toHaveText('Cloud backup canceled.');
+  expect(await page.evaluate(() => window.fixtureCloudWrites)).toBe(0);
+  expect(await page.evaluate(() => localStorage.getItem(STORAGE_KEY))).toBe(before);
+
+  await cloud.getByRole('button', {name: 'Back up now'}).click();
+  await confirmation.getByRole('button', {name: 'Back up now', exact: true}).click();
   await expect(cloud.getByRole('status')).toHaveText('Cloud backup saved.');
+  expect(await page.evaluate(() => window.fixtureCloudWrites)).toBe(1);
   const restorePrompt = page.waitForEvent('dialog');
   const restoreClick = cloud.getByRole('button', {name: 'Restore latest'}).click();
   const dialog = await restorePrompt;

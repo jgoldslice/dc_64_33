@@ -7,6 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-25 — Correct misleading cloud-backup confirmation
+
+- The owner reached the live pilot's manual backup prompt and supplied a screenshot showing **Confirm deletion / Delete** beside a save-backup message. Confirmed cause: the cloud controller used `BlueprintSheet.confirm(message)` without overriding that shared helper's deletion defaults.
+- The cloud save call now explicitly uses **Save cloud backup**, **Back up now**, and the existing Cancel control. It uses the helper's normal primary action styling. The shared deletion defaults and actual deletion flows are unchanged. Service-worker asset cache is advanced to make the updated controller available on refresh.
+- Updated `tests/cloud-backup-pilot.spec.cjs` to use the actual confirmation dialog instead of a stub for the primary save flow. It checks title, button text, absence of Delete/danger styling, Cancel causing zero cloud writes and no local-manifest change, and acceptance causing exactly one backup write. All **5 targeted Chromium cloud-backup tests passed** with one worker; module/test syntax and diff checks passed. Full PR CI is a separate follow-up check.
+- Updated only the controller and service worker in the isolated `localhost:8766` pilot after confirming those asset files matched the prior revision. Pilot Firebase configuration, browser authentication and planner data were not replaced. No live backup, restore, database/rule change, website publication or native install was performed for this correction. The owner should Cancel the old prompt, refresh the pilot and retry Back up now.
+
 ## 2026-11-25 — Authenticated live Spark pilot setup (backend configured; device QA pending)
 
 - Completed the owner's Firebase CLI sign-in and identified the single matching project: `blueprint-bf366` (Blueprint, project number `693172268920`). This is separate from end-user Google sign-in inside Blueprint. No authorization codes or account tokens are stored in this repository.

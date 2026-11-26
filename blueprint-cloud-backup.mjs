@@ -206,7 +206,9 @@ function install(card) {
   save.addEventListener('click', run(async () => {
     const store = createCloudBackupStore(client);
     store.assertAccount();
-    if (!await globalThis.BlueprintSheet.confirm('Save a complete copy of this device’s Blueprint data to your Google account?')) {
+    if (!await globalThis.BlueprintSheet.confirm(
+      'Save a complete copy of this device’s Blueprint data to your Google account?',
+      'Back up now', 'Save cloud backup', save)) {
       status.textContent = 'Cloud backup canceled.';
       return;
     }
