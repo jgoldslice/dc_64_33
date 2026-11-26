@@ -1,11 +1,18 @@
 # Blueprint — Development Status
 
-**Last documentation update:** 2026-11-23
+**Last documentation update:** 2026-11-25
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
 **Verification scope:** Fetched root README and index.html; checked that AGENTS.md and this status file were absent; inspected recent commit identifiers. This is **not** a full source-code audit, automated test run, or iOS device test.
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
+
+## 2026-11-25 — Cloud backup account-safety follow-up (draft; CI pending)
+
+- Resumed draft [PR #103](https://github.com/jgoldslice/dc_64_33/pull/103) from `ce30241ae461a6a34814521dbb5df0b7aa13c604`; compared against main `5590c0510fe3984b3921161afa60dfd6dfdeff48`.
+- `54de18fc354ef9a99781c2b8cde2a558f0d1d2fc` checks the source account before backup inspection, after inspection, after confirmation, and immediately before publishing the imported manifest. Local imports retain their default no-op account guard. `f725923f4d3361c2a73b276caa377bee05cc308f` binds save and restore to the original account rather than a later sign-in. No archive format or storage key changes.
+- `133c00faf5403353f113942c25c49e3743adce70` extends the mock-account browser regression to cover account changes during save and restore confirmation. Tests added, not locally executed in this session; inspect CI before merging. This does not establish real OAuth or device behavior.
+- Remains open: legacy task scheduling compatibility, durable account-specific reconciliation and recovery, production Firebase project configuration, signed Xcode builds and disposable iPhone/iPad restore testing. Automatic sync remains disabled. No paid services, live rules deployment, planner upload, or main merge performed.
 
 ## 2026-11-23 — Google Sign-In and manual cloud backup pilot
 
