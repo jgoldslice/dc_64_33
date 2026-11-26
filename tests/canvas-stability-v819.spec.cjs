@@ -9,6 +9,9 @@ async function week(page){
   await page.locator('#addWeekEvent').click();
   const dates=page.locator('#v87EventDates');
   await expect(dates).toBeVisible();
+  // Initial inline snap style is also empty before the first centering frame.
+  // Wait for the actual middle week before staging a native drag.
+  await expect.poll(()=>dates.evaluate(el=>Math.round(el.scrollLeft/el.clientWidth))).toBe(1);
   await expect.poll(()=>dates.evaluate(el=>el.style.scrollSnapType)).toBe('');
   return dates;
 }

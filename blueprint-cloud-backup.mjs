@@ -1,3 +1,4 @@
+import {installFullSync} from './sync/full-sync-ui.mjs';
 import {createFirebasePlannerStore} from './sync/firebase-planner-store.mjs';
 import {createPlannerPilot} from './sync/planner-pilot.mjs';
 
@@ -241,8 +242,21 @@ function install(card) {
   const buttons = [signIn, signOut, save, restore, preview, apply];
   let review = null, pilot = null, reviewUid = null;
   function clearReview() { review = null; pilot = null; reviewUid = null; reviewPanel.hidden = true; }
-  let client;
+  let client,connecting;
   let busy = false;
+  const fullSync=installFullSync(card,{getClient:ensureClient,downloadChunks:downloadBackupChunks});
+  async function ensureClient(){
+    if(client)return client;
+    if(!connecting)connecting=connect(message=>{status.textContent=message;}).then(connected=>{
+      client=connected;
+      client.authApi.onAuthStateChanged(client.auth,user=>{
+        render();fullSync.refresh(client);
+        if(!busy)status.textContent=user?'Signed in as '+(user.email||'Google account'):'Signed out.';
+      });
+      fullSync.refresh(client);return client;
+    }).finally(()=>{connecting=null;});
+    return connecting;
+  }
 
   function render() {
     const account = client?.auth.currentUser;
@@ -251,12 +265,14 @@ function install(card) {
     if (!account || (reviewUid && reviewUid !== account.uid)) clearReview();
     for (const button of buttons) button.disabled = busy;
     apply.disabled = busy || !review || !!review.conflicts.length;
+    fullSync.refresh(client);
   }
 
   function run(action, fallback) {
     return async () => {
       if (busy) return;
       busy = true;
+      fullSync.setExternalBusy(true);
       render();
       status.textContent = 'Working…';
       try {
@@ -266,6 +282,7 @@ function install(card) {
           ? error.message : fallback;
       } finally {
         busy = false;
+        fullSync.setExternalBusy(false);
         render();
       }
     };
@@ -276,13 +293,7 @@ function install(card) {
     if (native && !globalThis.Capacitor?.isPluginAvailable?.('BlueprintGoogleSignIn')) {
       throw new Error('This iOS build needs the Blueprint Google Sign-In bridge.');
     }
-    if (!client) {
-      client = await connect(message => { status.textContent = message; });
-      client.authApi.onAuthStateChanged(client.auth, user => {
-        render();
-        if (!busy) status.textContent = user ? 'Signed in as ' + (user.email || 'Google account') : 'Signed out.';
-      });
-    }
+    await ensureClient();
     status.textContent = 'Checking saved sign-in…';
     await withDeadline(client.auth.authStateReady(), 20000,
       'Saved sign-in did not respond. Close and reopen Blueprint, then try again.');

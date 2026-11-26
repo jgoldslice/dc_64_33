@@ -2,6 +2,15 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Content-addressed immutable sync nodes; no overwrite, delete or public read.
+    match /users/{uid}/sync/objects/{objectName} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+        && resource == null && request.resource != null
+        && objectName.matches('^[a-f0-9]{64}\\.json$')
+        && request.resource.size > 0 && request.resource.size <= 104857600
+        && request.resource.contentType == 'application/json';
+    }
     match /users/{uid}/backups/{backupId}/archive.json {
       allow read: if request.auth != null && request.auth.uid == uid;
       // Create-only versions: no overwrites or deletes, even by the owner.

@@ -8,16 +8,19 @@ final class BlueprintPencilViewController: UIViewController, PKCanvasViewDelegat
     private let pageId: String
     private let saveDrawing: (PKDrawing) throws -> Void
     private let onClose: () -> Void
+    private let onChange: () -> Void
     private var saveWork: DispatchWorkItem?
     private var observers: [NSObjectProtocol] = []
 
     init(drawing: PKDrawing, pageId: String,
+         onChange: @escaping () -> Void,
          save: @escaping (PKDrawing) throws -> Void,
          onClose: @escaping () -> Void) {
         self.startingDrawing = drawing
         self.pageId = pageId
         self.saveDrawing = save
         self.onClose = onClose
+        self.onChange = onChange
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -71,6 +74,7 @@ final class BlueprintPencilViewController: UIViewController, PKCanvasViewDelegat
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+        onChange()
         saveWork?.cancel()
         let work = DispatchWorkItem { [weak self] in self?.flushSave(showFailure: true) }
         saveWork = work

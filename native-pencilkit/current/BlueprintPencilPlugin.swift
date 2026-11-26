@@ -20,9 +20,14 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
     ]
 
     private var inlineSession: BlueprintPencilInlineSession?
+    private var fullEditorActive = false
 
     @objc public func capabilities(_ call: CAPPluginCall) {
-        call.resolve(["available": true, "schemaVersion": 1, "embeddedAvailable": true, "drawingArchiveVersion": 1, "imageExportVersion": 1])
+        call.resolve(["available": true, "schemaVersion": 1, "embeddedAvailable": true, "drawingArchiveVersion": 1, "imageExportVersion": 1, "syncDrawingEventsVersion": 1, "fullEditorActive": fullEditorActive])
+    }
+
+    private func drawingDidChange() {
+        self.bridge?.webView?.evaluateJavaScript("window.dispatchEvent(new Event('blueprint:pencil-dirty'))", completionHandler: nil)
     }
 
     @objc public func exportDrawing(_ call: CAPPluginCall) {
@@ -155,6 +160,7 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                         host: controller,
                         projectId: projectId, pageId: pageId,
                         drawing: drawing,
+                        onChange: { [weak self] in self?.drawingDidChange() },
                         save: { updated in
                             try BlueprintPencilStore.save(updated, projectId: projectId, pageId: pageId)
                         }
@@ -211,9 +217,12 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                     return
                 }
                 let editor = BlueprintPencilViewController(drawing: drawing, pageId: pageId,
+                    onChange: { [weak self] in self?.drawingDidChange() },
                     save: { updated in
                         try BlueprintPencilStore.save(updated, projectId: projectId, pageId: pageId)
-                    }, onClose: {
+                    }, onClose: { [weak self] in
+                        self?.fullEditorActive = false
+                        self?.drawingDidChange()
                         // Autosave and explicit Done save happen in the editor.
                         // The openEditor promise must NOT wait for the user to close it.
                         print("BLUEPRINT PENCIL: editor closed")
@@ -221,6 +230,8 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                 let navigation = UINavigationController(rootViewController: editor)
                 navigation.modalPresentationStyle = .fullScreen
                 print("BLUEPRINT PENCIL: presenting native editor")
+                self.fullEditorActive = true
+                self.drawingDidChange()
                 presenter.present(navigation, animated: true) {
                     guard presenter.presentedViewController === navigation else {
                         call.reject("Native PencilKit presentation did not complete")
@@ -244,9 +255,16 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
             let editor = BlueprintPencilViewController(drawing: PKDrawing(), pageId: "test",
-                save: { _ in }, onClose: { call.resolve(["opened": true]) })
+                onChange: { [weak self] in self?.drawingDidChange() },
+                save: { _ in }, onClose: { [weak self] in
+                    self?.fullEditorActive = false
+                    self?.drawingDidChange()
+                    call.resolve(["opened": true])
+                })
             let navigation = UINavigationController(rootViewController: editor)
             navigation.modalPresentationStyle = .fullScreen
+            self.fullEditorActive = true
+            self.drawingDidChange()
             presenter.present(navigation, animated: true)
         }
     }
@@ -278,6 +296,7 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
     private let canvas = PKCanvasView()
     private let picker = PKToolPicker()
     private let saveDrawing: (PKDrawing) throws -> Void
+    private let onChange: () -> Void
     private weak var hostController: UIViewController?
     private var lastSaved: PKDrawing
     private var pendingSave: DispatchWorkItem?
@@ -286,10 +305,11 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
     private var editing = false
 
     init(host: UIViewController, projectId: String, pageId: String,
-         drawing: PKDrawing, save: @escaping (PKDrawing) throws -> Void) {
+         drawing: PKDrawing, onChange: @escaping () -> Void, save: @escaping (PKDrawing) throws -> Void) {
         self.projectId = projectId
         self.pageId = pageId
         self.saveDrawing = save
+        self.onChange = onChange
         self.lastSaved = drawing
         super.init()
         overlay.isOpaque = false
@@ -369,6 +389,7 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+        onChange()
         pendingSave?.cancel()
         let work = DispatchWorkItem { [weak self] in
             do { try self?.saveNow() }

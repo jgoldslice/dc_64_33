@@ -144,3 +144,45 @@ test('two Firebase clients synchronize planner records under one account', async
     await assert.rejects(tabletStore.list(), /same Blueprint account/);
   });
 });
+
+test('full planner sync CAS heads, immutable files, account isolation and corruption checks',async t=>{
+  const {createFullSyncStore,SyncMoved}=await import('../sync/full-sync-store.mjs');
+  const {hashJSON}=await import('../sync/full-sync-codec.mjs');
+  const first=client(t),second=client(t),stranger=client(t),out=client(t);
+  const email=randomUUID()+'@example.test';
+  await createUserWithEmailAndPassword(first.auth,email,password);
+  await signInWithEmailAndPassword(second.auth,email,password);
+  await createUserWithEmailAndPassword(stranger.auth,randomUUID()+'@example.test',password);
+  const uid=first.auth.currentUser.uid;
+  const a=createFullSyncStore(first),b=createFullSyncStore(second);
+  const graph={'["settings"]':{title:'Shared planner'},'["tasks","one"]':{id:'one',title:'Task',done:false}};
+  const file={kind:'ink',base64:'YWJj',preview:{base64:'fixture',width:500,height:900}};
+  const hash=await hashJSON(file);
+  graph['["pages","p","one"]']={page:{id:'one'},ink:hash};
+  const candidate=await a.prepare(graph,new Map([[hash,file]]),null);
+  const h=await a.publish(candidate,()=>{});assert.equal(h.revision,1);
+  assert.deepEqual(JSON.parse(JSON.stringify((await b.read()).graph)),graph);
+  assert.deepEqual(await b.readObject(hash),file);
+  const ref=firestore.doc(first.db,'users',uid,'sync','current');
+  const next=await b.prepare({...graph,'["settings"]':{title:'Changed'}},new Map(),h);
+  const stale=await a.prepare({...graph,'["settings"]':{title:'Stale'}},new Map(),h);
+  await b.publish(next,()=>{});await assert.rejects(a.publish(stale,()=>{}),SyncMoved);
+  assert.ok(await a.contains((await a.read()).head,candidate.hash));
+  for(const actor of [stranger,out])await assert.rejects(firestore.getDocFromServer(firestore.doc(actor.db,'users',uid,'sync','current')),permissionDenied);
+  await assert.rejects(firestore.updateDoc(ref,{revision:99}),permissionDenied);
+  await assert.rejects(firestore.updateDoc(ref,{hash:'bad',revision:3,updatedAt:firestore.serverTimestamp()}),permissionDenied);
+  await assert.rejects(firestore.deleteDoc(ref),permissionDenied);
+  const object=storageApi.ref(first.storage,'users/'+uid+'/sync/objects/'+hash+'.json');
+  const storageDenied=error=>error.code==='storage/unauthorized';
+  await assert.rejects(storageApi.uploadBytes(object,new Uint8Array([1]),{contentType:'application/json'}),storageDenied);
+  await assert.rejects(storageApi.deleteObject(object),storageDenied);
+  await assert.rejects(storageApi.getBytes(storageApi.ref(stranger.storage,object.fullPath)),storageDenied);
+  await assert.rejects(storageApi.uploadBytes(storageApi.ref(first.storage,'users/'+uid+'/sync/objects/invalid.json'),new Uint8Array([1]),{contentType:'application/json'}),storageDenied);
+  // Even an owner-written incorrect object cannot pass the reader checksum.
+  const wrong='f'.repeat(64);
+  await storageApi.uploadBytes(storageApi.ref(first.storage,'users/'+uid+'/sync/objects/'+wrong+'.json'),new TextEncoder().encode('{}'),{contentType:'application/json'});
+  await assert.rejects(b.readObject(wrong),/checksum/);
+  await signOut(first.auth);
+  await signInWithEmailAndPassword(first.auth,email,password);
+  await assert.rejects(a.read(),/account changed/);
+});

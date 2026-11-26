@@ -50,6 +50,24 @@ service cloud.firestore {
           && (collection == 'tasks' ? validTask(row.record) : validEvent(row.record))));
     }
 
+    // users/{uid}/sync/current: account-owned CAS head; immutable objects live in Storage.
+    // schema=1, positive monotonic revision, SHA-256 manifest hash, server updatedAt.
+    function validSyncHead() {
+      let row = request.resource.data;
+      return row.keys().hasOnly(['schema', 'revision', 'hash', 'updatedAt'])
+        && row.keys().hasAll(['schema', 'revision', 'hash', 'updatedAt'])
+        && row.schema == 1 && row.revision is int && row.revision > 0
+        && row.revision <= 9007199254740991
+        && row.hash is string && row.hash.matches('^[a-f0-9]{64}$')
+        && row.updatedAt == request.time;
+    }
+    match /users/{uid}/sync/current {
+      allow get: if owns(uid);
+      allow create: if owns(uid) && validSyncHead() && request.resource.data.revision == 1;
+      allow update: if owns(uid) && validSyncHead()
+        && request.resource.data.revision == resource.data.revision + 1;
+    }
+
     match /users/{uid}/backups/{backupId} {
       allow get, list: if owns(uid);
       allow create: if owns(uid) && request.resource.data.createdAt == request.time
