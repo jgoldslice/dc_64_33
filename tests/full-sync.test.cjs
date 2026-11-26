@@ -125,3 +125,17 @@ test('legacy notebookText remains content until real note pages exist',async()=>
   const restored=await graphToArchive(packed.graph,hash=>packed.objects.get(hash));
   assert.equal(restored.state.projects[0].notebookText,archive.state.projects[0].notebookText);
 });
+
+test('durable checkpoint checksum detects valid-JSON damage before it can become a new baseline',async()=>{
+  const {syncCheckpoint}=await import('../sync/full-sync-local.mjs');
+  const old=globalThis.v6Blob,values=new Map();
+  globalThis.v6Blob=async(mode,key,value)=>{if(mode==='put'){values.set(key,value);return key;}return values.get(key);};
+  try{
+    const checkpoint=syncCheckpoint('fixture');assert.equal(await checkpoint.read(),null);
+    await checkpoint.write({schema:1,baseline:graph(),pending:null});
+    assert.deepEqual((await checkpoint.read()).baseline,graph());
+    const [key,text]=values.entries().next().value,changed=JSON.parse(text);changed.body.baseline={};
+    values.set(key,JSON.stringify(changed));
+    await assert.rejects(checkpoint.read(),/checkpoint is damaged/);
+  }finally{globalThis.v6Blob=old;}
+});

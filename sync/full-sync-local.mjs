@@ -1,4 +1,4 @@
-import {archiveToGraph,graphToArchive} from './full-sync-codec.mjs';
+import {archiveToGraph,graphToArchive,hashJSON} from './full-sync-codec.mjs';
 const maxBytes=100*1024*1024;
 export function createFullSyncLocal(){
   const api=globalThis.BlueprintFullSyncLocal;
@@ -73,13 +73,15 @@ export function syncCheckpoint(scope,guard=()=>{}){
     async read(){
       expected=await readText();guard();
       if(expected===null)return null;
-      const value=JSON.parse(expected);
-      if(value.schema!==1||!value.baseline)throw Error('The sync checkpoint is damaged. Preserve local data before recovery.');
-      return value;
+      const envelope=JSON.parse(expected),value=envelope.body;
+      if(envelope.version!==1||!value||value.schema!==1||!value.baseline||
+         await hashJSON(value)!==envelope.sha256)throw Error('The sync checkpoint is damaged. Preserve local data before recovery.');
+      guard();return value;
     },
     async write(value){
       if(await readText()!==(expected??null))throw Error('Another window changed the sync checkpoint.');
-      guard();const text=JSON.stringify(value);
+      guard();const sha256=await hashJSON(value);guard();
+      const text=JSON.stringify({version:1,body:value,sha256});
       await globalThis.v6Blob('put',key,text);guard();
       if(await readText()!==text)throw Error('The sync checkpoint could not be verified.');
       expected=text;

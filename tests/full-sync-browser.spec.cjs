@@ -159,6 +159,9 @@ test('an older native drawing bridge cannot enable incomplete handwriting sync',
   const backend=cloudBackend(),context=await browser.newContext({baseURL:'http://127.0.0.1:8765/'});
   try{
     const page=await connected(context,backend);await signIn(page);
+    await page.setViewportSize({width:320,height:740});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+    await page.locator('[data-full-sync]').screenshot({path:require('node:path').join(__dirname,'../test-results/sync-setup-320.png')});
     await page.evaluate(()=>{window.Capacitor={isNativePlatform:()=>true,nativePromise:async()=>({drawingArchiveVersion:1})};});
     await page.locator('[data-full-sync-start]').click();
     await expect(page.locator('[data-full-sync-status]')).toContainText('Install the new Blueprint iOS build');
