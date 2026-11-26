@@ -83,7 +83,7 @@ Record device, OS, build revision, project ID, account identifier (no tokens), a
 
 - Live Google sign-in, private cloud access, persistence, small and large restore, interruption/account-switch protection, and native drawing recovery have device evidence.
 - Existing local planner keys and complete backup formats remain intact.
-- Automatic sync, background backup, retention cleanup and newest-version selection behavior have not been changed during this pilot.
+- Automatic two-way sync and retention cleanup remain off. Optional automatic snapshots require explicit per-device/account consent and never restore data automatically.
 - Only then plan a read-only task/event sync preview. Applying preview changes requires a durable per-account baseline and recoverable apply journal before automatic writes can be considered.
 
 ## Current result
@@ -95,6 +95,6 @@ Verified live setup after the owner completed sign-in and selected Iowa:
 - Google sign-in backend configured. Native configuration downloaded into isolated staging with OAuth identifiers present. Actual in-app Google sign-in, signed-in manual backup and device recovery remain pending.
 - A separate configured web pilot is available on the Mac at `http://localhost:8766/` while its local server runs. Its real Firebase initialization passed a phone-viewport browser check. Use **Customize → Cloud Backup → Continue with Google** with disposable test data. This is a separate browser origin from the installed app and public website.
 - Repository configuration stays disabled; no website publication, native-wrapper modification or installation was performed. The existing wrapper has local edits and must be preserved when integration resumes.
-- Storage/billing/CORS and large-archive live tests remain pending. The user must complete any required billing enrollment through the console. Back up each device outside the app before any native installation.
+- The owner subsequently completed card setup, authorized linking the single billing account, selected a USD $5 monthly alert, and approved the Iowa Storage setup. Billing, bucket/CORS and private rules are now verified live. A synthetic large-archive/image round trip passed through the live bucket using administrator transport; signed-in client media and physical native drawing tests remain pending. Back up each device outside the app before any native installation.
 
 For exact identifiers, verification scope and remaining limits, see the 2026-11-25 live-setup entry in `BLUEPRINT_STATUS.md`.

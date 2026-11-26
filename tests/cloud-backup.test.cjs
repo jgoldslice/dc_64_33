@@ -13,7 +13,11 @@ function fixture() {
       toUint8Array() {return this.bytes;}
     },
     collection: (_, ...parts) => parts.join('/'),
-    doc: path => ({id: String(rows.length), path}),
+    doc: (path, id) => ({id: id ?? String(rows.length), path}),
+    runTransaction: async (_, action) => action({
+      get: async ref => ({exists: () => rows.some(row => row.id === ref.id), data: () => rows.find(row => row.id === ref.id)?.data}),
+      set: (ref, data) => rows.push({id: ref.id, data}),
+    }),
     serverTimestamp: () => null,
     addDoc: async (path, data) => rows.push({id: String(rows.length), data}),
     setDoc: async (ref, data) => rows.push({id: ref.id, data}),
@@ -24,7 +28,10 @@ function fixture() {
   const storageApi = {
     ref: (_, path) => path,
     uploadBytes: async (path, blob) => objects.set(path, blob),
-    getBlob: async path => objects.get(path),
+    getBlob: async path => {
+      if (!objects.has(path)) throw Object.assign(Error('missing'), {code: 'storage/object-not-found'});
+      return objects.get(path);
+    },
   };
   const client = {auth, db: {}, firestore, storage: {}, storageApi};
   return {client, rows, objects, store: createCloudBackupStore(client)};
@@ -107,4 +114,39 @@ test('persistent authentication tries IndexedDB, local storage, then disclosed m
     assert.equal(await configurePersistence({}, api), failures < 2);
     assert.deepEqual(attempts, ['idb', 'local', 'memory'].slice(0, failures + 1));
   }
+});
+
+
+test('automatic version retries use one immutable transaction identity for small and large archives', async () => {
+  for (const archive of [new Blob(['small archive']), large()]) {
+    const {store, rows, objects} = fixture();
+    await store.save(archive, {backupId: 'automatic-retry'});
+    await store.save(archive, {backupId: 'automatic-retry'});
+    assert.equal(rows.length, 1);
+    assert.equal(objects.size, archive.size > 768000 ? 1 : 0);
+    await assert.rejects(store.save(new Blob(['different']), {backupId: 'automatic-retry'}), /different data/);
+  }
+});
+
+test('automatic Storage replay recovers an uploaded object after failed manifest publication', async () => {
+  const {store, client, rows, objects} = fixture();
+  const original = client.firestore.runTransaction;
+  client.firestore.runTransaction = async () => {throw Error('offline');};
+  const archive = large();
+  await assert.rejects(store.save(archive, {backupId: 'pending-version'}), /offline/);
+  assert.equal(rows.length, 0);assert.equal(objects.size, 1);
+  client.firestore.runTransaction = original;
+  await store.save(archive, {backupId: 'pending-version'});
+  assert.equal(rows.length, 1);assert.equal(objects.size, 1);
+  assert.equal(await (await store.latest()).archive.text(), await archive.text());
+});
+
+test('automatic write guard prevents publication after pause even under the same account', async () => {
+  const {store, client, rows} = fixture();
+  const original = client.firestore.runTransaction;
+  let enabled = true;
+  client.firestore.runTransaction = async (...args) => {enabled = false;return original(...args);};
+  await assert.rejects(store.save(new Blob(['pending']), {backupId: 'paused-version',
+    assertCanWrite: () => {if (!enabled) throw Error('paused');}}), /paused/);
+  assert.equal(rows.length, 0);
 });

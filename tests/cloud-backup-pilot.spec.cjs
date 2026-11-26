@@ -39,7 +39,10 @@ async function mockCloud(page, storage = false) {
       export const getStorage = () => ({});
       export const ref = (_, path) => path;
       export const uploadBytes = async (path, blob) => {objects.set(path, blob);};
-      export const getBlob = async path => objects.get(path);
+      export const getBlob = async path => {
+        if (!objects.has(path)) throw Object.assign(Error('missing'), {code: 'storage/object-not-found'});
+        return objects.get(path);
+      };
     `,
     'firebase-firestore.js': `
       let latest;
@@ -51,7 +54,14 @@ async function mockCloud(page, storage = false) {
       }
       export const getFirestore = () => ({});
       export const collection = (_, ...path) => path.join('/');
-      export const doc = () => ({id: 'version-1'});
+      export const doc = (_, id) => ({id: id || 'version-1'});
+      export const runTransaction = async (_, action) => {
+        if (window.fixtureFailAuto) throw Object.assign(Error('offline'), {code: 'unavailable'});
+        return action({
+          get: async ref => ({exists: () => latest?.fixtureId === ref.id, data: () => latest}),
+          set: (ref, data) => {latest = {...data, fixtureId: ref.id};window.fixtureCloudWrites++;},
+        });
+      };
       export const setDoc = async (_, data) => {latest = data;};
       export const query = path => path;
       export const orderBy = () => ({});
@@ -183,4 +193,101 @@ test('large cloud archive restores attachment bytes and native ink through exist
   });
   expect(result).toEqual({size: 800000, first: 27, last: 27,
     page: 'restored-native-page', ink: ['native ink bytes']});
+});
+
+
+async function enableAutomatic(page, cloud) {
+  await cloud.locator('[data-cloud-auto]').click();
+  const prompt = page.getByRole('dialog', {name: 'Automatic backups', exact: true});
+  await expect(prompt).toBeVisible();
+  await prompt.getByRole('button', {name: 'Enable automatic backups', exact: true}).click();
+  await expect(cloud.getByRole('status')).toHaveText('Automatic backups enabled on this device.');
+}
+
+test('automatic backups require consent, deduplicate snapshots, follow saved edits and pause for restore', async ({page}) => {
+  await page.clock.install({time: new Date('2026-11-25T12:00:00Z')});
+  await mockCloud(page);
+  const cloud = await openCloud(page);
+  await expect(cloud.getByRole('status')).toHaveText('Signed in as pilot@example.test');
+  await expect(cloud.locator('[data-cloud-auto]')).not.toBeChecked();
+  await page.clock.fastForward(60000);
+  expect(await page.evaluate(() => window.fixtureCloudWrites)).toBe(0);
+  await enableAutomatic(page, cloud);
+  await page.clock.fastForward(31000);
+  await expect.poll(() => page.evaluate(() => window.fixtureCloudWrites)).toBe(1);
+  await expect(cloud.locator('[data-cloud-auto-status]')).toContainText('Last automatic backup:');
+  await page.clock.fastForward(301000);
+  await expect(cloud.locator('[data-cloud-auto-status]')).toContainText('No duplicate');
+  expect(await page.evaluate(() => window.fixtureCloudWrites)).toBe(1);
+  await page.evaluate(() => {state.tasks.push({id: 'auto-task', title: 'Automatic backup fixture', done: false});if (!save(true)) throw Error('Fixture save failed');});
+  await page.clock.fastForward(31000);
+  await expect.poll(() => page.evaluate(() => window.fixtureCloudWrites)).toBe(2);
+  page.on('dialog', dialog => dialog.dismiss());
+  await cloud.getByRole('button', {name: 'Restore latest'}).click();
+  await expect(cloud.locator('[data-cloud-auto]')).not.toBeChecked();
+  await expect(cloud.locator('[data-cloud-auto-status]')).toContainText('Restore paused');
+});
+
+test('automatic pending Blob survives reload and explicit sign-out disables future uploads', async ({page}) => {
+  await page.clock.install({time: new Date('2026-11-25T12:00:00Z')});
+  await mockCloud(page);
+  const cloud = await openCloud(page);
+  await expect(cloud.getByRole('status')).toHaveText('Signed in as pilot@example.test');
+  await enableAutomatic(page, cloud);
+  await page.evaluate(() => {window.fixtureFailAuto = true;});
+  await page.clock.fastForward(31000);
+  await expect(cloud.locator('[data-cloud-auto-status]')).toContainText('Backup pending');
+  const before = await page.evaluate(async () => {
+    const {createBackupQueue} = await import('/automatic-cloud-backup.mjs');
+    const record = await createBackupQueue().get('test:fixture');
+    return {id: record.pending.id, bytes: await record.pending.archive.text()};
+  });
+  expect(before.bytes).toContain('canvas-complete-backup');
+  await page.reload();
+  await page.locator('#paletteLauncher').click();
+  await expect(cloud.getByRole('status')).toHaveText('Signed in as pilot@example.test');
+  await page.clock.fastForward(31000);
+  await expect.poll(() => page.evaluate(() => window.fixtureCloudWrites)).toBe(1);
+  const after = await page.evaluate(async () => {
+    const {createBackupQueue} = await import('/automatic-cloud-backup.mjs');
+    return createBackupQueue().get('test:fixture');
+  });
+  expect(after.pending).toBeNull();
+  await cloud.getByRole('button', {name: 'Sign out'}).click();
+  await expect(cloud.getByRole('status')).toHaveText('Signed out.');
+  await page.reload();
+  await page.locator('#paletteLauncher').click();
+  await expect(cloud.getByRole('status')).toHaveText('Signed in as pilot@example.test');
+  await expect(cloud.locator('[data-cloud-auto]')).not.toBeChecked();
+  await page.clock.fastForward(31000);
+  expect(await page.evaluate(() => window.fixtureCloudWrites)).toBe(0);
+});
+
+test('automatic fingerprints include native-only ink changes even when the planner manifest does not change', async ({page}) => {
+  await page.clock.install({time: new Date('2026-11-25T12:00:00Z')});
+  await page.addInitScript(() => {
+    window.fixtureInk='ink-before';
+    window.Capacitor={isNativePlatform:()=>true,isPluginAvailable:()=>true,nativePromise:async(_,method)=>{
+      if(method==='capabilities')return {drawingArchiveVersion:1};
+      if(method==='exportDrawing')return {base64:btoa(window.fixtureInk)};
+    }};
+  });
+  await mockCloud(page);
+  const cloud=await openCloud(page);
+  await expect(cloud.getByRole('status')).toHaveText('Signed in as pilot@example.test');
+  await page.evaluate(()=>{
+    state.projects=[{id:'auto-native-project',title:'Native auto fixture',notes:[],actions:[],library:[],
+      notePages:[{id:'ink-page',title:'Ink',strokes:[],objects:[]}]}];
+    if(!save(true))throw Error('Fixture save failed');
+  });
+  const preparation=await page.evaluate(async()=>{try{return {fingerprint:(await v74BuildCloudBackupSnapshot()).fingerprint};}catch(error){return {error:error.message};}});
+  expect(preparation).not.toHaveProperty('error');
+  await enableAutomatic(page,cloud);
+  await page.clock.fastForward(31000);
+  await expect(cloud.locator('[data-cloud-auto-status]')).toContainText('Last automatic backup:');
+  await expect.poll(()=>page.evaluate(()=>window.fixtureCloudWrites)).toBe(1);
+  const before=await page.evaluate(()=>{window.fixtureInk='ink-after';return localStorage.getItem(STORAGE_KEY);});
+  await page.clock.fastForward(301000);
+  await expect.poll(()=>page.evaluate(()=>window.fixtureCloudWrites)).toBe(2);
+  expect(await page.evaluate(()=>localStorage.getItem(STORAGE_KEY))).toBe(before);
 });

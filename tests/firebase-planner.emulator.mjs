@@ -165,3 +165,30 @@ test('Storage versions round trip across clients with private immutable objects 
   await firestore.setDoc(corruptRef, {version: 2, path, size: 1, sha256: '0'.repeat(64), createdAt: firestore.serverTimestamp()});
   await assert.rejects(createCloudBackupStore(receiver).latest(), /integrity check failed/);
 });
+
+test('automatic versions recover lost acknowledgements and staged objects without duplicate cloud versions', async t => {
+  const phone=client(t), tablet=client(t);
+  const email=randomUUID()+'@example.test';
+  await createUserWithEmailAndPassword(phone.auth,email,password);
+  await signInWithEmailAndPassword(tablet.auth,email,password);
+  const uid=phone.auth.currentUser.uid;
+  const archive=new Blob(['automatic complete archive fixture:'.repeat(30000)],{type:'application/json'});
+  let loseResponse=true;
+  const unreliable={...phone,firestore:{...firestore,runTransaction:async(...args)=>{
+    const result=await firestore.runTransaction(...args);
+    if(loseResponse){loseResponse=false;throw Error('Lost success response');}
+    return result;
+  }}};
+  const store=createCloudBackupStore(unreliable);
+  await assert.rejects(store.save(archive,{backupId:'automatic-version'}),/Lost success response/);
+  await store.save(archive,{backupId:'automatic-version'});
+  const versions=()=>firestore.getDocsFromServer(firestore.collection(phone.db,'users',uid,'backups'));
+  assert.equal((await versions()).size,1);
+  assert.equal(await (await createCloudBackupStore(tablet).latest()).archive.text(),await archive.text());
+  await assert.rejects(store.save(new Blob(['different']),{backupId:'automatic-version'}),/different data/);
+  const pendingPath=`users/${uid}/backups/staged-version/archive.json`;
+  await storageApi.uploadBytes(storageApi.ref(phone.storage,pendingPath),new Uint8Array(await archive.arrayBuffer()),{contentType:'application/json'});
+  await store.save(archive,{backupId:'staged-version'});
+  assert.equal((await versions()).size,2);
+  await assert.rejects(storageApi.deleteObject(storageApi.ref(phone.storage,pendingPath)),{code:'storage/unauthorized'});
+});

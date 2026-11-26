@@ -5,6 +5,7 @@ on:
       - .github/workflows/firebase-emulator.yml
       - firebase.json
       - blueprint-cloud-backup.mjs
+      - automatic-cloud-backup.mjs
       - firestore.rules
       - storage.rules
       - sync/**

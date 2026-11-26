@@ -1,3 +1,4 @@
+import {createAutomaticBackup, clearAutomaticConsent} from './automatic-cloud-backup.mjs';
 const sdkBase = 'https://www.gstatic.com/firebasejs/12.10.0/';
 const maxBackupBytes = 750 * 1024;
 
@@ -19,15 +20,45 @@ export function createCloudBackupStore({auth, db, firestore, storage, storageApi
     assertAccount();
     return firestore.collection(db, 'users', uid, 'backups');
   }
-  async function save(archive) {
-    assertAccount();
+  async function save(archive, {backupId, assertCanWrite = () => {}} = {}) {
+    function assertWrite() {assertAccount(); assertCanWrite();}
+    assertWrite();
+    if (backupId !== undefined && !/^[a-zA-Z0-9_-]{1,128}$/.test(backupId)) {
+      throw new Error('Invalid backup version identity.');
+    }
+    async function publish(target, data) {
+      assertWrite();
+      if (!backupId) {await firestore.addDoc(target, data); return;}
+      const ref = firestore.doc(target, backupId);
+      // Transactions require a server connection. Automatic writes never enter
+      // Firestore's offline write queue, and a retry uses the exact same version.
+      await firestore.runTransaction(db, async transaction => {
+        assertWrite();
+        const snapshot = await transaction.get(ref);
+        assertWrite();
+        if (snapshot.exists()) {
+          const previous = snapshot.data();
+          let same = previous.version === data.version;
+          if (same && data.version === 1) {
+            const left = previous.archive instanceof firestore.Bytes ? previous.archive.toUint8Array() : [];
+            const right = data.archive.toUint8Array();
+            same = left.length === right.length && right.every((byte, i) => byte === left[i]);
+          } else if (same) {
+            same = previous.path === data.path && previous.size === data.size && previous.sha256 === data.sha256;
+          }
+          if (!same) throw new Error('This backup version already contains different data. Automatic backups paused.');
+          return;
+        }
+        transaction.set(ref, data);
+      });
+    }
     if (!(archive instanceof Blob) || archive.size === 0 || archive.size > maxArchiveBytes) {
       throw new Error('Invalid cloud backup size (maximum 100 MiB). Use Export backup.');
     }
     if (archive.size <= maxBackupBytes) {
       const bytes = new Uint8Array(await archive.arrayBuffer());
-      assertAccount();
-      await firestore.addDoc(backups(), {
+      assertWrite();
+      await publish(backups(), {
         version: 1, archive: firestore.Bytes.fromUint8Array(bytes),
         createdAt: firestore.serverTimestamp(),
       });
@@ -35,19 +66,34 @@ export function createCloudBackupStore({auth, db, firestore, storage, storageApi
       if (!storage || !storageApi) {
         throw new Error('This backup exceeds the 750 KiB cloud limit. Configure Storage or use Export backup.');
       }
-      const target = firestore.doc(backups());
+      const target = backupId ? firestore.doc(backups(), backupId) : firestore.doc(backups());
       const path = `users/${uid}/backups/${target.id}/archive.json`;
       const sha256 = await checksum(archive);
-      assertAccount();
-      await storageApi.uploadBytes(storageApi.ref(storage, path), archive, {contentType: 'application/json'});
-      assertAccount();
+      assertWrite();
+      const object = storageApi.ref(storage, path);
+      let uploaded = false;
+      if (backupId) {
+        try {
+          const existing = await storageApi.getBlob(object, archive.size);
+          assertWrite();
+          if (existing.size !== archive.size || await checksum(existing) !== sha256) {
+            throw new Error('Existing staged backup failed its integrity check. Automatic backups paused.');
+          }
+          uploaded = true;
+        } catch (error) {
+          if (error.code !== 'storage/object-not-found') throw error;
+        }
+      }
+      assertWrite();
+      if (!uploaded) await storageApi.uploadBytes(object, archive, {contentType: 'application/json'});
+      assertWrite();
       // Publish only after upload succeeds. A failed publication leaves an inert orphan;
       // never delete or overwrite objects on an ambiguous network result.
-      await firestore.setDoc(target, {
-        version: 2, path, size: archive.size, sha256, createdAt: firestore.serverTimestamp(),
-      });
+      const data = {version: 2, path, size: archive.size, sha256, createdAt: firestore.serverTimestamp()};
+      if (backupId) await publish(backups(), data);
+      else await firestore.setDoc(target, data);
     }
-    assertAccount();
+    assertWrite();
   }
   async function latest() {
     const query = firestore.query(backups(), firestore.orderBy('createdAt', 'desc'), firestore.limit(1));
@@ -115,7 +161,7 @@ async function connect() {
   await auth.authStateReady();
   const persistent = await configurePersistence(auth, authApi);
   const storageApi = config.storageBucket ? await import(sdkBase + 'firebase-storage.js') : null;
-  return {authApi, firestore, auth, persistent, db: firestore.getFirestore(app),
+  return {authApi, firestore, auth, persistent, projectId: config.projectId, db: firestore.getFirestore(app),
     storageApi, storage: storageApi?.getStorage(app)};
 }
 
@@ -125,16 +171,24 @@ function install(card) {
   const signOut = card.querySelector('[data-cloud-sign-out]');
   const save = card.querySelector('[data-cloud-save]');
   const restore = card.querySelector('[data-cloud-restore]');
+  const autoControls = card.querySelector('[data-cloud-auto-controls]');
+  const autoToggle = card.querySelector('[data-cloud-auto]');
+  const autoStatus = card.querySelector('[data-cloud-auto-status]');
   const buttons = [signIn, signOut, save, restore];
   let client;
   let connecting;
   let busy = false;
+  let automatic;
+  let automaticUser;
 
   function render() {
     const account = client?.auth.currentUser;
     signIn.hidden = !!account;
     for (const button of [save, restore, signOut]) button.hidden = !account;
-    for (const button of buttons) button.disabled = busy;
+    for (const button of buttons) button.disabled = busy || (button !== signOut && !!automatic?.running);
+    autoControls.hidden = !account;
+    autoToggle.disabled = busy;
+    autoToggle.checked = !!automatic?.enabled;
   }
 
   function run(action, fallback) {
@@ -161,13 +215,67 @@ function install(card) {
       (client.persistent ? '' : ' · Session only; sign in again after closing Blueprint.') : 'Signed out.';
   }
 
+  function syncAutomaticAccount() {
+    const user = client.auth.currentUser;
+    if (user === automaticUser) return;
+    automatic?.dispose();
+    automatic = null; automaticUser = user;
+    if (!user) {clearAutomaticConsent(client.projectId); render(); return;}
+    const owner = user;
+    const engine = createAutomaticBackup({uid: user.uid, projectId: client.projectId,
+      store: createCloudBackupStore(client),
+      build: () => globalThis.v74BuildCloudBackupSnapshot(),
+      canRun: () => !busy && !globalThis.document.hidden && globalThis.navigator.onLine !== false && client.auth.currentUser === owner,
+      onState(state) {
+        if (client.auth.currentUser !== owner) return;
+        autoStatus.textContent = state.message;
+        // The callback can fire during engine construction; rendering is safe
+        // before assignment and is repeated immediately afterward.
+        render();
+      },
+    });
+    automatic = engine;
+    render();
+  }
+  autoToggle.addEventListener('change', () => {
+    const requested = autoToggle.checked;
+    run(async () => {
+      const engine = automatic;
+      const owner = client.auth.currentUser;
+      if (!requested) {
+        engine.pause(); status.textContent = 'Automatic backups paused.'; return;
+      }
+      const confirmed = await globalThis.BlueprintSheet.confirm(
+        'Automatically save complete copies of this device’s data to this Google account while Blueprint is open? ' +
+        'Files and supported drawings are included. Pending uploads resume when you reopen Blueprint. ' +
+        'This device allows up to 12 automatic versions or 200 MiB per day, at least five minutes apart. ' +
+        'Older versions remain stored and can add cloud costs. You can pause anytime. Restoring remains manual.',
+        'Enable automatic backups', 'Automatic backups');
+      if (!confirmed) {status.textContent = 'Automatic backups remain off.'; return;}
+      if (automatic !== engine || client.auth.currentUser !== owner) throw Error('The account changed. Enable backups again for the current account.');
+      await engine.enable();
+      status.textContent = 'Automatic backups enabled on this device.';
+    }, 'Could not enable automatic backups. Manual backup is still available.')();
+  });
+  globalThis.addEventListener('blueprint:local-saved', () => automatic?.changed());
+  globalThis.addEventListener('blueprint:backup-import-start', () => automatic?.pause('Restore paused automatic backups. Enable them again when ready.'));
+  globalThis.addEventListener('online', () => automatic?.tick());
+  globalThis.addEventListener('storage', event => {
+    if (event.key === 'blueprint-cloud-backup-auto-v1:' + client?.projectId) render();
+  });
+  // Periodic fingerprints also detect saved sketch/native-ink changes that do
+  // not update the planner manifest. No background/closed-app guarantee.
+  globalThis.setInterval(() => automatic?.tick(), 15_000);
+
   async function initialize() {
     if (!connecting) connecting = (async () => {
       client = await connect();
       client.authApi.onAuthStateChanged(client.auth, () => {
+        syncAutomaticAccount();
         render();
         if (!busy) status.textContent = accountStatus();
       });
+      syncAutomaticAccount();
       render();
     })().catch(error => {connecting = null; throw error;});
     return connecting;
@@ -196,6 +304,7 @@ function install(card) {
   }, 'Google sign-in did not complete. Check your connection and try again.'));
 
   signOut.addEventListener('click', run(async () => {
+    automatic?.pause();
     await client.authApi.signOut(client.auth);
     if (globalThis.Capacitor?.isNativePlatform?.()) {
       await globalThis.Capacitor.nativePromise('BlueprintGoogleSignIn', 'signOut', {});
@@ -217,6 +326,7 @@ function install(card) {
   }, 'Could not save the cloud backup. Check your connection and try again.'));
 
   restore.addEventListener('click', run(async () => {
+    automatic?.pause('Restore paused automatic backups. Enable them again when ready.');
     const store = createCloudBackupStore(client);
     const backup = await store.latest();
     if (!backup) {
