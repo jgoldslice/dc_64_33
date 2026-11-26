@@ -7,7 +7,7 @@ Prepared 2026-11-25 for draft PR #104. This is a setup and test plan, not eviden
 - The owner's screenshot shows a Firebase project named **Blueprint**, the **Spark** plan, and an **Add app** button. It does not establish the project ID, registered app list, enabled authentication providers, database region, existing rules, or bucket state.
 - Draft #104 head `c690525393c28b2116a0d04982c84f8446f8c84d` has successful browser and emulator CI. The tested implementation passed 410 browser, 47 Node and 6 Auth/Firestore/Storage emulator tests. These are not live OAuth or native-device tests.
 - The owner has approved continuing setup and pilot preparation in this chat. Account access and the exact target project still need to be established. Do not repeat an approval request for the same authorized setup; obtain missing target/account information through the Firebase connection.
-- An official Firebase integration was found and suggested, but its account connection has not been confirmed. Until connected, all console actions below remain pending. Do not claim that viewing the screenshot grants project access.
+- At initial preparation, the official Firebase integration was not connected. It has since been installed and the owner completed CLI sign-in; see Current result for verified live actions. Viewing a screenshot alone does not grant project access.
 
 ## Stage 1: Establish the target and register the app
 
@@ -88,4 +88,13 @@ Record device, OS, build revision, project ID, account identifier (no tokens), a
 
 ## Current result
 
-Repository review and automated checks are complete for the existing draft. Live account access, registration, billing/bucket setup, rules deployment, OAuth and device tests remain pending. The screenshot and this checklist do not establish any of those actions as completed.
+Verified live setup after the owner completed sign-in and selected Iowa:
+
+- Project `blueprint-bf366` identified; Web and iOS pilot apps registered. Native bundle ID was checked against the actual existing Xcode target before registration.
+- Default Standard Firestore database created in `us-central1`; private rules deployed and fetched back byte-for-byte. A signed-out read probe was denied as expected; no planner document writes were performed.
+- Google sign-in backend configured. Native configuration downloaded into isolated staging with OAuth identifiers present. Actual in-app Google sign-in, signed-in manual backup and device recovery remain pending.
+- A separate configured web pilot is available on the Mac at `http://localhost:8766/` while its local server runs. Its real Firebase initialization passed a phone-viewport browser check. Use **Customize → Cloud Backup → Continue with Google** with disposable test data. This is a separate browser origin from the installed app and public website.
+- Repository configuration stays disabled; no website publication, native-wrapper modification or installation was performed. The existing wrapper has local edits and must be preserved when integration resumes.
+- Storage/billing/CORS and large-archive live tests remain pending. The user must complete any required billing enrollment through the console. Back up each device outside the app before any native installation.
+
+For exact identifiers, verification scope and remaining limits, see the 2026-11-25 live-setup entry in `BLUEPRINT_STATUS.md`.
