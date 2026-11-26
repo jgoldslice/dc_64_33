@@ -34,8 +34,11 @@ export function createFullSyncStore({auth,db,firestore,storage,storageApi,native
     const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
     guard();remember(hash,value,size);return value;
   }
+  async function readHead(){
+    guard();const head=parseHead(await bounded(firestore.getDocFromServer(headRef),20000,'Sync lookup timed out. Changes remain saved here.'));guard();return head;
+  }
   async function read(){
-    guard();const head=parseHead(await bounded(firestore.getDocFromServer(headRef),20000,'Sync lookup timed out. Changes remain saved here.'));guard();
+    const head=await readHead();
     if(!head)return {head:null,graph:null};
     const manifest=await readObject(head.hash);
     if(manifest.schema!==1||!manifest.records||Array.isArray(manifest.records)||
@@ -92,5 +95,5 @@ export function createFullSyncStore({auth,db,firestore,storage,storageApi,native
   function watch(changed,failed){guard();return firestore.onSnapshot(headRef,{includeMetadataChanges:true},snapshot=>{
     try{guard();if(!snapshot.metadata.fromCache)changed();}catch(error){failed(error);}
   },failed);}
-  return {read,readObject,prepare,publish,contains,watch,guard};
+  return {read,head:readHead,readObject,prepare,publish,contains,watch,guard};
 }

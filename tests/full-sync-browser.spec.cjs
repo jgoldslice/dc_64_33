@@ -144,6 +144,9 @@ test('setup cancellation, sign-out and overlapping edits never silently replace 
   const backend=cloudBackend();const a=await browser.newContext({baseURL:'http://127.0.0.1:8765/'}),b=await browser.newContext({baseURL:'http://127.0.0.1:8765/'});
   try{
     const first=await connected(a,backend),second=await connected(b,backend);await seedInk(first);await signIn(first);await signIn(second);
+    await second.locator('[data-full-sync-join]').click();
+    await expect(second.locator('[data-full-sync-status]')).toContainText('This device has not been enrolled');
+    expect(await second.evaluate(()=>localStorage.getItem('blueprint-full-sync-device-v1'))).toBeNull();
     await first.locator('[data-full-sync-start]').click();await first.locator('#bpSheet button[type="button"]').click();
     expect(backend.docs.size).toBe(0);expect(await first.evaluate(()=>localStorage.getItem('blueprint-full-sync-device-v1'))).toBeNull();
     await confirmSetup(first,'[data-full-sync-start]');await confirmSetup(second,'[data-full-sync-join]');
@@ -168,6 +171,7 @@ test('an older native drawing bridge cannot enable incomplete handwriting sync',
   const backend=cloudBackend(),context=await browser.newContext({baseURL:'http://127.0.0.1:8765/'});
   try{
     const page=await connected(context,backend);await signIn(page);
+    await expect(page.locator('[data-full-sync-status]')).toContainText('Choose this device');
     await page.setViewportSize({width:320,height:740});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
     await page.locator('[data-full-sync]').screenshot({path:require('node:path').join(__dirname,'../test-results/sync-setup-320.png')});

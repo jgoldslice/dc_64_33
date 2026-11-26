@@ -32,12 +32,14 @@ export function installFullSync(card,{getClient,downloadChunks}){
       const pref=readPreference().value,account=client?.auth.currentUser;
       const matches=!!account&&pref?.uid===account.uid&&pref?.projectId===client.projectId&&
         pref?.generation===globalThis.BlueprintFullSyncLocal.generation();
-      start.hidden=join.hidden=!!pref?.enabled;
+      start.hidden=join.hidden=!!pref?.enabled||matches&&pref?.paired;
       pause.hidden=!pref?.enabled;resume.hidden=!pref||pref.enabled||!matches;
       for(const b of [start,join,resume])b.disabled=busy||externalBusy||!account;
       pause.disabled=false;
       recovery.hidden=!localStorage.getItem('blueprint-sync-last-recovery');
       if(!account&&!busy)status.textContent='Sign in above to set up automatic sync.';
+      else if(account&&!pref&&status.textContent==='Sign in above to set up automatic sync.')
+        status.textContent='Choose this device as the starting planner, or join the shared planner from another device.';
       else if(pref&&(!matches)&&!busy)status.textContent='Sync is paused: this device’s planner or account changed. Set up this device again to continue.';
     }catch(error){status.textContent=error.message;for(const b of [start,join,resume])b.disabled=true;}
   }
@@ -108,6 +110,12 @@ export function installFullSync(card,{getClient,downloadChunks}){
       if(!globalThis.BlueprintFullSyncLocal.saved())throw Error('Save current edits before setting up sync.');
       const old=readPreference();
       if(old.value&&old.value.uid!==account.uid)throw Error('This planner was paired with another account. Sign back into that account before syncing.');
+      const preflight=createFullSyncStore({...client,downloadChunks,assertActive:()=>{
+        if(client.auth.currentUser!==account)throw Error('The account changed. Set up sync again.');
+      }});
+      const head=await preflight.head();
+      if(mode==='source'&&head)throw Error('A shared planner already exists. Choose Join shared planner.');
+      if(mode==='join'&&!head)throw Error('Start sync on the source device first. This device has not been enrolled.');
       const accepted=await globalThis.BlueprintSheet.confirm(mode==='source'
         ?'Start a shared planner from this device? Saved changes, notes, images and handwriting will sync to this Google account. A local recovery copy will be kept first.'
         :'Use the shared planner on this device? This replaces this device’s starting planner once, after keeping a complete local recovery copy. Future changes will merge automatically.',
