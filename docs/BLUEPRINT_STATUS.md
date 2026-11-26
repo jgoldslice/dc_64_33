@@ -7,6 +7,13 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-25 — Firebase pilot configuration and CI verification
+
+- Reviewed pilot head `166b6091a076d9fc221b6bbbc73d8c36b32f89f8`: [browser CI #45744719365](https://github.com/jgoldslice/dc_64_33/actions/runs/45744719365) and [Firebase emulator CI #45744719360](https://github.com/jgoldslice/dc_64_33/actions/runs/45744719360) both report success.
+- Owner's Firebase Console screenshots show project `blueprint-bf366`, enabled Google sign-in, authorized GitHub Pages domain, default Firestore database in us-central1, an existing backups subcollection, both Web and iOS pilot registrations and the visible first part of the custom rules. Full live rules and authentication were not independently exercised.
+- Owner provided Web client configuration and Apple plist; verified matching project ID and sender ID, iOS bundle ID `com.jgoldslice.canvas`, and presence of iOS OAuth client ID and reversed URL scheme. The native bridge also requires the Web OAuth client ID (`GIDServerClientID`); this is distinct from the Firebase Web app ID and absent from the supplied plist. Prepared a local-only `firebase-client.json` without Analytics initialization. The checked-in config remains null intentionally.
+- Native wrapper/Xcode unavailable in this session; no live account login, rules deployment, personal data upload, merge, paid service activation, or installed-app update. Next: retrieve Web OAuth client ID, stage reviewed pilot into actual local wrapper, integrate GoogleSignIn and verify on both devices with disposable data.
+
 ## 2026-11-25 — Reviewed manual planner sync pilot (draft; verification pending)
 
 - Resumed draft PR #103 from `c91051fa02a411be44fb5f42fbe3dc5259249e59`. The previous account-safety changes passed [browser CI #45744067783](https://github.com/jgoldslice/dc_64_33/actions/runs/45744067783) and [Firebase emulator CI #45744067737](https://github.com/jgoldslice/dc_64_33/actions/runs/45744067737).
