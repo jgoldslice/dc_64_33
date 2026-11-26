@@ -550,9 +550,11 @@
           <button type="button" class="secondary-button" data-cloud-sign-in>Continue with Google</button>
           <button type="button" class="secondary-button" data-cloud-save hidden>Back up now</button>
           <button type="button" class="secondary-button" data-cloud-restore hidden>Restore latest</button>
+          <button type="button" class="secondary-button" data-cloud-preview hidden>Preview planner sync</button>
           <button type="button" class="secondary-button" data-cloud-sign-out hidden>Sign out</button>
         </div>
         <p class="muted small" role="status" aria-live="polite"></p>
+        <div data-cloud-review hidden><p class="muted small" data-cloud-summary></p><details><summary>Review record changes</summary><pre data-cloud-changes style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:18rem;overflow:auto"></pre></details><button type="button" class="secondary-button" data-cloud-apply>Apply reviewed sync</button></div>
       </section>
     </div></section>
   </main>
@@ -2443,5 +2445,54 @@ v6Normalize();v6Render();
 <script src="areas-v939.js"></script>
 <script src="workflow-integration-v951.js"></script>
 <script src="project-appearance-v964.js"></script>
+<script>
+window.BlueprintSyncLocal = (() => {
+  function snapshot() {
+    if(canvasLoadError || canvasUnsaved || canvasTextSavePending ||
+       localStorage.getItem(STORAGE_KEY)!==canvasLastManifest ||
+       JSON.stringify(state)!==canvasLastManifest)
+      throw Error('Save your current planner before syncing. If another window changed it, reload first.');
+    const linkedTaskIds = [
+      ...state.projects.flatMap(p=>(p.actions||[]).map(a=>a.taskId)),
+      ...state.ideas.flatMap(i=>[...(i.taskIds||[]),...(i.actions||[]).map(a=>a.taskId)]),
+      ...state.goals.flatMap(g=>(g.actions||[]).map(a=>a.taskId))
+    ].filter(id=>id!=null&&id!=='');
+    return {token:canvasLastManifest, generation:state.blueprintSyncGeneration,
+      planner:structuredClone({tasks:state.tasks,events:state.events,linkedTaskIds})};
+  }
+  function prepare() {
+    if(canvasLoadError || canvasUnsaved || canvasTextSavePending ||
+      localStorage.getItem(STORAGE_KEY)!==canvasLastManifest)
+      throw Error('Save your current planner before syncing.');
+    if(!state.blueprintSyncGeneration) {
+      state.blueprintSyncGeneration=crypto.randomUUID();
+      if(!save(true))throw Error('Could not save local sync setup.');
+    } else if(JSON.stringify(state)!==canvasLastManifest && !save(true))
+      throw Error('Could not save local planner.');
+    return snapshot();
+  }
+  function apply(token, downloads) {
+    if(snapshot().token!==token)throw Error('Local planner changed. Preview again.');
+    if(!downloads.length)return;
+    const old=state, previous=canvasLastManifest;
+    const next={...state,tasks:state.tasks.slice(),events:state.events.slice()};
+    for(const {collection,id,record} of downloads) {
+      if(!['tasks','events'].includes(collection)||!record)throw Error('Unsupported pilot change.');
+      const list=next[collection], index=list.findIndex(r=>String(r.id)===id);
+      const numeric=Number(id);
+      const identity=Number.isSafeInteger(numeric)&&String(numeric)===id?numeric:id;
+      const updated={...(index<0?{}:list[index]),...record,id:index<0?identity:list[index].id};
+      if(index<0)list.push(updated);else list[index]=updated;
+    }
+    state=next;
+    if(!save(true)){
+      if(localStorage.getItem(STORAGE_KEY)===previous){state=old;canvasLastManifest=previous;canvasUnsaved=false;canvasSaveStatus(false);}
+      throw Error('Local sync save could not be verified. Preview again after recovery.');
+    }
+    try{render();v6Render();}catch(error){console.error('Synced data saved; refresh the view',error);}
+  }
+  return {prepare,snapshot,apply};
+})();
+</script>
 <script type="module" src="blueprint-cloud-backup.mjs"></script>
 </body></html>
