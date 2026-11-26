@@ -1,3 +1,6 @@
+import {createFirebasePlannerStore} from './sync/firebase-planner-store.mjs';
+import {createPlannerPilot} from './sync/planner-pilot.mjs';
+
 const sdkBase = 'https://www.gstatic.com/firebasejs/12.10.0/';
 const maxBackupBytes = 750 * 1024;
 
@@ -56,7 +59,7 @@ async function connect() {
   ]);
   const app = appApi.getApps().find(candidate => candidate.name === 'blueprint-cloud')
     ?? appApi.initializeApp(config, 'blueprint-cloud');
-  return {authApi, firestore, auth: authApi.getAuth(app), db: firestore.getFirestore(app)};
+  return {authApi, firestore, auth: authApi.getAuth(app), db: firestore.getFirestore(app), projectId: config.projectId};
 }
 
 function install(card) {
@@ -65,15 +68,22 @@ function install(card) {
   const signOut = card.querySelector('[data-cloud-sign-out]');
   const save = card.querySelector('[data-cloud-save]');
   const restore = card.querySelector('[data-cloud-restore]');
-  const buttons = [signIn, signOut, save, restore];
+  const preview = card.querySelector('[data-cloud-preview]');
+  const reviewPanel = card.querySelector('[data-cloud-review]');
+  const apply = card.querySelector('[data-cloud-apply]');
+  const buttons = [signIn, signOut, save, restore, preview, apply];
+  let review = null, pilot = null, reviewUid = null;
+  function clearReview() { review = null; pilot = null; reviewUid = null; reviewPanel.hidden = true; }
   let client;
   let busy = false;
 
   function render() {
     const account = client?.auth.currentUser;
     signIn.hidden = !!account;
-    for (const button of [save, restore, signOut]) button.hidden = !account;
+    for (const button of [save, restore, preview, signOut]) button.hidden = !account;
+    if (!account || (reviewUid && reviewUid !== account.uid)) clearReview();
     for (const button of buttons) button.disabled = busy;
+    apply.disabled = busy || !review || !!review.conflicts.length;
   }
 
   function run(action, fallback) {
@@ -132,6 +142,7 @@ function install(card) {
   }, 'Could not finish signing out.'));
 
   save.addEventListener('click', run(async () => {
+    clearReview();
     const store = createCloudBackupStore(client);
     if (!await globalThis.BlueprintSheet.confirm('Save a complete copy of this device’s Blueprint data to your Google account?')) {
       status.textContent = 'Cloud backup canceled.';
@@ -143,6 +154,7 @@ function install(card) {
   }, 'Could not save the cloud backup. Check your connection and try again.'));
 
   restore.addEventListener('click', run(async () => {
+    clearReview();
     const store = createCloudBackupStore(client);
     const backup = await store.latest();
     if (!backup) {
@@ -153,6 +165,45 @@ function install(card) {
     status.textContent = date ? 'Latest cloud backup from ' + date : 'Latest cloud backup ready.';
     await globalThis.v74ImportBackup(backup.archive, store.assertAccount);
   }, 'Could not open the cloud backup. Check your connection and try again.'));
+
+  preview.addEventListener('click', run(async () => {
+    clearReview();
+    const uid = client.auth.currentUser?.uid;
+    const assertAccount = createCloudBackupStore(client).assertAccount;
+    assertAccount();
+    const local = globalThis.BlueprintSyncLocal;
+    const snapshot = local.prepare();
+    pilot = createPlannerPilot({store:createFirebasePlannerStore(client), local,
+      storage:globalThis.localStorage, scope:JSON.stringify([client.projectId,uid,snapshot.generation]), assertAccount});
+    const next = await pilot.preview();
+    assertAccount();
+    review = next;
+    reviewUid = uid;
+    reviewPanel.hidden = false;
+    reviewPanel.querySelector('[data-cloud-summary]').textContent =
+      next.uploads.length + ' upload(s), ' + next.downloads.length + ' download(s), ' +
+      next.conflicts.length + ' conflict(s). ' + next.excluded.length + ' linked task(s) and ' +
+      next.skippedDeletions.length + ' deletion(s) excluded. ' +
+      (next.checkpoint.pending ? 'Previous sync interrupted; fresh preview required. ' : '') +
+      'This pilot does not sync notes, projects, habits, or deletions.';
+    reviewPanel.querySelector('[data-cloud-changes]').textContent = JSON.stringify({
+      uploads:next.uploads, downloads:next.downloads, conflicts:next.conflicts,
+      skippedDeletions:next.skippedDeletions, linkedTaskIds:next.excluded
+    }, null, 2);
+    status.textContent = next.conflicts.length ? 'Conflicts found. No sync changes applied.' : 'Preview ready. Review changes before applying.';
+  }, 'Could not preview sync. Check your connection and try again.'));
+
+  apply.addEventListener('click', run(async () => {
+    if (!review || !pilot || reviewUid !== client.auth.currentUser?.uid) throw Error('Preview sync again.');
+    if (!await globalThis.BlueprintSheet.confirm('Apply these reviewed task and event changes to this device and your Google account? No deletions will be synced.')) {
+      status.textContent = 'Sync canceled.';
+      return;
+    }
+    const selected = review, engine = pilot;
+    clearReview();
+    const result = await engine.apply(selected);
+    status.textContent = 'Sync complete: ' + result.uploads + ' uploaded, ' + result.downloads + ' downloaded.';
+  }, 'Sync did not complete. Preview again; some cloud writes may have completed.'));
 
   render();
 }
