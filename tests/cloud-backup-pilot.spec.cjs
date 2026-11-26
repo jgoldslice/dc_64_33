@@ -49,6 +49,9 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
         latest = data;
       };
       export const getDocsFromServer = async path => {
+        if (path.endsWith('/backups') && window.__cloudTestStage === 'list') {
+          await new Promise(resolve => {window.__releaseBackupList = resolve;});
+        }
         if (path.endsWith('/backups')) return {empty: !latest, docs: [{id: 'backup-1', data: () => latest}]};
         const docs = [...rows].filter(([key])=>key.startsWith(path+'/'))
           .map(([key,data])=>({id:key.split('/').at(-1),data:()=>data}));
@@ -75,8 +78,14 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
         };
         return task;
       }
-      export const getMetadata = async path => ({size:files.get(path).bytes.length,contentType:files.get(path).contentType});
-      export const getBytes = async path => files.get(path).bytes.buffer;
+      export const getMetadata = async path => {
+        if (window.__cloudTestStage === 'metadata') await new Promise(()=>{});
+        return {size:files.get(path).bytes.length,contentType:files.get(path).contentType};
+      };
+      export const getBytes = async path => {
+        if (window.__cloudTestStage === 'download') await new Promise(()=>{});
+        return files.get(path).bytes.buffer;
+      };
     `,
   };
   await page.route('https://www.gstatic.com/firebasejs/**', route => route.fulfill({
@@ -116,6 +125,26 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
   await cloud.getByRole('button', {name: 'Back up now'}).click();
   await sheet.getByRole('button', {name:'Back up now', exact:true}).click();
   await expect(cloud.getByRole('status')).toHaveText('Cloud backup saved.');
+  const beforeRestore = await page.evaluate(()=>JSON.stringify(state));
+  await page.clock.install();
+  for (const [stage, progress, elapsed, error] of [
+    ['list','Looking for your latest cloud backup…',20001,'cloud backup list did not respond'],
+    ['metadata','Checking the backup file…',20001,'backup file did not respond'],
+    ['download','Downloading complete backup…',180001,'backup download timed out'],
+  ]) {
+    await page.evaluate(stage=>{window.__cloudTestStage=stage;},stage);
+    await cloud.getByRole('button',{name:'Restore latest'}).click();
+    await expect(cloud.getByRole('status')).toContainText(progress);
+    await page.clock.fastForward(elapsed);
+    await expect(cloud.getByRole('status')).toContainText(error);
+    await expect(cloud.getByRole('button',{name:'Restore latest'})).toBeEnabled();
+    expect(await page.evaluate(()=>JSON.stringify(state))).toBe(beforeRestore);
+    if(stage==='list') {
+      await page.evaluate(()=>window.__releaseBackupList());
+      await expect(cloud.getByRole('status')).toContainText(error);
+    }
+  }
+  await page.evaluate(()=>{window.__cloudTestStage='';});
   const restorePrompt = page.waitForEvent('dialog');
   const restoreClick = cloud.getByRole('button', {name: 'Restore latest'}).click();
   const dialog = await restorePrompt;

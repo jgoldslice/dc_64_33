@@ -24,7 +24,76 @@ export function initializeBlueprintAuth(app, authApi, native) {
   }) : authApi.getAuth(app);
 }
 
-export function createCloudBackupStore({auth, db, firestore, storage, storageApi, authApi}) {
+export function initializeBlueprintFirestore(app, firestore, native) {
+  // WKWebView/network buffering can prevent streaming WebChannel responses from
+  // completing. Native builds use Firestore's supported non-streaming transport.
+  return native ? firestore.initializeFirestore(app, {experimentalForceLongPolling: true})
+    : firestore.getFirestore(app);
+}
+
+export async function downloadBackupChunks({user, file, size, assertAccount, onProgress,
+  createRequest = () => new XMLHttpRequest()}) {
+  // Download small authenticated ranges instead of a single opaque WKWebView
+  // array-buffer request. Never create a public download URL or log the token.
+  assertAccount();
+  if (!Number.isInteger(size) || size <= 0 || size > maxBackupBytes) throw Error('Invalid cloud backup size.');
+  const token = await withDeadline(user.getIdToken(), 20000,
+    'Could not authorize the backup download. Sign in again and retry.');
+  assertAccount();
+  const url = 'https://firebasestorage.googleapis.com/v0/b/' + encodeURIComponent(file.bucket)
+    + '/o/' + encodeURIComponent(file.fullPath) + '?alt=media';
+  const bytes = new Uint8Array(size), chunkSize = 1024 * 1024;
+  for (let start = 0; start < size; start += chunkSize) {
+    assertAccount();
+    const end = Math.min(start + chunkSize, size) - 1, expected = end - start + 1;
+    const chunk = await new Promise((resolve, reject) => {
+      const request = createRequest();
+      let settled = false;
+      function finish(error, result) {
+        if (settled) return;
+        settled = true;
+        request.onload = request.onerror = request.ontimeout = request.onabort = request.onprogress = null;
+        if (error) { request.abort(); reject(error); } else resolve(result);
+      }
+      request.open('GET', url);
+      request.responseType = 'arraybuffer';
+      request.timeout = 30000;
+      request.setRequestHeader('Authorization', 'Firebase ' + token);
+      request.setRequestHeader('Range', 'bytes=' + start + '-' + end);
+      request.onprogress = event => {
+        try {
+          assertAccount();
+          if (event.loaded > expected) throw Error('The backup download exceeded its expected size. No local data was changed.');
+          onProgress(start + event.loaded, size);
+        } catch (error) { finish(error); }
+      };
+      request.onload = () => {
+        try {
+          assertAccount();
+          if (request.status === 401 || request.status === 403) {
+            throw Error('Your account could not access this backup. Sign out and sign in again, then retry.');
+          }
+          const range = request.getResponseHeader('Content-Range');
+          const completeSmallFile = start === 0 && expected === size && request.status === 200;
+          if (!(completeSmallFile || (request.status === 206 && range === 'bytes ' + start + '-' + end + '/' + size))
+            || !(request.response instanceof ArrayBuffer) || request.response.byteLength !== expected) {
+            throw Error('The backup download was incomplete. No local data was changed. Try Restore latest again.');
+          }
+          finish(null, new Uint8Array(request.response));
+        } catch (error) { finish(error); }
+      };
+      request.onerror = request.ontimeout = request.onabort = () => finish(new Error(
+        'The backup download stopped. No local data was changed. Check your connection and try Restore latest again.'));
+      request.send();
+    });
+    assertAccount();
+    bytes.set(chunk, start);
+    onProgress(end + 1, size);
+  }
+  return bytes;
+}
+
+export function createCloudBackupStore({auth, db, firestore, storage, storageApi, authApi, native = false}) {
   const uid = auth.currentUser?.uid;
   function assertAccount() {
     if (!uid || auth.currentUser?.uid !== uid) throw new Error('Sign in again to use cloud backups.');
@@ -69,9 +138,11 @@ export function createCloudBackupStore({auth, db, firestore, storage, storageApi
     });
     assertAccount();
   }
-  async function latest() {
+  async function latest(progress = () => {}) {
+    progress('Looking for your latest cloud backup…');
     const query = firestore.query(backups(), firestore.orderBy('createdAt', 'desc'), firestore.limit(1));
-    const snapshot = await firestore.getDocsFromServer(query);
+    const snapshot = await withDeadline(firestore.getDocsFromServer(query), 20000,
+      'The cloud backup list did not respond. Your local data has not changed. Check your connection and try Restore latest again.');
     assertAccount();
     if (snapshot.empty) return null;
     const row = snapshot.docs[0], data = row.data();
@@ -84,14 +155,27 @@ export function createCloudBackupStore({auth, db, firestore, storage, storageApi
       }
       if (!storage || !storageApi) throw new Error('This build needs Firebase Storage to restore this backup.');
       const file = storageApi.ref(storage, expectedPath);
-      const metadata = await storageApi.getMetadata(file);
+      progress('Checking the backup file…');
+      const metadata = await withDeadline(storageApi.getMetadata(file), 20000,
+        'The backup file did not respond. Your local data has not changed. Try Restore latest again.');
       assertAccount();
       if (metadata.size !== data.size || metadata.contentType !== 'application/json') {
         throw new Error('Cloud backup size or file type does not match. No local data was changed.');
       }
-      bytes = new Uint8Array(await storageApi.getBytes(file, data.size));
+      progress('Downloading complete backup… ' + (data.size / 1024 / 1024).toFixed(1) + ' MiB');
+      if (native) {
+        bytes = await downloadBackupChunks({user:auth.currentUser,file,size:data.size,assertAccount,
+          onProgress:(loaded,total) => progress('Downloading backup… '
+            + Math.floor(loaded / total * 100) + '% · ' + (loaded / 1024 / 1024).toFixed(1)
+            + ' of ' + (total / 1024 / 1024).toFixed(1) + ' MiB')});
+      } else {
+        bytes = new Uint8Array(await withDeadline(storageApi.getBytes(file, data.size), 180000,
+          'The backup download timed out. Your local data has not changed. Check your connection and try Restore latest again.'));
+      }
       assertAccount();
-      const digest = await sha256(bytes);
+      progress('Verifying the downloaded backup…');
+      const digest = await withDeadline(sha256(bytes), 60000,
+        'Backup verification did not finish. Your local data has not changed. Close and reopen Blueprint, then try again.');
       assertAccount();
       if (bytes.length !== data.size || digest !== data.sha256) {
         throw new Error('Cloud backup integrity check failed. No local data was changed.');
@@ -136,8 +220,10 @@ async function connect(progress = () => {}) {
   const app = appApi.getApps().find(candidate => candidate.name === 'blueprint-cloud')
     ?? appApi.initializeApp(config, 'blueprint-cloud');
   return {authApi, firestore, storageApi, storage: storageApi.getStorage(app),
+    native: !!globalThis.Capacitor?.isNativePlatform?.(),
     auth: initializeBlueprintAuth(app, authApi, !!globalThis.Capacitor?.isNativePlatform?.()),
-    db: firestore.getFirestore(app), projectId: config.projectId};
+    db: initializeBlueprintFirestore(app, firestore, !!globalThis.Capacitor?.isNativePlatform?.()),
+    projectId: config.projectId};
 }
 
 function install(card) {
@@ -244,13 +330,13 @@ function install(card) {
   restore.addEventListener('click', run(async () => {
     clearReview();
     const store = createCloudBackupStore(client);
-    const backup = await store.latest();
+    const backup = await store.latest(message => { status.textContent = message; });
     if (!backup) {
       status.textContent = 'This account has no cloud backup yet.';
       return;
     }
     const date = backup.date?.toLocaleString();
-    status.textContent = date ? 'Latest cloud backup from ' + date : 'Latest cloud backup ready.';
+    status.textContent = date ? 'Preparing restore from ' + date + '…' : 'Preparing complete backup restore…';
     await globalThis.v74ImportBackup(backup.archive, store.assertAccount);
   }, 'Could not open the cloud backup. Check your connection and try again.'));
 
