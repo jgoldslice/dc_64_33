@@ -7,6 +7,23 @@ const maxLegacyBackupBytes = 750 * 1024;
 const sha256 = async bytes => Array.from(new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes)),
   byte => byte.toString(16).padStart(2, '0')).join('');
 
+export async function withDeadline(operation, milliseconds, message) {
+  let timer;
+  try {
+    return await Promise.race([operation, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(message)), milliseconds);
+    })]);
+  } finally { clearTimeout(timer); }
+}
+
+export function initializeBlueprintAuth(app, authApi, native) {
+  // Native Google Sign-In supplies the credential. Its WKWebView must not start
+  // the browser popup/redirect resolver and its proactive cross-origin iframe.
+  return native ? authApi.initializeAuth(app, {
+    persistence: [authApi.indexedDBLocalPersistence, authApi.browserLocalPersistence],
+  }) : authApi.getAuth(app);
+}
+
 export function createCloudBackupStore({auth, db, firestore, storage, storageApi, authApi}) {
   const uid = auth.currentUser?.uid;
   function assertAccount() {
@@ -93,23 +110,34 @@ export function createCloudBackupStore({auth, db, firestore, storage, storageApi
   return {save, latest, assertAccount};
 }
 
-async function connect() {
-  const response = await fetch(new URL('./firebase-client.json', import.meta.url), {cache: 'no-store'});
-  if (!response.ok) throw new Error('Connect a Firebase project to enable Google sign-in.');
-  const config = await response.json();
+async function connect(progress = () => {}) {
+  progress('Reading sign-in settings…');
+  const controller = new AbortController();
+  let config;
+  try {
+    config = await withDeadline((async () => {
+      const response = await fetch(new URL('./firebase-client.json', import.meta.url), {
+        cache: 'no-store', signal: controller.signal,
+      });
+      if (!response.ok) throw new Error('Connect a Firebase project to enable Google sign-in.');
+      return response.json();
+    })(), 15000, 'Could not read sign-in settings. Close and reopen Blueprint, then try again.');
+  } finally { controller.abort(); }
   if (!config?.apiKey || !config.authDomain || !config.projectId || !config.appId) {
     throw new Error('Connect a Firebase project to enable Google sign-in.');
   }
-  const [appApi, authApi, firestore, storageApi] = await Promise.all([
+  progress('Connecting to Google services…');
+  const [appApi, authApi, firestore, storageApi] = await withDeadline(Promise.all([
     import(sdkBase + 'firebase-app.js'),
     import(sdkBase + 'firebase-auth.js'),
     import(sdkBase + 'firebase-firestore.js'),
     import(sdkBase + 'firebase-storage.js'),
-  ]);
+  ]), 30000, 'Google services did not load. Check your internet connection and try again.');
   const app = appApi.getApps().find(candidate => candidate.name === 'blueprint-cloud')
     ?? appApi.initializeApp(config, 'blueprint-cloud');
   return {authApi, firestore, storageApi, storage: storageApi.getStorage(app),
-    auth: authApi.getAuth(app), db: firestore.getFirestore(app), projectId: config.projectId};
+    auth: initializeBlueprintAuth(app, authApi, !!globalThis.Capacitor?.isNativePlatform?.()),
+    db: firestore.getFirestore(app), projectId: config.projectId};
 }
 
 function install(card) {
@@ -160,21 +188,28 @@ function install(card) {
       throw new Error('This iOS build needs the Blueprint Google Sign-In bridge.');
     }
     if (!client) {
-      client = await connect();
+      client = await connect(message => { status.textContent = message; });
       client.authApi.onAuthStateChanged(client.auth, user => {
         render();
         if (!busy) status.textContent = user ? 'Signed in as ' + (user.email || 'Google account') : 'Signed out.';
       });
-      await client.auth.authStateReady();
     }
+    status.textContent = 'Checking saved sign-in…';
+    await withDeadline(client.auth.authStateReady(), 20000,
+      'Saved sign-in did not respond. Close and reopen Blueprint, then try again.');
     const {auth, authApi} = client;
     if (!auth.currentUser && !native && globalThis.navigator.userActivation?.isActive === false) {
       status.textContent = 'Google sign-in is ready. Tap Continue with Google.';
       return;
     }
     if (!auth.currentUser && native) {
-      const {idToken, accessToken} = await globalThis.Capacitor.nativePromise('BlueprintGoogleSignIn', 'signIn', {});
-      await authApi.signInWithCredential(auth, authApi.GoogleAuthProvider.credential(idToken, accessToken));
+      status.textContent = 'Opening Google sign-in…';
+      const {idToken, accessToken} = await withDeadline(
+        globalThis.Capacitor.nativePromise('BlueprintGoogleSignIn', 'signIn', {}), 120000,
+        'Google sign-in did not respond. Close any Google sign-in screen and reopen Blueprint to try again.');
+      status.textContent = 'Finishing Google sign-in…';
+      await withDeadline(authApi.signInWithCredential(auth, authApi.GoogleAuthProvider.credential(idToken, accessToken)),
+        30000, 'Google account verification timed out. Check your connection and try again.');
     } else if (!auth.currentUser) {
       const provider = new authApi.GoogleAuthProvider();
       provider.setCustomParameters({prompt: 'select_account'});
