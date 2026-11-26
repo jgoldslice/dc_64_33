@@ -1,5 +1,5 @@
 /* Canvas 8.2 — cache only our own app's assets, never another site's caches. */
-const CACHE='canvas-v971-cloud-account-session';
+const CACHE='canvas-v972-web-archive-preservation';
 const PREFIX='canvas-';
 const ASSETS=[
   './','./index.html','./manifest.webmanifest','./icon.svg',

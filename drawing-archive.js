@@ -23,10 +23,23 @@ window.BlueprintDrawingArchive = (() => {
     }
     return rows;
   }
-  async function collect(state) {
+  async function collect(state, {readBrowserInk} = {}) {
+    const rows = pages(state);
+    const hasBrowserInk = rows.some(row => row.page.blueprintBrowserInk);
+    if (hasBrowserInk) {
+      if (native?.isNativePlatform?.() || !readBrowserInk)
+        throw Error('Preserved iPad handwriting needs the updated web backup reader.');
+      const entries = [];
+      for (const {projectId, pageId, page} of rows) {
+        const base64 = page.blueprintBrowserInk ? await readBrowserInk(page.blueprintBrowserInk) : null;
+        if (page.blueprintBrowserInk && !validBase64(base64)) throw Error('Preserved iPad handwriting is damaged.');
+        entries.push({projectId, pageId, base64});
+      }
+      return entries;
+    }
     if (!await available()) return null;
     const entries = [];
-    for (const {projectId, pageId} of pages(state)) {
+    for (const {projectId, pageId} of rows) {
       const result = await invoke('exportDrawing', {projectId, pageId});
       if (result.missing !== true && typeof result.base64 !== 'string')
         throw Error('Could not read drawing on page ' + pageId);
@@ -34,7 +47,14 @@ window.BlueprintDrawingArchive = (() => {
     }
     return entries;
   }
-  async function validate(state, entries) {
+  function validBase64(value) {
+    if (typeof value !== 'string' || !value.length || value.length % 4) return false;
+    const end = value.length - (value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0);
+    for (let offset = 0; offset < end; offset += 32768)
+      if (/[^A-Za-z0-9+/]/.test(value.slice(offset, Math.min(offset + 32768, end)))) return false;
+    return end > 0;
+  }
+  async function validate(state, entries, {allowBrowserInk = false} = {}) {
     const rows = pages(state);
     if (!Array.isArray(entries) || entries.length !== rows.length)
       throw Error('Incomplete native drawing manifest');
@@ -44,16 +64,25 @@ window.BlueprintDrawingArchive = (() => {
           !(entry.base64 === null || typeof entry.base64 === 'string' && entry.base64.length > 0))
         throw Error('Invalid drawing or notebook page relationship');
     });
-    if (entries.some(entry => entry.base64 !== null) && !await available())
-      throw Error('Restore this drawing archive in the updated Blueprint iOS app.');
+    if (entries.some(entry => entry.base64 !== null) && !await available()) {
+      if (native?.isNativePlatform?.() || !allowBrowserInk)
+        throw Error('Restore this drawing archive in the updated Blueprint iOS app.');
+      if (entries.some(entry => entry.base64 !== null && !validBase64(entry.base64)))
+        throw Error('Invalid preserved iPad handwriting encoding');
+    }
   }
-  async function stage(state, entries) {
+  async function stage(state, entries, {storeBrowserInk} = {}) {
+    const preserveOnWeb = !native?.isNativePlatform?.() && typeof storeBrowserInk === 'function';
     // The candidate planner is private until the existing restore commits.
     // Remap empty pages too, so they cannot inherit unrelated local ink.
     for (const [i, {projectId, pageId, project, page}] of pages(state).entries()) {
       const base64 = entries[i].base64;
-      const fresh = base64 === null ? crypto.randomUUID() :
+      const fresh = base64 === null || preserveOnWeb ? crypto.randomUUID() :
         (await invoke('stageDrawing', {projectId, base64})).pageId;
+      if (preserveOnWeb && base64 !== null) {
+        if (!validBase64(base64)) throw Error('Invalid preserved iPad handwriting encoding');
+        page.blueprintBrowserInk = await storeBrowserInk(base64);
+      }
       if (typeof fresh !== 'string' || !fresh || project.notePages.some(p => String(p.id) === fresh))
         throw Error('Could not stage native drawing');
       if (String(project.activeNotePageId) === pageId) project.activeNotePageId = fresh;

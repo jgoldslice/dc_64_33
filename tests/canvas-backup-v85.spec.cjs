@@ -343,3 +343,32 @@ test('reloading while a restored draft is staged keeps the old planner and draft
   });
   expect(reopened).toEqual(['Local version','local ink']);
 });
+
+test('browser restores iPad v3 archive, retains original ink through reload and re-export',async({page})=>{
+  await seed(page);
+  const archive=await exportData(page);
+  archive.version=3;
+  archive.drawings=[{projectId:'p-backup-a',pageId:'page-a',base64:'YWJj'},{projectId:'p-backup-b',pageId:'page-b',base64:null}];
+  archive.drawingsSha256=require('node:crypto').createHash('sha256').update(JSON.stringify(archive.drawings)).digest('hex');
+  const before=await page.evaluate(()=>localStorage.getItem(STORAGE_KEY));
+  const dialogs=[];
+  await page.evaluate(()=>{window.confirm=()=>false;});
+  expect(await page.evaluate(async archive=>v74ImportBackup(new Blob([JSON.stringify(archive)])),archive)).toBe(false);
+  expect(await page.evaluate(()=>localStorage.getItem(STORAGE_KEY))).toBe(before);
+  await page.evaluate(()=>{window.confirm=()=>true;window.alert=()=>{};});
+  expect(await page.evaluate(async archive=>v74ImportBackup(new Blob([JSON.stringify(archive)])),archive)).toBe(true);
+  await page.reload();
+  const restored=await page.evaluate(async()=>{
+    const p=state.projects[0],pg=p.notePages[0];
+    const blob=await v6Blob('get',pg.blueprintBrowserInk.key);
+    return {pageId:pg.id,ink:await blob.text(),text:pg.objects[1].html,task:state.tasks[0].title};
+  });
+  expect(restored).toMatchObject({ink:'YWJj',text:'A thought',task:'Finish test'});
+  const exported=await exportData(page);
+  expect(exported.version).toBe(3);
+  expect(exported.state.projects[0].notePages[0]).not.toHaveProperty('blueprintBrowserInk');
+  expect(exported.drawings[0]).toEqual({projectId:'p-backup-a',pageId:restored.pageId,base64:'YWJj'});
+  expect(exported.drawingsSha256).toBe(require('node:crypto').createHash('sha256').update(JSON.stringify(exported.drawings)).digest('hex'));
+  await page.evaluate(async()=>{const pg=state.projects[0].notePages[0];await v6Blob('delete',pg.blueprintBrowserInk.key);});
+  expect(await page.evaluate(async()=>{try{await v74BuildCompleteBackup();return 'unexpected success';}catch(error){return error.message;}})).toContain('Preserved iPad handwriting is missing');
+});

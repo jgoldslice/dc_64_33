@@ -199,6 +199,8 @@
      for(const field of ['actions','library','notePages','contentBlocks'])
        records(p[field],'project '+field);
      for(const page of p.notePages||[]){
+       if(Object.prototype.hasOwnProperty.call(page,'blueprintBrowserInk'))
+         throw Error('Backup contains a device-local handwriting reference');
        records(page.objects,'note page objects');
        for(const stroke of records(page.strokes,'note page strokes'))
          records(stroke.points,'stroke points');
@@ -263,7 +265,7 @@
    if(source.version===3){
      if(!Array.isArray(source.drawings)||await hashState(source.drawings)!==source.drawingsSha256)
        throw Error('Drawing manifest checksum mismatch');
-     await BlueprintDrawingArchive.validate(source.state,source.drawings);
+     await BlueprintDrawingArchive.validate(source.state,source.drawings,{allowBrowserInk:!window.Capacitor?.isNativePlatform?.()});
    }
    return {complete:true,data:source.state,media,drawings:source.version===3?source.drawings:null};
  }
@@ -280,10 +282,21 @@
      draftKeys.set('v6-draft-'+project.id,v6SketchDraftKey(project));
      delete project.sketchDraftId;
    }
+   const drawings=await BlueprintDrawingArchive.collect(snapshot,{readBrowserInk:async reference=>{
+     if(!reference||typeof reference.key!=='string'||!/^v85-ink-[a-f0-9-]{36}$/i.test(reference.key)||
+       typeof reference.sha256!=='string'||!/^[a-f0-9]{64}$/.test(reference.sha256))
+       throw Error('Invalid local handwriting reference');
+     const blob=await v6Blob('get',reference.key);
+     if(!blob||await hashBlob(blob)!==reference.sha256)
+       throw Error('Preserved iPad handwriting is missing or damaged. Restore the original backup before exporting.');
+     return blob.text();
+   }});
+   // Portable archives contain the original drawing manifest, never browser-local keys.
+   for(const project of snapshot.projects||[])
+     for(const page of project.notePages||[])delete page.blueprintBrowserInk;
    const header={format:'canvas-complete-backup',version:2,
      exportedAt:new Date().toISOString(),state:snapshot,
      stateSha256:await hashState(snapshot)};
-   const drawings=await BlueprintDrawingArchive.collect(snapshot);
    if(drawings){
      header.version=3;
      header.drawings=drawings;
@@ -322,7 +335,9 @@
    if(canvasUnsaved||canvasTextSavePending)throw Error('Some current edits have not been saved. Export your current work before importing');
    if(!inspected.complete &&
      !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return false;
-   if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return false;
+   const hasBrowserInk=!window.Capacitor?.isNativePlatform?.()&&inspected.drawings?.some(entry=>entry.base64!==null);
+   const inkNotice=hasBrowserInk?' Original iPad handwriting will be preserved for iOS, but is not displayed or editable in this browser.':'';
+   if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'+inkNotice))return false;
 
    assertSourceAccount();
    const originalState=state,created=[];
@@ -331,7 +346,14 @@
    try{
      next=normalize(inspected.data);
      delete next.blueprintSyncGeneration;
-     if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings);
+     if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings,{storeBrowserInk:async base64=>{
+       const key='v85-ink-'+crypto.randomUUID();
+       const blob=new Blob([base64],{type:'text/plain'});
+       const sha256=await hashBlob(blob);
+       await v6Blob('put',key,blob);
+       created.push(key);
+       return {key,sha256};
+     }});
      const remap=new Map();
      const {required}=attachmentKeys(next);
      // Stage newly imported media under unique keys, never overwriting existing keys.
@@ -395,7 +417,7 @@
    try{v6Normalize();render();v6Render();}
    catch(error){console.error('Imported data saved, but the view needs refresh',error);
      alert('Blueprint backup restored, but the view needs a reload. Your imported data was saved.');return true;}
-   alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.'));
+   alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.')+inkNotice);
    return true;
  }
  document.getElementById('exportData').onclick=async()=>{

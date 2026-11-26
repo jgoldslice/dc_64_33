@@ -12,6 +12,7 @@
     '<div id="v76PageMenu" class="v76-page-menu" hidden><button type="button" id="v76RenamePage">Rename page</button>'+
     '<button type="button" id="v76DeletePage">Delete page</button>'+ 
     '<button type="button" id="v947SavePageImage">Save image to Library</button></div></div>'+
+    '<p id="v76BrowserInkNotice" class="muted small" role="status" hidden>iPad handwriting is preserved in this backup. Open in the iOS app to view or edit it.</p>'+
     '<div class="v76-toolbar" role="toolbar" aria-label="Notebook tools">'+
       '<div class="v93-layout-tools"><button type="button" id="v93TogglePageRail" aria-label="Expand notes, hide Pages panel" title="Expand notes" aria-pressed="false">'+
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5"/><path d="M9 9h6v6H9z"/></svg></button></div>'+
@@ -833,6 +834,7 @@
       const opt=document.createElement('option');opt.value=pg.id;opt.textContent=pg.title;pageSelect.append(opt);
     });
     pageSelect.value=String(page.id);
+    document.getElementById('v76BrowserInkNotice').hidden=!page.blueprintBrowserInk;
     renderPageList(p);
     textSizeSelect.value=sizeName(page.defaultTextSize);
     drawPage(p,page);applyMode('select');

@@ -37,3 +37,26 @@ test('failed native staging leaves original planner and page identifiers intact'
   await assert.rejects(archive.stage(structuredClone(state),await archive.collect(state)),/Disk full/);
   assert.deepEqual(state,before);
 });
+
+test('web preserves native ink as opaque data and reconstructs the drawing manifest',async()=>{
+  const window={};
+  runInNewContext(src,{window,crypto:require('node:crypto').webcrypto});
+  const archive=window.BlueprintDrawingArchive;
+  const state={projects:[{id:'p',activeNotePageId:'one',notePages:[{id:'one'},{id:'two'}]}]};
+  const entries=[{projectId:'p',pageId:'one',base64:'YWJj'},{projectId:'p',pageId:'two',base64:null}];
+  await assert.rejects(archive.validate(state,entries),/updated Blueprint iOS/);
+  await archive.validate(state,entries,{allowBrowserInk:true});
+  await assert.rejects(archive.validate(state,[{...entries[0],base64:'!!!!'},entries[1]],{allowBrowserInk:true}),/encoding/);
+  const saved=new Map(),candidate=structuredClone(state);
+  await archive.stage(candidate,entries,{storeBrowserInk:async value=>{saved.set('key',value);return {key:'key'};}});
+  const [first,second]=candidate.projects[0].notePages;
+  assert.notEqual(first.id,'one');
+  assert.equal(candidate.projects[0].activeNotePageId,first.id);
+  const result=await archive.collect(candidate,{readBrowserInk:async ref=>saved.get(ref.key)});
+  assert.equal(result[0].base64,'YWJj');
+  assert.equal(result[0].pageId,first.id);
+  assert.equal(result[1].base64,null);
+  assert.equal(result[1].pageId,second.id);
+  await assert.rejects(archive.collect(candidate),/updated web backup reader/);
+  await assert.rejects(archive.collect(candidate,{readBrowserInk:async()=>null}),/damaged/);
+});
