@@ -31,7 +31,7 @@ This feature is developed separately from manual backups and draft PR #104. It i
 - Immutable manifests and obsolete content are retained. Retention/garbage collection and a history browsing UI are not implemented; cloud storage usage can grow with edits. Existing manual cloud backups are neither deleted nor converted into sync versions.
 - Initial pairing can require an entire snapshot transfer. Subsequent cloud transfers reuse unchanged content, though local snapshot validation currently walks the complete backup. Extremely large notebooks may need further performance work.
 - Native previews retain the existing per-page/whole-export PNG bounds. Old archives without previews cannot display those drawings on the web until an updated iOS export generates them.
-- The native build must advertise `syncDrawingEventsVersion:1`. Older installed apps cannot opt into or resume this feature. The updated iPad app was installed in place, launched, and the owner confirmed notes look fine. Real-account iPad/Safari sync and editor-interruption timing still need owner-controlled verification after enrollment. The iPhone has not received this sync update.
+- The native build must advertise `syncDrawingEventsVersion:1`. Older installed apps cannot opt into or resume this feature. The updated iPad app was installed in place, launched, and the owner confirmed notes look fine. The owner confirmed both iPad and receiving computer reached Up to date, a task created on iPad appeared on the computer, a computer rename returned to iPad, and Notes/handwriting were visible on the computer. Physical offline/reopen, conflict review and editor-interruption timing were not separately owner-tested. The iPhone has not received this sync update.
 
 ## Rules and rollout
 
