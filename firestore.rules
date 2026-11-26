@@ -52,13 +52,19 @@ service cloud.firestore {
 
     match /users/{uid}/backups/{backupId} {
       allow get, list: if owns(uid);
-      allow create: if owns(uid)
-        && request.resource.data.keys().hasOnly(['version', 'archive', 'createdAt'])
-        && request.resource.data.version == 1
-        && request.resource.data.archive is bytes
-        && request.resource.data.archive.size() > 0
-        && request.resource.data.archive.size() <= 768000
-        && request.resource.data.createdAt == request.time;
+      allow create: if owns(uid) && request.resource.data.createdAt == request.time
+        && ((request.resource.data.keys().hasOnly(['version', 'archive', 'createdAt'])
+          && request.resource.data.version == 1
+          && request.resource.data.archive is bytes
+          && request.resource.data.archive.size() > 0
+          && request.resource.data.archive.size() <= 768000)
+        || (request.resource.data.keys().hasOnly(['version', 'path', 'size', 'sha256', 'createdAt'])
+          && request.resource.data.version == 2
+          && request.resource.data.path == 'users/' + uid + '/backups/' + backupId + '/archive.json'
+          && request.resource.data.size is int && request.resource.data.size > 0
+          && request.resource.data.size <= 104857600
+          && request.resource.data.sha256 is string
+          && request.resource.data.sha256.matches('^[a-f0-9]{64}$')));
     }
 
     match /users/{uid}/{collection}/{docId} {

@@ -6,24 +6,28 @@ import {
   connectAuthEmulator, createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signOut,
 } from 'firebase/auth';
 import * as firestore from 'firebase/firestore';
+import * as storageApi from 'firebase/storage';
 import {createFirebasePlannerStore, StalePlannerRevision} from '../sync/firebase-planner-store.mjs';
 import {planPlannerSync} from '../sync/planner-sync.mjs';
 import {createCloudBackupStore} from '../blueprint-cloud-backup.mjs';
 
 const authHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
 const dbHost = process.env.FIRESTORE_EMULATOR_HOST;
-if (authHost !== '127.0.0.1:9099' || dbHost !== '127.0.0.1:8080') {
-  throw new Error('Start the Blueprint Auth and Firestore emulators before running this test.');
+if (authHost !== '127.0.0.1:9099' || dbHost !== '127.0.0.1:8080'
+    || process.env.FIREBASE_STORAGE_EMULATOR_HOST !== '127.0.0.1:9199') {
+  throw new Error('Start the Blueprint Auth, Firestore and Storage emulators before running this test.');
 }
 
 function client(t) {
-  const app = initializeApp({projectId: 'demo-blueprint-sync', apiKey: 'demo-key'}, randomUUID());
+  const app = initializeApp({projectId: 'demo-blueprint-sync', apiKey: 'demo-key', storageBucket:'demo-blueprint-sync.appspot.com'}, randomUUID());
   t.after(() => deleteApp(app));
   const auth = getAuth(app);
   connectAuthEmulator(auth, 'http://' + authHost, {disableWarnings: true});
   const db = firestore.getFirestore(app);
   firestore.connectFirestoreEmulator(db, '127.0.0.1', 8080);
-  return {auth, db, firestore};
+  const storage = storageApi.getStorage(app);
+  storageApi.connectStorageEmulator(storage, '127.0.0.1', 9199);
+  return {auth, db, firestore, storage, storageApi};
 }
 
 const task = {id: 42, title: 'Draft report', done: false};
@@ -83,7 +87,9 @@ test('two Firebase clients synchronize planner records under one account', async
     await phoneBackup.save(new Blob(['first']));
     await phoneBackup.save(new Blob(['second']));
     assert.equal(await (await tabletBackup.latest()).archive.text(), 'second');
-    await assert.rejects(phoneBackup.save(new Blob([new Uint8Array(768001)])), /cloud limit/);
+    const largeArchive = new Blob(['x'.repeat(2 * 1024 * 1024)], {type:'application/json'});
+    await phoneBackup.save(largeArchive);
+    assert.equal((await tabletBackup.latest()).archive.size,largeArchive.size);
     const backups = db => firestore.collection(db, 'users', uid, 'backups');
     await assert.rejects(firestore.getDocsFromServer(backups(stranger.db)), permissionDenied);
     await assert.rejects(firestore.addDoc(backups(stranger.db), {
@@ -91,8 +97,30 @@ test('two Firebase clients synchronize planner records under one account', async
       createdAt: firestore.serverTimestamp(),
     }), permissionDenied);
     const snapshots = await firestore.getDocsFromServer(backups(phone.db));
-    assert.equal(snapshots.size, 2);
+    assert.equal(snapshots.size, 3);
     await assert.rejects(firestore.deleteDoc(snapshots.docs[0].ref), permissionDenied);
+    const backup = snapshots.docs[0].data();
+    const file = c => storageApi.ref(c.storage, backup.path);
+    await assert.rejects(storageApi.getBytes(file(stranger)), {code:'storage/unauthorized'});
+    await assert.rejects(storageApi.getBytes(file(signedOut)), {code:'storage/unauthorized'});
+    await assert.rejects(storageApi.uploadBytes(file(phone), new Uint8Array([1]), {contentType:'application/json'}),
+      {code:'storage/unauthorized'});
+    await assert.rejects(storageApi.deleteObject(file(phone)), {code:'storage/unauthorized'});
+    const newPath = 'users/' + uid + '/backups/foreign-write/archive.json';
+    await assert.rejects(storageApi.uploadBytes(storageApi.ref(stranger.storage,newPath), new Uint8Array([1]), {contentType:'application/json'}),
+      {code:'storage/unauthorized'});
+    await assert.rejects(storageApi.uploadBytes(storageApi.ref(phone.storage,newPath), new Uint8Array([1]), {contentType:'text/html'}),
+      {code:'storage/unauthorized'});
+    await assert.rejects(firestore.setDoc(firestore.doc(backups(phone.db)), {
+      version:2,path:'users/another/backups/foreign/archive.json',size:1,sha256:'a'.repeat(64),createdAt:firestore.serverTimestamp(),
+    }),permissionDenied);
+    await assert.rejects(firestore.updateDoc(snapshots.docs[0].ref,{size:1}),permissionDenied);
+    // An existing inline backup remains readable after this upgrade.
+    await firestore.addDoc(backups(phone.db), {
+      version:1,archive:firestore.Bytes.fromUint8Array(new TextEncoder().encode('legacy')),
+      createdAt:firestore.serverTimestamp(),
+    });
+    assert.equal(await (await tabletBackup.latest()).archive.text(),'legacy');
   });
 
   await t.test('rules enforce account boundaries, schema, revisions and deletion markers', async () => {

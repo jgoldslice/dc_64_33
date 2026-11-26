@@ -6,7 +6,7 @@ import UIKit
 public final class BlueprintGoogleSignInPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "BlueprintGoogleSignInPlugin"
     public let jsName = "BlueprintGoogleSignIn"
-    public let pluginMethods = [
+    public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "signIn", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "signOut", returnType: CAPPluginReturnPromise)
     ]
@@ -14,10 +14,13 @@ public final class BlueprintGoogleSignInPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func signIn(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             guard let presenter = self.bridge?.viewController,
-                  let url = Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist"),
+                  let url = Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist")
+                    ?? Bundle.main.url(forResource: "GoogleService-Info", withExtension: "plist", subdirectory: "public"),
                   let settings = NSDictionary(contentsOf: url),
                   let clientID = settings["CLIENT_ID"] as? String,
-                  let serverClientID = Bundle.main.object(forInfoDictionaryKey: "GIDServerClientID") as? String
+                  let serverClientID = Bundle.main.object(forInfoDictionaryKey: "GIDServerClientID") as? String,
+                  !clientID.isEmpty, !serverClientID.isEmpty,
+                  settings["BUNDLE_ID"] as? String == Bundle.main.bundleIdentifier
             else {
                 call.reject("Google sign-in needs the registered iOS and web OAuth client settings.")
                 return

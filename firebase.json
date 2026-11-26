@@ -2,7 +2,14 @@
   "firestore": {
     "rules": "firestore.rules"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "emulators": {
+    "storage": {
+      "host": "127.0.0.1",
+      "port": 9199
+    },
     "auth": {
       "host": "127.0.0.1",
       "port": 9099

@@ -49,16 +49,34 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
         latest = data;
       };
       export const getDocsFromServer = async path => {
-        if (path.endsWith('/backups')) return {empty: !latest, docs: [{data: () => latest}]};
+        if (path.endsWith('/backups')) return {empty: !latest, docs: [{id: 'backup-1', data: () => latest}]};
         const docs = [...rows].filter(([key])=>key.startsWith(path+'/'))
           .map(([key,data])=>({id:key.split('/').at(-1),data:()=>data}));
         return {empty:!docs.length,docs};
       };
-      export const doc = (_, ...parts) => parts.join('/');
+      export const doc = (_, ...parts) => parts.length ? parts.join('/') : {id:'backup-1'};
+      export const setDoc = async (_, data) => {latest = data;};
       export const runTransaction = async (_, fn) => fn({
         get:async path=>({exists:()=>rows.has(path),id:path.split('/').at(-1),data:()=>rows.get(path)}),
         set:(path,data)=>rows.set(path,data)
       });
+    `,
+    'firebase-storage.js': `
+      const files = new Map();
+      export const getStorage = () => ({});
+      export const ref = (_, path) => path;
+      export function uploadBytesResumable(path, bytes, metadata) {
+        files.set(path, {bytes: new Uint8Array(bytes), ...metadata});
+        const task = Promise.resolve();
+        task.cancel = () => true;
+        task.on = (_, listener) => {
+          listener({bytesTransferred:bytes.length,totalBytes:bytes.length});
+          return () => {};
+        };
+        return task;
+      }
+      export const getMetadata = async path => ({size:files.get(path).bytes.length,contentType:files.get(path).contentType});
+      export const getBytes = async path => files.get(path).bytes.buffer;
     `,
   };
   await page.route('https://www.gstatic.com/firebasejs/**', route => route.fulfill({
@@ -70,22 +88,33 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
   await cloud.getByRole('button', {name: 'Continue with Google'}).click();
   await expect(cloud.getByRole('status')).toHaveText('Signed in as pilot@example.test');
 
+  await cloud.getByRole('button', {name: 'Back up now'}).click();
+  const sheet = page.locator('#bpSheet');
+  await expect(sheet.getByRole('heading')).toHaveText('Confirm cloud backup');
+  await expect(sheet.getByRole('button', {name:'Back up now', exact:true})).toBeVisible();
+  await expect(sheet.locator('.bp-danger')).toHaveCount(0);
+  await sheet.getByRole('button', {name:'Cancel', exact:true}).click();
+  await expect(cloud.getByRole('status')).toHaveText('Cloud backup canceled.');
+
   await page.evaluate(() => {
     state.tasks=[{id:800,title:'Standalone task',done:false,date:'',dueDate:'',scheduledDate:'',scheduledTime:'',priority:false,priorityRank:0}];
     state.events=[];
     if(!save(true))throw Error('Fixture save failed');
-    BlueprintSheet.confirm = async () => true;
   });
   await cloud.getByRole('button', {name:'Preview planner sync'}).click();
   await expect(cloud.getByRole('status')).toHaveText('Preview ready. Review changes before applying.');
   await expect(cloud.locator('[data-cloud-summary]')).toContainText('1 upload(s), 1 download(s), 0 conflict(s)');
   expect(await page.evaluate(()=>state.events.length)).toBe(0);
   await cloud.getByRole('button', {name:'Apply reviewed sync'}).click();
+  await expect(sheet.getByRole('heading')).toHaveText('Confirm planner sync');
+  await expect(sheet.locator('.bp-danger')).toHaveCount(0);
+  await sheet.getByRole('button', {name:'Apply sync', exact:true}).click();
   await expect(cloud.getByRole('status')).toHaveText('Sync complete: 1 uploaded, 1 downloaded.');
   expect(await page.evaluate(()=>state.events.map(e=>e.title))).toEqual(['Cloud appointment']);
   await cloud.getByRole('button', {name:'Preview planner sync'}).click();
   await expect(cloud.locator('[data-cloud-summary]')).toContainText('0 upload(s), 0 download(s), 0 conflict(s)');
   await cloud.getByRole('button', {name: 'Back up now'}).click();
+  await sheet.getByRole('button', {name:'Back up now', exact:true}).click();
   await expect(cloud.getByRole('status')).toHaveText('Cloud backup saved.');
   const restorePrompt = page.waitForEvent('dialog');
   const restoreClick = cloud.getByRole('button', {name: 'Restore latest'}).click();
