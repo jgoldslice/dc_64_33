@@ -32,6 +32,7 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
     `,
     'firebase-firestore.js': `
       let latest;
+      const rows = new Map([['users/fixture/events/r-700', {id:'700',revision:1,record:{id:'700',title:'Cloud appointment',date:'2026-11-25',time:'14:00'}}]]);
       export class Bytes {
         static fromUint8Array(bytes) {return new Bytes(bytes);}
         constructor(bytes) {this.bytes = bytes;}
@@ -47,7 +48,17 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
         if (path !== 'users/fixture/backups') throw Error('Wrong backup account.');
         latest = data;
       };
-      export const getDocsFromServer = async () => ({empty: !latest, docs: [{data: () => latest}]});
+      export const getDocsFromServer = async path => {
+        if (path.endsWith('/backups')) return {empty: !latest, docs: [{data: () => latest}]};
+        const docs = [...rows].filter(([key])=>key.startsWith(path+'/'))
+          .map(([key,data])=>({id:key.split('/').at(-1),data:()=>data}));
+        return {empty:!docs.length,docs};
+      };
+      export const doc = (_, ...parts) => parts.join('/');
+      export const runTransaction = async (_, fn) => fn({
+        get:async path=>({exists:()=>rows.has(path),id:path.split('/').at(-1),data:()=>rows.get(path)}),
+        set:(path,data)=>rows.set(path,data)
+      });
     `,
   };
   await page.route('https://www.gstatic.com/firebasejs/**', route => route.fulfill({
@@ -59,7 +70,21 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
   await cloud.getByRole('button', {name: 'Continue with Google'}).click();
   await expect(cloud.getByRole('status')).toHaveText('Signed in as pilot@example.test');
 
-  await page.evaluate(() => {BlueprintSheet.confirm = async () => true;});
+  await page.evaluate(() => {
+    state.tasks=[{id:800,title:'Standalone task',done:false,date:'',dueDate:'',scheduledDate:'',scheduledTime:'',priority:false,priorityRank:0}];
+    state.events=[];
+    if(!save(true))throw Error('Fixture save failed');
+    BlueprintSheet.confirm = async () => true;
+  });
+  await cloud.getByRole('button', {name:'Preview planner sync'}).click();
+  await expect(cloud.getByRole('status')).toHaveText('Preview ready. Review changes before applying.');
+  await expect(cloud.locator('[data-cloud-summary]')).toContainText('1 upload(s), 1 download(s), 0 conflict(s)');
+  expect(await page.evaluate(()=>state.events.length)).toBe(0);
+  await cloud.getByRole('button', {name:'Apply reviewed sync'}).click();
+  await expect(cloud.getByRole('status')).toHaveText('Sync complete: 1 uploaded, 1 downloaded.');
+  expect(await page.evaluate(()=>state.events.map(e=>e.title))).toEqual(['Cloud appointment']);
+  await cloud.getByRole('button', {name:'Preview planner sync'}).click();
+  await expect(cloud.locator('[data-cloud-summary]')).toContainText('0 upload(s), 0 download(s), 0 conflict(s)');
   await cloud.getByRole('button', {name: 'Back up now'}).click();
   await expect(cloud.getByRole('status')).toHaveText('Cloud backup saved.');
   const restorePrompt = page.waitForEvent('dialog');
