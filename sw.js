@@ -21,6 +21,8 @@ self.addEventListener('activate',event=>{
 self.addEventListener('fetch',event=>{
   const request=event.request;
   if(request.method!=='GET'||new URL(request.url).origin!==self.location.origin)return;
+  // Never fall back to a stale Firebase project configuration.
+  if(new URL(request.url).pathname.endsWith('/firebase-client.json'))return;
   // Don't cache data downloads or requests from other GitHub Pages app paths.
   if(!new URL(request.url).pathname.startsWith(new URL(self.registration.scope).pathname))return;
   event.respondWith(fetch(request).then(response=>{
