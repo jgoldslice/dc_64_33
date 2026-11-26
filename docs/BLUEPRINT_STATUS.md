@@ -1,13 +1,17 @@
 # Blueprint — Development Status
 
-**Last documentation update:** 2026-11-25
+**Last documentation update:** 2026-11-26
 **Repository:** https://github.com/jgoldslice/dc_64_33  
 **Baseline commit inspected before adding these documentation files:** `05c6e74dbf4a1df2719a4aeba28076a8a113fe88`  
 **Verification scope:** Fetched root README and index.html; checked that AGENTS.md and this status file were absent; inspected recent commit identifiers. This is **not** a full source-code audit, automated test run, or iOS device test.
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
-## 2026-11-25 — Public web access to private iPad backups (release candidate)
+## 2026-11-26 — Public web access to private iPad backups (merged; deployment pending)
+
+- Exact release head `4812a692acd040019332f1df8b3e4b17d7909b7b` passed [browser CI](https://github.com/jgoldslice/dc_64_33/actions/runs/45771790268) and [Firebase emulator CI](https://github.com/jgoldslice/dc_64_33/actions/runs/45771790242). PR #103 merged with an expected-head check into main as `08387414810e9e2f54f151f4f5ad08be91e1b963`. PR #104 remains separate. [Pages publication](https://github.com/jgoldslice/dc_64_33/actions/runs/45773007369) started; public endpoint and authenticated restore are not yet verified. No owner data was accessed or changed.
+
+### Release implementation
 
 - Owner authorized connecting the public GitHub Pages web app to the existing Blueprint Firebase project. Pages deployment injects the recovered public Web SDK identifiers into the artifact only; the source `firebase-client.json` stays null, retaining offline/local test behavior. Account authorization is enforced by Firebase Auth and owner-scoped Firestore/Storage Rules. No service-account credentials, tokens, owner backup contents, live rules or billing settings are changed. The recorded pilot setup included the Pages authorized domain, but it has not been rechecked in the live console from this environment.
 - Browser restore now accepts a valid version-3 complete iPad archive and keeps native PencilKit data opaque in the existing attachment IndexedDB under a distinct, locally referenced key with SHA-256. The original archive remains immutable in Storage. The planner replacement still requires confirmation, validates all source hashes and stages new bytes before committing; staging failure follows the existing rollback path. Re-export reconstructs the version-3 drawing manifest with current page IDs and original ink bytes and never includes local-only references. Missing or changed preserved ink blocks export rather than creating an incomplete backup. The browser does not render or edit native PKDrawing strokes; an affected notebook page shows a disclosure. Existing v1–v3 format, storage keys and native drawing staging remain compatible.
