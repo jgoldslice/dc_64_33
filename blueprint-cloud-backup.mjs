@@ -94,9 +94,12 @@ export async function downloadBackupChunks({user, file, size, assertAccount, onP
 }
 
 export function createCloudBackupStore({auth, db, firestore, storage, storageApi, authApi, native = false}) {
-  const uid = auth.currentUser?.uid;
+  const account = auth.currentUser;
+  const uid = account?.uid;
   function assertAccount() {
-    if (!uid || auth.currentUser?.uid !== uid) throw new Error('Sign in again to use cloud backups.');
+    // The operation belongs to this Auth session, not merely its UID.
+    // A sign-out followed by sign-in to the same account invalidates it.
+    if (!uid || auth.currentUser !== account) throw new Error('Sign in again to use cloud backups.');
   }
   function backups() {
     assertAccount();
@@ -117,11 +120,11 @@ export function createCloudBackupStore({auth, db, firestore, storage, storageApi
       contentType: 'application/json',
     });
     const stopProgress = upload.on('state_changed', snapshot => {
-      if (auth.currentUser?.uid !== uid) { upload.cancel(); return; }
+      if (auth.currentUser !== account) { upload.cancel(); return; }
       onProgress(snapshot.totalBytes ? snapshot.bytesTransferred / snapshot.totalBytes : 0);
     });
     const stopAuth = authApi?.onAuthStateChanged(auth, user => {
-      if (user?.uid !== uid) upload.cancel();
+      if (user !== account) upload.cancel();
     });
     try {
       await upload;

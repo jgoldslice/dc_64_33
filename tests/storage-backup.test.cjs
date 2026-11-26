@@ -144,3 +144,30 @@ test('empty and oversized backups fail before upload; signed-out saves are rejec
   await assert.rejects(store.save(new Blob(['x'])),/Sign in again/);
   assert.equal(f.files.size,0);
 });
+
+test('same-UID sign-out and re-sign-in invalidates a pending backup or restore', async () => {
+  const {createCloudBackupStore} = await modulePromise;
+  const f=fixture(),store=createCloudBackupStore(f);
+  await store.save(new Blob(['previous']));
+  const archive=await store.latest();
+  assert.equal(await archive.archive.text(),'previous');
+  f.changeAccount(null);
+  f.changeAccount('owner');
+  assert.throws(()=>store.assertAccount(),/Sign in again/);
+  await assert.rejects(store.latest(),/Sign in again/);
+  await assert.rejects(store.save(new Blob(['stale'])),/Sign in again/);
+  const newStore=createCloudBackupStore(f);
+  assert.equal(await (await newStore.latest()).archive.text(),'previous');
+  assert.equal(f.rows.length,1);
+});
+
+test('same-UID session replacement during download blocks the old archive', async () => {
+  const {createCloudBackupStore} = await modulePromise;
+  for (const phase of ['metadata','download']) {
+    const f=fixture(),store=createCloudBackupStore(f);
+    await store.save(new Blob(['test']));
+    f.hooks[phase]=() => {f.changeAccount(null);f.changeAccount('owner');};
+    await assert.rejects(store.latest(),/Sign in again/);
+    assert.equal(f.rows.length,1);
+  }
+});

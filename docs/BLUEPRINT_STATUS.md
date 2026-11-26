@@ -7,6 +7,12 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-25 — Bind native pilot operations to the initiating Auth session
+
+- Ported the narrow account-identity guard from draft PR #104 onto the newer PR #103 without replacing native range downloads, resumable uploads, large-attachment validation, planner sync, or the iOS bridge. An in-flight operation no longer survives signing out and back into the same UID; upload cancellation also checks the original Firebase user object. Restore's existing pre-commit guard now inherits this behavior. No changes to saved planner or complete-backup formats, live Firebase settings, rules, or installed apps.
+- Added standalone regressions for same-UID session replacement after backup retrieval and during metadata/download, with unchanged backup history and a fresh session able to restore normally. Advanced the service-worker cache for the updated module. New CI is required; the previous native head passed both browser and emulator CI. This is a code-only follow-up, not an Xcode build or physical device test.
+- Draft #104's automatic-backup work remains separate. Its one failed browser test was corrected to await the canceled restore; merge/reconciliation of the two drafts remains pending. The legacy date projection differs between drafts, and the current local app normalizer also uses legacy date as a schedule fallback; do not change just the sync projection without reviewing the existing migration behavior.
+
 ## 2026-11-25 — Owner confirmed completed physical iPad-to-iPhone restore
 
 - Owner confirmed the corrected live restore now works after the large-attachment reader fix. The observed path is successful source iPad backup under the shared Google account, native iPhone sign-in, authenticated 21.4 MiB download, complete archive validation and successful receiving-device restore. This is owner-reported physical-device verification, alongside the automated tests; it does not establish continuous sync or arbitrary archive-size/device coverage.
