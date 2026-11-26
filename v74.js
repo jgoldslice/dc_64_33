@@ -134,8 +134,16 @@
    reader.readAsDataURL(blob);
  });
  const base64ToBlob=(data,mime)=>{
-   if(typeof data!=='string'||data.length%4!==0||!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(data))
+   if(typeof data!=='string'||data.length%4!==0)
      throw Error('Corrupted attachment encoding');
+   // A repeated four-character regexp can exhaust WebKit's match budget (or
+   // Chromium's stack) on valid large media. Validate bounded alphabet slices
+   // instead, while retaining the same strict trailing-padding requirements.
+   const padding=data.endsWith('==')?2:data.endsWith('=')?1:0;
+   const end=data.length-padding;
+   for(let offset=0;offset<end;offset+=32768)
+     if(/[^A-Za-z0-9+/]/.test(data.slice(offset,Math.min(offset+32768,end))))
+       throw Error('Corrupted attachment encoding');
    const binary=atob(data),parts=[];
    for(let i=0;i<binary.length;i+=32768){
      const slice=binary.slice(i,i+32768),bytes=new Uint8Array(slice.length);
@@ -191,6 +199,8 @@
      for(const field of ['actions','library','notePages','contentBlocks'])
        records(p[field],'project '+field);
      for(const page of p.notePages||[]){
+       if(Object.prototype.hasOwnProperty.call(page,'blueprintBrowserInk'))
+         throw Error('Backup contains a device-local handwriting reference');
        records(page.objects,'note page objects');
        for(const stroke of records(page.strokes,'note page strokes'))
          records(stroke.points,'stroke points');
@@ -255,26 +265,38 @@
    if(source.version===3){
      if(!Array.isArray(source.drawings)||await hashState(source.drawings)!==source.drawingsSha256)
        throw Error('Drawing manifest checksum mismatch');
-     await BlueprintDrawingArchive.validate(source.state,source.drawings);
+     await BlueprintDrawingArchive.validate(source.state,source.drawings,{allowBrowserInk:!window.Capacitor?.isNativePlatform?.()});
    }
    return {complete:true,data:source.state,media,drawings:source.version===3?source.drawings:null};
  }
- async function exportCompleteBackup(){
+ async function buildCompleteBackup(){
    if(canvasLoadError)throw Error('Saved planner data could not be loaded; export the untouched original using the recovery warning instead');
    // Snapshot first, so an export consistently refers to one planner version.
    // Keep the v2 format unchanged while avoiding a second giant JSON string
    // (and an all-attachments array) in addition to the base64 media.
    const snapshot=structuredClone(state);
+   delete snapshot.blueprintSyncGeneration;
    const {required,drafts}=attachmentKeys(snapshot);
    const draftKeys=new Map();
    for(const project of snapshot.projects||[]){
      draftKeys.set('v6-draft-'+project.id,v6SketchDraftKey(project));
      delete project.sketchDraftId;
    }
+   const drawings=await BlueprintDrawingArchive.collect(snapshot,{readBrowserInk:async reference=>{
+     if(!reference||typeof reference.key!=='string'||!/^v85-ink-[a-f0-9-]{36}$/i.test(reference.key)||
+       typeof reference.sha256!=='string'||!/^[a-f0-9]{64}$/.test(reference.sha256))
+       throw Error('Invalid local handwriting reference');
+     const blob=await v6Blob('get',reference.key);
+     if(!blob||await hashBlob(blob)!==reference.sha256)
+       throw Error('Preserved iPad handwriting is missing or damaged. Restore the original backup before exporting.');
+     return blob.text();
+   }});
+   // Portable archives contain the original drawing manifest, never browser-local keys.
+   for(const project of snapshot.projects||[])
+     for(const page of project.notePages||[])delete page.blueprintBrowserInk;
    const header={format:'canvas-complete-backup',version:2,
      exportedAt:new Date().toISOString(),state:snapshot,
      stateSha256:await hashState(snapshot)};
-   const drawings=await BlueprintDrawingArchive.collect(snapshot);
    if(drawings){
      header.version=3;
      header.drawings=drawings;
@@ -294,27 +316,44 @@
    // Browser Blob parts can be assembled without concatenating the entire
    // archive and every encoded attachment into a second JS string.
    const archive=new Blob(pieces,{type:'application/json'});
-   pieces.length=0;
+   return {archive, hasDrawings: !!drawings};
+ }
+ async function exportCompleteBackup(){
+   const {archive, hasDrawings}=await buildCompleteBackup();
    const u=URL.createObjectURL(archive);
    const a=document.createElement('a');
    a.href=u;a.download='canvas-complete-'+new Date().toISOString().slice(0,10)+'.json';
    document.body.appendChild(a);a.click();a.remove();
    setTimeout(()=>URL.revokeObjectURL(u),30000);
-   return drawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
+   return hasDrawings ? 'Backup file prepared, including native handwriting.' : 'Planner and attachment backup file prepared.';
  }
- async function importCompleteBackup(file){
+ async function importCompleteBackup(file, assertSourceAccount = () => {}){
+   assertSourceAccount();
    const source=JSON.parse(await file.text());
    const inspected=await inspectBackup(source);
-   if(canvasUnsaved)throw Error('Some current edits have not been saved. Export your current work before importing');
+   assertSourceAccount();
+   if(canvasUnsaved||canvasTextSavePending)throw Error('Some current edits have not been saved. Export your current work before importing');
    if(!inspected.complete &&
-     !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return;
-   if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return;
+     !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return false;
+   const hasBrowserInk=!window.Capacitor?.isNativePlatform?.()&&inspected.drawings?.some(entry=>entry.base64!==null);
+   const inkNotice=hasBrowserInk?' Original iPad handwriting will be preserved for iOS, but is not displayed or editable in this browser.':'';
+   if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'+inkNotice))return false;
 
+   assertSourceAccount();
    const originalState=state,created=[];
+   const originalManifest=canvasLastManifest, originalSnapshot=JSON.stringify(state);
    let attemptedCommit=false,previousManifest,next;
    try{
      next=normalize(inspected.data);
-     if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings);
+     delete next.blueprintSyncGeneration;
+     if(inspected.drawings)await BlueprintDrawingArchive.stage(next,inspected.drawings,{storeBrowserInk:async base64=>{
+       const key='v85-ink-'+crypto.randomUUID();
+       const blob=new Blob([base64],{type:'text/plain'});
+       const sha256=await hashBlob(blob);
+       await v6Blob('put',key,blob);
+       created.push(key);
+       return {key,sha256};
+     }});
      const remap=new Map();
      const {required}=attachmentKeys(next);
      // Stage newly imported media under unique keys, never overwriting existing keys.
@@ -341,14 +380,16 @@
        await v6Blob('put',key,draft);
        created.push(key);
      }
-     if(canvasUnsaved)throw Error('Save your current edits before importing');
+     if(canvasUnsaved||canvasTextSavePending||state!==originalState||canvasLastManifest!==originalManifest||JSON.stringify(state)!==originalSnapshot)
+       throw Error('Local planner changed during restore. Review the backup again.');
+     assertSourceAccount();
      previousManifest=canvasLastManifest;
      attemptedCommit=true;
      state=next;
      if(!save(true))throw Error('Planner storage is full or unavailable');
    }catch(error){
      const recoveryErrors=[];
-     state=originalState;
+     if(attemptedCommit)state=originalState;
      // If rollback cannot be verified, the persisted planner might still
      // reference staged bytes. Retain them for recovery.
      if(attemptedCommit){
@@ -375,8 +416,9 @@
    window.v6ActiveProjectId=null;
    try{v6Normalize();render();v6Render();}
    catch(error){console.error('Imported data saved, but the view needs refresh',error);
-     alert('Blueprint backup restored, but the view needs a reload. Your imported data was saved.');return;}
-   alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.'));
+     alert('Blueprint backup restored, but the view needs a reload. Your imported data was saved.');return true;}
+   alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.')+inkNotice);
+   return true;
  }
  document.getElementById('exportData').onclick=async()=>{
    const button=document.getElementById('exportData');
@@ -387,5 +429,9 @@
    finally{button.disabled=false;button.removeAttribute('aria-busy');}
  };
  window.v74ImportBackup=importCompleteBackup;
+ window.v74BuildCompleteBackup=async()=>{
+   if(canvasUnsaved||canvasTextSavePending)throw Error('Wait for your edits to save before creating a cloud backup.');
+   return (await buildCompleteBackup()).archive;
+ };
 
 })();

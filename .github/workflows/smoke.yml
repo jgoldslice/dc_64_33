@@ -26,7 +26,7 @@ jobs:
           done
       - name: Run standalone Node regression tests (native archive and Notes logic)
         run: node --test tests/*.test.cjs
-      - name: Install Chromium
-        run: npx playwright install chromium
+      - name: Install Chromium and WebKit for attachment restore coverage
+        run: npx playwright install --with-deps chromium webkit
       - name: Run Canvas smoke tests
         run: npx playwright test --reporter=line

@@ -25,6 +25,13 @@ jobs:
         uses: actions/checkout@v4
       - name: Configure Pages
         uses: actions/configure-pages@v5
+      # Public Firebase Web SDK identifiers only; authorization is enforced by Firebase Rules.
+      # Keep the repository's default firebase-client.json null for local and test builds.
+      - name: Configure Blueprint web client
+        run: |
+          cat > firebase-client.json <<'BLUEPRINT_FIREBASE_CONFIG'
+          {"apiKey":"AIzaSyDL_NPdntLoDoHiyo2Li5qdSISoYmCWHrA","authDomain":"blueprint-bf366.firebaseapp.com","projectId":"blueprint-bf366","storageBucket":"blueprint-bf366.firebasestorage.app","messagingSenderId":"693172268920","appId":"1:693172268920:web:11ae5b9c24f8dcad39628d"}
+          BLUEPRINT_FIREBASE_CONFIG
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:
