@@ -130,3 +130,15 @@ test('rejects incomplete snapshots, duplicate IDs and invalid identities before 
   const mismatched = {...head('tasks', task), id: 'something-else'};
   assert.throws(() => planPlannerSync({planner: planner(), remote: [mismatched]}), /envelope/);
 });
+
+
+test('explicit empty scheduling and due dates are not replaced by legacy date aliases', () => {
+  const unscheduled = projectPlannerRecord('tasks', {...task, scheduledDate:'', scheduledTime:'11:00'});
+  assert.equal(unscheduled.dueDate,task.date);
+  assert.equal(unscheduled.scheduledDate,'');
+  assert.equal(unscheduled.scheduledTime,'');
+  const noDeadline=projectPlannerRecord('tasks',{...task,dueDate:'',scheduledDate:'2026-11-27'});
+  assert.equal(noDeadline.date,'');
+  assert.equal(noDeadline.dueDate,'');
+  assert.equal(noDeadline.scheduledDate,'2026-11-27');
+});
