@@ -1,4 +1,4 @@
-# Full planner sync candidate
+# Automatic full planner sync
 
 This feature is developed separately from manual backups and draft PR #104. It is off until the owner explicitly sets up each device. No personal planner is enrolled by development tools.
 
@@ -7,7 +7,7 @@ This feature is developed separately from manual backups and draft PR #104. It i
 1. Keep a complete backup of the source iPad. Install the updated native app without uninstalling.
 2. Sign into the same Google account on every device.
 3. On the source iPad, choose **Customize → Automatic Sync → Start from this device**. This is allowed only when that account has no shared planner yet. A complete pre-sync recovery copy is saved and verified locally before publication.
-4. On the receiving device, choose **Join shared planner** and confirm the initial replacement. Its existing planner is retained in a verified local recovery copy first. Initial joining is deliberately explicit: a receiving device's sample data or independently remapped backup page IDs must not be merged into the source by guessing.
+4. In the receiving browser, export its existing planner with **Your Data → Export backup** first (this produces a complete backup). Then choose **Join shared planner** and confirm the initial replacement. Its existing planner is also retained in a verified local recovery copy first. Initial joining is deliberately explicit: a receiving device's sample data or independently remapped backup page IDs must not be merged into the source by guessing.
 5. Once paired, saved changes reconcile automatically while Blueprint is open. Reopening, reconnecting and server change notifications schedule another reconciliation. iOS suspension/closed-app execution is not promised.
 6. Conflicting edits pause sync. The owner chooses the device or shared version of the overlapping fields; other edits merge. The choice is rejected if either side changed during review. Local recovery copies and immutable cloud predecessors retain the earlier versions.
 
@@ -31,10 +31,10 @@ This feature is developed separately from manual backups and draft PR #104. It i
 - Immutable manifests and obsolete content are retained. Retention/garbage collection and a history browsing UI are not implemented; cloud storage usage can grow with edits. Existing manual cloud backups are neither deleted nor converted into sync versions.
 - Initial pairing can require an entire snapshot transfer. Subsequent cloud transfers reuse unchanged content, though local snapshot validation currently walks the complete backup. Extremely large notebooks may need further performance work.
 - Native previews retain the existing per-page/whole-export PNG bounds. Old archives without previews cannot display those drawings on the web until an updated iOS export generates them.
-- The native build must advertise `syncDrawingEventsVersion:1`. Older installed apps cannot opt into or resume this feature. Physical iPad/iPhone timing, editor interruption and real-account cross-device sync remain release gates.
+- The native build must advertise `syncDrawingEventsVersion:1`. Older installed apps cannot opt into or resume this feature. The updated iPad app was installed in place, launched, and the owner confirmed notes look fine. Real-account iPad/Safari sync and editor-interruption timing still need owner-controlled verification after enrollment. The iPhone has not received this sync update.
 
 ## Rules and rollout
 
-The existing default Firestore database was verified as Standard/Native in `us-central1` using database metadata only. The proposed new rules require the authenticated UID to match the path, a strictly validated head with a server timestamp and monotonic revision, and immutable bounded JSON objects. No new public read/list permissions, cross-account access, deletes, or backup-policy changes are added. The rules are a prototype under review and have only been exercised against local emulators at this point; no live rules are deployed by this branch merely existing.
+The existing default Firestore database was verified as Standard/Native in `us-central1` using database metadata only. The new rules require the authenticated UID to match the path, a strictly validated head with a server timestamp and monotonic revision, and immutable bounded JSON objects. No new public read/list permissions, cross-account access, deletes, or backup-policy changes are added. After explicit owner approval on 2026-11-26, the reviewed rules were deployed and read back as an exact match. Earlier rules are retained for rollback; no personal planner records were read to verify deployment.
 
-Before release: pass Node, browser (including Safari-engine reconciliation) and Auth/Firestore/Storage emulator checks; compile/sign the actual wrapper; update connected devices in place and verify existing Notes; review/deploy only the two rule files; publish the tested web build; then let the owner perform account authentication, source enrollment and receiving-device enrollment. The agent must not inspect or replace personal planner content to perform these steps. Record exact commits, checks and physical evidence in BLUEPRINT_STATUS.md.
+PR #106 merged as `5716305731da6ea00cc5710839295be1c2bb1e78` after passing Node, browser (including Safari-engine reconciliation), emulator and signed native-build checks. The updated website was published successfully. Enrollment remains off until the owner performs account authentication, source enrollment and receiving-device enrollment. The agent must not inspect or replace personal planner content to perform these steps. Exact commits, checks, physical evidence and pending owner validation are recorded in BLUEPRINT_STATUS.md.
