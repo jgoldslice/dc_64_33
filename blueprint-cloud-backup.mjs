@@ -39,7 +39,7 @@ export function createCloudBackupStore({auth, db, firestore}) {
       date: data.createdAt?.toDate(),
     };
   }
-  return {save, latest};
+  return {save, latest, assertAccount};
 }
 
 async function connect() {
@@ -132,24 +132,26 @@ function install(card) {
   }, 'Could not finish signing out.'));
 
   save.addEventListener('click', run(async () => {
+    const store = createCloudBackupStore(client);
     if (!await globalThis.BlueprintSheet.confirm('Save a complete copy of this device’s Blueprint data to your Google account?')) {
       status.textContent = 'Cloud backup canceled.';
       return;
     }
-    const store = createCloudBackupStore(client);
+    store.assertAccount();
     await store.save(await globalThis.v74BuildCompleteBackup());
     status.textContent = 'Cloud backup saved.';
   }, 'Could not save the cloud backup. Check your connection and try again.'));
 
   restore.addEventListener('click', run(async () => {
-    const backup = await createCloudBackupStore(client).latest();
+    const store = createCloudBackupStore(client);
+    const backup = await store.latest();
     if (!backup) {
       status.textContent = 'This account has no cloud backup yet.';
       return;
     }
     const date = backup.date?.toLocaleString();
     status.textContent = date ? 'Latest cloud backup from ' + date : 'Latest cloud backup ready.';
-    await globalThis.v74ImportBackup(backup.archive);
+    await globalThis.v74ImportBackup(backup.archive, store.assertAccount);
   }, 'Could not open the cloud backup. Check your connection and try again.'));
 
   render();
