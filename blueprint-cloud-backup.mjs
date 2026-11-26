@@ -337,7 +337,8 @@ function install(card) {
     }
     const date = backup.date?.toLocaleString();
     status.textContent = date ? 'Preparing restore from ' + date + '…' : 'Preparing complete backup restore…';
-    await globalThis.v74ImportBackup(backup.archive, store.assertAccount);
+    const restored = await globalThis.v74ImportBackup(backup.archive, store.assertAccount);
+    status.textContent = restored === false ? 'Restore canceled. Your local data has not changed.' : 'Cloud backup restored.';
   }, 'Could not open the cloud backup. Check your connection and try again.'));
 
   preview.addEventListener('click', run(async () => {

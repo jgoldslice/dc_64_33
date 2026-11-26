@@ -134,8 +134,16 @@
    reader.readAsDataURL(blob);
  });
  const base64ToBlob=(data,mime)=>{
-   if(typeof data!=='string'||data.length%4!==0||!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(data))
+   if(typeof data!=='string'||data.length%4!==0)
      throw Error('Corrupted attachment encoding');
+   // A repeated four-character regexp can exhaust WebKit's match budget (or
+   // Chromium's stack) on valid large media. Validate bounded alphabet slices
+   // instead, while retaining the same strict trailing-padding requirements.
+   const padding=data.endsWith('==')?2:data.endsWith('=')?1:0;
+   const end=data.length-padding;
+   for(let offset=0;offset<end;offset+=32768)
+     if(/[^A-Za-z0-9+/]/.test(data.slice(offset,Math.min(offset+32768,end))))
+       throw Error('Corrupted attachment encoding');
    const binary=atob(data),parts=[];
    for(let i=0;i<binary.length;i+=32768){
      const slice=binary.slice(i,i+32768),bytes=new Uint8Array(slice.length);
@@ -313,8 +321,8 @@
    assertSourceAccount();
    if(canvasUnsaved||canvasTextSavePending)throw Error('Some current edits have not been saved. Export your current work before importing');
    if(!inspected.complete &&
-     !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return;
-   if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return;
+     !confirm('This is an older text-only backup; it may not contain files, sketches or images. Continue?'))return false;
+   if(!confirm('Replace your current Blueprint data with this backup? Export a complete backup of your current data first.'))return false;
 
    assertSourceAccount();
    const originalState=state,created=[];
@@ -386,8 +394,9 @@
    window.v6ActiveProjectId=null;
    try{v6Normalize();render();v6Render();}
    catch(error){console.error('Imported data saved, but the view needs refresh',error);
-     alert('Blueprint backup restored, but the view needs a reload. Your imported data was saved.');return;}
+     alert('Blueprint backup restored, but the view needs a reload. Your imported data was saved.');return true;}
    alert('Blueprint backup restored. '+(inspected.complete?'All attachment checks passed.':'This was a text-only backup.'));
+   return true;
  }
  document.getElementById('exportData').onclick=async()=>{
    const button=document.getElementById('exportData');

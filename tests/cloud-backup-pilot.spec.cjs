@@ -151,6 +151,7 @@ test('cloud backup reuses the complete archive and guided restore entry point', 
   expect(dialog.message()).toContain('Replace your current Blueprint data');
   await dialog.dismiss();
   await restoreClick;
+  await expect(cloud.getByRole('status')).toHaveText('Restore canceled. Your local data has not changed.');
 
   // A different account must never receive a backup authorized for the
   // original account, even if the change occurs during confirmation.

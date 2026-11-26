@@ -7,6 +7,15 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-25 — Fixed false corruption errors for large Base64 attachments
+
+- After the CORS correction, the owner confirmed the live iPhone download reached 100% and then failed with Corrupted attachment encoding. This error occurs in the existing complete archive importer after the outer Storage size/SHA-256 validation, isolating the issue from file transfer.
+- Reproduced the old repeated-group Base64 validation regex on real browser engines: WebKit accepts valid 100k/1M strings but returns false for valid 8M/22M strings; Chromium throws Maximum call stack size exceeded at 8M/22M. Replaced that regex with bounded 32 KiB alphabet checks plus the same multiple-of-four and trailing-padding validation. Existing archive v1/v2/v3 data and checksums remain unchanged; malformed encoding still fails before replacement. Existing cloud backups need not be recreated for this reader fix.
+- Complete import now returns true after a successful commit and false after canceled confirmation, allowing the cloud UI to report Cloud backup restored or Restore canceled instead of leaving Preparing restore visible. No mutation, integrity, rollback or replacement-confirmation guard was removed.
+- Verification: all 13 targeted tests passed across large-attachment, existing archive-safety and cloud-restore cases, plus 58 standalone Node tests. A 12 MiB attachment roundtrips with matching bytes and SHA-256 in Chromium using actual IndexedDB. WebKit exercises the real codec/hash/import pipeline with a test Blob-store adapter because this Mac's Playwright WebKit fails preparing large IndexedDB Blob values; the actual device persistence result remains separate. Both engines reject a deliberately malformed large attachment without changing the planner. CI now installs WebKit as well as Chromium. Logs: `large-attachment-restore.log`, `large-attachment-node.log`, `build-large-attachment.log`; previous assets are in `large-encoding-before`.
+- Signed build and strict/deep signature verification passed. Installed and launched the corrected iPhone build over the existing app; owner is retrying the existing cloud archive. Live restore result pending.
+
+
 ## 2026-11-25 — Corrected live bucket CORS configuration for native restore
 
 - The owner reported the new native range downloader stopped with a connection error. Inspected the actual bucket Configuration → CORS editor and found its sole GET configuration permitted only `http://localhost:8766` and `https://jgoldslice.github.io`, omitting the native `capacitor://localhost` origin. Existing response headers also omitted Content-Range. The generic Firebase endpoint OPTIONS check recorded earlier did not establish that the bucket's media responses allowed the native origin; it was insufficient verification.
