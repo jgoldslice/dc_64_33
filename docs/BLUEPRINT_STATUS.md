@@ -7,6 +7,12 @@
 
 > **Operating rule:** Update this file after substantive development. Separate verified current state from the owner's design requests and past reports. The default branch's live commit and test status can change between chats; fetch them again.
 
+## 2026-11-26 — Owner confirmed visible web handwriting and Safari navigation
+
+- Owner supplied a screenshot of the published website displaying actual restored iPad handwriting in its notebook page, with the read-only preview notice. This supplies owner-provided evidence of actual handwriting rendering, beyond the earlier synthetic public-site check. No personal archive or browser profile was accessed by the agent.
+- Owner initially reported a missing-initial-state sign-in error in Safari and inability to pan/scroll in the chat browser. Current source already uses `signInWithPopup`; no redirect-based flow was found. Owner was asked to start a fresh sign-in directly from the Blueprint homepage in Safari, keeping the sign-in window in that browser. The owner then reported that it works well and panning works in Safari. This is owner-reported Safari sign-in and notebook navigation verification; the original error's exact cause was not independently reproduced, and the owner confirmed that panning still fails in the chat browser but accepts using Safari.
+- No authentication, notebook gesture, storage, backup schema, native build or production configuration change was needed for this result. This documentation update records the completed owner verification. The browser-export prerequisite was requested earlier but its completion was not separately confirmed; do not record an agent-managed export or restore. PR #104 remains separate; automatic synchronization remains disabled.
+
 ## 2026-11-26 — PR #105 published; updated iPad launch and new backup confirmed
 
 - Release head `736b0543504015bdfe6199a02d5190aa7767f56d` passed all 417 browser tests and the standalone Node checks in [CI run 45874451419](https://github.com/jgoldslice/dc_64_33/actions/runs/45874451419). All 62 Node tests and 5 Firebase emulator tests passed locally. Local browser verification finished with a clean **417/417 pass**. Earlier local runs had dropped HTTP connections and missing-script/UI failures; all 13 affected tests passed sequential retry, then the full suite passed with a local server request queue of 128. No application code or test assertions were weakened to obtain the passing result. JavaScript syntax checks and `git diff --check` passed.
