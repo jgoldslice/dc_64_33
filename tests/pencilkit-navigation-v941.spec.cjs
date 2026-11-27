@@ -1,8 +1,8 @@
 const {submitSheet}=require('./sheet-helper.cjs');
 const {test,expect}=require('@playwright/test');
-const base='http://127.0.0.1:8765/';
-async function openNativeNotebook(page){
-  await page.addInitScript(()=>{
+const base=process.env.BLUEPRINT_NATIVE_NAV_BASE_URL||'http://127.0.0.1:8765/';
+async function openNativeNotebook(page,nativeExtent){
+  await page.addInitScript(extent=>{
     window.__pencilCalls=[];
     window.Capacitor={
       isNativePlatform:()=>true,
@@ -12,12 +12,12 @@ async function openNativeNotebook(page){
         if(method==='capabilities')return {
           available:true,schemaVersion:1,embeddedAvailable:true
         };
-        if(method==='showInline')return {visible:true,embedded:true};
+        if(method==='showInline')return {visible:true,embedded:true,...extent};
         if(method==='hideInline')return {hidden:true};
         return {opened:true};
       }
     };
-  });
+  },nativeExtent);
   await page.goto(base);
   await page.locator('[data-tab="brainstorm"]').click();
   await page.locator('#newProject').click();
@@ -97,4 +97,37 @@ test('native pinch obeys Notes zoom bounds and reset button remains usable',asyn
   await nativeEvent(page,'change',750,400,.01);
   await nativeEvent(page,'end',750,400,.01);
   await expect(page.locator('#v815ZoomReset')).toHaveText('50%');
+});
+
+for(const viewport of [{width:390,height:844},{width:834,height:1194}]){
+  test('native ink outside the screen remains scrollable without rewriting the page at '+viewport.width,async({page})=>{
+    await page.setViewportSize(viewport);
+    await openNativeNotebook(page,{contentWidth:1600,contentHeight:2400});
+    const before=await page.evaluate(()=>JSON.stringify(v6Project().notePages));
+    await expect.poll(()=>page.evaluate(()=>document.getElementById('v815ZoomViewport').scrollWidth)).toBeGreaterThanOrEqual(1600);
+    await expect.poll(()=>page.evaluate(()=>document.getElementById('v815ZoomViewport').scrollHeight)).toBeGreaterThanOrEqual(2400);
+    await nativeEvent(page,'start',300,600);
+    await nativeEvent(page,'change',80,200);
+    await nativeEvent(page,'end',80,200);
+    const result=await page.evaluate(()=>({
+      left:document.getElementById('v815ZoomViewport').scrollLeft,
+      top:document.getElementById('v815ZoomViewport').scrollTop,
+      contents:JSON.stringify(v6Project().notePages),
+      rejected:BlueprintNotesBridge.setNativeInkExtent(v6Project().id,v6Project().activeNotePageId,500000,2400)
+    }));
+    expect(result.left).toBeGreaterThan(150);expect(result.top).toBeGreaterThan(300);
+    expect(result.contents).toBe(before);expect(result.rejected).toBe(false);
+  });
+}
+
+test('native overlay reloads unchanged geometry after a sync apply and stays hidden while staging',async({page})=>{
+  await openNativeNotebook(page);
+  const before=await page.evaluate(()=>window.__pencilCalls.filter(c=>c.method==='showInline').length);
+  await page.evaluate(async()=>{await BlueprintPencilInline.suspendForSync();window.dispatchEvent(new Event('resize'));});
+  await page.waitForTimeout(80);
+  expect(await page.evaluate(()=>window.__pencilCalls.filter(c=>c.method==='showInline').length)).toBe(before);
+  expect(await page.evaluate(()=>window.__pencilCalls.at(-1).method)).toBe('hideInline');
+  await page.evaluate(()=>BlueprintPencilInline.resumeAfterSync());
+  await expect.poll(()=>page.evaluate(()=>window.__pencilCalls.filter(c=>c.method==='showInline').length)).toBeGreaterThan(before);
+  await expect(page.locator('#v936InlineInk')).toHaveAttribute('aria-pressed','true');
 });

@@ -97,11 +97,13 @@ final class BlueprintPencilNavigation: NSObject, UIGestureRecognizerDelegate {
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
-        // Keep pinch + pan in one continuous navigation session, while
-        // never trying to recognize Apple Pencil strokes as finger gestures.
+        // PencilKit also installs its own recognizers on the canvas. Let our
+        // direct-touch navigation coexist with them, otherwise an internal
+        // recognizer can win and prevent any finger pan/pinch from starting.
+        // Our allowedTouchTypes excludes Pencil, so strokes stay native.
         let ours = gestureRecognizer === pinch || gestureRecognizer === pan
         let otherOurs = otherGestureRecognizer === pinch || otherGestureRecognizer === pan
-        return ours && otherOurs
+        return ours || otherOurs
     }
 
     @objc private func onPinch(_ recognizer: UIPinchGestureRecognizer) {

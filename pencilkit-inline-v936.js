@@ -17,7 +17,7 @@
 
   const invoke=(method,args={})=>native.nativePromise('BlueprintPencil',method,args);
   let withArchive=false, supported=false,active=false,mounted=false,accepted=false;
-  let lastPayload='',pending=false,running=null,scheduled=false;
+  let lastPayload='',pending=false,running=null,scheduled=false,suspended=false;
   const button=document.createElement('button');
   button.type='button';
   button.id='v936InlineInk';
@@ -61,7 +61,7 @@
       width:Math.round(r.width*2)/2,height:Math.round(r.height*2)/2};
   }
   function geometry(){
-    if(document.getElementById('bpSheet'))return null;
+    if(suspended||document.getElementById('bpSheet'))return null;
     const ctx=notes.current?.();
     if(!ctx?.p||!ctx?.page||!surface.getClientRects().length)return null;
     const box=surface.getBoundingClientRect();
@@ -100,6 +100,7 @@
         throw Error('Native PencilKit did not confirm the in-page drawing view.');
       mounted=true;
       lastPayload=key;
+      notes.setNativeInkExtent?.(payload.projectId,payload.pageId,result.contentWidth,result.contentHeight);
     }
     return true;
   }
@@ -185,6 +186,7 @@
   function watch(){
     window.addEventListener('scroll',schedule,true);
     window.addEventListener('blueprint:notes-viewport-change',schedule);
+    window.addEventListener('blueprint:pencil-dirty',()=>{lastPayload='';schedule();});
     // The native PKCanvasView receives finger gestures above the WKWebView;
     // forward them to the existing Notes zoom/scroll engine. Ignore stale
     // events arriving after a project/page switch or when drawing is paused.
@@ -258,7 +260,9 @@
     if(focusTools)focusTools.hidden=true;
     if(focusMenu)focusMenu.hidden=true;
     window.BlueprintPencilInline={isAvailable:()=>supported,focusChanged,
-      isDrawing:()=>active};
+      isDrawing:()=>active,
+      async suspendForSync(){suspended=true;await refresh();},
+      resumeAfterSync(){suspended=false;lastPayload='';schedule();}};
     label();
     watch();
     if(root.classList.contains('v928-focus-mode'))focusChanged(true);

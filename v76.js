@@ -301,6 +301,21 @@
     zoomOutButton.disabled=noteZoom<=ZOOM_MIN+.0001;
     zoomInButton.disabled=noteZoom>=ZOOM_MAX-.0001;
   }
+  // Native ink can extend beyond this device's viewport. These are local
+  // display bounds, not edits to the saved page or its original strokes.
+  const nativeInkExtents=new Map();
+  const extentKey=(projectId,pageId)=>JSON.stringify([String(projectId),String(pageId)]);
+  function setNativeInkExtent(projectId,pageId,width,height){
+    if(![width,height].every(value=>Number.isSafeInteger(value)&&value>=0&&value<=20000))return false;
+    const key=extentKey(projectId,pageId),prior=nativeInkExtents.get(key);
+    if(prior?.width===width&&prior?.height===height)return false;
+    nativeInkExtents.set(key,{width,height});
+    const ctx=current();
+    if(String(ctx?.p?.id)===String(projectId)&&String(ctx?.page?.id)===String(pageId)){
+      syncZoomLayout();window.dispatchEvent(new Event('blueprint:notes-viewport-change'));
+    }
+    return true;
+  }
   function syncZoomLayout(){
     if(!zoomViewport.clientWidth)return; // An inactive project may be hidden.
     const ctx=current();
@@ -309,12 +324,13 @@
     // A saved width also preserves ink placed beyond the original right edge.
     const preview=ctx?.page.blueprintBrowserInk?.preview;
     const previewExtent=value=>Number.isSafeInteger(value)&&value>0&&value<=20000?value:0;
-    const savedWidth=Math.max(0,Number(ctx?.page.width)||0,previewExtent(preview?.width));
+    const nativeExtent=nativeInkExtents.get(extentKey(ctx?.p?.id,ctx?.page?.id));
+    const savedWidth=Math.max(0,Number(ctx?.page.width)||0,previewExtent(preview?.width),nativeExtent?.width||0);
     const baseWidth=Math.ceil(Math.max(zoomViewport.clientWidth,savedWidth,
       zoomViewport.clientWidth/noteZoom));
     const cssMinHeight=parseFloat(getComputedStyle(surface).minHeight)||0;
     const baseHeight=Math.ceil(Math.max(740,cssMinHeight,Number(ctx?.page.height)||740,
-      previewExtent(preview?.height),zoomViewport.clientHeight/Math.min(1,noteZoom)));
+      previewExtent(preview?.height),nativeExtent?.height||0,zoomViewport.clientHeight/Math.min(1,noteZoom)));
     const priorWidth=surface.clientWidth,priorHeight=surface.clientHeight;
     const width=baseWidth+'px',height=baseHeight+'px';
     if(surface.style.width!==width)surface.style.width=width;
@@ -1811,7 +1827,7 @@
   // the original page records, SVG rendering, undo control and verified save.
   window.BlueprintNotesBridge={current,persist,strokesView,growPage,growPageWidth,
     setMode:applyMode,getMode:()=>mode,inkPosition,getZoom:()=>noteZoom,
-    handlePencilViewportGesture,pushInkUndo,
+    handlePencilViewportGesture,setNativeInkExtent,pushInkUndo,
     root,surface,ink,zoomViewport};
   applyMode('select');
   if(v6Project())renderPage(v6Project(),true);

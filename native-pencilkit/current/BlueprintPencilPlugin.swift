@@ -177,7 +177,10 @@ public class BlueprintPencilPlugin: CAPPlugin, CAPBridgedPlugin {
                     try self.inlineSession?.saveNow()
                 }
                 self.inlineSession?.setEditing(editing)
-                call.resolve(["visible": true, "embedded": true, "pageId": pageId])
+                let extent = self.inlineSession?.contentExtent() ?? .zero
+                call.resolve(["visible": true, "embedded": true, "pageId": pageId,
+                              "contentWidth": Double(extent.width),
+                              "contentHeight": Double(extent.height)])
             } catch {
                 call.reject("Cannot show embedded native drawing: \(error.localizedDescription)")
             }
@@ -364,6 +367,14 @@ private final class BlueprintPencilInlineSession: NSObject, PKCanvasViewDelegate
         canvas.center = CGPoint(
             x: surface.rect.minX - visible.minX + surface.rect.width / 2,
             y: surface.rect.minY - visible.minY + surface.rect.height / 2)
+    }
+
+    func contentExtent() -> CGSize {
+        let bounds = canvas.drawing.bounds
+        guard !bounds.isNull, !bounds.isEmpty,
+              bounds.maxX.isFinite, bounds.maxY.isFinite else { return .zero }
+        return CGSize(width: min(20000, ceil(max(0, bounds.maxX) + 24)),
+                      height: min(20000, ceil(max(0, bounds.maxY) + 24)))
     }
 
     func setEditing(_ allowed: Bool) {

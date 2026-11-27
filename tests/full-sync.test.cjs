@@ -139,3 +139,23 @@ test('durable checkpoint checksum detects valid-JSON damage before it can become
     await assert.rejects(checkpoint.read(),/checkpoint is damaged/);
   }finally{globalThis.v6Blob=old;}
 });
+
+test('native incoming apply suspends the overlay and resumes it even when a guarded import fails',async()=>{
+  const {createFullSyncLocal}=await import('../sync/full-sync-local.mjs');
+  const {archiveToGraph}=await codecModule;
+  const archive=await fixture(),packed=await archiveToGraph(archive),events=[];
+  const names=['BlueprintFullSyncLocal','BlueprintPencilInline','Capacitor','document','window','scrollY','scrollTo','v74ImportBackup'];
+  const previous=Object.fromEntries(names.map(name=>[name,Object.getOwnPropertyDescriptor(globalThis,name)]));
+  try{
+    globalThis.BlueprintFullSyncLocal={inspect:async()=>{},assert:()=>{}};
+    globalThis.BlueprintPencilInline={suspendForSync:async()=>events.push('suspend'),resumeAfterSync:()=>events.push('resume')};
+    globalThis.Capacitor={isNativePlatform:()=>true,nativePromise:async()=>({syncDrawingEventsVersion:1,fullEditorActive:false})};
+    globalThis.document={getElementById:()=>null};globalThis.window={dispatchEvent:()=>{}};
+    globalThis.scrollY=0;globalThis.scrollTo=()=>{};
+    globalThis.v74ImportBackup=async()=>{events.push('import');throw Error('local changed during staging');};
+    await assert.rejects(createFullSyncLocal().apply({token:{manifest:'fixture'},archive},packed.graph,h=>packed.objects.get(h),()=>{}),/local changed/);
+    assert.deepEqual(events,['suspend','import','resume']);
+  }finally{
+    for(const name of names){if(previous[name])Object.defineProperty(globalThis,name,previous[name]);else delete globalThis[name];}
+  }
+});
